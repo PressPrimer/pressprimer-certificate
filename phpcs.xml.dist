@@ -1,0 +1,198 @@
+<?xml version="1.0"?>
+<ruleset name="PressPrimer Certificate">
+	<description>PHPCS ruleset for PressPrimer Certificate plugin.</description>
+
+	<!-- What to scan -->
+	<file>.</file>
+
+	<!-- Exclude paths -->
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/assets/js/*.min.js</exclude-pattern>
+	<exclude-pattern>/assets/css/*.min.css</exclude-pattern>
+	<exclude-pattern>/build/*</exclude-pattern>
+	<exclude-pattern>/src/*</exclude-pattern>
+	<exclude-pattern>/tests/*</exclude-pattern>
+	<exclude-pattern>composer-setup.php</exclude-pattern>
+	<exclude-pattern>*.phar</exclude-pattern>
+
+	<!-- How to scan -->
+	<arg value="sp"/> <!-- Show sniff and progress -->
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg name="extensions" value="php"/>
+	<arg name="parallel" value="8"/>
+
+	<!-- Rules: WordPress Coding Standards -->
+	<rule ref="WordPress">
+		<!--
+		Exclude rules that don't apply to plugins with custom database tables.
+		These are intentional patterns, not security issues.
+		-->
+
+		<!--
+		We use custom database tables with $wpdb->prefix, which requires
+		interpolating table names into SQL strings. This is safe because:
+		1. Table names are constructed from $wpdb->prefix (trusted)
+		2. All user input is still passed through prepare() placeholders
+		-->
+		<exclude name="WordPress.DB.PreparedSQL.InterpolatedNotPrepared"/>
+		<exclude name="WordPress.DB.PreparedSQL.NotPrepared"/>
+
+		<!--
+		Direct database queries are necessary for custom tables that don't
+		use WordPress post/meta APIs. We handle caching at the application level.
+		-->
+		<exclude name="WordPress.DB.DirectDatabaseQuery.DirectQuery"/>
+		<exclude name="WordPress.DB.DirectDatabaseQuery.NoCaching"/>
+
+		<!--
+		Short array syntax [] is allowed in modern PHP (7.4+) and is more readable.
+		WordPress core now uses this syntax as well.
+		-->
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax.Found"/>
+
+		<!--
+		We use Yoda conditions where appropriate but don't enforce them everywhere.
+		-->
+		<exclude name="WordPress.PHP.YodaConditions.NotYoda"/>
+
+		<!--
+		Plugin uses custom capabilities (ppcert_*) which are registered at runtime.
+		These are not WordPress core capabilities.
+		-->
+		<exclude name="WordPress.WP.Capabilities.Unknown"/>
+
+		<!--
+		WordPress-style class file naming (class-*.php) is used, not PSR-4.
+		This is standard for WordPress plugins.
+		-->
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+
+		<!--
+		Comment formatting - not enforcing period at end of inline comments.
+		-->
+		<exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
+
+		<!--
+		Short ternary (?:) is readable and intentional.
+		-->
+		<exclude name="Universal.Operators.DisallowShortTernary.Found"/>
+
+		<!--
+		Slow DB query warnings - meta_query is sometimes necessary.
+		-->
+		<exclude name="WordPress.DB.SlowDBQuery.slow_db_query_meta_query"/>
+
+		<!--
+		Multiple classes per file is used for List Tables that are tightly coupled.
+		-->
+		<exclude name="Generic.Files.OneObjectStructurePerFile.MultipleFound"/>
+
+		<!--
+		Unused function parameters are often required for WordPress hooks/filters
+		that pass multiple arguments even when not all are needed.
+		-->
+		<exclude name="Generic.CodeAnalysis.UnusedFunctionParameter.Found"/>
+		<exclude name="Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed"/>
+
+		<!--
+		Throw tag documentation is not strictly required.
+		-->
+		<exclude name="Squiz.Commenting.FunctionCommentThrowTag.Missing"/>
+
+		<!--
+		Translator comments for i18n - not always required for simple strings.
+		-->
+		<exclude name="WordPress.WP.I18n.MissingTranslatorsComment"/>
+
+		<!--
+		Comment formatting - period at end of param comments not required.
+		-->
+		<exclude name="Squiz.Commenting.FunctionComment.ParamCommentFullStop"/>
+
+		<!--
+		Reserved keywords as parameter names (array, default, class) are sometimes
+		meaningful and readable in context.
+		-->
+		<exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames.arrayFound"/>
+		<exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames.defaultFound"/>
+		<exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames.classFound"/>
+
+		<!--
+		Schema changes are necessary during plugin activation/migration.
+		-->
+		<exclude name="WordPress.DB.DirectDatabaseQuery.SchemaChange"/>
+
+		<!--
+		Silenced errors are occasionally needed for expected failures.
+		-->
+		<exclude name="WordPress.PHP.NoSilencedErrors.Discouraged"/>
+
+		<!--
+		Variable names from third-party APIs may not follow snake_case.
+		-->
+		<exclude name="WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase"/>
+		<exclude name="WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase"/>
+	</rule>
+
+	<!--
+	NOTE: This ruleset is deliberately stricter than the Quiz/Assignment
+	rulesets. The prefix sniffs (PrefixAllGlobals.*), strict in_array,
+	current_time('timestamp'), unreachable-code, and unfinished-prepare
+	sniffs stay ACTIVE to enforce Decision 003 (ppcert minimum everywhere)
+	and the UTC datetime standard. Do not copy the sibling excludes for
+	those sniffs without a decision record.
+	-->
+
+	<!-- Verify that the text domain is set correctly -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="pressprimer-certificate"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Verify that everything is properly prefixed (Decision 003: ppcert minimum everywhere) -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="ppcert"/>
+				<element value="PPCERT"/>
+				<element value="PressPrimer_Certificate"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Allow hyphens as word delimiters in hook names -->
+	<rule ref="WordPress.NamingConventions.ValidHookName">
+		<properties>
+			<property name="additionalWordDelimiters" value="-"/>
+		</properties>
+	</rule>
+
+	<!--
+	Minimum PHP and WP versions.
+	These should match the plugin header requirements.
+	-->
+	<config name="minimum_wp_version" value="6.4.0"/>
+	<config name="minimum_supported_php_version" value="7.4.0"/>
+
+	<!-- Check for PHP cross-version compatibility -->
+	<config name="testVersion" value="7.4-"/>
+
+	<!--
+	==========================================================================
+	WordPress.org Plugin Directory - Additional Rules
+	==========================================================================
+	These rules are enforced by the WordPress.org plugin scanner but are not
+	included in the default WordPress-Core or WordPress-Extra rulesets.
+	Adding them here ensures we catch issues before submission.
+	-->
+
+	<!-- Heredoc/nowdoc syntax is not allowed by WordPress.org -->
+	<rule ref="Squiz.PHP.Heredoc"/>
+
+</ruleset>

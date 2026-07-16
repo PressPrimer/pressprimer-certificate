@@ -1,0 +1,125 @@
+name: Generate Changelog
+
+on:
+  # Runs when you start creating a release on GitHub
+  release:
+    types: [created]
+  
+  # Also can be triggered manually from Actions tab
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to generate changelog for (e.g., v2.0.0)'
+        required: true
+        type: string
+
+jobs:
+  generate-changelog:
+    name: Generate Release Notes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          # Get the tag before the current one
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          echo "previous_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREV_TAG"
+
+      - name: Generate changelog from commits
+        id: changelog
+        run: |
+          # Determine the range
+          if [ -n "${{ steps.prev_tag.outputs.previous_tag }}" ]; then
+            RANGE="${{ steps.prev_tag.outputs.previous_tag }}..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+          
+          echo "Generating changelog for range: $RANGE"
+          
+          # Create changelog file
+          CHANGELOG_FILE=$(mktemp)
+          
+          # Features
+          FEATURES=$(git log $RANGE --pretty=format:"%s" --grep="^feat:" --grep="^feat(" | sed 's/^feat[:(][^)]*): */- /' | sed 's/^feat: */- /')
+          if [ -n "$FEATURES" ]; then
+            echo "### Added" >> $CHANGELOG_FILE
+            echo "$FEATURES" >> $CHANGELOG_FILE
+            echo "" >> $CHANGELOG_FILE
+          fi
+          
+          # Fixes
+          FIXES=$(git log $RANGE --pretty=format:"%s" --grep="^fix:" --grep="^fix(" | sed 's/^fix[:(][^)]*): */- /' | sed 's/^fix: */- /')
+          if [ -n "$FIXES" ]; then
+            echo "### Fixed" >> $CHANGELOG_FILE
+            echo "$FIXES" >> $CHANGELOG_FILE
+            echo "" >> $CHANGELOG_FILE
+          fi
+          
+          # Performance
+          PERF=$(git log $RANGE --pretty=format:"%s" --grep="^perf:" --grep="^perf(" | sed 's/^perf[:(][^)]*): */- /' | sed 's/^perf: */- /')
+          if [ -n "$PERF" ]; then
+            echo "### Improved" >> $CHANGELOG_FILE
+            echo "$PERF" >> $CHANGELOG_FILE
+            echo "" >> $CHANGELOG_FILE
+          fi
+          
+          # Refactors
+          REFACTOR=$(git log $RANGE --pretty=format:"%s" --grep="^refactor:" --grep="^refactor(" | sed 's/^refactor[:(][^)]*): */- /' | sed 's/^refactor: */- /')
+          if [ -n "$REFACTOR" ]; then
+            echo "### Changed" >> $CHANGELOG_FILE
+            echo "$REFACTOR" >> $CHANGELOG_FILE
+            echo "" >> $CHANGELOG_FILE
+          fi
+          
+          # Breaking changes (look in commit body)
+          BREAKING=$(git log $RANGE --pretty=format:"%b" | grep -i "BREAKING CHANGE:" | sed 's/BREAKING CHANGE: */- ⚠️ /')
+          if [ -n "$BREAKING" ]; then
+            echo "### ⚠️ Breaking Changes" >> $CHANGELOG_FILE
+            echo "$BREAKING" >> $CHANGELOG_FILE
+            echo "" >> $CHANGELOG_FILE
+          fi
+          
+          # Output the changelog
+          CHANGELOG=$(cat $CHANGELOG_FILE)
+          
+          # Handle multiline output for GitHub Actions
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Also print to log
+          echo "Generated changelog:"
+          cat $CHANGELOG_FILE
+
+      - name: Update release notes
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ---
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.prev_tag.outputs.previous_tag }}...${{ github.ref_name }}
+          append_body: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output changelog for manual runs
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "## Changelog for ${{ inputs.version }}"
+          echo ""
+          echo "${{ steps.changelog.outputs.changelog }}"
+          echo ""
+          echo "Copy this to your readme.txt changelog section"

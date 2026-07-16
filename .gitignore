@@ -1,0 +1,49 @@
+# WordPress
+.htaccess
+wp-config.php
+*.log
+
+# Dependencies
+node_modules/
+
+# Vendor: all Composer output is ignored until production libraries land.
+# When TCPDF and the QR library are adopted, switch to the whitelist pattern
+# (ignore /vendor/* and un-ignore the trimmed production packages) so the
+# trimmed vendor output is committed per CLAUDE.md "Bundled libraries".
+/vendor/
+
+# Composer
+composer.lock
+composer.phar
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+
+# Build files
+/build/
+/dist/
+*.map
+
+# Testing
+/tests/tmp/
+/tests/results/
+.phpunit.result.cache
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright/
+
+# Internal documentation (kept locally, not pushed to public repo)
+/docs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db

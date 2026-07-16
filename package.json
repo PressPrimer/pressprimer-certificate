@@ -1,0 +1,34 @@
+{
+  "name": "pressprimer-certificate",
+  "version": "1.0.0",
+  "description": "Design, issue, and verify certificates on your own site. Drag-and-drop designer, credential IDs, QR verification, and LMS-agnostic issuance.",
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start",
+    "check-engines": "wp-scripts check-engines",
+    "check-licenses": "wp-scripts check-licenses",
+    "lint:css": "wp-scripts lint-style",
+    "lint:js": "wp-scripts lint-js",
+    "format": "wp-scripts format",
+    "packages-update": "wp-scripts packages-update",
+    "plugin-zip": "PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1) && wp-scripts build && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-certificate && \"$PHP\" composer.phar install --no-dev --optimize-autoloader && rm -rf dist && mkdir -p dist/pressprimer-certificate && rsync -av --exclude-from='.distignore' ./ dist/pressprimer-certificate/ && cd dist && zip -r pressprimer-certificate.zip pressprimer-certificate && rm -rf pressprimer-certificate && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-certificate && \"$PHP\" composer.phar install && echo 'Created dist/pressprimer-certificate.zip'"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^27.0.0",
+    "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.2.6",
+    "@wordpress/api-fetch": "^7.0.0",
+    "@wordpress/components": "^27.0.0",
+    "@wordpress/element": "^6.0.0",
+    "@wordpress/i18n": "^5.0.0",
+    "antd": "^5.12.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

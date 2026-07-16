@@ -1,0 +1,130 @@
+# Distribution Ignore File
+# Files and directories to exclude when building the plugin zip
+
+# Version Control
+.git
+.github
+.gitignore
+.gitattributes
+
+# Hidden placeholder files (rsync pattern)
+.gitkeep
+
+# Claude Code / AI
+.claude
+
+# WordPress.org Assets (banners, icons, screenshots - stored in repo but not in plugin zip)
+.wordpress-org
+
+# Development Dependencies
+node_modules
+composer.phar
+composer.lock
+package-lock.json
+
+# Note: composer.json and package.json are intentionally included per WordPress.org guidelines
+
+# Vendor dev-only packages (composer install --no-dev should remove these, but exclude as safety)
+vendor/bin
+vendor/dealerdirect
+vendor/phpcompatibility
+vendor/phpcsstandards
+vendor/phpunit
+vendor/sebastian
+vendor/squizlabs
+vendor/wp-coding-standards
+
+# Vendor dev-only files (cleanup for production dependencies; strip library
+# test/example/doc folders per CLAUDE.md "Bundled libraries")
+vendor/*/doc
+vendor/*/*/doc
+vendor/*/docs
+vendor/*/*/docs
+vendor/*/examples
+vendor/*/*/examples
+vendor/*/tests
+vendor/*/*/tests
+vendor/*/.github
+vendor/*/*/.github
+vendor/*/Makefile
+vendor/*/*/Makefile
+vendor/*/.php-cs-fixer.php
+vendor/*/*/.php-cs-fixer.php
+vendor/*/phpunit*.xml
+vendor/*/*/phpunit*.xml
+vendor/*/phpunit*.xml.dist
+vendor/*/*/phpunit*.xml.dist
+vendor/*/.phpcs.xml.dist
+vendor/*/*/.phpcs.xml.dist
+vendor/*/CONTRIBUTING.md
+vendor/*/*/CONTRIBUTING.md
+vendor/*/CHANGELOG.md
+vendor/*/*/CHANGELOG.md
+vendor/*/README.md
+vendor/*/*/README.md
+vendor/*/.editorconfig
+vendor/*/*/.editorconfig
+vendor/*/*.php-dist
+vendor/*/*/*.php-dist
+
+# Build Tools / Config
+webpack.config.js
+babel.config.js
+postcss.config.js
+.babelrc
+.browserslistrc
+
+# Source Files (built versions are in /build)
+/src
+
+# Testing
+/tests
+phpunit.xml
+phpunit.xml.dist
+.phpunit.result.cache
+playwright.config.ts
+/test-results
+/playwright-report
+/blob-report
+/.playwright
+
+# Code Quality
+phpcs.xml
+phpcs.xml.dist
+.eslintrc
+.eslintrc.js
+.eslintrc.json
+.eslintignore
+.prettierrc
+.prettierignore
+.stylelintrc
+
+# Editor/IDE
+.editorconfig
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+
+# WordPress Development Environment
+.wp-env.json
+.wp-env.override.json
+
+# Documentation (development only)
+/docs
+/*.md
+!/readme.md
+
+# OS Files
+.DS_Store
+__MACOSX
+._*
+Thumbs.db
+
+# Misc
+.distignore
+.npmrc
+.nvmrc
+
+# Build output (prevent recursive copying)
+/dist
