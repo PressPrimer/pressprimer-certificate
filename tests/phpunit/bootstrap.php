@@ -40,6 +40,19 @@ if ( ! function_exists( 'absint' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_rand' ) ) {
+	/**
+	 * Stub: Random integer in a range (CSPRNG, like modern WP).
+	 *
+	 * @param int $min Lower bound.
+	 * @param int $max Upper bound.
+	 * @return int
+	 */
+	function wp_rand( $min = 0, $max = 0 ) {
+		return random_int( (int) $min, (int) $max );
+	}
+}
+
 if ( ! function_exists( '__' ) ) {
 	/**
 	 * Stub: Return the untranslated text.
