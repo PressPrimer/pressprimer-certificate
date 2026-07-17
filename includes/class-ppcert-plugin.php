@@ -41,11 +41,13 @@ class PressPrimer_Certificate_Plugin {
 	 * Returns the single instance of the plugin class.
 	 * Creates the instance if it doesn't exist.
 	 *
+	 * Named instance() per 008-foundation FR-001.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return PressPrimer_Certificate_Plugin The plugin instance.
 	 */
-	public static function get_instance() {
+	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -55,7 +57,7 @@ class PressPrimer_Certificate_Plugin {
 	/**
 	 * Private constructor
 	 *
-	 * Prevents direct instantiation. Use get_instance() instead.
+	 * Prevents direct instantiation. Use instance() instead.
 	 *
 	 * @since 1.0.0
 	 */
@@ -64,14 +66,14 @@ class PressPrimer_Certificate_Plugin {
 	}
 
 	/**
-	 * Run the plugin
+	 * Initialize the plugin
 	 *
-	 * Initializes all plugin components in the correct order.
-	 * This method is called from the ppcert_init() function.
+	 * Initializes all plugin components in the correct order, then fires
+	 * `ppcert_loaded` (008-foundation FR-001). Called from ppcert_init().
 	 *
 	 * @since 1.0.0
 	 */
-	public function run() {
+	public function init() {
 		// Ensure capabilities are set up (handles cases where activation hook didn't run,
 		// such as WordPress Playground or manual file installations)
 		$this->ensure_capabilities();
@@ -91,6 +93,16 @@ class PressPrimer_Certificate_Plugin {
 		$this->init_rest_api();
 		$this->init_blocks();
 		$this->init_cron();
+
+		/**
+		 * Fires when the free plugin is fully loaded.
+		 *
+		 * Premium addons hook in here to initialize themselves and register
+		 * via the `ppcert_register_addon` action. See docs/architecture/HOOKS.md.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'ppcert_loaded' );
 	}
 
 	/**

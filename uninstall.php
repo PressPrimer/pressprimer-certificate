@@ -26,8 +26,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 // Define plugin path constant if not already defined.
-if ( ! defined( 'PPCERT_PLUGIN_PATH' ) ) {
-	define( 'PPCERT_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+if ( ! defined( 'PPCERT_PLUGIN_DIR' ) ) {
+	define( 'PPCERT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 }
 
 /**

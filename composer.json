@@ -10,7 +10,9 @@
         }
     ],
     "require": {
-        "php": ">=7.4"
+        "php": ">=7.4",
+        "ext-gd": "*",
+        "tecnickcom/tcpdf": "6.11.3"
     },
     "require-dev": {
         "dealerdirect/phpcodesniffer-composer-installer": "*",

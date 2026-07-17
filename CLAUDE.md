@@ -4,7 +4,7 @@
 
 PressPrimer Certificate is an LMS-agnostic certificate authoring, issuance, and verification plugin for WordPress. It is the third plugin suite in the PressPrimer portfolio (Quiz, Assignment, Certificate).
 
-**Status: pre-1.0, in development.** The bootstrap scaffold is in place; feature code is being built per the Phase 1-5 sequence in `docs/versions/v1.x/v1.0/README.md`. Conventions were locked before the first commit; every convention in this guide and in `docs/architecture/CONVENTIONS.md` is binding.
+**Status: pre-1.0, in planning. No code exists yet.** That makes this the one moment where conventions are free to set and expensive to change later. Every convention in this guide and in `docs/architecture/CONVENTIONS.md` is binding from the first commit.
 
 **Read before any work:** `docs/CLAUDE-INSTRUCTIONS.md` for the reading order and current version context.
 
@@ -42,30 +42,26 @@ These rules govern how AI assistants work on this codebase. They are identical t
 
 ### Mandatory Code Quality Checks
 
-**Run these checks on ALL code changes before requesting commit approval.** All PHP commands use the Local.app PHP binary. Its versioned path changes when Local updates, so discover it version-agnostically first:
-
-```bash
-PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1)
-```
+**Run these checks on ALL code changes before requesting commit approval:**
 
 1. **PHP Syntax Check** - On any new or modified PHP files:
    ```bash
-   "$PHP" -l path/to/file.php
+   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" -l path/to/file.php
    ```
 
 2. **PHPCS (WordPress Coding Standards)** - On modified PHP files:
    ```bash
-   "$PHP" ./vendor/bin/phpcs --standard=phpcs.xml.dist --report=full path/to/file.php
+   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=phpcs.xml.dist --report=full path/to/file.php
    ```
 
 3. **Security-Specific Checks** - On files handling user input, database queries, or output:
    ```bash
-   "$PHP" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
+   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
    ```
 
 4. **PHP Compatibility (7.4 - 8.4)** - On new PHP files:
    ```bash
-   "$PHP" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
+   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
    ```
 
 5. **JavaScript Lint** - If JavaScript was modified: `npm run lint:js`
@@ -137,7 +133,7 @@ The certificate **designer canvas** has no ecosystem precedent. Its specificatio
 
 ### Layout JSON Contract
 
-The versioned layout JSON is the single source of truth for a certificate design. It is consumed by:
+The versioned layout JSON is the single source of truth for a certificate design. The full schema contract is `docs/architecture/layout-schema.md`. It is consumed by:
 1. The React designer canvas (editing view)
 2. The server-side PDF renderer (TCPDF - see ADR 002)
 3. Future consumers: OG-image generation (Educator 2.0), print pipeline (School 2.x)

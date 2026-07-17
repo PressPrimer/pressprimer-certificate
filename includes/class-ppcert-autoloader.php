@@ -87,7 +87,7 @@ class PressPrimer_Certificate_Autoloader {
 			$file = $file_prefix . '-ppcert-' . $slug . '.php';
 
 			// Check includes/ root first
-			$path = PPCERT_PLUGIN_PATH . 'includes/' . $file;
+			$path = PPCERT_PLUGIN_DIR . 'includes/' . $file;
 			if ( file_exists( $path ) ) {
 				require_once $path;
 				return;
@@ -95,7 +95,7 @@ class PressPrimer_Certificate_Autoloader {
 
 			// Then each registered subdirectory
 			foreach ( self::$directories as $dir ) {
-				$path = PPCERT_PLUGIN_PATH . 'includes/' . $dir . '/' . $file;
+				$path = PPCERT_PLUGIN_DIR . 'includes/' . $dir . '/' . $file;
 				if ( file_exists( $path ) ) {
 					require_once $path;
 					return;

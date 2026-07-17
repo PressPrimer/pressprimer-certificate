@@ -1,6 +1,6 @@
 {
   "name": "pressprimer-certificate",
-  "version": "1.0.0",
+  "version": "1.0.0-dev",
   "description": "Design, issue, and verify certificates on your own site. Drag-and-drop designer, credential IDs, QR verification, and LMS-agnostic issuance.",
   "scripts": {
     "build": "wp-scripts build",
