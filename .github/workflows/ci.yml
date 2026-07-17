@@ -27,6 +27,26 @@ jobs:
       - name: Run PHPCS
         run: vendor/bin/phpcs
 
+  phpunit:
+    name: PHPUnit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit
+
   php-compatibility:
     name: PHP 7.4+ Compatibility
     runs-on: ubuntu-latest

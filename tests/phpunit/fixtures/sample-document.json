@@ -1,0 +1,17 @@
+{
+  "layout_schema_version": 1,
+  "page": { "size": "a4", "orientation": "landscape", "width": 842, "height": 595 },
+  "background": { "color": "#fdfcf8", "attachment_id": 0 },
+  "elements": [
+    { "id": "el_a1b2c3d4", "type": "shape", "x": 30, "y": 30, "w": 782, "h": 535, "z": 1,
+      "props": { "shape": "rect", "stroke_color": "#b8860b", "stroke_width": 2, "fill_color": "", "radius": 0 } },
+    { "id": "el_e5f6a7b8", "type": "text", "x": 121, "y": 120, "w": 600, "h": 40, "z": 2,
+      "props": { "content": "Certificate of Completion", "font_family": "playfair-display", "font_size": 32,
+                 "color": "#1f2a44", "align": "center", "line_height": 1.2, "bold": true, "italic": false } },
+    { "id": "el_c9d0e1f2", "type": "merge_field", "x": 121, "y": 220, "w": 600, "h": 48, "z": 3,
+      "props": { "token": "{{recipient.display_name}}", "font_family": "playfair-display", "font_size": 40,
+                 "color": "#1f2a44", "align": "center", "line_height": 1.2, "bold": false, "italic": true } },
+    { "id": "el_b3c4d5e6", "type": "qr", "x": 750, "y": 480, "w": 60, "h": 60, "z": 4,
+      "props": { "dark_color": "#1f2a44", "light_color": "" } }
+  ]
+}
