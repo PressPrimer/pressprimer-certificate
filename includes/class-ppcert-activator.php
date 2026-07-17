@@ -16,9 +16,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Activator class
  *
- * Contains all functionality for plugin activation.
- * Sets up database tables, default options, and capabilities.
- * Supports both single site and multisite network activation.
+ * Contains all functionality for plugin activation: database tables,
+ * default options, and capabilities (008-foundation FR-001). Supports both
+ * single site and multisite network activation.
+ *
+ * The WP/PHP requirements guard lives in the bootstrap
+ * (pressprimer-certificate.php): on an unmet floor the plugin is a
+ * notice-only stub and this class never loads, so activation cannot fatal.
  *
  * @since 1.0.0
  */
@@ -72,24 +76,6 @@ class PressPrimer_Certificate_Activator {
 	 * @since 1.0.0
 	 */
 	private static function activate_single_site() {
-		// Check WordPress version
-		if ( version_compare( get_bloginfo( 'version' ), '6.4', '<' ) ) {
-			wp_die(
-				'PressPrimer Certificate requires WordPress 6.4 or higher.',
-				'Plugin Activation Error',
-				[ 'back_link' => true ]
-			);
-		}
-
-		// Check PHP version
-		if ( version_compare( PHP_VERSION, '7.4', '<' ) ) {
-			wp_die(
-				'PressPrimer Certificate requires PHP 7.4 or higher.',
-				'Plugin Activation Error',
-				[ 'back_link' => true ]
-			);
-		}
-
 		// Set default options
 		self::set_default_options();
 
@@ -97,18 +83,20 @@ class PressPrimer_Certificate_Activator {
 		// This handles both fresh installs and reinstalls after data removal
 		self::ensure_database_tables();
 
-		// Run database migrations for version upgrades
-		if ( class_exists( 'PressPrimer_Certificate_Migrator' ) ) {
-			PressPrimer_Certificate_Migrator::maybe_migrate();
-		}
+		// Run the migration chain. The migrator owns ppcert_db_version and
+		// only advances it after verifying each step's tables are present
+		// (008-foundation FR-002).
+		PressPrimer_Certificate_Migrator::maybe_migrate();
 
-		// Setup capabilities
-		if ( class_exists( 'PressPrimer_Certificate_Capabilities' ) ) {
-			PressPrimer_Certificate_Capabilities::setup_capabilities();
-		}
+		// Setup capabilities (administrator; Feature 003 TR-003)
+		PressPrimer_Certificate_Capabilities::setup_capabilities();
 
-		// The public verification page is created here when Feature 6
-		// (Verification + QR) ships, and its ID stored in ppcert_settings.
+		// TODO (Prompt 2.7): create the public verification page and store
+		// its ID in ppcert_settings['verification_page_id'], detecting an
+		// existing page on re-activation (idempotent).
+
+		// TODO (Prompt 5.1): seed the starter templates into
+		// wp_ppcert_templates (is_starter = 1), re-seeding only if missing.
 
 		// Flush rewrite rules
 		flush_rewrite_rules();
@@ -123,6 +111,8 @@ class PressPrimer_Certificate_Activator {
 	 *
 	 * Checks if tables are missing and creates them if needed.
 	 * This runs on every activation to handle reinstalls after data removal.
+	 * The stored DB version is deliberately NOT written here - only the
+	 * migrator advances it, after verification.
 	 *
 	 * @since 1.0.0
 	 */
@@ -143,13 +133,7 @@ class PressPrimer_Certificate_Activator {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 			// Load and run schema
-			if ( class_exists( 'PressPrimer_Certificate_Schema' ) ) {
-				$sql = PressPrimer_Certificate_Schema::get_schema();
-				dbDelta( $sql );
-
-				// Update database version
-				update_option( 'ppcert_db_version', PPCERT_DB_VERSION );
-			}
+			dbDelta( PressPrimer_Certificate_Schema::get_schema() );
 		}
 	}
 
@@ -163,7 +147,7 @@ class PressPrimer_Certificate_Activator {
 	private static function set_default_options() {
 		// Default settings (see docs/architecture/DATABASE.md, Options)
 		$default_settings = [
-			'verification_page_id'  => 0, // Assigned when the verification page is created (Feature 6).
+			'verification_page_id'  => 0, // Assigned when the verification page is created (Prompt 2.7).
 			'email_from_name'       => get_bloginfo( 'name' ),
 			'email_from_address'    => get_bloginfo( 'admin_email' ),
 			'events_retention_days' => 90, // Anonymous event pruning window per DATABASE.md.
@@ -177,9 +161,11 @@ class PressPrimer_Certificate_Activator {
 		}
 
 		// Opt-in uninstall data removal is a standalone option (DATABASE.md).
-		// ALWAYS reset it to false on activation - a critical safety measure
-		// to prevent accidental data loss (mirrors the Quiz precedent).
-		update_option( 'ppcert_remove_data_on_uninstall', false );
+		// ALWAYS reset it off on activation - a critical safety measure to
+		// prevent accidental data loss (mirrors the Quiz precedent). Stored
+		// as 0/1 rather than a boolean: update_option( $option, false ) on a
+		// missing option early-returns without storing anything.
+		update_option( 'ppcert_remove_data_on_uninstall', 0 );
 	}
 
 	/**
