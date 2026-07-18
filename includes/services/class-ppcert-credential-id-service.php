@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *   and O to 0 (human transcription of printed certificates)
  *
  * The check character uses odd position weights, which detects 100% of
- * single-character substitutions and ~98% of adjacent transpositions -
+ * single-character substitutions and 96.8% of adjacent transpositions -
  * a fail-fast filter so the public verification endpoint rejects typos
  * before any database work. It is a UX/anti-junk measure, not a security
  * boundary; the 55 random bits are the security property.
@@ -79,8 +79,9 @@ class PressPrimer_Certificate_Credential_ID_Service {
 	 * Position weights for the check character
 	 *
 	 * All odd (coprime with 32) so every single-character substitution
-	 * changes the checksum; consecutive-odd spacing catches ~98% of
-	 * adjacent transpositions.
+	 * changes the checksum; consecutive-odd spacing catches 96.8% of
+	 * adjacent transpositions (a swap slips only when the two symbol
+	 * values differ by exactly 16).
 	 *
 	 * @since 1.0.0
 	 * @var int[]

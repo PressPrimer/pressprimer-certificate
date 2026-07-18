@@ -1,0 +1,171 @@
+<?php
+/**
+ * Trigger type registry
+ *
+ * Core consumption of the ppcert_register_trigger_types filter and the
+ * conditions_json sanitizer.
+ *
+ * @package PressPrimer_Certificate
+ * @subpackage Services
+ * @since 1.0.0
+ */
+
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Trigger registry class
+ *
+ * Collects trigger types registered through `ppcert_register_trigger_types`
+ * (HOOKS.md) - adapters and third-party integrations register through the
+ * same filter; core has no adapter-specific branches. Provides the
+ * schema-walking sanitizer for conditions_json (Feature 004 TR-002):
+ * unknown keys stripped, types coerced, numeric ranges clamped. The
+ * triggers REST controller runs every inbound conditions object through
+ * sanitize_conditions() before save.
+ *
+ * @since 1.0.0
+ */
+class PressPrimer_Certificate_Trigger_Registry {
+
+	/**
+	 * Get all registered trigger types, keyed by id
+	 *
+	 * Malformed entries (missing/invalid id) are dropped; every returned
+	 * entry carries id, label, source_picker (callable|null), and
+	 * conditions_schema (array).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<string,array> Map of trigger type id => entry.
+	 */
+	public static function get_types() {
+		/** This filter is documented in docs/architecture/HOOKS.md */
+		$raw = apply_filters( 'ppcert_register_trigger_types', [] );
+
+		$types = [];
+
+		foreach ( (array) $raw as $entry ) {
+			if ( ! is_array( $entry ) || empty( $entry['id'] ) || ! is_string( $entry['id'] ) ) {
+				continue;
+			}
+
+			$id = sanitize_key( $entry['id'] );
+
+			if ( '' === $id ) {
+				continue;
+			}
+
+			$types[ $id ] = [
+				'id'                => $id,
+				'label'             => isset( $entry['label'] ) && is_string( $entry['label'] ) ? $entry['label'] : $id,
+				'source_picker'     => isset( $entry['source_picker'] ) && is_callable( $entry['source_picker'] ) ? $entry['source_picker'] : null,
+				'conditions_schema' => isset( $entry['conditions_schema'] ) && is_array( $entry['conditions_schema'] ) ? $entry['conditions_schema'] : [],
+			];
+		}
+
+		return $types;
+	}
+
+	/**
+	 * Get one registered trigger type
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $id Trigger type id.
+	 * @return array|null The entry, or null when unregistered.
+	 */
+	public static function get_type( $id ) {
+		$types = self::get_types();
+
+		return isset( $types[ $id ] ) ? $types[ $id ] : null;
+	}
+
+	/**
+	 * Sanitize a conditions object against its trigger type's schema
+	 *
+	 * Walks the registered conditions_schema (Feature 004 TR-002): the
+	 * output contains exactly the schema's keys - unknown input keys are
+	 * stripped, values are coerced per field type, numbers clamp to
+	 * min/max, and absent or uncoercible values fall back to the field's
+	 * default (null when no default is declared). An unregistered trigger
+	 * type yields an empty array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $trigger_type Trigger type id.
+	 * @param mixed  $conditions   Raw conditions (decoded array).
+	 * @return array Sanitized conditions.
+	 */
+	public static function sanitize_conditions( $trigger_type, $conditions ) {
+		$type = self::get_type( $trigger_type );
+
+		if ( null === $type || empty( $type['conditions_schema'] ) ) {
+			return [];
+		}
+
+		$conditions = is_array( $conditions ) ? $conditions : [];
+		$clean      = [];
+
+		foreach ( $type['conditions_schema'] as $key => $field ) {
+			if ( ! is_string( $key ) || '' === $key || ! is_array( $field ) ) {
+				continue;
+			}
+
+			$default = array_key_exists( 'default', $field ) ? $field['default'] : null;
+			$has     = array_key_exists( $key, $conditions );
+			$value   = $has ? $conditions[ $key ] : null;
+
+			$field_type = isset( $field['type'] ) ? (string) $field['type'] : 'text';
+
+			switch ( $field_type ) {
+				case 'number':
+					$clean[ $key ] = $has && is_numeric( $value )
+						? self::clamp_number( (float) $value, $field )
+						: $default;
+					break;
+
+				case 'toggle':
+					$clean[ $key ] = $has
+						? ( true === $value || 1 === $value || '1' === $value || 'true' === $value )
+						: (bool) $default;
+					break;
+
+				case 'select':
+					$options       = isset( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : [];
+					$clean[ $key ] = ( $has && in_array( $value, $options, true ) ) ? $value : $default;
+					break;
+
+				case 'text':
+				default:
+					$clean[ $key ] = $has ? sanitize_text_field( (string) $value ) : $default;
+					break;
+			}
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Clamp a number to a schema field's min/max bounds
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param float $value Numeric value.
+	 * @param array $field Schema field (optional min/max).
+	 * @return float
+	 */
+	private static function clamp_number( $value, $field ) {
+		if ( isset( $field['min'] ) && is_numeric( $field['min'] ) ) {
+			$value = max( (float) $field['min'], $value );
+		}
+
+		if ( isset( $field['max'] ) && is_numeric( $field['max'] ) ) {
+			$value = min( (float) $field['max'], $value );
+		}
+
+		return $value;
+	}
+}

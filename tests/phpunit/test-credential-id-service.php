@@ -97,8 +97,12 @@ class Test_Credential_ID_Service extends TestCase {
 	}
 
 	/**
-	 * The checksum catches adjacent transpositions at the documented rate
-	 * (~98%; asserted above 95% over a sample).
+	 * The checksum catches adjacent transpositions at the documented rate.
+	 *
+	 * True rate is 96.8% (a swap goes undetected only when the two symbols'
+	 * values differ by exactly 16: 32 of the 992 ordered pairs). With 2000
+	 * samples, sigma is ~0.4%, so the 94% assertion threshold sits >7 sigma
+	 * below the mean - no flake risk.
 	 *
 	 * @return void
 	 */
@@ -106,7 +110,7 @@ class Test_Credential_ID_Service extends TestCase {
 		$attempted = 0;
 		$caught    = 0;
 
-		for ( $sample = 0; $sample < 300; $sample++ ) {
+		for ( $sample = 0; $sample < 2000; $sample++ ) {
 			$id       = PressPrimer_Certificate_Credential_ID_Service::generate();
 			$position = wp_rand( 0, 10 );
 
@@ -125,9 +129,9 @@ class Test_Credential_ID_Service extends TestCase {
 			}
 		}
 
-		$this->assertGreaterThan( 100, $attempted );
+		$this->assertGreaterThan( 1000, $attempted );
 		$this->assertGreaterThan(
-			0.95,
+			0.94,
 			$caught / $attempted,
 			"Transposition detection rate too low: {$caught}/{$attempted}"
 		);

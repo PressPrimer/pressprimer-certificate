@@ -28,7 +28,7 @@ class Test_Layout_Validator extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$GLOBALS['ppcert_test_image_attachments'] = [];
-		$GLOBALS['ppcert_test_filters']           = [];
+		ppcert_tests_reset_hooks();
 	}
 
 	/**
@@ -524,10 +524,13 @@ class Test_Layout_Validator extends TestCase {
 	 * @return void
 	 */
 	public function test_filter_registered_font_accepted() {
-		$GLOBALS['ppcert_test_filters']['ppcert_designer_fonts'] = static function ( $fonts ) {
-			$fonts['custom-font'] = [];
-			return $fonts;
-		};
+		add_filter(
+			'ppcert_designer_fonts',
+			static function ( $fonts ) {
+				$fonts['custom-font'] = [];
+				return $fonts;
+			}
+		);
 
 		$element = $this->text_element( [ 'props' => [ 'font_family' => 'custom-font' ] ] );
 

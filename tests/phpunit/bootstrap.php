@@ -66,22 +66,185 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+// ---------------------------------------------------------------------
+// Mini hook system: behavior-faithful add_filter/apply_filters and
+// add_action/do_action with priorities and accepted_args. Tests call
+// ppcert_tests_reset_hooks() in setUp() for isolation.
+// ---------------------------------------------------------------------
+
+$GLOBALS['ppcert_test_hooks'] = [];
+
+/**
+ * Reset all registered test hooks.
+ *
+ * @return void
+ */
+function ppcert_tests_reset_hooks() {
+	$GLOBALS['ppcert_test_hooks'] = [];
+}
+
+if ( ! function_exists( 'add_filter' ) ) {
+	/**
+	 * Stub: Register a filter callback.
+	 *
+	 * @param string   $hook_name     Hook name.
+	 * @param callable $callback      Callback.
+	 * @param int      $priority      Priority.
+	 * @param int      $accepted_args Number of accepted arguments.
+	 * @return bool
+	 */
+	function add_filter( $hook_name, $callback, $priority = 10, $accepted_args = 1 ) {
+		$GLOBALS['ppcert_test_hooks'][ $hook_name ][] = [
+			'callback'      => $callback,
+			'priority'      => (int) $priority,
+			'accepted_args' => (int) $accepted_args,
+			'order'         => count( isset( $GLOBALS['ppcert_test_hooks'][ $hook_name ] ) ? $GLOBALS['ppcert_test_hooks'][ $hook_name ] : [] ),
+		];
+		return true;
+	}
+}
+
+if ( ! function_exists( 'add_action' ) ) {
+	/**
+	 * Stub: Register an action callback.
+	 *
+	 * @param string   $hook_name     Hook name.
+	 * @param callable $callback      Callback.
+	 * @param int      $priority      Priority.
+	 * @param int      $accepted_args Number of accepted arguments.
+	 * @return bool
+	 */
+	function add_action( $hook_name, $callback, $priority = 10, $accepted_args = 1 ) {
+		return add_filter( $hook_name, $callback, $priority, $accepted_args );
+	}
+}
+
+/**
+ * Get a hook's callbacks in priority order (stable).
+ *
+ * @param string $hook_name Hook name.
+ * @return array
+ */
+function ppcert_tests_hook_callbacks( $hook_name ) {
+	if ( empty( $GLOBALS['ppcert_test_hooks'][ $hook_name ] ) ) {
+		return [];
+	}
+
+	$callbacks = $GLOBALS['ppcert_test_hooks'][ $hook_name ];
+
+	usort(
+		$callbacks,
+		static function ( $a, $b ) {
+			if ( $a['priority'] === $b['priority'] ) {
+				return $a['order'] <=> $b['order'];
+			}
+			return $a['priority'] <=> $b['priority'];
+		}
+	);
+
+	return $callbacks;
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
-	 * Stub: Pass the value through, allowing a test override.
-	 *
-	 * Tests may set $GLOBALS['ppcert_test_filters']['hook_name'] to a
-	 * callable receiving the value (further args ignored).
+	 * Stub: Run a value through registered filter callbacks.
 	 *
 	 * @param string $hook_name The filter hook.
 	 * @param mixed  $value     The value to filter.
+	 * @param mixed  ...$args   Additional arguments.
 	 * @return mixed
 	 */
-	function apply_filters( $hook_name, $value ) {
-		if ( isset( $GLOBALS['ppcert_test_filters'][ $hook_name ] ) ) {
-			return call_user_func( $GLOBALS['ppcert_test_filters'][ $hook_name ], $value );
+	function apply_filters( $hook_name, $value, ...$args ) {
+		foreach ( ppcert_tests_hook_callbacks( $hook_name ) as $entry ) {
+			$all_args = array_merge( [ $value ], $args );
+			$value    = call_user_func_array(
+				$entry['callback'],
+				array_slice( $all_args, 0, max( 1, $entry['accepted_args'] ) )
+			);
 		}
 		return $value;
+	}
+}
+
+if ( ! function_exists( 'do_action' ) ) {
+	/**
+	 * Stub: Run registered action callbacks.
+	 *
+	 * @param string $hook_name The action hook.
+	 * @param mixed  ...$args   Arguments.
+	 * @return void
+	 */
+	function do_action( $hook_name, ...$args ) {
+		foreach ( ppcert_tests_hook_callbacks( $hook_name ) as $entry ) {
+			call_user_func_array(
+				$entry['callback'],
+				array_slice( $args, 0, max( 0, $entry['accepted_args'] ) )
+			);
+		}
+	}
+}
+
+if ( ! function_exists( 'wp_generate_uuid4' ) ) {
+	/**
+	 * Stub: Generate a v4 UUID.
+	 *
+	 * @return string
+	 */
+	function wp_generate_uuid4() {
+		return sprintf(
+			'%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+			random_int( 0, 0xffff ),
+			random_int( 0, 0xffff ),
+			random_int( 0, 0xffff ),
+			random_int( 0, 0x0fff ) | 0x4000,
+			random_int( 0, 0x3fff ) | 0x8000,
+			random_int( 0, 0xffff ),
+			random_int( 0, 0xffff ),
+			random_int( 0, 0xffff )
+		);
+	}
+}
+
+if ( ! function_exists( 'current_time' ) ) {
+	/**
+	 * Stub: Current time; 'mysql' with $gmt returns UTC Y-m-d H:i:s.
+	 *
+	 * @param string $type Type ('mysql' or 'timestamp').
+	 * @param bool   $gmt  Whether to use GMT.
+	 * @return string|int
+	 */
+	function current_time( $type, $gmt = false ) {
+		if ( 'timestamp' === $type ) {
+			return time();
+		}
+		return gmdate( 'Y-m-d H:i:s' );
+	}
+}
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	/**
+	 * Stub: Encode a variable as JSON.
+	 *
+	 * @param mixed $data    Data to encode.
+	 * @param int   $options JSON encode options.
+	 * @param int   $depth   Maximum depth.
+	 * @return string|false
+	 */
+	function wp_json_encode( $data, $options = 0, $depth = 512 ) {
+		return json_encode( $data, $options, $depth ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * Stub: Sanitize a single-line string.
+	 *
+	 * @param string $str String to sanitize.
+	 * @return string
+	 */
+	function sanitize_text_field( $str ) {
+		$filtered = wp_strip_all_tags( (string) $str, true );
+		return trim( $filtered );
 	}
 }
 
