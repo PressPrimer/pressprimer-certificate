@@ -325,6 +325,114 @@ if ( ! function_exists( 'wp_attachment_is_image' ) ) {
 	}
 }
 
+// Minimal $wpdb stand-in: only the prefix property is consulted by unit-
+// tested code paths (the user-meta denylist). DB-backed methods are
+// exercised live on the dev site, not in this suite.
+if ( ! isset( $GLOBALS['wpdb'] ) ) {
+	$GLOBALS['wpdb'] = (object) [ 'prefix' => 'wp_' ];
+}
+
+if ( ! function_exists( 'get_userdata' ) ) {
+	/**
+	 * Stub: Get a user object.
+	 *
+	 * Tests register users in $GLOBALS['ppcert_test_users'][id] as objects
+	 * with display_name, first_name, last_name, user_email.
+	 *
+	 * @param int $user_id User id.
+	 * @return object|false
+	 */
+	function get_userdata( $user_id ) {
+		$users = isset( $GLOBALS['ppcert_test_users'] ) ? $GLOBALS['ppcert_test_users'] : [];
+		return isset( $users[ (int) $user_id ] ) ? $users[ (int) $user_id ] : false;
+	}
+}
+
+if ( ! function_exists( 'get_user_meta' ) ) {
+	/**
+	 * Stub: Get user meta ($single behavior).
+	 *
+	 * Tests register meta in $GLOBALS['ppcert_test_user_meta'][id][key].
+	 *
+	 * @param int    $user_id User id.
+	 * @param string $key     Meta key.
+	 * @param bool   $single  Single value.
+	 * @return mixed '' when missing, like WordPress with $single = true.
+	 */
+	function get_user_meta( $user_id, $key = '', $single = false ) {
+		$meta = isset( $GLOBALS['ppcert_test_user_meta'][ (int) $user_id ] ) ? $GLOBALS['ppcert_test_user_meta'][ (int) $user_id ] : [];
+		return isset( $meta[ $key ] ) ? $meta[ $key ] : '';
+	}
+}
+
+if ( ! function_exists( 'get_post_meta' ) ) {
+	/**
+	 * Stub: Get post meta ($single behavior).
+	 *
+	 * Tests register meta in $GLOBALS['ppcert_test_post_meta'][id][key].
+	 *
+	 * @param int    $post_id Post id.
+	 * @param string $key     Meta key.
+	 * @param bool   $single  Single value.
+	 * @return mixed '' when missing, like WordPress with $single = true.
+	 */
+	function get_post_meta( $post_id, $key = '', $single = false ) {
+		$meta = isset( $GLOBALS['ppcert_test_post_meta'][ (int) $post_id ] ) ? $GLOBALS['ppcert_test_post_meta'][ (int) $post_id ] : [];
+		return isset( $meta[ $key ] ) ? $meta[ $key ] : '';
+	}
+}
+
+if ( ! function_exists( 'get_bloginfo' ) ) {
+	/**
+	 * Stub: Site info.
+	 *
+	 * Overridable via $GLOBALS['ppcert_test_bloginfo'].
+	 *
+	 * @param string $show Info key.
+	 * @return string
+	 */
+	function get_bloginfo( $show = '' ) {
+		$defaults = [
+			'name'        => 'Test Site',
+			'description' => 'Just another test site',
+			'url'         => 'https://test.example',
+			'version'     => '6.4',
+			'admin_email' => 'admin@test.example',
+		];
+		$info     = isset( $GLOBALS['ppcert_test_bloginfo'] ) ? array_merge( $defaults, $GLOBALS['ppcert_test_bloginfo'] ) : $defaults;
+		return isset( $info[ $show ] ) ? $info[ $show ] : '';
+	}
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * Stub: Options with test overrides.
+	 *
+	 * @param string $option        Option name.
+	 * @param mixed  $default_value Default.
+	 * @return mixed
+	 */
+	function get_option( $option, $default_value = false ) {
+		$defaults = [ 'date_format' => 'F j, Y' ];
+		$options  = isset( $GLOBALS['ppcert_test_options'] ) ? array_merge( $defaults, $GLOBALS['ppcert_test_options'] ) : $defaults;
+		return isset( $options[ $option ] ) ? $options[ $option ] : $default_value;
+	}
+}
+
+if ( ! function_exists( 'get_date_from_gmt' ) ) {
+	/**
+	 * Stub: Convert a UTC datetime string to site time (UTC in tests).
+	 *
+	 * @param string $date_string UTC datetime (Y-m-d H:i:s).
+	 * @param string $format      Output format.
+	 * @return string
+	 */
+	function get_date_from_gmt( $date_string, $format = 'Y-m-d H:i:s' ) {
+		$timestamp = strtotime( $date_string . ' +0000' );
+		return false === $timestamp ? '' : gmdate( $format, $timestamp );
+	}
+}
+
 if ( ! function_exists( 'is_wp_error' ) ) {
 	/**
 	 * Stub: Whether a value is a WP_Error.
