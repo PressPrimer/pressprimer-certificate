@@ -98,10 +98,23 @@ class PressPrimer_Certificate_PDF_Renderer {
 		try {
 			$pdf = $this->create_document( $layout, $args );
 
-			$this->render_background( $pdf, $layout );
+			if ( self::is_parity_debug( $args ) ) {
+				// Parity-only mode: white page, one solid rect per element
+				// in its index color - the harness extracts bounding boxes
+				// from these (FR-005 drift assertions).
+				$pdf->SetFillColorArray( [ 255, 255, 255 ] );
+				$pdf->Rect( 0, 0, (float) $layout['page']['width'], (float) $layout['page']['height'], 'F' );
 
-			foreach ( $layout['elements'] as $element ) {
-				$this->render_element( $pdf, $element, $merge_data, $layout, $args );
+				foreach ( array_values( $layout['elements'] ) as $index => $element ) {
+					$pdf->SetFillColorArray( self::parity_color( $index ) );
+					$pdf->Rect( (float) $element['x'], (float) $element['y'], (float) $element['w'], (float) $element['h'], 'F' );
+				}
+			} else {
+				$this->render_background( $pdf, $layout );
+
+				foreach ( $layout['elements'] as $element ) {
+					$this->render_element( $pdf, $element, $merge_data, $layout, $args );
+				}
 			}
 
 			$pdf->Output( $temp_path, 'F' );
@@ -886,6 +899,39 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		imagealphablending( $canvas, true );
 
+		if ( self::is_parity_debug( $args ) ) {
+			// Parity-only mode: mirror of the PDF path's debug rendering.
+			imagefilledrectangle( $canvas, 0, 0, $width - 1, $height - 1, (int) imagecolorallocate( $canvas, 255, 255, 255 ) );
+
+			foreach ( array_values( $layout['elements'] ) as $index => $element ) {
+				$rgb = self::parity_color( $index );
+				imagefilledrectangle(
+					$canvas,
+					(int) round( (float) $element['x'] * $scale ),
+					(int) round( (float) $element['y'] * $scale ),
+					(int) round( ( (float) $element['x'] + (float) $element['w'] ) * $scale ) - 1,
+					(int) round( ( (float) $element['y'] + (float) $element['h'] ) * $scale ) - 1,
+					(int) imagecolorallocate( $canvas, $rgb[0], $rgb[1], $rgb[2] )
+				);
+			}
+
+			$png_path = wp_tempnam( 'ppcert-raster' );
+
+			if ( ! $png_path ) {
+				imagedestroy( $canvas );
+
+				return new WP_Error(
+					'ppcert_raster_tempfile',
+					__( 'Could not create a temporary file for rasterization.', 'pressprimer-certificate' )
+				);
+			}
+
+			imagepng( $canvas, $png_path );
+			imagedestroy( $canvas );
+
+			return $png_path;
+		}
+
 		// Background color, then full-bleed cover image.
 		$bg_color = isset( $layout['background']['color'] ) ? (string) $layout['background']['color'] : '#ffffff';
 		imagefilledrectangle( $canvas, 0, 0, $width - 1, $height - 1, $this->gd_color( $canvas, $bg_color, [ 255, 255, 255 ] ) );
@@ -1327,6 +1373,38 @@ class PressPrimer_Certificate_PDF_Renderer {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Whether a render is in parity-debug mode
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Render arguments.
+	 * @return bool
+	 */
+	private static function is_parity_debug( $args ) {
+		return ! empty( $args['parity_debug'] );
+	}
+
+	/**
+	 * The deterministic debug color for an element index
+	 *
+	 * Unique for up to the 100-element cap and never white; the parity
+	 * harness groups pixels by exact color to recover each element's
+	 * rendered bounding box.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $index Element index in canonical (z-normalized) order.
+	 * @return int[] [ r, g, b ].
+	 */
+	public static function parity_color( $index ) {
+		return [
+			40 + ( ( $index * 2 ) % 200 ),
+			70 + ( ( (int) floor( $index / 100 ) * 60 ) % 150 ),
+			90 + ( ( $index * 3 ) % 160 ),
+		];
 	}
 
 	/**

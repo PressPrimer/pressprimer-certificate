@@ -12,10 +12,17 @@
     "format": "wp-scripts format",
     "packages-update": "wp-scripts packages-update",
     "build:fonts": "PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1) && \"$PHP\" scripts/build-fonts.php",
-    "plugin-zip": "PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1) && wp-scripts build && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-certificate && \"$PHP\" composer.phar install --no-dev --optimize-autoloader && rm -rf dist && mkdir -p dist/pressprimer-certificate && rsync -av --exclude-from='.distignore' ./ dist/pressprimer-certificate/ && cd dist && zip -r pressprimer-certificate.zip pressprimer-certificate && rm -rf pressprimer-certificate && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-certificate && \"$PHP\" composer.phar install && echo 'Created dist/pressprimer-certificate.zip'"
+    "plugin-zip": "PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1) && wp-scripts build && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-certificate && \"$PHP\" composer.phar install --no-dev --optimize-autoloader && rm -rf dist && mkdir -p dist/pressprimer-certificate && rsync -av --exclude-from='.distignore' ./ dist/pressprimer-certificate/ && cd dist && zip -r pressprimer-certificate.zip pressprimer-certificate && rm -rf pressprimer-certificate && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-certificate && \"$PHP\" composer.phar install && echo 'Created dist/pressprimer-certificate.zip'",
+    "test:parity": "playwright test --project=parity-pdf",
+    "parity:update-golden": "node tests/playwright/tools/update-golden.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
     "@wordpress/scripts": "^27.0.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
     "typescript": "~5.9.3"
   },
   "dependencies": {

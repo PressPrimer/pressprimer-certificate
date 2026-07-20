@@ -22,6 +22,8 @@ Local development runs against the "Quiz Plugin Dev" Local site (symlink this di
 | `npm run build` | Compile the React admin apps into `build/` |
 | `npm run lint:js` | JavaScript lint |
 | `npm run build:fonts` | Font pipeline (below) |
+| `npm run test:parity` | Canvas-vs-PDF parity suite (PDF side in Phase 2; release blocker) |
+| `npm run parity:update-golden` | **Deliberate** golden-image regeneration — only when a visual change is intended and reviewed |
 | `npm run plugin-zip` | Production ZIP into `dist/` |
 
 ## Font pipeline (`npm run build:fonts`)
