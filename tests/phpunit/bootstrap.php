@@ -325,11 +325,23 @@ if ( ! function_exists( 'wp_attachment_is_image' ) ) {
 	}
 }
 
-// Minimal $wpdb stand-in: only the prefix property is consulted by unit-
-// tested code paths (the user-meta denylist). DB-backed methods are
-// exercised live on the dev site, not in this suite.
+// In-memory $wpdb fake supporting the plugin's query shapes - lets the
+// issuance pipeline and models run in CI without a database. Real-DB
+// behavior is additionally verified live on the dev site per prompt.
+require_once __DIR__ . '/doubles/class-ppcert-fake-wpdb.php';
+
 if ( ! isset( $GLOBALS['wpdb'] ) ) {
-	$GLOBALS['wpdb'] = (object) [ 'prefix' => 'wp_' ];
+	$GLOBALS['wpdb'] = new PPCert_Fake_WPDB();
+}
+
+/**
+ * Replace the global fake wpdb with a fresh instance (test isolation).
+ *
+ * @return PPCert_Fake_WPDB The fresh instance.
+ */
+function ppcert_tests_reset_wpdb() {
+	$GLOBALS['wpdb'] = new PPCert_Fake_WPDB();
+	return $GLOBALS['wpdb'];
 }
 
 if ( ! function_exists( 'get_userdata' ) ) {

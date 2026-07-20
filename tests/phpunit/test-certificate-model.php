@@ -1,0 +1,164 @@
+<?php
+/**
+ * Certificate model tests
+ *
+ * Status evaluation with read-time expiry (Feature 003 FR-005),
+ * normalized credential lookup, and the revoke transition.
+ *
+ * @package PressPrimer_Certificate
+ * @subpackage Tests
+ * @since 1.0.0
+ */
+
+use PHPUnit\Framework\TestCase;
+
+/**
+ * Certificate model test case
+ *
+ * @since 1.0.0
+ */
+class Test_Certificate_Model extends TestCase {
+
+	/**
+	 * The fake wpdb for the current test.
+	 *
+	 * @var PPCert_Fake_WPDB
+	 */
+	private $wpdb;
+
+	/**
+	 * Reset state and seed a certificate row.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		ppcert_tests_reset_hooks();
+		$this->wpdb = ppcert_tests_reset_wpdb();
+	}
+
+	/**
+	 * Seed a certificate row.
+	 *
+	 * @param array $overrides Column overrides.
+	 * @return int Row id.
+	 */
+	private function seed_certificate( array $overrides = [] ) {
+		return $this->wpdb->seed_row(
+			PressPrimer_Certificate_Certificate::table(),
+			array_merge(
+				[
+					'uuid'                 => 'cert-0000-0000-0000',
+					'credential_id'        => '7Q4MK9P2XT3A',
+					'template_id'          => 1,
+					'recipient_id'         => 7,
+					'issued_by'            => 1,
+					'source_type'          => 'manual',
+					'source_ref'           => null,
+					'status'               => 'issued',
+					'layout_snapshot_json' => '{"layout_schema_version":1}',
+					'merge_data_json'      => '{"recipient.display_name":"Dana Whitfield"}',
+					'issued_at'            => '2026-07-01 12:00:00',
+					'expires_at'           => null,
+					'revoked_at'           => null,
+					'revoke_reason'        => null,
+				],
+				$overrides
+			)
+		);
+	}
+
+	/**
+	 * Effective status: read-time expiry evaluation (FR-005).
+	 *
+	 * @return void
+	 */
+	public function test_effective_status_read_time_expiry() {
+		$no_expiry = (object) [ 'status' => 'issued', 'expires_at' => null ];
+		$this->assertSame( 'issued', PressPrimer_Certificate_Certificate::effective_status( $no_expiry ) );
+
+		$future = (object) [ 'status' => 'issued', 'expires_at' => gmdate( 'Y-m-d H:i:s', time() + 86400 ) ];
+		$this->assertSame( 'issued', PressPrimer_Certificate_Certificate::effective_status( $future ) );
+
+		$past = (object) [ 'status' => 'issued', 'expires_at' => '2020-01-01 00:00:00' ];
+		$this->assertSame( 'expired', PressPrimer_Certificate_Certificate::effective_status( $past ), 'Past expires_at reports expired without a row update' );
+
+		$revoked_and_expired = (object) [ 'status' => 'revoked', 'expires_at' => '2020-01-01 00:00:00' ];
+		$this->assertSame( 'revoked', PressPrimer_Certificate_Certificate::effective_status( $revoked_and_expired ), 'Revoked always wins' );
+	}
+
+	/**
+	 * Credential lookup accepts any normalized input form.
+	 *
+	 * @return void
+	 */
+	public function test_get_by_credential_id_normalizes() {
+		$this->seed_certificate();
+
+		$found = PressPrimer_Certificate_Certificate::get_by_credential_id( '7q4m-k9p2-xt3a' );
+		$this->assertNotNull( $found );
+		$this->assertSame( '7Q4MK9P2XT3A', $found->credential_id );
+
+		// Confusables typed from print: O for 0 would appear here if the ID
+		// contained one; exercise separators and case at minimum.
+		$this->assertNotNull( PressPrimer_Certificate_Certificate::get_by_credential_id( ' 7Q4M K9P2 XT3A ' ) );
+		$this->assertNull( PressPrimer_Certificate_Certificate::get_by_credential_id( 'ZZZZ-ZZZZ-ZZZZ' ) );
+		$this->assertNull( PressPrimer_Certificate_Certificate::get_by_credential_id( '' ) );
+	}
+
+	/**
+	 * Hydration exposes decoded snapshot arrays without touching the
+	 * stored JSON.
+	 *
+	 * @return void
+	 */
+	public function test_hydration() {
+		$id  = $this->seed_certificate();
+		$row = PressPrimer_Certificate_Certificate::get( $id );
+
+		$this->assertSame( [ 'layout_schema_version' => 1 ], $row->layout_snapshot );
+		$this->assertSame( 'Dana Whitfield', $row->merge_data['recipient.display_name'] );
+		$this->assertSame( '{"layout_schema_version":1}', $row->layout_snapshot_json );
+	}
+
+	/**
+	 * Revoke: single transition path, hook contract, idempotency.
+	 *
+	 * @return void
+	 */
+	public function test_revoke_transition() {
+		$id    = $this->seed_certificate();
+		$calls = [];
+
+		add_action(
+			'ppcert_certificate_revoked',
+			static function ( ...$args ) use ( &$calls ) {
+				$calls[] = $args;
+			},
+			10,
+			5
+		);
+
+		$result = PressPrimer_Certificate_Certificate::revoke( $id, 'Issued in error' );
+		$this->assertTrue( $result );
+
+		$row = PressPrimer_Certificate_Certificate::get( $id );
+		$this->assertSame( 'revoked', $row->status );
+		$this->assertSame( 'Issued in error', $row->revoke_reason );
+		$this->assertNotEmpty( $row->revoked_at );
+		$this->assertSame( 'revoked', PressPrimer_Certificate_Certificate::effective_status( $row ) );
+
+		// Hook contract: ( int $certificate_id, string $reason ).
+		$this->assertCount( 1, $calls );
+		$this->assertCount( 2, $calls[0] );
+		$this->assertSame( $id, $calls[0][0] );
+		$this->assertSame( 'Issued in error', $calls[0][1] );
+
+		// Idempotent: already revoked returns true without re-firing.
+		$this->assertTrue( PressPrimer_Certificate_Certificate::revoke( $id, 'Again' ) );
+		$this->assertCount( 1, $calls );
+
+		// Unknown id errors.
+		$this->assertInstanceOf( WP_Error::class, PressPrimer_Certificate_Certificate::revoke( 999 ) );
+	}
+}

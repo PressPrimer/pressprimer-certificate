@@ -69,22 +69,22 @@ class Test_Hook_Contract extends TestCase {
 		'ppcert_issue_validation'      => [
 			'type'   => 'filter',
 			'params' => 2,
-			'status' => 'pending:2.1',
+			'status' => 'covered',
 		],
 		'ppcert_before_issue'          => [
 			'type'   => 'action',
 			'params' => 1,
-			'status' => 'pending:2.1',
+			'status' => 'covered',
 		],
 		'ppcert_certificate_issued'    => [
 			'type'   => 'action',
 			'params' => 2,
-			'status' => 'pending:2.1',
+			'status' => 'covered',
 		],
 		'ppcert_certificate_revoked'   => [
 			'type'   => 'action',
 			'params' => 2,
-			'status' => 'pending:reserved',
+			'status' => 'covered',
 		],
 		'ppcert_verification_result'   => [
 			'type'   => 'filter',
@@ -114,12 +114,12 @@ class Test_Hook_Contract extends TestCase {
 		'ppcert_email_enabled'         => [
 			'type'   => 'filter',
 			'params' => 3,
-			'status' => 'pending:2.7',
+			'status' => 'covered',
 		],
 		'ppcert_email_content'         => [
 			'type'   => 'filter',
 			'params' => 3,
-			'status' => 'pending:2.7',
+			'status' => 'covered',
 		],
 	];
 
@@ -302,6 +302,99 @@ class Test_Hook_Contract extends TestCase {
 	}
 
 	/**
+	 * The issuance flow fires its six hooks with the documented signatures
+	 * (added at Prompt 2.1; drives a real issue() + revoke() against the
+	 * wpdb fake).
+	 *
+	 * @return void
+	 */
+	public function test_issuance_flow_hook_signatures() {
+		$wpdb = ppcert_tests_reset_wpdb();
+
+		$GLOBALS['ppcert_test_users'] = [
+			7 => (object) [
+				'display_name' => 'Dana Whitfield',
+				'first_name'   => 'Dana',
+				'last_name'    => 'Whitfield',
+				'user_email'   => 'dana@example.test',
+			],
+		];
+
+		$template_id = $wpdb->seed_row(
+			PressPrimer_Certificate_Template::table(),
+			[
+				'uuid'                  => 'tmpl-hook-contract',
+				'title'                 => 'Contract Template',
+				'status'                => 'published',
+				'author_id'             => 1,
+				'layout_schema_version' => 1,
+				'layout_json'           => '{"layout_schema_version":1,"elements":[]}',
+				'deleted_at'            => null,
+			]
+		);
+
+		$captured = [];
+		$spied    = [
+			'ppcert_issue_validation'    => 5,
+			'ppcert_before_issue'        => 5,
+			'ppcert_certificate_issued'  => 5,
+			'ppcert_certificate_revoked' => 5,
+			'ppcert_email_enabled'       => 5,
+			'ppcert_email_content'       => 5,
+		];
+
+		foreach ( $spied as $hook => $accepted ) {
+			$captured[ $hook ] = [];
+			$this->spy( $hook, $accepted, $captured[ $hook ] );
+		}
+
+		$certificate_id = PressPrimer_Certificate_Issuance_Service::issue(
+			[
+				'template_id'  => $template_id,
+				'recipient_id' => 7,
+				'issued_by'    => 1,
+			]
+		);
+		$this->assertIsInt( $certificate_id );
+		PressPrimer_Certificate_Certificate::revoke( $certificate_id, 'Contract test' );
+
+		// ppcert_issue_validation: ( true|WP_Error, array $context ).
+		$this->assertCount( 2, $captured['ppcert_issue_validation'][0] );
+		$this->assertTrue( $captured['ppcert_issue_validation'][0][0] );
+		$this->assertIsArray( $captured['ppcert_issue_validation'][0][1] );
+
+		// ppcert_before_issue: ( array $context ).
+		$this->assertCount( 1, $captured['ppcert_before_issue'][0] );
+		$this->assertIsArray( $captured['ppcert_before_issue'][0][0] );
+
+		// ppcert_certificate_issued: ( int $certificate_id, array $context ).
+		$this->assertCount( 2, $captured['ppcert_certificate_issued'][0] );
+		$this->assertSame( $certificate_id, $captured['ppcert_certificate_issued'][0][0] );
+		$this->assertIsArray( $captured['ppcert_certificate_issued'][0][1] );
+
+		// ppcert_certificate_revoked: ( int $certificate_id, string $reason ).
+		$this->assertCount( 2, $captured['ppcert_certificate_revoked'][0] );
+		$this->assertSame( $certificate_id, $captured['ppcert_certificate_revoked'][0][0] );
+		$this->assertIsString( $captured['ppcert_certificate_revoked'][0][1] );
+
+		// ppcert_email_enabled: ( bool, string $email_type, array $context ).
+		$this->assertCount( 3, $captured['ppcert_email_enabled'][0] );
+		$this->assertIsBool( $captured['ppcert_email_enabled'][0][0] );
+		$this->assertSame( 'issued', $captured['ppcert_email_enabled'][0][1] );
+		$this->assertIsArray( $captured['ppcert_email_enabled'][0][2] );
+
+		// ppcert_email_content: ( array $content, string $email_type, array $context ).
+		$this->assertCount( 3, $captured['ppcert_email_content'][0] );
+		$this->assertIsArray( $captured['ppcert_email_content'][0][0] );
+		$this->assertSame(
+			[ 'to', 'subject', 'body', 'headers', 'attachments' ],
+			array_keys( $captured['ppcert_email_content'][0][0] ),
+			'Email content shape per HOOKS.md'
+		);
+		$this->assertSame( 'issued', $captured['ppcert_email_content'][0][1] );
+	}
+
+	/**
 	 * Contract completeness: every hook in HOOKS.md appears in the table,
 	 * every covered hook has a spy test above, and pending hooks name
 	 * their owning prompt. This test fails when a hook is added to the
@@ -326,8 +419,8 @@ class Test_Hook_Contract extends TestCase {
 			}
 		}
 
-		$this->assertSame( 6, $covered, 'Covered hook count changed - update the spy tests with it' );
-		$this->assertSame( 11, $pending, 'Pending hook count changed - a feature prompt should move entries to covered' );
+		$this->assertSame( 12, $covered, 'Covered hook count changed - update the spy tests with it' );
+		$this->assertSame( 5, $pending, 'Pending hook count changed - a feature prompt should move entries to covered' );
 
 		// Grep-level source check: every contract hook name appears in the
 		// plugin source or is pending with a scheduled owner.
