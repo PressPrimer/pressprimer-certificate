@@ -109,7 +109,7 @@ class Test_Hook_Contract extends TestCase {
 		'ppcert_pdf_generated'         => [
 			'type'   => 'action',
 			'params' => 3,
-			'status' => 'pending:2.3',
+			'status' => 'covered',
 		],
 		'ppcert_email_enabled'         => [
 			'type'   => 'filter',
@@ -419,8 +419,8 @@ class Test_Hook_Contract extends TestCase {
 			}
 		}
 
-		$this->assertSame( 12, $covered, 'Covered hook count changed - update the spy tests with it' );
-		$this->assertSame( 5, $pending, 'Pending hook count changed - a feature prompt should move entries to covered' );
+		$this->assertSame( 13, $covered, 'Covered hook count changed - update the spy tests with it' );
+		$this->assertSame( 4, $pending, 'Pending hook count changed - a feature prompt should move entries to covered' );
 
 		// Grep-level source check: every contract hook name appears in the
 		// plugin source or is pending with a scheduled owner.

@@ -1,0 +1,13 @@
+{
+  "description": "Shared aspect-math fixtures for image/signature fit modes (Feature 007 FR-002). Consumed by the PHP renderer tests and the JS canvas tests - both implementations must produce these exact numbers. Offsets are relative to the element box; dw/dh are draw dimensions (cover crops outside the box).",
+  "cases": [
+    { "name": "contain_wide_in_square",  "iw": 200, "ih": 100, "bw": 100, "bh": 100, "mode": "contain", "dx": 0,    "dy": 25,  "dw": 100, "dh": 50 },
+    { "name": "contain_tall_in_square",  "iw": 100, "ih": 200, "bw": 100, "bh": 100, "mode": "contain", "dx": 25,   "dy": 0,   "dw": 50,  "dh": 100 },
+    { "name": "contain_exact_fit",       "iw": 300, "ih": 150, "bw": 150, "bh": 75,  "mode": "contain", "dx": 0,    "dy": 0,   "dw": 150, "dh": 75 },
+    { "name": "contain_upscale",         "iw": 50,  "ih": 50,  "bw": 200, "bh": 100, "mode": "contain", "dx": 50,   "dy": 0,   "dw": 100, "dh": 100 },
+    { "name": "cover_wide_in_square",    "iw": 200, "ih": 100, "bw": 100, "bh": 100, "mode": "cover",   "dx": -50,  "dy": 0,   "dw": 200, "dh": 100 },
+    { "name": "cover_tall_in_square",    "iw": 100, "ih": 200, "bw": 100, "bh": 100, "mode": "cover",   "dx": 0,    "dy": -50, "dw": 100, "dh": 200 },
+    { "name": "cover_wide_in_wide",      "iw": 400, "ih": 100, "bw": 200, "bh": 80,  "mode": "cover",   "dx": -60,  "dy": 0,   "dw": 320, "dh": 80 },
+    { "name": "stretch_any",             "iw": 123, "ih": 457, "bw": 200, "bh": 60,  "mode": "stretch", "dx": 0,    "dy": 0,   "dw": 200, "dh": 60 }
+  ]
+}

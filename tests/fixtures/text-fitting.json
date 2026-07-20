@@ -1,0 +1,30 @@
+{
+  "description": "Shared text-fitting fixtures (Feature 007 FR-004: shrink in shrink_step_pt steps to min_scale of the specified size, then truncate with ellipsis). Cases use the deterministic test measurement model: characters per line = max(1, floor(box_w / (font_size * 0.5))), lines = ceil(strlen / chars_per_line), rendered height = lines * font_size * line_height. Both the PHP tests and the JS canvas tests run these cases against their fitting implementations with this same model.",
+  "thresholds": { "shrink_step_pt": 0.5, "min_scale": 0.6 },
+  "cases": [
+    {
+      "name": "fits_at_original",
+      "text_length": 20, "box_w": 200, "box_h": 30, "font_size": 16, "line_height": 1.2,
+      "expected_size": 16, "expected_truncated": false,
+      "note": "cpl = floor(200/8) = 25 -> 1 line -> 19.2pt <= 30"
+    },
+    {
+      "name": "shrinks_to_fit",
+      "text_length": 60, "box_w": 200, "box_h": 40, "font_size": 16, "line_height": 1.2,
+      "expected_size": 13, "expected_truncated": false,
+      "note": "16pt..13.5pt all wrap to 3 lines (> 40); 13pt: cpl=30 -> 2 lines -> 31.2 <= 40"
+    },
+    {
+      "name": "hits_floor_and_truncates",
+      "text_length": 400, "box_w": 100, "box_h": 20, "font_size": 20, "line_height": 1.0,
+      "expected_size": 12, "expected_truncated": true,
+      "note": "floor = 20*0.6 = 12pt; at 12pt cpl=floor(100/6)=16, max_lines=floor(20/12)=1 -> 16 chars kept + ellipsis"
+    },
+    {
+      "name": "single_line_exact",
+      "text_length": 10, "box_w": 80, "box_h": 12, "font_size": 10, "line_height": 1.2,
+      "expected_size": 10, "expected_truncated": false,
+      "note": "cpl=floor(80/5)=16 -> 1 line -> 12 <= 12"
+    }
+  ]
+}

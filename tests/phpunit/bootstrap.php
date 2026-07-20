@@ -445,6 +445,80 @@ if ( ! function_exists( 'get_date_from_gmt' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_tempnam' ) ) {
+	/**
+	 * Stub: Create a temp file.
+	 *
+	 * @param string $filename Name hint.
+	 * @param string $dir      Directory (unused).
+	 * @return string|false
+	 */
+	function wp_tempnam( $filename = '', $dir = '' ) {
+		return tempnam( sys_get_temp_dir(), 'ppcert' );
+	}
+}
+
+if ( ! function_exists( 'wp_delete_file' ) ) {
+	/**
+	 * Stub: Delete a file.
+	 *
+	 * @param string $file File path.
+	 * @return void
+	 */
+	function wp_delete_file( $file ) {
+		if ( file_exists( $file ) ) {
+			unlink( $file );
+		}
+	}
+}
+
+if ( ! function_exists( 'get_attached_file' ) ) {
+	/**
+	 * Stub: Resolve an attachment id to a local file path.
+	 *
+	 * Tests register files in $GLOBALS['ppcert_test_attachment_files'][id].
+	 *
+	 * @param int $attachment_id Attachment id.
+	 * @return string|false
+	 */
+	function get_attached_file( $attachment_id ) {
+		$files = isset( $GLOBALS['ppcert_test_attachment_files'] ) ? $GLOBALS['ppcert_test_attachment_files'] : [];
+		return isset( $files[ (int) $attachment_id ] ) ? $files[ (int) $attachment_id ] : false;
+	}
+}
+
+if ( ! function_exists( 'wp_check_filetype' ) ) {
+	/**
+	 * Stub: Filetype check by extension.
+	 *
+	 * @param string $filename File name.
+	 * @param array  $mimes    Allowed mimes (unused).
+	 * @return array [ 'ext' => string|false, 'type' => string|false ].
+	 */
+	function wp_check_filetype( $filename, $mimes = null ) {
+		$map = [
+			'jpg'  => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'png'  => 'image/png',
+			'gif'  => 'image/gif',
+			'pdf'  => 'application/pdf',
+		];
+		$ext = strtolower( (string) pathinfo( (string) $filename, PATHINFO_EXTENSION ) );
+
+		if ( isset( $map[ $ext ] ) ) {
+			return [
+				'ext'  => $ext,
+				'type' => $map[ $ext ],
+			];
+		}
+
+		return [
+			'ext'  => false,
+			'type' => false,
+		];
+	}
+}
+
 if ( ! function_exists( 'is_wp_error' ) ) {
 	/**
 	 * Stub: Whether a value is a WP_Error.
