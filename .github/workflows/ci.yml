@@ -70,7 +70,7 @@ jobs:
             --standard=PHPCompatibilityWP \
             --runtime-set testVersion 7.4- \
             --extensions=php \
-            --ignore=vendor/,node_modules/,build/,src/ \
+            --ignore=vendor/,node_modules/,build/,src/,fonts/tcpdf/ \
             .
 
   syntax-check:

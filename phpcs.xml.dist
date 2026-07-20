@@ -15,6 +15,10 @@
 	<exclude-pattern>/tests/*</exclude-pattern>
 	<exclude-pattern>composer-setup.php</exclude-pattern>
 	<exclude-pattern>*.phar</exclude-pattern>
+	<!-- Generated TCPDF font definitions (npm run build:fonts output) -->
+	<exclude-pattern>/fonts/tcpdf/*</exclude-pattern>
+	<!-- Dev-time build scripts: excluded from the release ZIP, not plugin runtime -->
+	<exclude-pattern>/scripts/*</exclude-pattern>
 
 	<!-- How to scan -->
 	<arg value="sp"/> <!-- Show sniff and progress -->

@@ -77,6 +77,9 @@ postcss.config.js
 # Source Files (built versions are in /build)
 /src
 
+# Build scripts (dev-time only; converted font output ships, the converter does not)
+/scripts
+
 # Testing
 /tests
 phpunit.xml

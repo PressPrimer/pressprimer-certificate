@@ -11,6 +11,7 @@
     "lint:js": "wp-scripts lint-js",
     "format": "wp-scripts format",
     "packages-update": "wp-scripts packages-update",
+    "build:fonts": "PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1) && \"$PHP\" scripts/build-fonts.php",
     "plugin-zip": "PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1) && wp-scripts build && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-certificate && \"$PHP\" composer.phar install --no-dev --optimize-autoloader && rm -rf dist && mkdir -p dist/pressprimer-certificate && rsync -av --exclude-from='.distignore' ./ dist/pressprimer-certificate/ && cd dist && zip -r pressprimer-certificate.zip pressprimer-certificate && rm -rf pressprimer-certificate && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-certificate && \"$PHP\" composer.phar install && echo 'Created dist/pressprimer-certificate.zip'"
   },
   "devDependencies": {

@@ -1,0 +1,106 @@
+{
+    "manifest_version": 1,
+    "families": {
+        "playfair-display": {
+            "label": "Playfair Display",
+            "license": "SIL OFL 1.1",
+            "license_file": "playfair-display/OFL.txt",
+            "source": "Static instances generated from the upstream variable fonts (github.com/clauseggers/Playfair, fonts/VF-TTF) via fontTools varLib.instancer at wght 400/700",
+            "variants": {
+                "regular": {
+                    "tcpdf_font": "playfairdisplay",
+                    "ttf": "playfair-display/PlayfairDisplay-Regular.ttf",
+                    "metrics": {
+                        "ascent": 885,
+                        "descent": -315,
+                        "cap_height": 571,
+                        "units": "per-1000-em"
+                    }
+                },
+                "bold": {
+                    "tcpdf_font": "playfairdisplayb",
+                    "ttf": "playfair-display/PlayfairDisplay-Bold.ttf",
+                    "metrics": {
+                        "ascent": 885,
+                        "descent": -315,
+                        "cap_height": 571,
+                        "units": "per-1000-em"
+                    }
+                },
+                "italic": {
+                    "tcpdf_font": "playfairdisplayi",
+                    "ttf": "playfair-display/PlayfairDisplay-Italic.ttf",
+                    "metrics": {
+                        "ascent": 885,
+                        "descent": -315,
+                        "cap_height": 571,
+                        "units": "per-1000-em"
+                    }
+                },
+                "bold_italic": {
+                    "tcpdf_font": "playfairdisplaybi",
+                    "ttf": "playfair-display/PlayfairDisplay-BoldItalic.ttf",
+                    "metrics": {
+                        "ascent": 885,
+                        "descent": -315,
+                        "cap_height": 571,
+                        "units": "per-1000-em"
+                    }
+                }
+            }
+        },
+        "source-sans-3": {
+            "label": "Source Sans 3",
+            "license": "SIL OFL 1.1",
+            "license_file": "source-sans-3/LICENSE.md",
+            "source": "adobe-fonts/source-sans release 3.052R (github.com/adobe-fonts/source-sans)",
+            "variants": {
+                "regular": {
+                    "tcpdf_font": "sourcesans3",
+                    "ttf": "source-sans-3/SourceSans3-Regular.ttf",
+                    "metrics": {
+                        "ascent": 1000,
+                        "descent": -326,
+                        "cap_height": 656,
+                        "units": "per-1000-em"
+                    }
+                },
+                "bold": {
+                    "tcpdf_font": "sourcesans3b",
+                    "ttf": "source-sans-3/SourceSans3-Bold.ttf",
+                    "metrics": {
+                        "ascent": 1000,
+                        "descent": -326,
+                        "cap_height": 652,
+                        "units": "per-1000-em"
+                    }
+                },
+                "italic": {
+                    "tcpdf_font": "sourcesans3it",
+                    "ttf": "source-sans-3/SourceSans3-It.ttf",
+                    "metrics": {
+                        "ascent": 1000,
+                        "descent": -326,
+                        "cap_height": 656,
+                        "units": "per-1000-em"
+                    }
+                },
+                "bold_italic": {
+                    "tcpdf_font": "sourcesans3bit",
+                    "ttf": "source-sans-3/SourceSans3-BoldIt.ttf",
+                    "metrics": {
+                        "ascent": 1000,
+                        "descent": -326,
+                        "cap_height": 652,
+                        "units": "per-1000-em"
+                    }
+                }
+            }
+        }
+    },
+    "fitting": {
+        "shrink_step_pt": 0.5,
+        "min_scale": 0.6,
+        "overflow": "ellipsis"
+    }
+}
