@@ -242,6 +242,14 @@ class PPCert_Fake_WPDB {
 	}
 
 	/**
+	 * Read queries executed (test instrumentation, e.g. asserting the
+	 * checksum gate reaches the endpoint before any DB work).
+	 *
+	 * @var int
+	 */
+	public $read_queries = 0;
+
+	/**
 	 * Route a prepared query to matching rows.
 	 *
 	 * @param string $prepared Encoded payload.
@@ -249,6 +257,7 @@ class PPCert_Fake_WPDB {
 	 * @throws RuntimeException On an unsupported query shape.
 	 */
 	private function run_query( $prepared ) {
+		$this->read_queries++;
 		$payload = json_decode( (string) $prepared, true );
 
 		if ( ! is_array( $payload ) || ! isset( $payload['q'], $payload['args'] ) ) {
@@ -277,6 +286,31 @@ class PPCert_Fake_WPDB {
 				static function ( $row ) use ( $args ) {
 					return (int) $row['id'] === (int) $args[1];
 				}
+			);
+		}
+
+		// Certificate::get_for_verification - joined single lookup.
+		if ( false !== strpos( $query, 'LEFT JOIN' ) && false !== strpos( $query, 'WHERE c.credential_id = %s' ) ) {
+			$templates = $this->rows( (string) $args[1] );
+			$matches   = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return isset( $row['credential_id'] ) && $row['credential_id'] === $args[2];
+				}
+			);
+
+			return array_map(
+				static function ( $row ) use ( $templates ) {
+					$row['template_title'] = null;
+					foreach ( $templates as $template ) {
+						if ( (int) $template['id'] === (int) $row['template_id'] ) {
+							$row['template_title'] = isset( $template['title'] ) ? $template['title'] : null;
+							break;
+						}
+					}
+					return $row;
+				},
+				$matches
 			);
 		}
 

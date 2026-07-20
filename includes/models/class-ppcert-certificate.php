@@ -109,6 +109,39 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * Get a certificate for public verification: one indexed lookup
+	 *
+	 * The single prepared query the verification endpoint runs (Feature
+	 * 006 FR-003/Security Requirements) - the template title joins in for
+	 * the response's subject field, so no second query is needed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $credential_id Credential ID in any accepted input form.
+	 * @return object|null Hydrated row with a template_title property, or null.
+	 */
+	public static function get_for_verification( $credential_id ) {
+		global $wpdb;
+
+		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $credential_id );
+
+		if ( '' === $normalized ) {
+			return null;
+		}
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT c.*, t.title AS template_title FROM %i c LEFT JOIN %i t ON t.id = c.template_id WHERE c.credential_id = %s',
+				self::table(),
+				PressPrimer_Certificate_Template::table(),
+				$normalized
+			)
+		);
+
+		return $row ? self::hydrate( $row ) : null;
+	}
+
+	/**
 	 * Evaluate a certificate's effective status at read time
 	 *
 	 * Feature 003 FR-005: a certificate with a past expires_at reports

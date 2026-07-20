@@ -918,7 +918,9 @@ class PressPrimer_Certificate_PDF_Renderer {
 			$png_path = wp_tempnam( 'ppcert-raster' );
 
 			if ( ! $png_path ) {
-				imagedestroy( $canvas );
+				if ( PHP_VERSION_ID < 80000 ) {
+					imagedestroy( $canvas ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Guarded: needed on PHP 7.x, no-op 8.0+, deprecated 8.5.
+				}
 
 				return new WP_Error(
 					'ppcert_raster_tempfile',
@@ -927,7 +929,9 @@ class PressPrimer_Certificate_PDF_Renderer {
 			}
 
 			imagepng( $canvas, $png_path );
-			imagedestroy( $canvas );
+			if ( PHP_VERSION_ID < 80000 ) {
+				imagedestroy( $canvas ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Guarded: needed on PHP 7.x, no-op 8.0+, deprecated 8.5.
+			}
 
 			return $png_path;
 		}
@@ -990,7 +994,9 @@ class PressPrimer_Certificate_PDF_Renderer {
 		$png_path = wp_tempnam( 'ppcert-raster' );
 
 		if ( ! $png_path ) {
-			imagedestroy( $canvas );
+			if ( PHP_VERSION_ID < 80000 ) {
+				imagedestroy( $canvas ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Guarded: needed on PHP 7.x, no-op 8.0+, deprecated 8.5.
+			}
 
 			return new WP_Error(
 				'ppcert_raster_tempfile',
@@ -999,7 +1005,9 @@ class PressPrimer_Certificate_PDF_Renderer {
 		}
 
 		imagepng( $canvas, $png_path );
-		imagedestroy( $canvas );
+		if ( PHP_VERSION_ID < 80000 ) {
+			imagedestroy( $canvas ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Guarded: needed on PHP 7.x, no-op 8.0+, deprecated 8.5.
+		}
 
 		return $png_path;
 	}
@@ -1254,7 +1262,9 @@ class PressPrimer_Certificate_PDF_Renderer {
 			$this->warn( $element_id, 'gd_opacity_approximate' );
 		}
 
-		imagedestroy( $source );
+		if ( PHP_VERSION_ID < 80000 ) {
+			imagedestroy( $source ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Guarded: needed on PHP 7.x, no-op 8.0+, deprecated 8.5.
+		}
 	}
 
 	/**

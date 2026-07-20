@@ -132,7 +132,6 @@ class Test_QR_Service extends TestCase {
 		$finder = imagecolorsforindex( $image, imagecolorat( $image, $offset, $offset ) );
 		$this->assertSame( [ 31, 42, 68 ], [ $finder['red'], $finder['green'], $finder['blue'] ] );
 
-		imagedestroy( $image );
 	}
 
 	/**
@@ -157,6 +156,5 @@ class Test_QR_Service extends TestCase {
 		$corner = imagecolorsforindex( $image, imagecolorat( $image, 1, 1 ) );
 		$this->assertSame( 127, $corner['alpha'], 'Quiet zone must be fully transparent' );
 
-		imagedestroy( $image );
 	}
 }

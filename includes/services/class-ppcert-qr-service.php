@@ -196,7 +196,9 @@ class PressPrimer_Certificate_QR_Service {
 		ob_start();
 		imagepng( $image );
 		$png = ob_get_clean();
-		imagedestroy( $image );
+		if ( PHP_VERSION_ID < 80000 ) {
+			imagedestroy( $image ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Guarded: needed on PHP 7.x, no-op 8.0+, deprecated 8.5.
+		}
 
 		if ( ! is_string( $png ) || '' === $png ) {
 			return new WP_Error(

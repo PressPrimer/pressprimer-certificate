@@ -531,6 +531,246 @@ if ( ! function_exists( 'wp_check_filetype' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * Stub: Remove slashes added by WordPress.
+	 *
+	 * @param string|array $value Value to unslash.
+	 * @return string|array
+	 */
+	function wp_unslash( $value ) {
+		return is_array( $value ) ? array_map( 'wp_unslash', $value ) : stripslashes( (string) $value );
+	}
+}
+
+if ( ! function_exists( 'wp_salt' ) ) {
+	/**
+	 * Stub: Site salt.
+	 *
+	 * @param string $scheme Salt scheme (unused).
+	 * @return string
+	 */
+	function wp_salt( $scheme = 'auth' ) {
+		return 'ppcert-test-salt';
+	}
+}
+
+if ( ! function_exists( 'wp_hash' ) ) {
+	/**
+	 * Stub: Salted hash.
+	 *
+	 * @param string $data   Data to hash.
+	 * @param string $scheme Salt scheme (unused).
+	 * @return string
+	 */
+	function wp_hash( $data, $scheme = 'auth' ) {
+		return md5( wp_salt( $scheme ) . $data );
+	}
+}
+
+if ( ! function_exists( 'get_current_user_id' ) ) {
+	/**
+	 * Stub: Current user id ($GLOBALS['ppcert_test_current_user']).
+	 *
+	 * @return int
+	 */
+	function get_current_user_id() {
+		return isset( $GLOBALS['ppcert_test_current_user'] ) ? (int) $GLOBALS['ppcert_test_current_user'] : 0;
+	}
+}
+
+/**
+ * Reset the in-memory transient store.
+ *
+ * @return void
+ */
+function ppcert_tests_reset_transients() {
+	$GLOBALS['ppcert_test_transients'] = [];
+}
+
+if ( ! function_exists( 'get_transient' ) ) {
+	/**
+	 * Stub: Transient read with expiry.
+	 *
+	 * @param string $key Transient key.
+	 * @return mixed False when missing/expired.
+	 */
+	function get_transient( $key ) {
+		$store = isset( $GLOBALS['ppcert_test_transients'] ) ? $GLOBALS['ppcert_test_transients'] : [];
+
+		if ( ! isset( $store[ $key ] ) ) {
+			return false;
+		}
+
+		if ( $store[ $key ]['expires'] > 0 && $store[ $key ]['expires'] <= time() ) {
+			unset( $GLOBALS['ppcert_test_transients'][ $key ] );
+			return false;
+		}
+
+		return $store[ $key ]['value'];
+	}
+}
+
+if ( ! function_exists( 'set_transient' ) ) {
+	/**
+	 * Stub: Transient write.
+	 *
+	 * @param string $key        Transient key.
+	 * @param mixed  $value      Value.
+	 * @param int    $expiration Seconds until expiry (0 = never).
+	 * @return bool
+	 */
+	function set_transient( $key, $value, $expiration = 0 ) {
+		$GLOBALS['ppcert_test_transients'][ $key ] = [
+			'value'   => $value,
+			'expires' => $expiration > 0 ? time() + $expiration : 0,
+		];
+		return true;
+	}
+}
+
+if ( ! function_exists( '__return_true' ) ) {
+	/**
+	 * Stub: Return true.
+	 *
+	 * @return bool
+	 */
+	function __return_true() { // phpcs:ignore PHPCompatibility.FunctionNameRestrictions.ReservedFunctionNames.FunctionDoubleUnderscore -- Faithful stub of the WordPress core function name.
+		return true;
+	}
+}
+
+if ( ! function_exists( 'register_rest_route' ) ) {
+	/**
+	 * Stub: Record REST route registrations for assertions.
+	 *
+	 * @param string $route_namespace Namespace.
+	 * @param string $route           Route pattern.
+	 * @param array  $args            Route args.
+	 * @return bool
+	 */
+	function register_rest_route( $route_namespace, $route, $args = [] ) {
+		$GLOBALS['ppcert_test_rest_routes'][] = [
+			'namespace' => $route_namespace,
+			'route'     => $route,
+			'args'      => $args,
+		];
+		return true;
+	}
+}
+
+if ( ! class_exists( 'WP_REST_Request' ) ) {
+	/**
+	 * Stub: Minimal REST request.
+	 */
+	class WP_REST_Request {
+
+		/**
+		 * Request params.
+		 *
+		 * @var array
+		 */
+		private $params;
+
+		/**
+		 * Constructor.
+		 *
+		 * @param array $params Request params.
+		 */
+		public function __construct( $params = [] ) {
+			$this->params = $params;
+		}
+
+		/**
+		 * Get a param.
+		 *
+		 * @param string $key Param name.
+		 * @return mixed
+		 */
+		public function get_param( $key ) {
+			return isset( $this->params[ $key ] ) ? $this->params[ $key ] : null;
+		}
+	}
+}
+
+if ( ! class_exists( 'WP_REST_Response' ) ) {
+	/**
+	 * Stub: Minimal REST response.
+	 */
+	class WP_REST_Response {
+
+		/**
+		 * Response data.
+		 *
+		 * @var mixed
+		 */
+		private $data;
+
+		/**
+		 * HTTP status.
+		 *
+		 * @var int
+		 */
+		private $status;
+
+		/**
+		 * Headers.
+		 *
+		 * @var array
+		 */
+		private $headers = [];
+
+		/**
+		 * Constructor.
+		 *
+		 * @param mixed $data   Response data.
+		 * @param int   $status HTTP status.
+		 */
+		public function __construct( $data = null, $status = 200 ) {
+			$this->data   = $data;
+			$this->status = $status;
+		}
+
+		/**
+		 * Set a header.
+		 *
+		 * @param string $key   Header name.
+		 * @param string $value Header value.
+		 * @return void
+		 */
+		public function header( $key, $value ) {
+			$this->headers[ $key ] = $value;
+		}
+
+		/**
+		 * Get data.
+		 *
+		 * @return mixed
+		 */
+		public function get_data() {
+			return $this->data;
+		}
+
+		/**
+		 * Get status.
+		 *
+		 * @return int
+		 */
+		public function get_status() {
+			return $this->status;
+		}
+
+		/**
+		 * Get headers.
+		 *
+		 * @return array
+		 */
+		public function get_headers() {
+			return $this->headers;
+		}
+	}
+}
+
 if ( ! function_exists( 'is_wp_error' ) ) {
 	/**
 	 * Stub: Whether a value is a WP_Error.

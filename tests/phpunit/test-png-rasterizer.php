@@ -151,7 +151,6 @@ class Test_PNG_Rasterizer extends TestCase {
 
 		$this->assertTrue( $dark_found, 'QR dark modules must appear inside the element box' );
 
-		imagedestroy( $image );
 		unlink( $path );
 	}
 
@@ -233,8 +232,6 @@ class Test_PNG_Rasterizer extends TestCase {
 
 		$this->assertLessThanOrEqual( 0.01, $differing / max( 1, $sampled ), 'GD and Imagick rasters must agree within the parity threshold' );
 
-		imagedestroy( $a );
-		imagedestroy( $b );
 		unlink( $imagick_png );
 		unlink( $gd_png );
 	}

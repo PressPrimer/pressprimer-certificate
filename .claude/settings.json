@@ -1,0 +1,18 @@
+{
+	"permissions": {
+		"allow": [
+			"Bash(vendor/bin/phpunit)",
+			"Bash(vendor/bin/phpunit *)",
+			"Bash(./vendor/bin/phpunit)",
+			"Bash(./vendor/bin/phpunit *)",
+			"Bash(vendor/bin/phpcs)",
+			"Bash(vendor/bin/phpcs *)",
+			"Bash(./vendor/bin/phpcs)",
+			"Bash(./vendor/bin/phpcs *)",
+			"Bash(php -l *)",
+			"Bash(npm run lint:js)",
+			"Bash(npm run lint:css)",
+			"Bash(npm run test:parity)"
+		]
+	}
+}
