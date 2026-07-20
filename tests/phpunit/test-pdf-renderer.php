@@ -179,9 +179,8 @@ class Test_PDF_Renderer extends TestCase {
 		$this->assertSame( 0, $fired[0][1] );
 		$this->assertSame( 'preview', $fired[0][2] );
 
-		// The sample's QR element is pending Prompt 2.4.
-		$warnings = array_column( $renderer->get_last_render_warnings(), 'warning' );
-		$this->assertContains( 'qr_pending_2_4', $warnings );
+		// With QR live (Prompt 2.4) the sample renders warning-free.
+		$this->assertSame( [], $renderer->get_last_render_warnings() );
 
 		unlink( $path );
 	}

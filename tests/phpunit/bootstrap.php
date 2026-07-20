@@ -445,6 +445,18 @@ if ( ! function_exists( 'get_date_from_gmt' ) ) {
 	}
 }
 
+if ( ! function_exists( 'home_url' ) ) {
+	/**
+	 * Stub: Site home URL.
+	 *
+	 * @param string $path Path to append.
+	 * @return string
+	 */
+	function home_url( $path = '' ) {
+		return 'https://test.example' . $path;
+	}
+}
+
 if ( ! function_exists( 'wp_tempnam' ) ) {
 	/**
 	 * Stub: Create a temp file.
