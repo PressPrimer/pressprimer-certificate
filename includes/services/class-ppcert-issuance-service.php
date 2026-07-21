@@ -291,10 +291,10 @@ class PressPrimer_Certificate_Issuance_Service {
 	/**
 	 * The email dispatch point (Feature 003 FR-004)
 	 *
-	 * Fires the documented email hooks with their HOOKS.md signatures.
-	 * The email service (Prompt 2.7) consumes the filtered content and
-	 * sends via wp_mail(); until then this is the contract-stable no-op
-	 * dispatch point.
+	 * Delegates to the email service, which fires the documented
+	 * ppcert_email_enabled / ppcert_email_content filters and sends via
+	 * wp_mail(). Runs inside the post-insert boundary: failures log,
+	 * never roll back.
 	 *
 	 * @since 1.0.0
 	 *
@@ -302,29 +302,7 @@ class PressPrimer_Certificate_Issuance_Service {
 	 * @param array $context        Issuance context.
 	 */
 	private static function dispatch_email( $certificate_id, $context ) {
-		/** This filter is documented in docs/architecture/HOOKS.md */
-		$enabled = apply_filters( 'ppcert_email_enabled', true, 'issued', $context );
-
-		if ( ! $enabled ) {
-			return;
-		}
-
-		$recipient = get_userdata( (int) $context['recipient_id'] );
-
-		$content = [
-			'to'          => $recipient ? (string) $recipient->user_email : '',
-			'subject'     => '',
-			'body'        => '',
-			'headers'     => [],
-			'attachments' => [],
-		];
-
-		/** This filter is documented in docs/architecture/HOOKS.md */
-		$content = apply_filters( 'ppcert_email_content', $content, 'issued', $context );
-
-		// TODO (Prompt 2.7): hand $content to the email service for
-		// subject/body building and wp_mail() dispatch.
-		unset( $content, $certificate_id );
+		PressPrimer_Certificate_Email_Service::send_issued( $certificate_id, $context );
 	}
 
 	/**

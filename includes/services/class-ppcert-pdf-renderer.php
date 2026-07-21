@@ -710,8 +710,8 @@ class PressPrimer_Certificate_PDF_Renderer {
 			return ppcert_verification_url( $credential );
 		}
 
-		// TODO (Prompt 2.7): ppcert_verification_url() becomes the canonical
-		// builder; this provisional query-arg form matches its planned shape.
+		// Unit-test path only: the bootstrap stubs don't load the plugin
+		// bootstrap file, so the canonical builder above may be absent.
 		if ( '' !== $credential ) {
 			return home_url( '/?ppcert_id=' . rawurlencode( $credential ) );
 		}

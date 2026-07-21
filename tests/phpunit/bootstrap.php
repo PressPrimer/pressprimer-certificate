@@ -771,6 +771,245 @@ if ( ! class_exists( 'WP_REST_Response' ) ) {
 	}
 }
 
+if ( ! function_exists( 'ppcert_verification_url' ) ) {
+	/**
+	 * Stub: Behavior-identical mirror of the plugin bootstrap's canonical
+	 * verification URL builder (the bootstrap file itself is not loaded
+	 * in unit tests).
+	 *
+	 * @param string $credential_id Credential ID.
+	 * @return string
+	 */
+	function ppcert_verification_url( $credential_id ) {
+		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $credential_id );
+
+		$settings = get_option( 'ppcert_settings', [] );
+		$page_id  = is_array( $settings ) && isset( $settings['verification_page_id'] ) ? absint( $settings['verification_page_id'] ) : 0;
+
+		$base = $page_id > 0 ? get_permalink( $page_id ) : '';
+
+		if ( ! $base ) {
+			$base = home_url( '/' );
+		}
+
+		return add_query_arg( 'ppcert_id', rawurlencode( $normalized ), $base );
+	}
+}
+
+if ( ! function_exists( 'esc_html' ) ) {
+	/**
+	 * Stub: HTML-escape.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function esc_html( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_attr' ) ) {
+	/**
+	 * Stub: Attribute-escape.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function esc_attr( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	/**
+	 * Stub: Translate (identity) and HTML-escape.
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Text domain (unused).
+	 * @return string
+	 */
+	function esc_html__( $text, $domain = 'default' ) { // phpcs:ignore WordPress.WP.I18n
+		return esc_html( $text );
+	}
+}
+
+if ( ! function_exists( 'update_option' ) ) {
+	/**
+	 * Stub: Option write into the test options store.
+	 *
+	 * @param string $option Option name.
+	 * @param mixed  $value  Value.
+	 * @return bool
+	 */
+	function update_option( $option, $value ) {
+		$GLOBALS['ppcert_test_options'][ $option ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'add_shortcode' ) ) {
+	/**
+	 * Stub: Record shortcode registrations.
+	 *
+	 * @param string   $tag      Shortcode tag.
+	 * @param callable $callback Render callback.
+	 * @return void
+	 */
+	function add_shortcode( $tag, $callback ) {
+		$GLOBALS['ppcert_test_shortcodes'][ $tag ] = $callback;
+	}
+}
+
+if ( ! function_exists( 'wp_register_script' ) ) {
+	/**
+	 * Stub: No-op asset registration.
+	 *
+	 * @return bool
+	 */
+	function wp_register_script() {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_register_style' ) ) {
+	/**
+	 * Stub: No-op asset registration.
+	 *
+	 * @return bool
+	 */
+	function wp_register_style() {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_script' ) ) {
+	/**
+	 * Stub: No-op enqueue.
+	 *
+	 * @return void
+	 */
+	function wp_enqueue_script() {
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_style' ) ) {
+	/**
+	 * Stub: No-op enqueue.
+	 *
+	 * @return void
+	 */
+	function wp_enqueue_style() {
+	}
+}
+
+if ( ! function_exists( 'wp_localize_script' ) ) {
+	/**
+	 * Stub: Record localized data.
+	 *
+	 * @param string $handle Script handle.
+	 * @param string $name   Object name.
+	 * @param array  $data   Data.
+	 * @return bool
+	 */
+	function wp_localize_script( $handle, $name, $data ) {
+		$GLOBALS['ppcert_test_localized'][ $name ] = $data;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'rest_url' ) ) {
+	/**
+	 * Stub: REST URL builder.
+	 *
+	 * @param string $path Route path.
+	 * @return string
+	 */
+	function rest_url( $path = '' ) {
+		return 'https://test.example/wp-json/' . ltrim( $path, '/' );
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * Stub: Append one query arg.
+	 *
+	 * @param string $key   Arg name.
+	 * @param string $value Arg value.
+	 * @param string $url   Base URL.
+	 * @return string
+	 */
+	function add_query_arg( $key, $value, $url ) {
+		$separator = false === strpos( $url, '?' ) ? '?' : '&';
+		return $url . $separator . $key . '=' . $value;
+	}
+}
+
+if ( ! function_exists( 'wp_insert_post' ) ) {
+	/**
+	 * Stub: Create a post in the test posts store.
+	 *
+	 * @param array $postarr Post data.
+	 * @return int Post id.
+	 */
+	function wp_insert_post( $postarr ) {
+		$posts   = isset( $GLOBALS['ppcert_test_posts'] ) ? $GLOBALS['ppcert_test_posts'] : [];
+		$post_id = count( $posts ) + 1000;
+
+		$postarr['ID']                        = $post_id;
+		$postarr['post_status']               = isset( $postarr['post_status'] ) ? $postarr['post_status'] : 'publish';
+		$GLOBALS['ppcert_test_posts'][ $post_id ] = (object) $postarr;
+
+		return $post_id;
+	}
+}
+
+if ( ! function_exists( 'get_post' ) ) {
+	/**
+	 * Stub: Read a post from the test posts store.
+	 *
+	 * @param int $post_id Post id.
+	 * @return object|null
+	 */
+	function get_post( $post_id ) {
+		return isset( $GLOBALS['ppcert_test_posts'][ (int) $post_id ] ) ? $GLOBALS['ppcert_test_posts'][ (int) $post_id ] : null;
+	}
+}
+
+if ( ! function_exists( 'get_permalink' ) ) {
+	/**
+	 * Stub: Permalink for a test post.
+	 *
+	 * @param int $post_id Post id.
+	 * @return string|false
+	 */
+	function get_permalink( $post_id ) {
+		return isset( $GLOBALS['ppcert_test_posts'][ (int) $post_id ] ) ? 'https://test.example/?page_id=' . (int) $post_id : false;
+	}
+}
+
+if ( ! function_exists( 'wp_mail' ) ) {
+	/**
+	 * Stub: Capture outgoing mail.
+	 *
+	 * @param string       $to          Recipient.
+	 * @param string       $subject     Subject.
+	 * @param string       $message     Body.
+	 * @param array|string $headers     Headers.
+	 * @param array        $attachments Attachments.
+	 * @return bool
+	 */
+	function wp_mail( $to, $subject, $message, $headers = [], $attachments = [] ) {
+		$GLOBALS['ppcert_test_mail'][] = [
+			'to'          => $to,
+			'subject'     => $subject,
+			'body'        => $message,
+			'headers'     => $headers,
+			'attachments' => $attachments,
+		];
+		return true;
+	}
+}
+
 if ( ! function_exists( 'is_wp_error' ) ) {
 	/**
 	 * Stub: Whether a value is a WP_Error.

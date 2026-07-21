@@ -96,7 +96,7 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 	 */
 	public function verify( $request ) {
 		// Step 1: rate limit before ANY other work (FR-004).
-		if ( ! $this->within_rate_limit() ) {
+		if ( ! self::within_rate_limit() ) {
 			$response = new WP_REST_Response(
 				[ 'message' => __( 'Too many verification requests. Please wait a minute and try again.', 'pressprimer-certificate' ) ],
 				429
@@ -107,24 +107,39 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 			return $response;
 		}
 
-		$raw = (string) $request->get_param( 'credential_id' );
+		return $this->respond( self::lookup( (string) $request->get_param( 'credential_id' ) ) );
+	}
 
-		// Step 2: checksum gate. A malformed ID cannot exist, so it skips
-		// the database and returns the identical not-found shape (the
-		// "check for typos" UX runs client-side in the shortcode, never
-		// here - no oracle).
+	/**
+	 * The lookup pipeline (FR-003) - shared by the REST route and the
+	 * verification page's server-side render (no-JS fallback and direct
+	 * links), so exactly one code path resolves credentials
+	 *
+	 * NOT rate-limited itself: callers gate first (the REST route above;
+	 * the page render via check_rate_limit()).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $raw Raw credential input.
+	 * @return array The locked-shape result array.
+	 */
+	public static function lookup( $raw ) {
+		// Checksum gate. A malformed ID cannot exist, so it skips the
+		// database and returns the identical not-found shape (the "check
+		// for typos" UX runs client-side in the shortcode, never here -
+		// no oracle).
 		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_well_formed( $raw ) ) {
-			return $this->respond( $this->not_found_result() );
+			return self::not_found_result();
 		}
 
-		// Step 3: the single prepared, indexed lookup.
+		// The single prepared, indexed lookup.
 		$certificate = PressPrimer_Certificate_Certificate::get_for_verification( $raw );
 
 		if ( ! $certificate ) {
-			return $this->respond( $this->not_found_result() );
+			return self::not_found_result();
 		}
 
-		// Step 4: authoritative status.
+		// Authoritative status.
 		$effective = PressPrimer_Certificate_Certificate::effective_status( $certificate );
 		$status    = 'issued' === $effective ? 'valid' : $effective;
 		$valid     = 'valid' === $status;
@@ -139,8 +154,8 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 			'expires_at'     => ! empty( $certificate->expires_at ) ? self::to_iso8601( (string) $certificate->expires_at ) : null,
 		];
 
-		// Step 5: brand/extend filter with post-filter re-assertion -
-		// addons can never weaken the verdict.
+		// Brand/extend filter with post-filter re-assertion - addons can
+		// never weaken the verdict.
 		/** This filter is documented in docs/architecture/HOOKS.md */
 		$filtered = apply_filters( 'ppcert_verification_result', $result, $certificate );
 
@@ -151,8 +166,8 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 		$filtered['valid']  = $valid;
 		$filtered['status'] = $status;
 
-		// Step 6: privacy-minimal verified event (no IP, no user agent;
-		// actor only when a logged-in user performed the lookup).
+		// Privacy-minimal verified event (no IP, no user agent; actor
+		// only when a logged-in user performed the lookup).
 		$actor = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
 		PressPrimer_Certificate_Certificate::record_event(
 			(int) $certificate->id,
@@ -160,7 +175,19 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 			$actor > 0 ? $actor : null
 		);
 
-		return $this->respond( $filtered );
+		return $filtered;
+	}
+
+	/**
+	 * Public rate-limit check for non-REST callers (the page's
+	 * server-side render path)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True when the request is within the limit.
+	 */
+	public static function check_rate_limit() {
+		return self::within_rate_limit();
 	}
 
 	/**
@@ -170,7 +197,7 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 	 *
 	 * @return array
 	 */
-	private function not_found_result() {
+	private static function not_found_result() {
 		return [
 			'valid'          => false,
 			'status'         => 'not_found',
@@ -207,7 +234,7 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 	 *
 	 * @return bool True when the request is within the limit.
 	 */
-	private function within_rate_limit() {
+	private static function within_rate_limit() {
 		$limit = defined( 'PPCERT_VERIFY_RATE_LIMIT' ) ? (int) PPCERT_VERIFY_RATE_LIMIT : self::DEFAULT_RATE_LIMIT;
 
 		if ( $limit < 1 ) {

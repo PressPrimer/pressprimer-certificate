@@ -175,9 +175,11 @@ class PressPrimer_Certificate_Plugin {
 			$shortcodes->init();
 		}
 
-		// The verification page renderer and the WordPress privacy handlers
-		// (personal data export/erase) are wired here when Feature 6
-		// (Verification + QR) and Feature 8 (Foundation) ship.
+		// The public verification page: shortcode, assets, admin notice.
+		PressPrimer_Certificate_Verification_Page::init();
+
+		// WordPress privacy handlers (personal data export/erase) are
+		// wired here when Feature 8 (Foundation, Prompt 4.6) ships.
 	}
 
 	/**

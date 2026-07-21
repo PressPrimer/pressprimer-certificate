@@ -101,6 +101,35 @@ function ppcert_init() {
 add_action( 'init', 'ppcert_init', 0 );
 
 /**
+ * Build the public verification URL for a credential ID
+ *
+ * The canonical builder (Feature 006 FR-002): query-arg form against the
+ * configured verification page, home-URL fallback when none is set. The
+ * QR on every rendered certificate encodes this URL, so upgrading to
+ * pretty permalinks later changes only this function (and only affects
+ * newly rendered PDFs).
+ *
+ * @since 1.0.0
+ *
+ * @param string $credential_id Credential ID (any accepted form).
+ * @return string Verification URL.
+ */
+function ppcert_verification_url( $credential_id ) {
+	$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $credential_id );
+
+	$settings = get_option( 'ppcert_settings', [] );
+	$page_id  = is_array( $settings ) && isset( $settings['verification_page_id'] ) ? absint( $settings['verification_page_id'] ) : 0;
+
+	$base = $page_id > 0 ? get_permalink( $page_id ) : '';
+
+	if ( ! $base ) {
+		$base = home_url( '/' );
+	}
+
+	return add_query_arg( 'ppcert_id', rawurlencode( $normalized ), $base );
+}
+
+/**
  * Get the addon manager instance
  *
  * Returns null until the addon manager class ships (Prompt 1.8).

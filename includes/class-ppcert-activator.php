@@ -91,9 +91,9 @@ class PressPrimer_Certificate_Activator {
 		// Setup capabilities (administrator; Feature 003 TR-003)
 		PressPrimer_Certificate_Capabilities::setup_capabilities();
 
-		// TODO (Prompt 2.7): create the public verification page and store
-		// its ID in ppcert_settings['verification_page_id'], detecting an
-		// existing page on re-activation (idempotent).
+		// Create the public verification page (idempotent - an existing
+		// page is detected via the stored ID).
+		PressPrimer_Certificate_Verification_Page::create_page();
 
 		// TODO (Prompt 5.1): seed the starter templates into
 		// wp_ppcert_templates (is_starter = 1), re-seeding only if missing.

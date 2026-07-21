@@ -1,0 +1,61 @@
+/**
+ * PressPrimer Certificate - front-end styles (verification page; the
+ * wallet arrives in Prompt 4.6). Deliberately light: the page renders
+ * through the site's theme (Feature 006 US-3).
+ */
+
+.ppcert-verify__form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+	align-items: center;
+	margin-bottom: 1em;
+}
+
+.ppcert-verify__input {
+	font-family: monospace;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	min-width: 16ch;
+}
+
+.ppcert-verify__status {
+	font-weight: 600;
+	padding: 0.5em 0.75em;
+	border-left: 4px solid #64748b;
+	background: rgba(100, 116, 139, 0.08);
+}
+
+.ppcert-verify__status--valid {
+	border-left-color: #15803d;
+	background: rgba(21, 128, 61, 0.08);
+}
+
+.ppcert-verify__status--expired {
+	border-left-color: #b45309;
+	background: rgba(180, 83, 9, 0.08);
+}
+
+.ppcert-verify__status--revoked {
+	border-left-color: #b91c1c;
+	background: rgba(185, 28, 28, 0.08);
+}
+
+.ppcert-verify__details {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 0.25em 1em;
+	margin: 0.75em 0 0;
+}
+
+.ppcert-verify__details dt {
+	font-weight: 600;
+}
+
+.ppcert-verify__details dd {
+	margin: 0;
+}
+
+.ppcert-hidden {
+	display: none;
+}
