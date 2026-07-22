@@ -6,13 +6,13 @@
  * exactly; a checksum failure shows the typo help WITHOUT calling the
  * API (the server deliberately yields no malformed-vs-missing oracle).
  *
- * @package PressPrimer_Certificate
+ * @package
  */
 ( function () {
 	'use strict';
 
-	var ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-	var WEIGHTS = [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 ];
+	const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+	const WEIGHTS = [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 ];
 
 	/**
 	 * Mirror of Credential_ID_Service::normalize().
@@ -40,10 +40,10 @@
 			return false;
 		}
 
-		var sum = 0;
+		let sum = 0;
 
-		for ( var i = 0; i < 12; i++ ) {
-			var value = ALPHABET.indexOf( candidate[ i ] );
+		for ( let i = 0; i < 12; i++ ) {
+			const value = ALPHABET.indexOf( candidate[ i ] );
 
 			if ( value === -1 ) {
 				return false;
@@ -65,15 +65,16 @@
 	 * @param {Object}  data   Result data (locked-shape fields).
 	 */
 	function render( region, state, data ) {
-		var i18n = window.ppcert_verify_data.i18n;
+		const i18n = window.ppcert_verify_data.i18n;
 
-		region.className = 'ppcert-verify__result ppcert-verify__result--' + state;
+		region.className =
+			'ppcert-verify__result ppcert-verify__result--' + state;
 
 		while ( region.firstChild ) {
 			region.removeChild( region.firstChild );
 		}
 
-		var heading = document.createElement( 'p' );
+		const heading = document.createElement( 'p' );
 		heading.className = 'ppcert-verify__status';
 		heading.textContent = i18n[ state ] || i18n.error;
 		region.appendChild( heading );
@@ -82,7 +83,7 @@
 			return;
 		}
 
-		var rows = [
+		const rows = [
 			[ i18n.recipient, data.recipient_name ],
 			[ i18n.subject, data.subject ],
 			[ i18n.issuer, data.issuer_name ],
@@ -93,7 +94,7 @@
 			rows.push( [ i18n.expires, formatDate( data.expires_at ) ] );
 		}
 
-		var list = document.createElement( 'dl' );
+		const list = document.createElement( 'dl' );
 		list.className = 'ppcert-verify__details';
 
 		rows.forEach( function ( row ) {
@@ -101,9 +102,9 @@
 				return;
 			}
 
-			var term = document.createElement( 'dt' );
+			const term = document.createElement( 'dt' );
 			term.textContent = row[ 0 ];
-			var definition = document.createElement( 'dd' );
+			const definition = document.createElement( 'dd' );
 			definition.textContent = row[ 1 ];
 			list.appendChild( term );
 			list.appendChild( definition );
@@ -123,7 +124,7 @@
 			return '';
 		}
 
-		var date = new Date( iso );
+		const date = new Date( iso );
 
 		return isNaN( date.getTime() ) ? iso : date.toLocaleDateString();
 	}
@@ -135,7 +136,7 @@
 	 * @param {string}  credential Raw credential input.
 	 */
 	function verify( region, credential ) {
-		var normalized = normalize( credential );
+		const normalized = normalize( credential );
 
 		if ( ! isWellFormed( normalized ) ) {
 			render( region, 'typo', null );
@@ -169,8 +170,8 @@
 	}
 
 	document.addEventListener( 'DOMContentLoaded', function () {
-		var form = document.querySelector( '.ppcert-verify__form' );
-		var region = document.querySelector( '.ppcert-verify__result' );
+		const form = document.querySelector( '.ppcert-verify__form' );
+		const region = document.querySelector( '.ppcert-verify__result' );
 
 		if ( ! form || ! region || ! window.ppcert_verify_data ) {
 			return;
@@ -178,7 +179,7 @@
 
 		form.addEventListener( 'submit', function ( event ) {
 			event.preventDefault();
-			var input = form.querySelector( '.ppcert-verify__input' );
+			const input = form.querySelector( '.ppcert-verify__input' );
 			verify( region, input ? input.value : '' );
 		} );
 	} );

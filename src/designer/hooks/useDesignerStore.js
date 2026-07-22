@@ -1,0 +1,155 @@
+/**
+ * Designer store (Feature 001 TR-002)
+ *
+ * Single reducer store via useReducer + context:
+ * { template, layout, selection, history, dirty, triggers }.
+ *
+ * Layout mutations go through action creators that also push history -
+ * no component mutates layout objects directly. Mutation actions grow in
+ * Prompts 3.2+ (canvas interactions); 3.1 ships the load flow and the
+ * history plumbing they build on.
+ *
+ * @package
+ */
+
+import { createContext, useContext, useReducer } from '@wordpress/element';
+
+const HISTORY_LIMIT = 50;
+
+export const initialState = {
+	template: null, // { id, title, status, page_size, orientation, updated_at }
+	layout: null, // The validator-clean layout document.
+	selection: [], // Selected element ids.
+	history: { past: [], future: [] },
+	dirty: false,
+	triggers: [],
+};
+
+/**
+ * Push the current layout onto the undo stack (bounded, FR-008).
+ *
+ * @param {Object} history Current history.
+ * @param {Object} layout  Layout being replaced.
+ * @return {Object} Next history.
+ */
+function pushHistory( history, layout ) {
+	const past = [ ...history.past, layout ].slice( -HISTORY_LIMIT );
+	return { past, future: [] };
+}
+
+/**
+ * The designer reducer.
+ *
+ * @param {Object} state  Current state.
+ * @param {Object} action Dispatched action.
+ * @return {Object} Next state.
+ */
+export function designerReducer( state, action ) {
+	switch ( action.type ) {
+		case 'LOAD_TEMPLATE':
+			return {
+				...initialState,
+				template: action.template,
+				layout: action.layout,
+				triggers: action.triggers || [],
+			};
+
+		case 'APPLY_LAYOUT':
+			// The single entry point for layout mutations (action creators
+			// in 3.2+ funnel through this): history push + dirty flag.
+			return {
+				...state,
+				layout: action.layout,
+				history: pushHistory( state.history, state.layout ),
+				dirty: true,
+			};
+
+		case 'SET_SELECTION':
+			return { ...state, selection: action.ids };
+
+		case 'UNDO': {
+			if ( state.history.past.length === 0 ) {
+				return state;
+			}
+			const past = state.history.past.slice( 0, -1 );
+			const restored =
+				state.history.past[ state.history.past.length - 1 ];
+			return {
+				...state,
+				layout: restored,
+				history: {
+					past,
+					future: [ state.layout, ...state.history.future ].slice(
+						0,
+						HISTORY_LIMIT
+					),
+				},
+				dirty: true,
+			};
+		}
+
+		case 'REDO': {
+			if ( state.history.future.length === 0 ) {
+				return state;
+			}
+			const [ next, ...future ] = state.history.future;
+			return {
+				...state,
+				layout: next,
+				history: {
+					past: [ ...state.history.past, state.layout ].slice(
+						-HISTORY_LIMIT
+					),
+					future,
+				},
+				dirty: true,
+			};
+		}
+
+		case 'MARK_SAVED':
+			return {
+				...state,
+				dirty: false,
+				template: action.template || state.template,
+			};
+
+		default:
+			return state;
+	}
+}
+
+const DesignerContext = createContext( null );
+
+/**
+ * Store provider.
+ *
+ * @param {Object} props          Props.
+ * @param {*}      props.children Children.
+ * @return {JSX.Element} Provider.
+ */
+export function DesignerProvider( { children } ) {
+	const [ state, dispatch ] = useReducer( designerReducer, initialState );
+
+	return (
+		<DesignerContext.Provider value={ { state, dispatch } }>
+			{ children }
+		</DesignerContext.Provider>
+	);
+}
+
+/**
+ * Store hook.
+ *
+ * @return {Object} { state, dispatch }.
+ */
+export function useDesignerStore() {
+	const store = useContext( DesignerContext );
+
+	if ( ! store ) {
+		throw new Error(
+			'useDesignerStore must be used inside DesignerProvider'
+		);
+	}
+
+	return store;
+}

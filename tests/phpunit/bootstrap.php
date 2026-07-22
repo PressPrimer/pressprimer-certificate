@@ -1079,6 +1079,16 @@ if ( ! class_exists( 'WP_Error' ) ) {
 		}
 
 		/**
+		 * Get the first error code (matches WP core).
+		 *
+		 * @return string|int
+		 */
+		public function get_error_code() {
+			$codes = $this->get_error_codes();
+			return $codes ? $codes[0] : '';
+		}
+
+		/**
 		 * Get all messages, optionally for one code.
 		 *
 		 * @param string|int $code Error code, or '' for all.

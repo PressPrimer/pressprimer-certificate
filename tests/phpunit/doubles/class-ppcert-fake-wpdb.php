@@ -352,6 +352,25 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Template::get_all.
+		if ( false !== strpos( $query, 'WHERE deleted_at IS NULL ORDER BY updated_at DESC' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) {
+					return empty( $row['deleted_at'] );
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return strcmp( isset( $b['updated_at'] ) ? $b['updated_at'] : '', isset( $a['updated_at'] ) ? $a['updated_at'] : '' );
+				}
+			);
+
+			return $matches;
+		}
+
 		// Trigger::get_for_template.
 		if ( false !== strpos( $query, 'WHERE template_id = %d ORDER BY id ASC' ) ) {
 			return $this->filter_rows(

@@ -40,6 +40,133 @@ class PressPrimer_Certificate_Template {
 	}
 
 	/**
+	 * Get all templates (not soft-deleted), newest-updated first
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return object[] Hydrated rows.
+	 */
+	public static function get_all() {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT * FROM %i WHERE deleted_at IS NULL ORDER BY updated_at DESC',
+				self::table()
+			)
+		);
+
+		return array_map( [ __CLASS__, 'hydrate' ], (array) $rows );
+	}
+
+	/**
+	 * Create a template row
+	 *
+	 * The layout MUST already be validator-clean - the REST controller
+	 * runs the validator before calling this (CODE-STRUCTURE rule 3: only
+	 * the validator sanitizes layout documents).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args {
+	 *     @type string $title     Template title.
+	 *     @type array  $layout    Validator-clean layout document.
+	 *     @type int    $author_id Author user id.
+	 *     @type string $status    'draft' (default) or 'published'.
+	 * }
+	 * @return int|WP_Error New template row id.
+	 */
+	public static function create( array $args ) {
+		global $wpdb;
+
+		$layout = isset( $args['layout'] ) && is_array( $args['layout'] ) ? $args['layout'] : null;
+
+		if ( null === $layout ) {
+			return new WP_Error(
+				'ppcert_invalid_layout',
+				__( 'A layout document is required.', 'pressprimer-certificate' )
+			);
+		}
+
+		$status = isset( $args['status'] ) && in_array( $args['status'], [ 'draft', 'published' ], true )
+			? $args['status']
+			: 'draft';
+
+		$now = current_time( 'mysql', true );
+
+		$inserted = $wpdb->insert(
+			self::table(),
+			[
+				'uuid'                  => wp_generate_uuid4(),
+				'title'                 => substr( sanitize_text_field( isset( $args['title'] ) ? (string) $args['title'] : '' ), 0, 200 ),
+				'status'                => $status,
+				'author_id'             => isset( $args['author_id'] ) ? absint( $args['author_id'] ) : 0,
+				'page_size'             => isset( $layout['page']['size'] ) ? (string) $layout['page']['size'] : 'a4',
+				'orientation'           => isset( $layout['page']['orientation'] ) ? (string) $layout['page']['orientation'] : 'landscape',
+				'layout_schema_version' => isset( $layout['layout_schema_version'] ) ? (int) $layout['layout_schema_version'] : 1,
+				'layout_json'           => wp_json_encode( $layout ),
+				'is_starter'            => 0,
+				'created_at'            => $now,
+				'updated_at'            => $now,
+			],
+			[ '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%d', '%s', '%s' ]
+		);
+
+		if ( ! $inserted ) {
+			return new WP_Error(
+				'ppcert_template_create_failed',
+				__( 'The template could not be created.', 'pressprimer-certificate' )
+			);
+		}
+
+		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * Get the bundled starter definitions from templates/*.json
+	 *
+	 * Each file carries a _meta block (slug, label); the returned layout
+	 * has _meta stripped. Starters are provisional until Prompt 5.1
+	 * finalizes the set (ROADMAP Open Decision 6).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<string,array> Map of slug => [ slug, label, layout ].
+	 */
+	public static function get_starters() {
+		static $starters = null;
+
+		if ( null !== $starters ) {
+			return $starters;
+		}
+
+		$starters = [];
+		$files    = glob( PPCERT_PLUGIN_DIR . 'templates/starter-*.json' );
+
+		foreach ( (array) $files as $file ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local bundled file, not a remote URL.
+			$decoded = json_decode( (string) file_get_contents( $file ), true );
+
+			if ( ! is_array( $decoded ) || ! isset( $decoded['_meta']['slug'] ) ) {
+				continue;
+			}
+
+			$slug  = sanitize_key( (string) $decoded['_meta']['slug'] );
+			$label = isset( $decoded['_meta']['label'] ) ? (string) $decoded['_meta']['label'] : $slug;
+
+			unset( $decoded['_meta'] );
+
+			$starters[ $slug ] = [
+				'slug'   => $slug,
+				'label'  => $label,
+				'layout' => $decoded,
+			];
+		}
+
+		return $starters;
+	}
+
+	/**
 	 * Get one template by row id
 	 *
 	 * Soft-deleted templates (deleted_at set) are not returned. The row's
@@ -62,10 +189,18 @@ class PressPrimer_Certificate_Template {
 			)
 		);
 
-		if ( ! $row ) {
-			return null;
-		}
+		return $row ? self::hydrate( $row ) : null;
+	}
 
+	/**
+	 * Hydrate a raw row: decode layout_json onto a layout property
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param object $row Raw wpdb row.
+	 * @return object Hydrated row.
+	 */
+	private static function hydrate( $row ) {
 		$row->layout = null;
 
 		if ( ! empty( $row->layout_json ) ) {
