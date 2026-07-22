@@ -101,6 +101,7 @@ function ConditionField( { fieldKey, field, value, onChange } ) {
 			control = (
 				<Select
 					size="small"
+					getPopupContainer={ ( node ) => node.parentElement }
 					value={ value }
 					data-ppcert-condition={ fieldKey }
 					popupMatchSelectWidth={ false }
@@ -204,6 +205,7 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 	return (
 		<Modal
 			open={ open }
+			maskClosable={ false }
 			onCancel={ onClose }
 			okText={
 				initial
@@ -241,6 +243,7 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 					<span className="ppcert-designer__prop-control">
 						<Select
 							size="small"
+							getPopupContainer={ ( node ) => node.parentElement }
 							value={ typeId }
 							data-ppcert-trigger-type
 							placeholder={ __(
@@ -266,6 +269,9 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 						<span className="ppcert-designer__prop-control">
 							<Select
 								size="small"
+								getPopupContainer={ ( node ) =>
+									node.parentElement
+								}
 								showSearch
 								value={ sourceRef }
 								data-ppcert-trigger-source

@@ -192,7 +192,21 @@ class PressPrimer_Certificate_Admin {
 	 * @param string $hook_suffix Current admin page hook.
 	 */
 	public function enqueue_assets( $hook_suffix ) {
-		if ( $hook_suffix !== $this->templates_hook || '' === $this->current_designer_action() ) {
+		if ( $hook_suffix !== $this->templates_hook ) {
+			return;
+		}
+
+		// Global WP-admin / Ant Design conflict overrides on every plugin
+		// admin page (ecosystem pattern - see the Quiz/Assignment
+		// admin.css twins).
+		wp_enqueue_style(
+			'ppcert-admin',
+			PPCERT_PLUGIN_URL . 'assets/css/ppcert-admin.css',
+			[],
+			PPCERT_VERSION
+		);
+
+		if ( '' === $this->current_designer_action() ) {
 			return;
 		}
 

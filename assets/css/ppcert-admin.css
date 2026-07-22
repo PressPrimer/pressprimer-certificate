@@ -1,0 +1,122 @@
+/**
+ * Admin styles for PressPrimer Certificate
+ *
+ * Global WP-admin / Ant Design conflict overrides, ported from the
+ * PressPrimer Quiz and Assignment admin stylesheets (the ecosystem's
+ * canonical fixes for these clashes). Loads on every PressPrimer
+ * Certificate admin page.
+ *
+ * @package PressPrimer_Certificate
+ * @since 1.0.0
+ */
+
+/*
+ * Fix Ant Design radio/checkbox native inputs in WP admin.
+ *
+ * WordPress admin forms.css styles input[type="radio"] and
+ * input[type="checkbox"] with explicit width, height, and positioning
+ * that override Ant Design v5's CSS-in-JS styles. This makes the native
+ * <input> visible alongside the custom styled <span class="ant-radio-inner">
+ * / <span class="ant-checkbox-inner">, causing duplicate radio buttons and
+ * checkboxes to appear.
+ *
+ * @since 1.0.0
+ */
+.ant-radio-input,
+.ant-checkbox-input {
+	position: absolute !important;
+	inset: 0 !important;
+	z-index: 1 !important;
+	width: 100% !important;
+	height: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	cursor: pointer !important;
+	opacity: 0 !important;
+}
+
+/*
+ * Fix Ant Design search input (Input.Search) in WP admin.
+ *
+ * WordPress admin forms.css styles input[type="search"] with its own
+ * min-height, border, and a blue :focus box-shadow. Those leak into Ant
+ * Design's Input.Search field: the min-height overflows Ant's wrapper, pushing
+ * the placeholder to the bottom of the box and drawing a stray focus box below
+ * the frame. The .ant-select reset below does not apply here (this input is
+ * not inside .ant-select), so reset the search input too — Ant draws the
+ * border and focus ring on the wrapper.
+ *
+ * @since 1.0.0
+ */
+.ant-input-search input,
+.ant-input-search input:focus {
+	min-height: 0 !important;
+	margin: 0 !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	outline: none !important;
+}
+
+/*
+ * Fix Ant Design Select search input in WP admin.
+ *
+ * WordPress admin forms.css styles every <input> with a border, a 30px
+ * min-height, and a blue :focus box-shadow. Those leak into Ant Design's Select
+ * search input and render as an oversized, offset blue box when a Select is
+ * focused. Resetting the inner input here corrects every admin dropdown in one
+ * place — Ant draws the focus ring on the selector itself.
+ *
+ * @since 1.0.0
+ *
+ * The stylelint disable below is a false positive: the
+ * .ant-input-search input:focus rule above targets a different
+ * component; these subtrees never overlap.
+ */
+/* stylelint-disable-next-line no-descending-specificity */
+.ant-select input,
+.ant-select input:focus {
+	min-height: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	outline: none !important;
+	background: transparent !important;
+}
+
+/*
+ * Fix Ant Design modal close button in WP admin.
+ *
+ * WordPress admin CSS applies styles to bare <button> elements that interfere
+ * with the Ant Design v5 modal close button, making it unclickable even though
+ * the X icon renders. Reset the button so the click target covers the icon.
+ *
+ * @since 1.0.0
+ */
+.ant-modal-close {
+	cursor: pointer !important;
+	pointer-events: auto !important;
+}
+
+/*
+ * Fix visited-link color on Ant Design button links in WP admin.
+ *
+ * Ant Design renders an <a href> button as <a class="ant-btn ...">. WordPress
+ * admin styles a:link / a:visited with a color whose selector out-specifies Ant
+ * Design's class-based button text color, so after a user follows a link button
+ * its label turns the muddy visited-link color. Restore the intended text color
+ * across link states. Only the solid variants (primary and default) are
+ * targeted — link/text buttons take their color from context and must not be
+ * forced here.
+ *
+ * @since 1.0.0
+ */
+a.ant-btn-primary:link,
+a.ant-btn-primary:visited {
+	color: #fff;
+}
+
+a.ant-btn-default:link,
+a.ant-btn-default:visited {
+	color: rgba(0, 0, 0, 0.88);
+}
