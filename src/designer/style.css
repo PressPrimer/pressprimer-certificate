@@ -78,6 +78,52 @@
 	outline: none;
 }
 
+.ppcert-designer__surface--rulers {
+	display: grid;
+	grid-template-columns: min-content min-content;
+	grid-template-rows: min-content min-content;
+	justify-content: center;
+}
+
+.ppcert-designer__ruler {
+	display: block;
+	background: #fafafa;
+	border: 0 solid #e5e7eb;
+	box-sizing: border-box;
+}
+
+.ppcert-designer__ruler--h {
+	border-bottom-width: 1px;
+}
+
+.ppcert-designer__ruler--v {
+	border-right-width: 1px;
+}
+
+.ppcert-designer__ruler-corner {
+	background: #fafafa;
+	border-right: 1px solid #e5e7eb;
+	border-bottom: 1px solid #e5e7eb;
+	box-sizing: border-box;
+}
+
+.ppcert-designer__guide {
+	position: absolute;
+	background: #eb2f96;
+	pointer-events: none;
+	z-index: 30;
+}
+
+.ppcert-designer__guide--v {
+	top: 0;
+	bottom: 0;
+}
+
+.ppcert-designer__guide--h {
+	left: 0;
+	right: 0;
+}
+
 .ppcert-designer__scaler {
 	position: relative;
 	flex: none;

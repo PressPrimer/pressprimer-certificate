@@ -81,6 +81,19 @@ async function drag(
 	await page.mouse.up();
 }
 
+// Drag with snapping disabled (Alt) - these specs verify raw pointer
+// math; snapping behavior has its own suite (guardrails.spec.ts).
+async function dragUnsnapped(
+	page: Page,
+	from: { x: number; y: number },
+	dxPx: number,
+	dyPx: number
+): Promise< void > {
+	await page.keyboard.down( 'Alt' );
+	await drag( page, from, dxPx, dyPx );
+	await page.keyboard.up( 'Alt' );
+}
+
 test.describe( 'canvas interactions', () => {
 	for ( const zoom of [ 0.75, 1.5 ] ) {
 		test( `drag stores zoom-independent points at ${
@@ -91,7 +104,7 @@ test.describe( 'canvas interactions', () => {
 			// 40pt right, 20pt down: screen delta scales with zoom, the
 			// stored point delta must not.
 			const from = await centerOf( page, TITLE.id );
-			await drag( page, from, 40 * zoom, 20 * zoom );
+			await dragUnsnapped( page, from, 40 * zoom, 20 * zoom );
 
 			const after = await getElement( page, TITLE.id );
 			expect( after.x ).toBe( TITLE.x + 40 );
@@ -169,7 +182,7 @@ test.describe( 'canvas interactions', () => {
 		const eastBox = await page
 			.locator( '[data-ppcert-handle="e"]' )
 			.boundingBox();
-		await drag(
+		await dragUnsnapped(
 			page,
 			{
 				x: Math.round( eastBox!.x + eastBox!.width / 2 ),
@@ -191,7 +204,7 @@ test.describe( 'canvas interactions', () => {
 		const seBox = await page
 			.locator( '[data-ppcert-handle="se"]' )
 			.boundingBox();
-		await drag(
+		await dragUnsnapped(
 			page,
 			{
 				x: Math.round( seBox!.x + seBox!.width / 2 ),
@@ -259,7 +272,7 @@ test.describe( 'canvas interactions', () => {
 		await boot( page, 1 );
 
 		const from = await centerOf( page, TITLE.id );
-		await drag( page, from, 40, 20 );
+		await dragUnsnapped( page, from, 40, 20 );
 
 		const historyDepth = await page.evaluate(
 			() =>
@@ -288,17 +301,20 @@ test.describe( 'canvas interactions', () => {
 			const canvas = document.querySelector(
 				'[data-ppcert-canvas-scale]'
 			) as HTMLElement;
+			const ruler = document.querySelector(
+				'[data-ppcert-ruler="v"]'
+			) as SVGElement | null;
 			const state = ( window as any ).__ppcertHarness.getState();
+			const available =
+				surface.clientWidth -
+				( ruler ? ruler.getBoundingClientRect().width : 0 );
 			return {
 				scaleAttr: Number(
 					canvas.getAttribute( 'data-ppcert-canvas-scale' )
 				),
 				expected: Math.min(
 					2,
-					Math.max(
-						0.5,
-						surface.clientWidth / state.layout.page.width
-					)
+					Math.max( 0.5, available / state.layout.page.width )
 				),
 			};
 		} );

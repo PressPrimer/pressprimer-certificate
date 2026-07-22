@@ -28,7 +28,12 @@ import {
 } from '@ant-design/icons';
 import { useDesignerStore } from '../hooks/useDesignerStore';
 import { getBoot } from '../boot';
-import { addElement, generateElementId, roundPt } from '../schema/geometry';
+import {
+	MAX_ELEMENTS,
+	addElement,
+	generateElementId,
+	roundPt,
+} from '../schema/geometry';
 import { loadMergeFields } from '../mergeFields';
 import MetaPickerModal from './MetaPickerModal';
 
@@ -61,8 +66,11 @@ export default function ElementPalette() {
 		loadMergeFields().then( setRegistry );
 	}, [] );
 
+	const atCap =
+		!! state.layout && state.layout.elements.length >= MAX_ELEMENTS;
+
 	const addFromType = ( type, propsOverride = {} ) => {
-		if ( ! state.layout || ! type || ! type.default_box ) {
+		if ( ! state.layout || ! type || ! type.default_box || atCap ) {
 			return;
 		}
 
@@ -216,16 +224,40 @@ export default function ElementPalette() {
 				size="small"
 				dataSource={ types }
 				renderItem={ ( type ) => {
+					// The 100-element cap (FR-002): adders disable with an
+					// explanation; Background (document root) stays live.
+					const capped = atCap && 'background' !== type.key;
+
 					const item = (
 						<List.Item
-							className="ppcert-designer__palette-item"
+							className={
+								'ppcert-designer__palette-item' +
+								( capped
+									? ' ppcert-designer__palette-item--inert'
+									: '' )
+							}
 							data-ppcert-palette={ type.key }
-							onClick={ () => onAdd( type ) }
+							aria-disabled={ capped || undefined }
+							onClick={ capped ? undefined : () => onAdd( type ) }
 						>
 							{ ICONS[ type.key ] || <AppstoreOutlined /> }
 							<span>{ type.label }</span>
 						</List.Item>
 					);
+
+					if ( capped ) {
+						return (
+							<Tooltip
+								title={ __(
+									'This certificate has reached the 100-element limit.',
+									'pressprimer-certificate'
+								) }
+								placement="right"
+							>
+								{ item }
+							</Tooltip>
+						);
+					}
 
 					if ( 'merge_field' !== type.key ) {
 						return item;

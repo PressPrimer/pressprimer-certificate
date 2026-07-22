@@ -22,7 +22,12 @@ import {
 	message,
 	Alert,
 } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import {
+	ArrowLeftOutlined,
+	BorderOuterOutlined,
+	RedoOutlined,
+	UndoOutlined,
+} from '@ant-design/icons';
 import { useDesignerStore } from '../hooks/useDesignerStore';
 import { DesignerViewContext } from '../view-context';
 import { loadMergeFields, getSampleMap } from '../mergeFields';
@@ -65,11 +70,44 @@ export default function DesignerApp( { boot } ) {
 	const [ zoom, setZoom ] = useState( 'fit' );
 	const [ tokenView, setTokenView ] = useState( false );
 	const [ samples, setSamples ] = useState( {} );
+	const [ rulers, setRulers ] = useState( true );
 
 	// Registry samples for merge-field canvas rendering (FR-004).
 	useEffect( () => {
 		loadMergeFields().then( () => setSamples( getSampleMap() ) );
 	}, [] );
+
+	// Undo/redo shortcuts (FR-008): Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z or
+	// Ctrl+Y. Skipped while typing in a field.
+	useEffect( () => {
+		const onKeyDown = ( event ) => {
+			const target = event.target;
+			const typing =
+				target &&
+				( 'INPUT' === target.tagName ||
+					'TEXTAREA' === target.tagName ||
+					'SELECT' === target.tagName ||
+					target.isContentEditable );
+
+			if ( typing || ! ( event.metaKey || event.ctrlKey ) ) {
+				return;
+			}
+
+			const key = event.key.toLowerCase();
+
+			if ( 'z' === key ) {
+				event.preventDefault();
+				dispatch( { type: event.shiftKey ? 'REDO' : 'UNDO' } );
+			} else if ( 'y' === key && event.ctrlKey ) {
+				event.preventDefault();
+				dispatch( { type: 'REDO' } );
+			}
+		};
+
+		document.addEventListener( 'keydown', onKeyDown );
+
+		return () => document.removeEventListener( 'keydown', onKeyDown );
+	}, [ dispatch ] );
 
 	// Deep link: ?action=edit&template_id=N loads directly.
 	useEffect( () => {
@@ -170,7 +208,37 @@ export default function DesignerApp( { boot } ) {
 					>
 						{ state.template.status }
 					</Tag>
+					<Button
+						type="text"
+						icon={ <UndoOutlined /> }
+						disabled={ 0 === state.history.past.length }
+						title={ __( 'Undo', 'pressprimer-certificate' ) }
+						aria-label={ __( 'Undo', 'pressprimer-certificate' ) }
+						onClick={ () => dispatch( { type: 'UNDO' } ) }
+					/>
+					<Button
+						type="text"
+						icon={ <RedoOutlined /> }
+						disabled={ 0 === state.history.future.length }
+						title={ __( 'Redo', 'pressprimer-certificate' ) }
+						aria-label={ __( 'Redo', 'pressprimer-certificate' ) }
+						onClick={ () => dispatch( { type: 'REDO' } ) }
+					/>
 					<span className="ppcert-designer__toolbar-spacer" />
+					<Button
+						type={ rulers ? 'primary' : 'text' }
+						ghost={ rulers }
+						icon={ <BorderOuterOutlined /> }
+						title={ __(
+							'Toggle rulers',
+							'pressprimer-certificate'
+						) }
+						aria-label={ __(
+							'Toggle rulers',
+							'pressprimer-certificate'
+						) }
+						onClick={ () => setRulers( ( r ) => ! r ) }
+					/>
 					<span className="ppcert-designer__token-toggle">
 						<Text type="secondary">
 							{ __( 'Tokens', 'pressprimer-certificate' ) }
@@ -212,7 +280,11 @@ export default function DesignerApp( { boot } ) {
 					</Sider>
 
 					<Content className="ppcert-designer__canvas-region">
-						<Canvas layout={ state.layout } zoom={ zoom } />
+						<Canvas
+							layout={ state.layout }
+							zoom={ zoom }
+							rulers={ rulers }
+						/>
 					</Content>
 
 					<Sider

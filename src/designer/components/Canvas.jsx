@@ -31,10 +31,14 @@ import {
 	marqueeHits,
 	moveElements,
 	pxToPt,
+	removeElements,
 	resizeBox,
 	resizeElement,
 	reorderElement,
+	snapDrag,
+	snapResize,
 } from '../schema/geometry';
+import Ruler, { RULER_PX } from './Ruler';
 
 const SAFE_MARGIN_PT = 24;
 const DRAG_THRESHOLD_PX = 3;
@@ -47,9 +51,10 @@ const FIT_MAX = 2;
  * @param {Object}          props        Props.
  * @param {Object}          props.layout Layout document.
  * @param {string | number} props.zoom   'fit' or a scale (0.5-2).
+ * @param {boolean}         props.rulers Show the point rulers.
  * @return {JSX.Element} Canvas surface.
  */
-export default function Canvas( { layout, zoom } ) {
+export default function Canvas( { layout, zoom, rulers = true } ) {
 	const { state, dispatch } = useDesignerStore();
 	const selection = state.selection;
 
@@ -78,7 +83,7 @@ export default function Canvas( { layout, zoom } ) {
 		}
 
 		const measure = () => {
-			const available = node.clientWidth;
+			const available = node.clientWidth - ( rulers ? RULER_PX : 0 );
 			const next = Math.min(
 				FIT_MAX,
 				Math.max( FIT_MIN, available / layout.page.width )
@@ -92,7 +97,7 @@ export default function Canvas( { layout, zoom } ) {
 		observer.observe( node );
 
 		return () => observer.disconnect();
-	}, [ layout ] );
+	}, [ layout, rulers ] );
 
 	// Active gesture: window-level move/up listeners. Layout effect, not
 	// passive: the listeners must exist before the browser processes the
@@ -115,12 +120,47 @@ export default function Canvas( { layout, zoom } ) {
 					Math.abs( dxPx ) >= DRAG_THRESHOLD_PX ||
 					Math.abs( dyPx ) >= DRAG_THRESHOLD_PX;
 
-				return {
-					...g,
-					moved,
-					dx: pxToPt( dxPx, g.scale ),
-					dy: pxToPt( dyPx, g.scale ),
-				};
+				let dx = pxToPt( dxPx, g.scale );
+				let dy = pxToPt( dyPx, g.scale );
+				let guides = [];
+
+				// Snapping (FR-002): alignment guides + 4pt grid on drag,
+				// grid on resize. Alt disables while held.
+				if ( moved && ! event.altKey ) {
+					if ( 'drag' === g.kind ) {
+						const primary = layout.elements.find(
+							( el ) => el.id === g.pressedId
+						);
+
+						if ( primary ) {
+							const others = layout.elements.filter(
+								( el ) => ! g.ids.includes( el.id )
+							);
+							const snapped = snapDrag(
+								primary,
+								dx,
+								dy,
+								others,
+								layout.page
+							);
+							dx = snapped.dx;
+							dy = snapped.dy;
+							guides = snapped.guides;
+						}
+					} else if ( 'resize' === g.kind ) {
+						const el = layout.elements.find(
+							( e ) => e.id === g.id
+						);
+
+						if ( el ) {
+							const snapped = snapResize( el, g.handle, dx, dy );
+							dx = snapped.dx;
+							dy = snapped.dy;
+						}
+					}
+				}
+
+				return { ...g, moved, dx, dy, guides };
 			} );
 		};
 
@@ -287,6 +327,20 @@ export default function Canvas( { layout, zoom } ) {
 	};
 
 	const onKeyDown = ( event ) => {
+		if ( 0 === selection.length ) {
+			return;
+		}
+
+		if ( 'Delete' === event.key || 'Backspace' === event.key ) {
+			event.preventDefault();
+			dispatch( {
+				type: 'APPLY_LAYOUT',
+				layout: removeElements( layout, selection ),
+			} );
+			dispatch( { type: 'SET_SELECTION', ids: [] } );
+			return;
+		}
+
 		const deltas = {
 			ArrowLeft: [ -1, 0 ],
 			ArrowRight: [ 1, 0 ],
@@ -294,7 +348,7 @@ export default function Canvas( { layout, zoom } ) {
 			ArrowDown: [ 0, 1 ],
 		};
 
-		if ( ! deltas[ event.key ] || 0 === selection.length ) {
+		if ( ! deltas[ event.key ] ) {
 			return;
 		}
 
@@ -325,11 +379,21 @@ export default function Canvas( { layout, zoom } ) {
 		} );
 	};
 
-	const onReorder = ( op ) => {
-		dispatch( {
-			type: 'APPLY_LAYOUT',
-			layout: reorderElement( layout, menu.id, op ),
-		} );
+	const onMenuAction = ( op ) => {
+		if ( 'delete' === op ) {
+			const ids = selection.includes( menu.id ) ? selection : [ menu.id ];
+			dispatch( {
+				type: 'APPLY_LAYOUT',
+				layout: removeElements( layout, ids ),
+			} );
+			dispatch( { type: 'SET_SELECTION', ids: [] } );
+		} else {
+			dispatch( {
+				type: 'APPLY_LAYOUT',
+				layout: reorderElement( layout, menu.id, op ),
+			} );
+		}
+
 		setMenu( null );
 	};
 
@@ -401,18 +465,40 @@ export default function Canvas( { layout, zoom } ) {
 			label: __( 'Bring to front', 'pressprimer-certificate' ),
 		},
 		{ key: 'back', label: __( 'Send to back', 'pressprimer-certificate' ) },
+		{ type: 'divider' },
+		{
+			key: 'delete',
+			danger: true,
+			label: __( 'Delete', 'pressprimer-certificate' ),
+		},
 	];
+
+	const activeGuides =
+		gesture && gesture.moved && gesture.guides ? gesture.guides : [];
 
 	return (
 		// eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- role="application" is the correct role for a keyboard-operated design canvas; arrow-key nudging lives here.
 		<div
-			className="ppcert-designer__surface"
+			className={
+				'ppcert-designer__surface' +
+				( rulers ? ' ppcert-designer__surface--rulers' : '' )
+			}
 			ref={ surfaceRef }
 			tabIndex={ 0 }
 			role="application"
 			aria-label={ __( 'Certificate canvas', 'pressprimer-certificate' ) }
 			onKeyDown={ onKeyDown }
 		>
+			{ rulers && (
+				<>
+					<div
+						className="ppcert-designer__ruler-corner"
+						style={ { width: RULER_PX, height: RULER_PX } }
+					/>
+					<Ruler axis="h" length={ width } scale={ scale } />
+					<Ruler axis="v" length={ height } scale={ scale } />
+				</>
+			) }
 			<div
 				className="ppcert-designer__scaler"
 				style={ { width: width * scale, height: height * scale } }
@@ -543,6 +629,25 @@ export default function Canvas( { layout, zoom } ) {
 							} }
 						/>
 					) }
+
+					{ activeGuides.map( ( guide ) => (
+						<div
+							key={ `${ guide.axis }-${ guide.at }` }
+							data-ppcert-guide={ guide.axis }
+							className={ `ppcert-designer__guide ppcert-designer__guide--${ guide.axis }` }
+							style={
+								'v' === guide.axis
+									? {
+											left: guide.at,
+											width: 1 / scale,
+									  }
+									: {
+											top: guide.at,
+											height: 1 / scale,
+									  }
+							}
+						/>
+					) ) }
 				</div>
 			</div>
 
@@ -552,7 +657,7 @@ export default function Canvas( { layout, zoom } ) {
 					trigger={ [] }
 					menu={ {
 						items: menuItems,
-						onClick: ( { key } ) => onReorder( key ),
+						onClick: ( { key } ) => onMenuAction( key ),
 					} }
 					onOpenChange={ ( open ) => {
 						if ( ! open ) {

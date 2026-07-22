@@ -182,6 +182,7 @@ function Harness() {
 	const { state, dispatch } = useDesignerStore();
 	const [ zoom, setZoom ] = useState( 1 );
 	const [ tokenView, setTokenView ] = useState( false );
+	const [ rulers, setRulers ] = useState( true );
 
 	useEffect( () => {
 		if ( state.layout ) {
@@ -205,6 +206,7 @@ function Harness() {
 		dispatch,
 		setZoom,
 		setTokenView,
+		setRulers,
 		seedAttachment: seedAttachmentUrl,
 	};
 
@@ -221,7 +223,11 @@ function Harness() {
 					<ElementPalette />
 				</div>
 				<div className="ppcert-harness__canvas">
-					<Canvas layout={ state.layout } zoom={ zoom } />
+					<Canvas
+						layout={ state.layout }
+						zoom={ zoom }
+						rulers={ rulers }
+					/>
 				</div>
 				<div className="ppcert-harness__panel">
 					<PropertiesPanel />

@@ -16,6 +16,10 @@ export const MIN_DIMENSION = 0.1;
 export const NUDGE_PT = 1;
 export const NUDGE_SHIFT_PT = 10;
 
+export const SNAP_GRID_PT = 4;
+export const SNAP_TOLERANCE_PT = 4;
+export const MAX_ELEMENTS = 100;
+
 /**
  * Round to the designer's 0.1pt storage precision.
  *
@@ -391,4 +395,136 @@ export function updateBackground( layout, patch ) {
 		...layout,
 		background: { ...( layout.background || {} ), ...patch },
 	};
+}
+
+/**
+ * Remove elements and renumber z 1..n (FR-008: removal is undoable).
+ *
+ * @param {Object}   layout Layout document.
+ * @param {string[]} ids    Element ids to remove.
+ * @return {Object} New layout.
+ */
+export function removeElements( layout, ids ) {
+	return {
+		...layout,
+		elements: layout.elements
+			.filter( ( element ) => ! ids.includes( element.id ) )
+			.map( ( element, index ) => ( { ...element, z: index + 1 } ) ),
+	};
+}
+
+/**
+ * Snap candidates for one axis of a box: leading edge, center, trailing
+ * edge.
+ *
+ * @param {number} start Leading edge position.
+ * @param {number} size  Box size on the axis.
+ * @return {number[]} [ leading, center, trailing ].
+ */
+function axisPoints( start, size ) {
+	return [ start, start + size / 2, start + size ];
+}
+
+/**
+ * Snap a dragged box against the other elements and the page (FR-002).
+ *
+ * Alignment targets are the other elements' edges/centers and the page
+ * center; within tolerance the delta adjusts to align exactly and a
+ * guide line is reported. With no alignment hit, the box's leading edge
+ * snaps to the 4pt grid. Alt disables all snapping (handled by the
+ * caller not calling this).
+ *
+ * @param {Object} box    The dragged element's box at its ORIGINAL
+ *                        position { x, y, w, h }.
+ * @param {number} dx     Proposed delta x in points.
+ * @param {number} dy     Proposed delta y in points.
+ * @param {Array}  others Other elements (excluded from dragging).
+ * @param {Object} page   { width, height }.
+ * @return {Object} { dx, dy, guides: [ { axis: 'v'|'h', at } ] }.
+ */
+export function snapDrag( box, dx, dy, others, page ) {
+	const guides = [];
+
+	const targetsX = [ page.width / 2 ];
+	const targetsY = [ page.height / 2 ];
+
+	others.forEach( ( el ) => {
+		targetsX.push( ...axisPoints( el.x, el.w ) );
+		targetsY.push( ...axisPoints( el.y, el.h ) );
+	} );
+
+	const snapAxis = ( start, size, delta, targets ) => {
+		const moved = axisPoints( start + delta, size );
+		let best = null;
+
+		moved.forEach( ( point, index ) => {
+			targets.forEach( ( target ) => {
+				const distance = Math.abs( point - target );
+
+				if (
+					distance <= SNAP_TOLERANCE_PT &&
+					( ! best || distance < best.distance )
+				) {
+					best = { distance, target, index };
+				}
+			} );
+		} );
+
+		if ( best ) {
+			// Align the matched point (edge or center) exactly.
+			const offsets = [ 0, size / 2, size ];
+			return {
+				delta: best.target - offsets[ best.index ] - start,
+				guide: best.target,
+			};
+		}
+
+		// Grid fallback: leading edge to the 4pt grid.
+		const snapped =
+			Math.round( ( start + delta ) / SNAP_GRID_PT ) * SNAP_GRID_PT;
+		return { delta: snapped - start, guide: null };
+	};
+
+	const x = snapAxis( box.x, box.w, dx, targetsX );
+	const y = snapAxis( box.y, box.h, dy, targetsY );
+
+	if ( null !== x.guide ) {
+		guides.push( { axis: 'v', at: x.guide } );
+	}
+	if ( null !== y.guide ) {
+		guides.push( { axis: 'h', at: y.guide } );
+	}
+
+	return { dx: x.delta, dy: y.delta, guides };
+}
+
+/**
+ * Snap a resize delta so the dragged edge lands on the 4pt grid.
+ *
+ * @param {Object} box    Original box { x, y, w, h }.
+ * @param {string} handle One of HANDLES.
+ * @param {number} dx     Proposed delta x in points.
+ * @param {number} dy     Proposed delta y in points.
+ * @return {Object} { dx, dy }.
+ */
+export function snapResize( box, handle, dx, dy ) {
+	const snapEdge = ( edge, delta ) =>
+		Math.round( ( edge + delta ) / SNAP_GRID_PT ) * SNAP_GRID_PT - edge;
+
+	let outX = dx;
+	let outY = dy;
+
+	if ( handle.includes( 'e' ) ) {
+		outX = snapEdge( box.x + box.w, dx );
+	} else if ( handle.includes( 'w' ) ) {
+		outX = snapEdge( box.x, dx );
+	}
+
+	if ( handle.includes( 's' ) ) {
+		outY = snapEdge( box.y + box.h, dy );
+	} else if ( handle.includes( 'n' ) ) {
+		outY = snapEdge( box.y, dy );
+	}
+
+	return { dx: outX, dy: outY };
 }
