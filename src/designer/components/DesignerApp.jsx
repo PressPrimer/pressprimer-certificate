@@ -12,6 +12,7 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import {
 	Layout,
+	Select,
 	Tabs,
 	Tag,
 	Typography,
@@ -37,6 +38,16 @@ const STATUS_COLORS = {
 	archived: 'orange',
 };
 
+const ZOOM_OPTIONS = [
+	{ value: 'fit', label: __( 'Fit width', 'pressprimer-certificate' ) },
+	{ value: 0.5, label: '50%' },
+	{ value: 0.75, label: '75%' },
+	{ value: 1, label: '100%' },
+	{ value: 1.25, label: '125%' },
+	{ value: 1.5, label: '150%' },
+	{ value: 2, label: '200%' },
+];
+
 /**
  * The shell.
  *
@@ -48,6 +59,7 @@ export default function DesignerApp( { boot } ) {
 	const { state, dispatch } = useDesignerStore();
 	const [ loading, setLoading ] = useState( boot.template_id > 0 );
 	const [ loadError, setLoadError ] = useState( '' );
+	const [ zoom, setZoom ] = useState( 'fit' );
 
 	// Deep link: ?action=edit&template_id=N loads directly.
 	useEffect( () => {
@@ -148,9 +160,18 @@ export default function DesignerApp( { boot } ) {
 					{ state.template.status }
 				</Tag>
 				<span className="ppcert-designer__toolbar-spacer" />
+				<Select
+					size="small"
+					value={ zoom }
+					onChange={ setZoom }
+					options={ ZOOM_OPTIONS }
+					popupMatchSelectWidth={ false }
+					aria-label={ __( 'Zoom', 'pressprimer-certificate' ) }
+					className="ppcert-designer__zoom"
+				/>
 				<Text type="secondary">
 					{ __(
-						'Editing, saving, and preview arrive in the next steps.',
+						'Saving and preview arrive in the next steps.',
 						'pressprimer-certificate'
 					) }
 				</Text>
@@ -166,7 +187,7 @@ export default function DesignerApp( { boot } ) {
 				</Sider>
 
 				<Content className="ppcert-designer__canvas-region">
-					<Canvas layout={ state.layout } />
+					<Canvas layout={ state.layout } zoom={ zoom } />
 				</Content>
 
 				<Sider

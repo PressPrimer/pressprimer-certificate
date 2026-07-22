@@ -47,3 +47,6 @@ composer.phar
 
 # OS
 Thumbs.db
+
+# Playwright designer harness build output
+/tests/playwright/designer/harness/dist/

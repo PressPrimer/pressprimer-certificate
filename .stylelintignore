@@ -1,0 +1,6 @@
+build/
+dist/
+vendor/
+node_modules/
+tests/playwright/designer/harness/dist/
+test-results/

@@ -3,9 +3,12 @@ import { defineConfig } from '@playwright/test';
 /**
  * PressPrimer Certificate — Playwright suite.
  *
- * Phase 2: the PDF-side parity harness (no browser involved — specs drive
- * the PHP renderer through a CLI bridge and compare rasters). Phase 3
- * adds the designer canvas projects, closing the canvas-vs-PDF loop
+ * parity-pdf: the PDF-side parity harness (no browser involved — specs
+ * drive the PHP renderer through a CLI bridge and compare rasters).
+ * designer-canvas: browser specs against the standalone canvas harness
+ * (tests/playwright/designer/harness — build with `npm run
+ * build:harness` first; `npm run test:designer` does both). Phase 3
+ * closes the canvas-vs-PDF parity loop on top of these projects
  * (Feature 007 FR-005 — a parity failure is a release blocker).
  */
 export default defineConfig( {
@@ -17,6 +20,14 @@ export default defineConfig( {
 		{
 			name: 'parity-pdf',
 			testMatch: /parity\/.*\.spec\.ts/,
+		},
+		{
+			name: 'designer-canvas',
+			testMatch: /designer\/.*\.spec\.ts/,
+			use: {
+				browserName: 'chromium',
+				viewport: { width: 1400, height: 900 },
+			},
 		},
 	],
 } );
