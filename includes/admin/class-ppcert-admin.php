@@ -158,6 +158,12 @@ class PressPrimer_Certificate_Admin {
 
 		wp_set_script_translations( 'ppcert-designer', 'pressprimer-certificate', PPCERT_PLUGIN_DIR . 'languages' );
 
+		// The image/signature/background pickers use the WP media modal
+		// (attachment IDs only - never raw file handling).
+		wp_enqueue_media();
+
+		$fonts = PressPrimer_Certificate_Layout_Validator::get_registered_fonts();
+
 		if ( file_exists( PPCERT_PLUGIN_DIR . 'build/style-designer.css' ) ) {
 			wp_enqueue_style(
 				'ppcert-designer',
@@ -165,24 +171,16 @@ class PressPrimer_Certificate_Admin {
 				[],
 				$asset['version']
 			);
+
+			// Canvas text must render the real bundled variants - the PDF
+			// uses them, and synthetic styling would break parity.
+			wp_add_inline_style( 'ppcert-designer', $this->build_font_face_css( $fonts ) );
 		}
 
 		// Read-only routing context; capability enforcement happens on
 		// every REST route, never from request parameters.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$template_id = isset( $_GET['template_id'] ) ? absint( wp_unslash( $_GET['template_id'] ) ) : 0;
-
-		$manifest_path = PPCERT_PLUGIN_DIR . 'fonts/manifest.json';
-		$font_manifest = [];
-
-		if ( is_readable( $manifest_path ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local bundled file.
-			$decoded = json_decode( (string) file_get_contents( $manifest_path ), true );
-
-			if ( is_array( $decoded ) ) {
-				$font_manifest = $decoded;
-			}
-		}
 
 		$starters = [];
 
@@ -200,7 +198,8 @@ class PressPrimer_Certificate_Admin {
 			[
 				'template_id'   => $template_id,
 				'list_url'      => add_query_arg( 'page', 'pressprimer-certificate', admin_url( 'admin.php' ) ),
-				'font_manifest' => $font_manifest,
+				'fonts'         => $fonts,
+				'element_types' => PressPrimer_Certificate_Element_Types::get_types(),
 				'starters'      => $starters,
 				'page_presets'  => [
 					'a4'     => [
@@ -214,6 +213,64 @@ class PressPrimer_Certificate_Admin {
 				],
 			]
 		);
+	}
+
+	/**
+	 * Build @font-face CSS for the registered fonts
+	 *
+	 * One rule per bundled variant so the canvas uses the same real
+	 * bold/italic files as the PDF renderer. Values come from the
+	 * validated manifest / font filter, sanitized per rule: family names
+	 * via sanitize_key(), URLs via esc_url().
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $fonts Map of font slug => family definition.
+	 * @return string CSS.
+	 */
+	private function build_font_face_css( array $fonts ) {
+		$variant_face = [
+			'regular'     => [ 400, 'normal' ],
+			'bold'        => [ 700, 'normal' ],
+			'italic'      => [ 400, 'italic' ],
+			'bold_italic' => [ 700, 'italic' ],
+		];
+
+		$css = '';
+
+		foreach ( $fonts as $slug => $family ) {
+			if ( empty( $family['variants'] ) || ! is_array( $family['variants'] ) ) {
+				continue;
+			}
+
+			foreach ( $variant_face as $variant => $face ) {
+				if ( empty( $family['variants'][ $variant ] ) ) {
+					continue;
+				}
+
+				$def = $family['variants'][ $variant ];
+
+				if ( ! empty( $def['url'] ) ) {
+					// Filter-registered fonts (Educator custom fonts)
+					// provide their own absolute URL.
+					$url = esc_url( $def['url'] );
+				} elseif ( ! empty( $def['ttf'] ) ) {
+					$url = esc_url( PPCERT_PLUGIN_URL . 'fonts/' . ltrim( (string) $def['ttf'], '/' ) );
+				} else {
+					continue;
+				}
+
+				$css .= sprintf(
+					'@font-face{font-family:"%1$s";src:url("%2$s") format("truetype");font-weight:%3$d;font-style:%4$s;font-display:block;}',
+					sanitize_key( $slug ),
+					$url,
+					(int) $face[0],
+					'italic' === $face[1] ? 'italic' : 'normal'
+				);
+			}
+		}
+
+		return $css;
 	}
 
 	/**

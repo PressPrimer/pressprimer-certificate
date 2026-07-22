@@ -1,10 +1,13 @@
 /**
  * Element palette (Feature 001 FR-003)
  *
- * Lists the seven 1.0 element types. Adding elements to the canvas
- * activates in Prompt 3.3 alongside the element components.
+ * Entries come from the ppcert_designer_element_types registry (boot
+ * data) so Educator 2.0 types appear without core changes. Clicking an
+ * entry adds an element with the registry's validator-clean defaults,
+ * centered with a small cascade, and selects it.
  *
- * @package
+ * merge_field activates with the registry routes (Prompt 3.4);
+ * background edits the document root via the properties panel.
  */
 
 import { __ } from '@wordpress/i18n';
@@ -17,19 +20,23 @@ import {
 	BorderOutlined,
 	QrcodeOutlined,
 	BgColorsOutlined,
+	AppstoreOutlined,
 } from '@ant-design/icons';
+import { useDesignerStore } from '../hooks/useDesignerStore';
+import { getBoot } from '../boot';
+import { addElement, generateElementId, roundPt } from '../schema/geometry';
 
 const { Text } = Typography;
 
-const TYPES = [
-	{ key: 'text', icon: <FontSizeOutlined />, labelKey: 'Text' },
-	{ key: 'merge_field', icon: <TagOutlined />, labelKey: 'Merge Field' },
-	{ key: 'image', icon: <PictureOutlined />, labelKey: 'Image / Logo' },
-	{ key: 'signature', icon: <EditOutlined />, labelKey: 'Signature' },
-	{ key: 'shape', icon: <BorderOutlined />, labelKey: 'Line / Shape' },
-	{ key: 'qr', icon: <QrcodeOutlined />, labelKey: 'QR Code' },
-	{ key: 'background', icon: <BgColorsOutlined />, labelKey: 'Background' },
-];
+const ICONS = {
+	text: <FontSizeOutlined />,
+	merge_field: <TagOutlined />,
+	image: <PictureOutlined />,
+	signature: <EditOutlined />,
+	shape: <BorderOutlined />,
+	qr: <QrcodeOutlined />,
+	background: <BgColorsOutlined />,
+};
 
 /**
  * The palette.
@@ -37,6 +44,45 @@ const TYPES = [
  * @return {JSX.Element} Palette list.
  */
 export default function ElementPalette() {
+	const { state, dispatch } = useDesignerStore();
+	const types = Object.values( getBoot().element_types );
+
+	const onAdd = ( type ) => {
+		if ( ! state.layout ) {
+			return;
+		}
+
+		if ( 'background' === type.key ) {
+			// Background is a palette entry for UX only: it edits the
+			// document root. Clearing the selection surfaces the Page
+			// section (background controls) in the properties panel.
+			dispatch( { type: 'SET_SELECTION', ids: [] } );
+			return;
+		}
+
+		if ( ! type.default_box ) {
+			return;
+		}
+
+		const { page, elements } = state.layout;
+		const cascade = 12 * ( elements.length % 8 );
+		const element = {
+			id: generateElementId( elements.map( ( el ) => el.id ) ),
+			type: type.key,
+			x: roundPt( ( page.width - type.default_box.w ) / 2 + cascade ),
+			y: roundPt( ( page.height - type.default_box.h ) / 2 + cascade ),
+			w: type.default_box.w,
+			h: type.default_box.h,
+			props: { ...type.default_props },
+		};
+
+		dispatch( {
+			type: 'APPLY_LAYOUT',
+			layout: addElement( state.layout, element ),
+		} );
+		dispatch( { type: 'SET_SELECTION', ids: [ element.id ] } );
+	};
+
 	return (
 		<div className="ppcert-designer__palette-inner">
 			<Text type="secondary" className="ppcert-designer__panel-heading">
@@ -44,21 +90,39 @@ export default function ElementPalette() {
 			</Text>
 			<List
 				size="small"
-				dataSource={ TYPES }
-				renderItem={ ( type ) => (
-					<Tooltip
-						title={ __(
-							'Adding elements activates in an upcoming step.',
-							'pressprimer-certificate'
-						) }
-						placement="right"
-					>
-						<List.Item className="ppcert-designer__palette-item ppcert-designer__palette-item--inert">
-							{ type.icon }
-							<span>{ type.labelKey }</span>
+				dataSource={ types }
+				renderItem={ ( type ) => {
+					const inert = 'merge_field' === type.key;
+					const item = (
+						<List.Item
+							className={
+								'ppcert-designer__palette-item' +
+								( inert
+									? ' ppcert-designer__palette-item--inert'
+									: '' )
+							}
+							data-ppcert-palette={ type.key }
+							onClick={ inert ? undefined : () => onAdd( type ) }
+						>
+							{ ICONS[ type.key ] || <AppstoreOutlined /> }
+							<span>{ type.label }</span>
 						</List.Item>
-					</Tooltip>
-				) }
+					);
+
+					return inert ? (
+						<Tooltip
+							title={ __(
+								'Merge fields activate in an upcoming step.',
+								'pressprimer-certificate'
+							) }
+							placement="right"
+						>
+							{ item }
+						</Tooltip>
+					) : (
+						item
+					);
+				} }
 			/>
 		</div>
 	);

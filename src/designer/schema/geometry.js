@@ -285,3 +285,110 @@ export function cornersToRect( a, b ) {
 		h: Math.abs( a.y - b.y ),
 	};
 }
+
+/**
+ * Generate an element id: el_ + 8 lowercase alphanumerics (schema rule).
+ *
+ * @param {string[]} existing Ids already in the layout (collision guard).
+ * @return {string} New id.
+ */
+export function generateElementId( existing = [] ) {
+	const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+	let id = '';
+
+	do {
+		const bytes = new Uint8Array( 8 );
+		window.crypto.getRandomValues( bytes );
+
+		id = 'el_';
+		bytes.forEach( ( byte ) => {
+			id += alphabet[ byte % alphabet.length ];
+		} );
+	} while ( existing.includes( id ) );
+
+	return id;
+}
+
+/**
+ * Update one element's box fields (x/y/w/h), clamped. QR stays square:
+ * a change to w or h applies to both.
+ *
+ * @param {Object} layout Layout document.
+ * @param {string} id     Element id.
+ * @param {Object} patch  Partial { x, y, w, h }.
+ * @return {Object} New layout.
+ */
+export function updateElementBox( layout, id, patch ) {
+	return {
+		...layout,
+		elements: layout.elements.map( ( element ) => {
+			if ( element.id !== id ) {
+				return element;
+			}
+
+			const next = { ...element, ...patch };
+
+			if ( 'qr' === element.type ) {
+				if ( undefined !== patch.w ) {
+					next.h = patch.w;
+				} else if ( undefined !== patch.h ) {
+					next.w = patch.h;
+				}
+			}
+
+			return { ...next, ...clampBox( next, layout.page ) };
+		} ),
+	};
+}
+
+/**
+ * Patch one element's props. Returns a new layout.
+ *
+ * @param {Object} layout Layout document.
+ * @param {string} id     Element id.
+ * @param {Object} patch  Partial props.
+ * @return {Object} New layout.
+ */
+export function updateElementProps( layout, id, patch ) {
+	return {
+		...layout,
+		elements: layout.elements.map( ( element ) =>
+			element.id === id
+				? { ...element, props: { ...element.props, ...patch } }
+				: element
+		),
+	};
+}
+
+/**
+ * Append a new element on top (z = n+1), clamped to the page.
+ *
+ * @param {Object} layout  Layout document.
+ * @param {Object} element Element without z.
+ * @return {Object} New layout.
+ */
+export function addElement( layout, element ) {
+	const box = clampBox( element, layout.page );
+
+	return {
+		...layout,
+		elements: [
+			...layout.elements,
+			{ ...element, ...box, z: layout.elements.length + 1 },
+		],
+	};
+}
+
+/**
+ * Patch the document root background.
+ *
+ * @param {Object} layout Layout document.
+ * @param {Object} patch  Partial { color, attachment_id }.
+ * @return {Object} New layout.
+ */
+export function updateBackground( layout, patch ) {
+	return {
+		...layout,
+		background: { ...( layout.background || {} ), ...patch },
+	};
+}

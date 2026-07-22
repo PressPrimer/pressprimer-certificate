@@ -21,6 +21,8 @@ import {
 import { __ } from '@wordpress/i18n';
 import { Dropdown } from 'antd';
 import { useDesignerStore } from '../hooks/useDesignerStore';
+import { getElementComponent } from '../elements';
+import { useAttachmentUrl } from '../hooks/useAttachment';
 import {
 	HANDLES,
 	NUDGE_PT,
@@ -38,89 +40,6 @@ const SAFE_MARGIN_PT = 24;
 const DRAG_THRESHOLD_PX = 3;
 const FIT_MIN = 0.5;
 const FIT_MAX = 2;
-
-/**
- * Minimal element rendering for the 3.2 canvas (per-type components in 3.3).
- *
- * @param {Object} props         Props.
- * @param {Object} props.element Clean element.
- * @param {Object} props.box     Visual box (may differ mid-gesture).
- * @return {JSX.Element} Element content.
- */
-function ElementContent( { element, box } ) {
-	switch ( element.type ) {
-		case 'text':
-		case 'merge_field': {
-			const p = element.props;
-			return (
-				<div
-					className={
-						element.type === 'merge_field'
-							? 'ppcert-designer__el-merge'
-							: undefined
-					}
-					style={ {
-						width: box.w,
-						height: box.h,
-						color: p.color,
-						fontSize: p.font_size,
-						lineHeight: p.line_height,
-						fontWeight: p.bold ? 700 : 400,
-						fontStyle: p.italic ? 'italic' : 'normal',
-						textAlign: p.align,
-						overflow: 'hidden',
-					} }
-				>
-					{ element.type === 'merge_field' ? p.token : p.content }
-				</div>
-			);
-		}
-
-		case 'shape': {
-			const p = element.props;
-			return (
-				<div
-					style={ {
-						width: box.w,
-						height: box.h,
-						border:
-							p.stroke_width > 0
-								? `${ p.stroke_width }px solid ${ p.stroke_color }`
-								: 'none',
-						background: p.fill_color || 'transparent',
-						borderRadius: p.radius || 0,
-					} }
-				/>
-			);
-		}
-
-		case 'qr':
-			return (
-				<div
-					className="ppcert-designer__el-qr"
-					style={ {
-						width: box.w,
-						height: box.h,
-						background: element.props.dark_color,
-					} }
-				>
-					QR
-				</div>
-			);
-
-		case 'image':
-		case 'signature':
-		default:
-			return (
-				<div
-					className="ppcert-designer__el-media"
-					style={ { width: box.w, height: box.h } }
-				>
-					{ element.type }
-				</div>
-			);
-	}
-}
 
 /**
  * The canvas.
@@ -145,6 +64,10 @@ export default function Canvas( { layout, zoom } ) {
 	gestureRef.current = gesture;
 
 	const scale = 'fit' === zoom ? fitScale : zoom;
+
+	const { url: backgroundUrl } = useAttachmentUrl(
+		( layout && layout.background && layout.background.attachment_id ) || 0
+	);
 
 	// Fit-width: track the surface width and derive the scale.
 	useEffect( () => {
@@ -503,6 +426,11 @@ export default function Canvas( { layout, zoom } ) {
 						width,
 						height,
 						background: layout.background?.color || '#ffffff',
+						backgroundImage: backgroundUrl
+							? `url("${ backgroundUrl }")`
+							: undefined,
+						backgroundSize: 'cover',
+						backgroundPosition: 'center',
 						transform: `scale(${ scale })`,
 						transformOrigin: '0 0',
 					} }
@@ -517,6 +445,9 @@ export default function Canvas( { layout, zoom } ) {
 					{ ordered.map( ( element ) => {
 						const box = visualBox( element );
 						const isSelected = selection.includes( element.id );
+						const ElementContent = getElementComponent(
+							element.type
+						);
 
 						return (
 							/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- pointer-driven design surface; selection is keyboard-reachable via the surface wrapper. */

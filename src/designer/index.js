@@ -27,7 +27,8 @@ document.addEventListener( 'DOMContentLoaded', () => {
 		template_id: 0,
 		list_url: '',
 		starters: [],
-		font_manifest: {},
+		fonts: {},
+		element_types: {},
 		page_presets: {},
 	};
 
