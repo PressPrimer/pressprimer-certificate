@@ -368,7 +368,7 @@ class PPCert_Fake_WPDB {
 		}
 
 		// Certificate::find_duplicate - null source_ref variant.
-		if ( false !== strpos( $query, 'AND source_ref IS NULL' ) ) {
+		if ( false !== strpos( $query, 'WHERE recipient_id = %d AND template_id = %d' ) && false !== strpos( $query, 'AND source_ref IS NULL' ) ) {
 			return $this->filter_rows(
 				$rows,
 				static function ( $row ) use ( $args ) {
@@ -382,7 +382,7 @@ class PPCert_Fake_WPDB {
 		}
 
 		// Certificate::find_duplicate - source_ref variant.
-		if ( false !== strpos( $query, 'AND source_ref = %s' ) ) {
+		if ( false !== strpos( $query, 'WHERE recipient_id = %d AND template_id = %d' ) && false !== strpos( $query, 'AND source_ref = %s' ) ) {
 			return $this->filter_rows(
 				$rows,
 				static function ( $row ) use ( $args ) {
@@ -433,6 +433,39 @@ class PPCert_Fake_WPDB {
 						&& isset( $row['source_ref'] ) && $row['source_ref'] === $args[2]
 						&& 1 === (int) $row['is_active'];
 				}
+			);
+		}
+
+		// PPQ adapter sources: published quizzes by title.
+		if ( false !== strpos( $query, "WHERE status = 'published' AND title LIKE %s" ) ) {
+			$needle  = $this->like_to_substring( (string) $args[1] );
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $needle ) {
+					if ( ! isset( $row['status'] ) || 'published' !== $row['status'] ) {
+						return false;
+					}
+
+					return '' === $needle
+						|| false !== stripos( (string) $row['title'], $needle );
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return strcmp( (string) $a['title'], (string) $b['title'] );
+				}
+			);
+
+			return array_map(
+				static function ( $row ) {
+					return [
+						'id'    => $row['id'],
+						'title' => $row['title'],
+					];
+				},
+				array_slice( $matches, 0, 50 )
 			);
 		}
 

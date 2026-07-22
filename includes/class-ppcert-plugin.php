@@ -198,7 +198,23 @@ class PressPrimer_Certificate_Plugin {
 	 * @since 1.0.0
 	 */
 	private function init_integrations() {
-		// Intentionally empty until the adapter interface lands (Phase 1).
+		// Bundled adapters instantiate on ppcert_loaded (Feature 004
+		// FR-002); each register() call no-ops unless its source plugin
+		// is detected, so this list is inert on sites without them.
+		add_action(
+			'ppcert_loaded',
+			static function () {
+				$adapters = [
+					'PressPrimer_Certificate_PPQ_Adapter',
+				];
+
+				foreach ( $adapters as $adapter_class ) {
+					if ( class_exists( $adapter_class ) ) {
+						( new $adapter_class() )->register();
+					}
+				}
+			}
+		);
 	}
 
 	/**

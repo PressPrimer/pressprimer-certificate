@@ -649,6 +649,24 @@ if ( ! function_exists( 'wp_generate_password' ) ) {
 	}
 }
 
+if ( ! function_exists( 'mysql2date' ) ) {
+	/**
+	 * Stub: Format a LOCAL-time MySQL datetime (core semantics).
+	 *
+	 * Only non-ppcert values may pass through this (ppcert tables store
+	 * UTC and are formatted with get_date_from_gmt).
+	 *
+	 * @param string $format Date format.
+	 * @param string $date   MySQL datetime string.
+	 * @return string
+	 */
+	function mysql2date( $format, $date ) {
+		$timestamp = strtotime( (string) $date );
+
+		return false === $timestamp ? '' : gmdate( $format, $timestamp );
+	}
+}
+
 if ( ! function_exists( 'current_user_can' ) ) {
 	/**
 	 * Stub: Capability check.
