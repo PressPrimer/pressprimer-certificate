@@ -70,6 +70,15 @@ export function designerReducer( state, action ) {
 		case 'SET_SELECTION':
 			return { ...state, selection: action.ids };
 
+		case 'RENAME_TEMPLATE':
+			// Title persists with the next save (not part of layout
+			// history - renames are not undoable canvas operations).
+			return {
+				...state,
+				template: { ...state.template, title: action.title },
+				dirty: true,
+			};
+
 		case 'SET_TRIGGERS':
 			// Server truth (load or post-save adoption): not dirty.
 			return {

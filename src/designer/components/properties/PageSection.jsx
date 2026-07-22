@@ -1,19 +1,26 @@
 /**
- * Page section - shown with no selection; edits the document root
- * background (the Background palette entry routes here per FR-003).
+ * Page section - shown with no selection; edits the page preset (size +
+ * orientation) and the document root background (the Background palette
+ * entry routes here per FR-003).
  */
 
 import { __, sprintf } from '@wordpress/i18n';
-import { Button, Tooltip, Typography } from 'antd';
+import { Button, Segmented, Select, Tooltip, Typography } from 'antd';
 import { PictureOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDesignerStore } from '../../hooks/useDesignerStore';
-import { updateBackground } from '../../schema/geometry';
+import { updateBackground, updatePagePreset } from '../../schema/geometry';
 import { useAttachmentUrl } from '../../hooks/useAttachment';
 import { isMediaAvailable, openImagePicker } from '../../media';
+import { getBoot } from '../../boot';
 import ColorField from './ColorField';
 import PropRow from './PropRow';
 
 const { Text } = Typography;
+
+const SIZE_LABELS = {
+	a4: 'A4',
+	letter: __( 'Letter', 'pressprimer-certificate' ),
+};
 
 /**
  * The section.
@@ -54,21 +61,62 @@ export default function PageSection() {
 		</Button>
 	);
 
+	const presets = getBoot().page_presets;
+
+	const setPreset = ( size, orientation ) => {
+		dispatch( {
+			type: 'APPLY_LAYOUT',
+			layout: updatePagePreset( layout, size, orientation, presets ),
+		} );
+	};
+
 	return (
 		<div className="ppcert-designer__prop-section">
 			<Text type="secondary" className="ppcert-designer__panel-heading">
 				{ __( 'Page', 'pressprimer-certificate' ) }
 			</Text>
 
+			<PropRow label={ __( 'Size', 'pressprimer-certificate' ) }>
+				<Select
+					size="small"
+					value={ layout.page.size }
+					data-ppcert-prop="page-size"
+					popupMatchSelectWidth={ false }
+					onChange={ ( size ) =>
+						setPreset( size, layout.page.orientation )
+					}
+					options={ Object.keys( presets ).map( ( size ) => ( {
+						value: size,
+						label: SIZE_LABELS[ size ] || size.toUpperCase(),
+					} ) ) }
+				/>
+			</PropRow>
+
+			<PropRow label={ __( 'Layout', 'pressprimer-certificate' ) }>
+				<Segmented
+					size="small"
+					value={ layout.page.orientation }
+					data-ppcert-prop="page-orientation"
+					onChange={ ( orientation ) =>
+						setPreset( layout.page.size, orientation )
+					}
+					options={ [
+						{
+							value: 'landscape',
+							label: __( 'Landscape', 'pressprimer-certificate' ),
+						},
+						{
+							value: 'portrait',
+							label: __( 'Portrait', 'pressprimer-certificate' ),
+						},
+					] }
+				/>
+			</PropRow>
+
 			<Text type="secondary" className="ppcert-designer__page-info">
 				{ sprintf(
-					/* translators: 1: page size, 2: orientation, 3: width, 4: height */
-					__(
-						'%1$s %2$s — %3$s × %4$s pt',
-						'pressprimer-certificate'
-					),
-					( layout.page.size || '' ).toUpperCase(),
-					layout.page.orientation,
+					/* translators: 1: width, 2: height */
+					__( '%1$s × %2$s pt', 'pressprimer-certificate' ),
 					layout.page.width,
 					layout.page.height
 				) }

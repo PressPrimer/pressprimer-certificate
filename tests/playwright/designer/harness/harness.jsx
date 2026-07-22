@@ -127,7 +127,10 @@ window.ppcert_designer_data = {
 		},
 	},
 	starters: [],
-	page_presets: {},
+	page_presets: {
+		a4: { landscape: [ 842, 595 ], portrait: [ 595, 842 ] },
+		letter: { landscape: [ 792, 612 ], portrait: [ 612, 792 ] },
+	},
 };
 
 // Merge-field registry fixture (no REST in the harness) - a subset of

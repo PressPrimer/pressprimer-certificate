@@ -12,8 +12,8 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import {
 	Layout,
+	Segmented,
 	Select,
-	Switch,
 	Tabs,
 	Tag,
 	Typography,
@@ -95,6 +95,7 @@ export default function DesignerApp( { boot } ) {
 
 		saveTemplate( state.template.id, {
 			layout: state.layout,
+			title: state.template.title,
 			expected_updated_at: state.template.updated_at,
 			...extra,
 		} )
@@ -387,7 +388,26 @@ export default function DesignerApp( { boot } ) {
 					>
 						{ __( 'Templates', 'pressprimer-certificate' ) }
 					</Button>
-					<Text strong className="ppcert-designer__title">
+					<Text
+						strong
+						className="ppcert-designer__title"
+						editable={ {
+							tooltip: __(
+								'Rename template',
+								'pressprimer-certificate'
+							),
+							onChange: ( title ) => {
+								const clean = title.trim();
+
+								if ( clean && clean !== state.template.title ) {
+									dispatch( {
+										type: 'RENAME_TEMPLATE',
+										title: clean,
+									} );
+								}
+							},
+						} }
+					>
 						{ state.template.title }
 					</Text>
 					<Tag
@@ -428,20 +448,31 @@ export default function DesignerApp( { boot } ) {
 						) }
 						onClick={ () => setRulers( ( r ) => ! r ) }
 					/>
-					<span className="ppcert-designer__token-toggle">
-						<Text type="secondary">
-							{ __( 'Tokens', 'pressprimer-certificate' ) }
-						</Text>
-						<Switch
-							size="small"
-							checked={ tokenView }
-							onChange={ setTokenView }
-							aria-label={ __(
-								'Show raw merge tokens',
-								'pressprimer-certificate'
-							) }
-						/>
-					</span>
+					<Segmented
+						size="small"
+						value={ tokenView }
+						onChange={ setTokenView }
+						aria-label={ __(
+							'Merge field display',
+							'pressprimer-certificate'
+						) }
+						options={ [
+							{
+								value: false,
+								label: __(
+									'Samples',
+									'pressprimer-certificate'
+								),
+							},
+							{
+								value: true,
+								label: __(
+									'Tokens',
+									'pressprimer-certificate'
+								),
+							},
+						] }
+					/>
 					<Select
 						size="small"
 						value={ zoom }

@@ -58,10 +58,41 @@ window.ppcert_designer_data = {
 		},
 	},
 	starters: [],
-	page_presets: {},
+	page_presets: {
+		a4: { landscape: [ 842, 595 ], portrait: [ 595, 842 ] },
+		letter: { landscape: [ 792, 612 ], portrait: [ 612, 792 ] },
+	},
 };
 
-seedMergeFields( { groups: {}, fields: [] } );
+seedMergeFields( {
+	groups: { recipient: 'Recipient', certificate: 'Certificate' },
+	fields: [
+		{
+			key: 'recipient.full_name',
+			group: 'recipient',
+			label: 'Recipient Full Name',
+			sample: 'Jordan Rivera',
+		},
+		{
+			key: 'certificate.issue_date',
+			group: 'certificate',
+			label: 'Issue Date',
+			sample: 'June 12, 2026',
+		},
+		{
+			key: 'certificate.credential_id',
+			group: 'certificate',
+			label: 'Credential ID',
+			sample: '7Q4M-K9P2-XT3A',
+		},
+		{
+			key: 'certificate.issuer_name',
+			group: 'certificate',
+			label: 'Issuer',
+			sample: 'Sunrise Training Academy',
+		},
+	],
+} );
 seedMetaKeys( 'user', [] );
 
 /**

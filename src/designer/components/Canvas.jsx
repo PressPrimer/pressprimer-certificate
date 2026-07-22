@@ -35,12 +35,11 @@ import {
 	resizeBox,
 	resizeElement,
 	reorderElement,
+	SAFE_MARGIN_PT,
 	snapDrag,
-	snapResize,
 } from '../schema/geometry';
 import Ruler, { RULER_PX } from './Ruler';
 
-const SAFE_MARGIN_PT = 24;
 const DRAG_THRESHOLD_PX = 3;
 const FIT_MIN = 0.5;
 const FIT_MAX = 2;
@@ -146,16 +145,6 @@ export default function Canvas( { layout, zoom, rulers = true } ) {
 							dx = snapped.dx;
 							dy = snapped.dy;
 							guides = snapped.guides;
-						}
-					} else if ( 'resize' === g.kind ) {
-						const el = layout.elements.find(
-							( e ) => e.id === g.id
-						);
-
-						if ( el ) {
-							const snapped = snapResize( el, g.handle, dx, dy );
-							dx = snapped.dx;
-							dy = snapped.dy;
 						}
 					}
 				}

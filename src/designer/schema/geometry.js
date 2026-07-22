@@ -16,8 +16,8 @@ export const MIN_DIMENSION = 0.1;
 export const NUDGE_PT = 1;
 export const NUDGE_SHIFT_PT = 10;
 
-export const SNAP_GRID_PT = 4;
 export const SNAP_TOLERANCE_PT = 4;
+export const SAFE_MARGIN_PT = 24;
 export const MAX_ELEMENTS = 100;
 
 /**
@@ -430,9 +430,11 @@ function axisPoints( start, size ) {
  *
  * Alignment targets are the other elements' edges/centers and the page
  * center; within tolerance the delta adjusts to align exactly and a
- * guide line is reported. With no alignment hit, the box's leading edge
- * snaps to the 4pt grid. Alt disables all snapping (handled by the
- * caller not calling this).
+ * guide line is reported. The canvas NEVER snaps silently: no guide
+ * shown means the pointer delta applies untouched (UX decision, Ryan
+ * 2026-07-22 - the invisible 4pt grid fallback read as unexplained
+ * stickiness). Alt disables snapping entirely (handled by the caller
+ * not calling this).
  *
  * @param {Object} box    The dragged element's box at its ORIGINAL
  *                        position { x, y, w, h }.
@@ -445,8 +447,22 @@ function axisPoints( start, size ) {
 export function snapDrag( box, dx, dy, others, page ) {
 	const guides = [];
 
-	const targetsX = [ page.width / 2 ];
-	const targetsY = [ page.height / 2 ];
+	// Page structure targets (the Canva set): edges, the drawn
+	// safe-print margin, and the center lines.
+	const targetsX = [
+		0,
+		SAFE_MARGIN_PT,
+		page.width / 2,
+		page.width - SAFE_MARGIN_PT,
+		page.width,
+	];
+	const targetsY = [
+		0,
+		SAFE_MARGIN_PT,
+		page.height / 2,
+		page.height - SAFE_MARGIN_PT,
+		page.height,
+	];
 
 	others.forEach( ( el ) => {
 		targetsX.push( ...axisPoints( el.x, el.w ) );
@@ -479,10 +495,8 @@ export function snapDrag( box, dx, dy, others, page ) {
 			};
 		}
 
-		// Grid fallback: leading edge to the 4pt grid.
-		const snapped =
-			Math.round( ( start + delta ) / SNAP_GRID_PT ) * SNAP_GRID_PT;
-		return { delta: snapped - start, guide: null };
+		// No alignment match: the pointer delta applies untouched.
+		return { delta, guide: null };
 	};
 
 	const x = snapAxis( box.x, box.w, dx, targetsX );
@@ -499,32 +513,39 @@ export function snapDrag( box, dx, dy, others, page ) {
 }
 
 /**
- * Snap a resize delta so the dragged edge lands on the 4pt grid.
+ * Change the page preset (size + orientation), keeping elements valid.
  *
- * @param {Object} box    Original box { x, y, w, h }.
- * @param {string} handle One of HANDLES.
- * @param {number} dx     Proposed delta x in points.
- * @param {number} dy     Proposed delta y in points.
- * @return {Object} { dx, dy }.
+ * Element boxes re-clamp against the new page dimensions (the same
+ * ranges the validator enforces); elements keep their positions and may
+ * hang past a smaller page until the user repositions them.
+ *
+ * @param {Object} layout      Layout document.
+ * @param {string} size        'a4' | 'letter'.
+ * @param {string} orientation 'landscape' | 'portrait'.
+ * @param {Object} presets     Boot page_presets map.
+ * @return {Object} New layout.
  */
-export function snapResize( box, handle, dx, dy ) {
-	const snapEdge = ( edge, delta ) =>
-		Math.round( ( edge + delta ) / SNAP_GRID_PT ) * SNAP_GRID_PT - edge;
+export function updatePagePreset( layout, size, orientation, presets ) {
+	const preset = presets[ size ] && presets[ size ][ orientation ];
 
-	let outX = dx;
-	let outY = dy;
-
-	if ( handle.includes( 'e' ) ) {
-		outX = snapEdge( box.x + box.w, dx );
-	} else if ( handle.includes( 'w' ) ) {
-		outX = snapEdge( box.x, dx );
+	if ( ! preset ) {
+		return layout;
 	}
 
-	if ( handle.includes( 's' ) ) {
-		outY = snapEdge( box.y + box.h, dy );
-	} else if ( handle.includes( 'n' ) ) {
-		outY = snapEdge( box.y, dy );
-	}
+	const page = {
+		...layout.page,
+		size,
+		orientation,
+		width: preset[ 0 ],
+		height: preset[ 1 ],
+	};
 
-	return { dx: outX, dy: outY };
+	return {
+		...layout,
+		page,
+		elements: layout.elements.map( ( element ) => ( {
+			...element,
+			...clampBox( element, page ),
+		} ) ),
+	};
 }

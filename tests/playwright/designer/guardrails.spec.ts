@@ -45,13 +45,13 @@ async function centerOf( page: Page, id: string ) {
 }
 
 test.describe( 'guardrails', () => {
-	test( 'drag snaps to the 4pt grid when no guide matches', async ( {
+	test( 'drag with no alignment match applies the exact pointer delta', async ( {
 		page,
 	} ) => {
 		await boot( page );
 
-		// +39/+18 lands off-grid (160? proposed 160/114): the leading
-		// edge snaps to multiples of 4.
+		// No invisible grid (UX decision 2026-07-22): unless a guide is
+		// shown, the element lands exactly where the pointer puts it.
 		const from = await centerOf( page, TITLE.id );
 		await page.mouse.move( from.x, from.y );
 		await page.mouse.down();
@@ -59,28 +59,47 @@ test.describe( 'guardrails', () => {
 		await page.mouse.up();
 
 		const title = await getElement( page, TITLE.id );
-		expect( title.x % 4 ).toBe( 0 );
-		expect( title.y % 4 ).toBe( 0 );
-		expect( title.x ).toBe( 160 );
-		expect( title.y ).toBe( 116 );
+		expect( title.x ).toBe( TITLE.x + 39 );
+		expect( title.y ).toBe( TITLE.y + 18 );
 	} );
 
-	test( 'Alt disables snapping for the exact pointer delta', async ( {
+	test( 'Alt suppresses alignment locking near a target', async ( {
 		page,
 	} ) => {
 		await boot( page );
 
-		const from = await centerOf( page, TITLE.id );
+		// Without Alt this drag would lock the QR center to the page
+		// center (421); with Alt held it lands on the raw delta.
+		const from = await centerOf( page, QR.id );
 		await page.keyboard.down( 'Alt' );
 		await page.mouse.move( from.x, from.y );
 		await page.mouse.down();
-		await page.mouse.move( from.x + 37, from.y + 18, { steps: 5 } );
+		await page.mouse.move( from.x - 358, from.y, { steps: 8 } );
 		await page.mouse.up();
 		await page.keyboard.up( 'Alt' );
 
-		const title = await getElement( page, TITLE.id );
-		expect( title.x ).toBe( TITLE.x + 37 );
-		expect( title.y ).toBe( TITLE.y + 18 );
+		const qr = await getElement( page, QR.id );
+		expect( qr.x ).toBe( QR.x - 358 );
+		expect( qr.x + qr.w / 2 ).not.toBe( 421 );
+	} );
+
+	test( 'safe-margin line is a snap target with a visible guide', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		// Proposed left edge lands at 23pt - within tolerance of the
+		// drawn 24pt safe margin: it locks on with a guide.
+		const from = await centerOf( page, TITLE.id );
+		await page.mouse.move( from.x, from.y );
+		await page.mouse.down();
+		await page.mouse.move( from.x - 98, from.y, { steps: 8 } );
+
+		await expect( page.locator( '[data-ppcert-guide="v"]' ) ).toBeVisible();
+
+		await page.mouse.up();
+
+		expect( ( await getElement( page, TITLE.id ) ).x ).toBe( 24 );
 	} );
 
 	test( 'alignment guide appears and snaps the QR center to page center', async ( {
