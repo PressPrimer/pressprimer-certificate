@@ -7,9 +7,12 @@
  * centered with a small cascade, and selects it.
  *
  * Merge Field opens grouped registry fields (GET /ppcert/v1/merge-fields)
- * plus the user-meta picker; the source-meta picker activates once the
- * template has a trigger with a source (Prompt 3.7). Background edits
- * the document root via the properties panel.
+ * scoped to the template's staged trigger - source fields belong to the
+ * trigger's integration, and without a trigger the source section
+ * explains how to unlock them. The user-meta picker is always
+ * available; the source-meta picker activates once the staged trigger
+ * points at a post-backed source (Prompt 3.7). Background edits the
+ * document root via the properties panel.
  */
 
 import { useEffect, useState } from '@wordpress/element';
@@ -35,6 +38,7 @@ import {
 	roundPt,
 } from '../schema/geometry';
 import { loadMergeFields } from '../mergeFields';
+import { getTriggerTypes } from '../api';
 import MetaPickerModal from './MetaPickerModal';
 
 const { Text } = Typography;
@@ -59,12 +63,50 @@ export default function ElementPalette() {
 	const types = Object.values( getBoot().element_types );
 
 	const [ registry, setRegistry ] = useState( null );
+	const [ triggerTypes, setTriggerTypes ] = useState( [] );
 	const [ mergeOpen, setMergeOpen ] = useState( false );
 	const [ pickerOpen, setPickerOpen ] = useState( false );
+	const [ pickerScope, setPickerScope ] = useState( 'user' );
+
+	// Source fields follow the staged trigger (single in 1.0): the
+	// registry refetches whenever the template's trigger types change.
+	const triggers = state.triggers || [];
+	const scope = triggers
+		.map( ( trigger ) => trigger.trigger_type )
+		.sort()
+		.join( ',' );
 
 	useEffect( () => {
-		loadMergeFields().then( setRegistry );
+		let active = true;
+
+		loadMergeFields( '' === scope ? [] : scope.split( ',' ) ).then(
+			( data ) => active && setRegistry( data )
+		);
+
+		return () => {
+			active = false;
+		};
+	}, [ scope ] );
+
+	useEffect( () => {
+		getTriggerTypes().then( setTriggerTypes );
 	}, [] );
+
+	// The source-meta picker unlocks when the staged trigger points at a
+	// post-backed source (Feature 002 FR-004 / Prompt 3.7).
+	const postSourceTrigger = triggers.find( ( trigger ) => {
+		const type = triggerTypes.find(
+			( t ) => t.id === trigger.trigger_type
+		);
+
+		return (
+			type &&
+			Array.isArray( type.source_post_types ) &&
+			type.source_post_types.length > 0 &&
+			trigger.source_ref &&
+			/^\d+$/.test( String( trigger.source_ref ) )
+		);
+	} );
 
 	const atCap =
 		!! state.layout && state.layout.elements.length >= MAX_ELEMENTS;
@@ -144,6 +186,30 @@ export default function ElementPalette() {
 		return groups;
 	};
 
+	const hasSourceFields = groupedFields().some(
+		( group ) => 'source' === group.id
+	);
+
+	const sourceMetaButton = (
+		<button
+			type="button"
+			className="ppcert-designer__merge-item"
+			data-ppcert-merge-field="__source_meta"
+			disabled={ ! postSourceTrigger }
+			onClick={
+				postSourceTrigger
+					? () => {
+							setMergeOpen( false );
+							setPickerScope( 'post' );
+							setPickerOpen( true );
+					  }
+					: undefined
+			}
+		>
+			<span>{ __( 'Source meta…', 'pressprimer-certificate' ) }</span>
+		</button>
+	);
+
 	const mergeContent = (
 		<div className="ppcert-designer__merge-menu" data-ppcert-merge-menu>
 			{ groupedFields().map( ( group ) => (
@@ -173,6 +239,26 @@ export default function ElementPalette() {
 				</div>
 			) ) }
 
+			{ ! hasSourceFields && (
+				<div data-ppcert-merge-source-hint>
+					<Text
+						type="secondary"
+						className="ppcert-designer__panel-heading"
+					>
+						{ __( 'Source', 'pressprimer-certificate' ) }
+					</Text>
+					<Text
+						type="secondary"
+						className="ppcert-designer__merge-hint"
+					>
+						{ __(
+							'Add a trigger in the Award tab to unlock fields from your quiz or course plugin.',
+							'pressprimer-certificate'
+						) }
+					</Text>
+				</div>
+			) }
+
 			<div>
 				<Text
 					type="secondary"
@@ -186,6 +272,7 @@ export default function ElementPalette() {
 					data-ppcert-merge-field="__user_meta"
 					onClick={ () => {
 						setMergeOpen( false );
+						setPickerScope( 'user' );
 						setPickerOpen( true );
 					} }
 				>
@@ -194,23 +281,19 @@ export default function ElementPalette() {
 						{ __( 'Custom user meta…', 'pressprimer-certificate' ) }
 					</span>
 				</button>
-				<Tooltip
-					title={ __(
-						'Available once this template has an award trigger with a source.',
-						'pressprimer-certificate'
-					) }
-					placement="right"
-				>
-					<button
-						type="button"
-						className="ppcert-designer__merge-item"
-						disabled
+				{ postSourceTrigger ? (
+					sourceMetaButton
+				) : (
+					<Tooltip
+						title={ __(
+							'Available once this template has an award trigger with a source.',
+							'pressprimer-certificate'
+						) }
+						placement="right"
 					>
-						<span>
-							{ __( 'Source meta…', 'pressprimer-certificate' ) }
-						</span>
-					</button>
-				</Tooltip>
+						{ sourceMetaButton }
+					</Tooltip>
+				) }
 			</div>
 		</div>
 	);
@@ -282,9 +365,18 @@ export default function ElementPalette() {
 
 			<MetaPickerModal
 				open={ pickerOpen }
-				scope="user"
+				scope={ pickerScope }
+				postId={
+					'post' === pickerScope && postSourceTrigger
+						? parseInt( postSourceTrigger.source_ref, 10 )
+						: 0
+				}
 				onInsert={ ( key ) =>
-					insertToken( `{{recipient.meta.${ key }}}` )
+					insertToken(
+						'post' === pickerScope
+							? `{{source.meta.${ key }}}`
+							: `{{recipient.meta.${ key }}}`
+					)
 				}
 				onClose={ () => setPickerOpen( false ) }
 			/>

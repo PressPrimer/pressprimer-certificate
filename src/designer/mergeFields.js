@@ -10,22 +10,50 @@
 import apiFetch from '@wordpress/api-fetch';
 
 let registry = null;
+let registryScope = null;
 let registryPromise = null;
+let seeded = false;
 
 const metaKeyFixtures = { user: null, post: null };
 
 /**
- * Load the registry (cached).
+ * Scope cache key for a trigger-type list.
  *
+ * @param {Array|null} triggerTypes Type ids, or null for unscoped.
+ * @return {string|null} Cache key.
+ */
+function scopeKey( triggerTypes ) {
+	return Array.isArray( triggerTypes )
+		? [ ...triggerTypes ].sort().join( ',' )
+		: null;
+}
+
+/**
+ * Load the registry (cached per trigger scope).
+ *
+ * Passing an array scopes adapter-contributed source fields to those
+ * trigger types (an empty array = core fields only); null loads the
+ * unscoped registry. Changing scope refetches.
+ *
+ * @param {Array|null} triggerTypes The template's trigger type ids.
  * @return {Promise<Object>} { groups, fields }.
  */
-export function loadMergeFields() {
-	if ( registry ) {
+export function loadMergeFields( triggerTypes = null ) {
+	const key = scopeKey( triggerTypes );
+
+	if ( seeded || ( registry && registryScope === key ) ) {
 		return Promise.resolve( registry );
 	}
 
-	if ( ! registryPromise ) {
-		registryPromise = apiFetch( { path: '/ppcert/v1/merge-fields' } )
+	if ( ! registryPromise || registryScope !== key ) {
+		registryScope = key;
+		registryPromise = apiFetch( {
+			path:
+				'/ppcert/v1/merge-fields' +
+				( null === key
+					? ''
+					: `?trigger_types=${ encodeURIComponent( key ) }` ),
+		} )
 			.then( ( data ) => {
 				registry = data;
 				return registry;
@@ -49,13 +77,15 @@ export function getMergeFieldsSync() {
 }
 
 /**
- * Seed the registry (harness / tests).
+ * Seed the registry (harness / tests). A seeded registry answers every
+ * scope - specs that exercise scoping mock the REST route instead.
  *
  * @param {Object} data { groups, fields }.
  */
 export function seedMergeFields( data ) {
 	registry = data;
 	registryPromise = Promise.resolve( data );
+	seeded = true;
 }
 
 /**

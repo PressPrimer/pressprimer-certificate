@@ -99,6 +99,45 @@ class Test_Merge_Fields_REST extends TestCase {
 	}
 
 	/**
+	 * ?trigger_types scopes adapter fields and relabels the source group
+	 * with the trigger type's noun (Award tab review pass, 2026-07-22).
+	 *
+	 * @return void
+	 */
+	public function test_registry_scoping_by_trigger_types() {
+		$adapter = new PPCert_Test_Double_Adapter();
+		$adapter->register();
+
+		// Absent parameter: unscoped - the adapter field is offered.
+		$data = $this->controller->get_registry( new WP_REST_Request( [] ) )->get_data();
+		$this->assertContains( 'source.course_title', array_column( $data['fields'], 'key' ) );
+
+		// Scoped to no triggers (empty string): core fields only, and
+		// the source group keeps its generic label.
+		$data = $this->controller->get_registry(
+			new WP_REST_Request( [ 'trigger_types' => '' ] )
+		)->get_data();
+		$keys = array_column( $data['fields'], 'key' );
+		$this->assertNotContains( 'source.course_title', $keys );
+		$this->assertContains( 'recipient.display_name', $keys );
+		$this->assertSame( 'Source', $data['groups']['source'] );
+
+		// Scoped to the adapter's type: its fields return and the source
+		// group takes the type's noun.
+		$data = $this->controller->get_registry(
+			new WP_REST_Request( [ 'trigger_types' => 'double_lms' ] )
+		)->get_data();
+		$this->assertContains( 'source.course_title', array_column( $data['fields'], 'key' ) );
+		$this->assertSame( 'Course', $data['groups']['source'] );
+
+		// Scoped to some other type: the adapter's fields stay out.
+		$data = $this->controller->get_registry(
+			new WP_REST_Request( [ 'trigger_types' => 'unrelated_lms' ] )
+		)->get_data();
+		$this->assertNotContains( 'source.course_title', array_column( $data['fields'], 'key' ) );
+	}
+
+	/**
 	 * Every route requires ppcert_manage_templates.
 	 *
 	 * @return void

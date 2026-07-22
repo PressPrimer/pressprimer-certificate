@@ -164,6 +164,35 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Noun for this adapter's sources ("Quiz", "Course", "Assignment")
+	 *
+	 * Labels the Award tab's source line and the merge-field palette's
+	 * source group. Adapters override with a translated noun.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_source_group_label(): string {
+		return __( 'Source', 'pressprimer-certificate' );
+	}
+
+	/**
+	 * Post types this adapter's sources live in
+	 *
+	 * Empty when sources are not posts (PPQ quizzes live in a custom
+	 * table). Non-empty unlocks the designer's source-meta picker and
+	 * gates the post-meta REST route (Feature 002 TR-002).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string[]
+	 */
+	public function get_source_post_types(): array {
+		return [];
+	}
+
+	/**
 	 * Filter callback: contribute this adapter's trigger type entry
 	 *
 	 * Entry shape per HOOKS.md ppcert_register_trigger_types.
@@ -179,7 +208,9 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 		$types[ $this->get_id() ] = [
 			'id'                => $this->get_id(),
 			'label'             => $this->get_label(),
+			'source_label'      => $this->get_source_group_label(),
 			'source_picker'     => [ $this, 'get_sources' ],
+			'source_post_types' => $this->get_source_post_types(),
 			'conditions_schema' => $this->get_conditions_schema(),
 		];
 
@@ -202,6 +233,13 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 
 		foreach ( $this->get_merge_fields() as $group => $group_fields ) {
 			foreach ( (array) $group_fields as $field_key => $definition ) {
+				// Tag with the contributing trigger type so the designer
+				// palette can scope source fields to the template's
+				// trigger (Feature 002 registry scoping).
+				if ( is_array( $definition ) && ! isset( $definition['trigger_type'] ) ) {
+					$definition['trigger_type'] = $this->get_id();
+				}
+
 				$fields[ $group ][ $field_key ] = $definition;
 			}
 		}

@@ -53,11 +53,18 @@ class Test_Adapter_Interface extends TestCase {
 		$this->assertIsCallable( $entry['source_picker'] );
 		$this->assertArrayHasKey( 'min_score', $entry['conditions_schema'] );
 
-		// Merge fields flow through the shared filter, group-wise.
+		// Merge fields flow through the shared filter, group-wise, and
+		// are auto-tagged with the contributing trigger type so the
+		// designer palette can scope them to the template's trigger.
 		$fields = apply_filters( 'ppcert_register_merge_fields', [], 'designer' );
 		$this->assertArrayHasKey( 'source', $fields );
 		$this->assertArrayHasKey( 'course_title', $fields['source'] );
 		$this->assertSame( 'Introduction to Botany', $fields['source']['course_title']['sample'] );
+		$this->assertSame( 'double_lms', $fields['source']['course_title']['trigger_type'] );
+
+		// The registration glue exposes the source noun and post types.
+		$this->assertSame( 'Course', $types['double_lms']['source_label'] );
+		$this->assertSame( [ 'page' ], $types['double_lms']['source_post_types'] );
 	}
 
 	/**

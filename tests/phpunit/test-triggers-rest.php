@@ -104,7 +104,9 @@ class Test_Triggers_REST extends TestCase {
 		$this->assertCount( 1, $types );
 		$this->assertSame( 'double_lms', $types[0]['id'] );
 		$this->assertSame( 'Double LMS', $types[0]['label'] );
+		$this->assertSame( 'Course', $types[0]['source_label'] );
 		$this->assertTrue( $types[0]['has_sources'] );
+		$this->assertSame( [ 'page' ], $types[0]['source_post_types'] );
 
 		$schema = $types[0]['conditions_schema'];
 		$this->assertSame(
@@ -114,6 +116,14 @@ class Test_Triggers_REST extends TestCase {
 		$this->assertSame( 0.0, $schema['min_score']['min'] );
 		$this->assertSame( 100.0, $schema['min_score']['max'] );
 		$this->assertSame( [ 'full', 'lessons_only' ], $schema['mode']['options'] );
+
+		// The schema's help string reaches the client (condition
+		// tooltips); fields without help omit the key.
+		$this->assertSame(
+			'Leave blank to award on any passing score.',
+			$schema['min_score']['help']
+		);
+		$this->assertArrayNotHasKey( 'help', $schema['notify'] );
 
 		// Callables never serialize into the response.
 		$this->assertArrayNotHasKey( 'source_picker', $types[0] );
@@ -185,7 +195,7 @@ class Test_Triggers_REST extends TestCase {
 	}
 
 	/**
-	 * PUT is a replace-set: the new payload fully defines the rows.
+	 * PUT is a replace-set: the new payload fully defines the row.
 	 *
 	 * @return void
 	 */
@@ -196,14 +206,10 @@ class Test_Triggers_REST extends TestCase {
 					'trigger_type' => 'double_lms',
 					'source_ref'   => '101',
 				],
-				[
-					'trigger_type' => 'double_lms',
-					'source_ref'   => '102',
-				],
 			]
 		);
 
-		$this->assertCount( 2, $this->wpdb->rows( 'wp_ppcert_triggers' ) );
+		$this->assertCount( 1, $this->wpdb->rows( 'wp_ppcert_triggers' ) );
 
 		$response = $this->put_triggers(
 			[
@@ -219,14 +225,17 @@ class Test_Triggers_REST extends TestCase {
 		$this->assertCount( 1, $data );
 		$this->assertSame( '102', $data[0]['source_ref'] );
 		$this->assertFalse( $data[0]['is_active'] );
+		$this->assertCount( 1, $this->wpdb->rows( 'wp_ppcert_triggers' ) );
 	}
 
 	/**
-	 * Enrichment resolves sources and flags orphans and inert types.
+	 * 1.0 scope decision (2026-07-22): one trigger per template. The PUT
+	 * rejects a larger set outright - nothing is written - while the
+	 * model and issuance engine stay multi-trigger capable underneath.
 	 *
 	 * @return void
 	 */
-	public function test_enrichment_flags_orphans_and_inert_types() {
+	public function test_put_caps_at_one_trigger() {
 		$response = $this->put_triggers(
 			[
 				[
@@ -235,14 +244,52 @@ class Test_Triggers_REST extends TestCase {
 				],
 				[
 					'trigger_type' => 'double_lms',
+					'source_ref'   => '102',
+				],
+			]
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $response );
+		$this->assertSame( 'ppcert_too_many_triggers', $response->get_error_code() );
+		$this->assertSame( 400, $response->get_error_data()['status'] );
+		$this->assertCount( 0, $this->wpdb->rows( 'wp_ppcert_triggers' ) );
+	}
+
+	/**
+	 * Enrichment resolves sources and flags orphans and inert types.
+	 *
+	 * @return void
+	 */
+	public function test_enrichment_flags_orphans_and_inert_types() {
+		// Seeded at the model layer: the REST cap allows one trigger,
+		// but stored multi-trigger data (a future release, or rows
+		// written before the cap) must still enrich correctly on GET.
+		PressPrimer_Certificate_Trigger::replace_for_template(
+			$this->template_id,
+			[
+				[
+					'trigger_type' => 'double_lms',
+					'source_ref'   => '101',
+					'conditions'   => [],
+					'is_active'    => true,
+				],
+				[
+					'trigger_type' => 'double_lms',
 					'source_ref'   => '999',
+					'conditions'   => [],
+					'is_active'    => true,
 				],
 				[
 					'trigger_type' => 'vanished_lms',
 					'source_ref'   => '55',
 					'conditions'   => [ 'legacy_setting' => 'keep' ],
+					'is_active'    => true,
 				],
 			]
+		);
+
+		$response = $this->controller->get_triggers(
+			new WP_REST_Request( [ 'id' => $this->template_id ] )
 		);
 
 		$data = $response->get_data();

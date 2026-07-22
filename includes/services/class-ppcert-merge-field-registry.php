@@ -66,7 +66,10 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 	 * @since 1.0.0
 	 *
 	 * @param string $context 'designer' (palette building) or 'issue' (value resolution).
-	 * @param array  $args    Reserved for future scoping (e.g. trigger type).
+	 * @param array  $args    Optional scoping. 'trigger_types' (string[]) keeps
+	 *                        adapter-tagged fields only when their contributing
+	 *                        trigger type is listed; untagged (core) fields
+	 *                        always pass. Absent = no scoping.
 	 * @return array<string,array> Map of token key => field definition.
 	 */
 	public static function get_fields( $context, $args = [] ) {
@@ -99,6 +102,17 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 			if ( null !== $normalized ) {
 				$clean[ $normalized['key'] ] = $normalized;
 			}
+		}
+
+		if ( isset( $args['trigger_types'] ) && is_array( $args['trigger_types'] ) ) {
+			$scope = array_map( 'strval', $args['trigger_types'] );
+
+			$clean = array_filter(
+				$clean,
+				static function ( $field ) use ( $scope ) {
+					return '' === $field['trigger_type'] || in_array( $field['trigger_type'], $scope, true );
+				}
+			);
 		}
 
 		return $clean;
@@ -675,11 +689,14 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 		}
 
 		return [
-			'group'    => $field_group,
-			'key'      => $key,
-			'label'    => isset( $field['label'] ) ? (string) $field['label'] : $key,
-			'sample'   => isset( $field['sample'] ) && is_scalar( $field['sample'] ) ? (string) $field['sample'] : '',
-			'resolver' => isset( $field['resolver'] ) && is_callable( $field['resolver'] ) ? $field['resolver'] : null,
+			'group'        => $field_group,
+			'key'          => $key,
+			'label'        => isset( $field['label'] ) ? (string) $field['label'] : $key,
+			'sample'       => isset( $field['sample'] ) && is_scalar( $field['sample'] ) ? (string) $field['sample'] : '',
+			'resolver'     => isset( $field['resolver'] ) && is_callable( $field['resolver'] ) ? $field['resolver'] : null,
+			// '' = core field (always in scope); adapters tag their fields
+			// with their trigger type id for designer scoping.
+			'trigger_type' => isset( $field['trigger_type'] ) && is_string( $field['trigger_type'] ) ? $field['trigger_type'] : '',
 		];
 	}
 

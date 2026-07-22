@@ -358,18 +358,46 @@
 	gap: 8px;
 }
 
-.ppcert-designer__trigger-row {
+.ppcert-designer__trigger-card {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-top: 10px;
+	padding: 10px 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	background: #fafafa;
+}
+
+.ppcert-designer__trigger-card-head {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: 8px;
 }
 
-.ppcert-designer__trigger-main {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
+.ppcert-designer__trigger-title {
 	min-width: 0;
+	flex: 1;
+}
+
+.ppcert-designer__trigger-card-line {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	min-width: 0;
+	font-size: 12px;
+}
+
+.ppcert-designer__trigger-card-label {
+	flex: none;
+	font-size: 12px;
+}
+
+.ppcert-designer__trigger-card .ant-tag {
+	white-space: normal;
+	line-height: 1.4;
+	margin-inline-end: 0;
 }
 
 .ppcert-designer__trigger-actions {
@@ -377,6 +405,12 @@
 	align-items: center;
 	gap: 4px;
 	flex: none;
+}
+
+.ppcert-designer__trigger-help {
+	margin-left: 4px;
+	color: #9ca3af;
+	cursor: help;
 }
 
 .ppcert-designer__trigger-form {
@@ -396,6 +430,13 @@
 .ppcert-designer__trigger-manual {
 	font-size: 12px;
 	margin-top: 8px;
+}
+
+.ppcert-designer__merge-hint {
+	display: block;
+	max-width: 240px;
+	padding: 2px 8px 6px;
+	font-size: 12px;
 }
 
 .ppcert-designer__el-merge {

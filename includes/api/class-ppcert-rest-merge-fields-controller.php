@@ -74,6 +74,11 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_registry' ],
 				'permission_callback' => [ $this, 'can_manage' ],
+				'args'                => [
+					'trigger_types' => [
+						'sanitize_callback' => [ __CLASS__, 'sanitize_trigger_types' ],
+					],
+				],
 			]
 		);
 
@@ -137,6 +142,23 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 	}
 
 	/**
+	 * Sanitize the trigger_types scope: comma-separated type ids
+	 *
+	 * An empty string is a meaningful value ("scope to no triggers":
+	 * core fields only), distinct from an absent parameter (no scoping).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	public static function sanitize_trigger_types( $value ) {
+		$ids = array_filter( array_map( 'sanitize_key', explode( ',', (string) $value ) ) );
+
+		return implode( ',', $ids );
+	}
+
+	/**
 	 * GET /merge-fields - the designer registry (groups + fields)
 	 *
 	 * Resolvers are server-side callables and never serialize into the
@@ -148,9 +170,18 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_registry( $request ) {
+		// Absent parameter = unscoped registry; present (even empty) =
+		// scope adapter fields to the listed trigger types.
+		$scope_param = $request->get_param( 'trigger_types' );
+		$args        = [];
+
+		if ( null !== $scope_param ) {
+			$args['trigger_types'] = array_filter( explode( ',', (string) $scope_param ) );
+		}
+
 		$fields = [];
 
-		foreach ( PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' ) as $field ) {
+		foreach ( PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer', $args ) as $field ) {
 			$fields[] = [
 				'key'    => $field['key'],
 				'group'  => $field['group'],
@@ -159,9 +190,22 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 			];
 		}
 
+		$groups = PressPrimer_Certificate_Merge_Field_Registry::get_groups( 'designer' );
+
+		// Scoped to a single trigger type: label the source group with the
+		// type's own noun ("Quiz", "Course") so the palette reads in the
+		// user's terms. 1.0 templates carry at most one trigger.
+		if ( isset( $args['trigger_types'] ) && 1 === count( $args['trigger_types'] ) ) {
+			$type = PressPrimer_Certificate_Trigger_Registry::get_type( reset( $args['trigger_types'] ) );
+
+			if ( null !== $type && '' !== $type['source_label'] ) {
+				$groups['source'] = $type['source_label'];
+			}
+		}
+
 		return new WP_REST_Response(
 			[
-				'groups' => PressPrimer_Certificate_Merge_Field_Registry::get_groups( 'designer' ),
+				'groups' => $groups,
 				'fields' => $fields,
 			],
 			200

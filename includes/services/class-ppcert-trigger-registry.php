@@ -61,6 +61,9 @@ class PressPrimer_Certificate_Trigger_Registry {
 			$types[ $id ] = [
 				'id'                => $id,
 				'label'             => isset( $entry['label'] ) && is_string( $entry['label'] ) ? $entry['label'] : $id,
+				// Noun for the type's sources ("Quiz", "Course") - labels
+				// the Award tab source line and the palette source group.
+				'source_label'      => isset( $entry['source_label'] ) && is_string( $entry['source_label'] ) ? $entry['source_label'] : '',
 				'source_picker'     => isset( $entry['source_picker'] ) && is_callable( $entry['source_picker'] ) ? $entry['source_picker'] : null,
 				'conditions_schema' => isset( $entry['conditions_schema'] ) && is_array( $entry['conditions_schema'] ) ? $entry['conditions_schema'] : [],
 				// Optional: post types this trigger's sources live in.

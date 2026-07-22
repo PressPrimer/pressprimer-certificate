@@ -371,6 +371,57 @@ class Test_Merge_Field_Registry extends TestCase {
 	}
 
 	/**
+	 * Trigger-type scoping: adapter-tagged fields filter by
+	 * args['trigger_types']; untagged (core) fields always pass; no args
+	 * means no scoping (Award tab review pass, 2026-07-22).
+	 *
+	 * @return void
+	 */
+	public function test_trigger_type_scoping() {
+		add_filter(
+			'ppcert_register_merge_fields',
+			static function ( $fields ) {
+				$fields['source']['quiz_title']   = [
+					'key'          => 'source.quiz_title',
+					'label'        => 'Quiz Title',
+					'sample'       => 'Botany Quiz',
+					'trigger_type' => 'fake_quiz',
+				];
+				$fields['source']['course_title'] = [
+					'key'          => 'source.course_title',
+					'label'        => 'Course Title',
+					'sample'       => 'Botany 101',
+					'trigger_type' => 'fake_course',
+				];
+				return $fields;
+			}
+		);
+
+		// No args: everything registers (issue-time resolution path).
+		$all = PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' );
+		$this->assertArrayHasKey( 'source.quiz_title', $all );
+		$this->assertArrayHasKey( 'source.course_title', $all );
+
+		// Scoped to one type: only its fields plus core.
+		$scoped = PressPrimer_Certificate_Merge_Field_Registry::get_fields(
+			'designer',
+			[ 'trigger_types' => [ 'fake_quiz' ] ]
+		);
+		$this->assertArrayHasKey( 'source.quiz_title', $scoped );
+		$this->assertArrayNotHasKey( 'source.course_title', $scoped );
+		$this->assertArrayHasKey( 'recipient.display_name', $scoped );
+
+		// Scoped to no triggers: core only.
+		$core_only = PressPrimer_Certificate_Merge_Field_Registry::get_fields(
+			'designer',
+			[ 'trigger_types' => [] ]
+		);
+		$this->assertArrayNotHasKey( 'source.quiz_title', $core_only );
+		$this->assertArrayNotHasKey( 'source.course_title', $core_only );
+		$this->assertArrayHasKey( 'certificate.credential_id', $core_only );
+	}
+
+	/**
 	 * Token extraction: merge_field tokens only, braces stripped, unique,
 	 * in order of first appearance.
 	 *

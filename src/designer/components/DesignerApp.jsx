@@ -206,10 +206,20 @@ export default function DesignerApp( { boot } ) {
 			.finally( () => setPreviewing( false ) );
 	};
 
-	// Registry samples for merge-field canvas rendering (FR-004).
+	// Registry samples for merge-field canvas rendering (FR-004), scoped
+	// to the template's trigger like the palette: a token whose trigger
+	// was removed loses its sample and renders as its raw token - visible
+	// feedback that it will not resolve.
+	const triggerScope = ( state.triggers || [] )
+		.map( ( trigger ) => trigger.trigger_type )
+		.sort()
+		.join( ',' );
+
 	useEffect( () => {
-		loadMergeFields().then( () => setSamples( getSampleMap() ) );
-	}, [] );
+		loadMergeFields(
+			'' === triggerScope ? [] : triggerScope.split( ',' )
+		).then( () => setSamples( getSampleMap() ) );
+	}, [ triggerScope ] );
 
 	// Undo/redo + save shortcuts (FR-008/FR-007): Cmd/Ctrl+Z,
 	// Shift+Cmd/Ctrl+Z or Ctrl+Y, Cmd/Ctrl+S. Skipped while typing.

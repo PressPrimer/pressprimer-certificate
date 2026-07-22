@@ -184,6 +184,6 @@ test.describe( 'trigger panel', () => {
 		await page.click( '[data-ppcert-trigger-remove="0"]' );
 
 		expect( await getTriggersState( page ) ).toHaveLength( 0 );
-		await expect( page.getByText( 'No triggers yet.' ) ).toBeVisible();
+		await expect( page.getByText( 'No trigger yet.' ) ).toBeVisible();
 	} );
 } );

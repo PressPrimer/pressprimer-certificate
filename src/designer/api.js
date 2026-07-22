@@ -50,13 +50,28 @@ export function trashTemplate( id ) {
 	} );
 }
 
+let triggerTypesPromise = null;
+
 /**
  * Registered trigger types (available adapters only).
  *
- * @return {Promise<Array>} [ { id, label, has_sources, conditions_schema } ].
+ * Cached for the session: the palette and the Award tab both consume
+ * this, and the registered set only changes with plugin (de)activation.
+ *
+ * @return {Promise<Array>} [ { id, label, source_label, has_sources,
+ *                          source_post_types, conditions_schema } ].
  */
 export function getTriggerTypes() {
-	return apiFetch( { path: '/ppcert/v1/trigger-types' } );
+	if ( ! triggerTypesPromise ) {
+		triggerTypesPromise = apiFetch( {
+			path: '/ppcert/v1/trigger-types',
+		} ).catch( () => {
+			triggerTypesPromise = null;
+			return [];
+		} );
+	}
+
+	return triggerTypesPromise;
 }
 
 /**

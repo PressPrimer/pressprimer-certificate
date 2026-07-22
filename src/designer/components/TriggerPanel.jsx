@@ -1,17 +1,19 @@
 /**
  * Trigger panel - "Award this certificate when..." (Feature 001 FR-006)
  *
- * Lists this template's triggers with an add/edit flow: trigger type
- * (registered adapters only) -> source search (the adapter's
- * get_sources) -> conditions form generated from the adapter's schema
- * -> active toggle. Edits stage in the store (outside the undo stack,
- * FR-008) and persist with the toolbar Save.
+ * The template's single award trigger (1.0 scope decision: one trigger
+ * per certificate - duplicate the template to award it another way)
+ * with an add/edit flow: trigger type (registered adapters only) ->
+ * source search (the adapter's get_sources) -> conditions form
+ * generated from the adapter's schema -> active toggle. Edits stage in
+ * the store (outside the undo stack, FR-008) and persist with the
+ * toolbar Save.
  *
  * Manual issuance is always available and shown as copy, never as a
- * trigger row. With no adapters detected the empty state explains how
- * to unlock automatic awarding (Edge US-5). Rows whose source no
- * longer resolves - or whose adapter was deactivated - carry a warning
- * badge.
+ * trigger card. With no adapters detected the empty state explains how
+ * to unlock automatic awarding (Edge US-5). A card whose source no
+ * longer resolves - or whose adapter was deactivated - carries a
+ * warning badge.
  */
 
 import { useEffect, useState } from '@wordpress/element';
@@ -22,7 +24,6 @@ import {
 	Empty,
 	Input,
 	InputNumber,
-	List,
 	Modal,
 	Select,
 	Switch,
@@ -35,6 +36,7 @@ import {
 	EditOutlined,
 	DeleteOutlined,
 	WarningOutlined,
+	InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useDesignerStore } from '../hooks/useDesignerStore';
 import { getTriggerTypes, getTriggerSources } from '../api';
@@ -130,10 +132,60 @@ function ConditionField( { fieldKey, field, value, onChange } ) {
 		<div className="ppcert-designer__prop-row">
 			<span className="ppcert-designer__trigger-label">
 				{ field.label }
+				{ field.help && (
+					<Tooltip title={ field.help }>
+						<InfoCircleOutlined
+							className="ppcert-designer__trigger-help"
+							data-ppcert-condition-help={ fieldKey }
+						/>
+					</Tooltip>
+				) }
 			</span>
 			<span className="ppcert-designer__prop-control">{ control }</span>
 		</div>
 	);
+}
+
+/**
+ * Human-readable summary of a trigger's set conditions.
+ *
+ * Only values that deviate from the schema default appear - blank or
+ * default values mean "the integration's own behavior" and would read
+ * as noise; toggles contribute their label when on.
+ *
+ * @param {Object} trigger Trigger row.
+ * @param {Object} type    Its registered type (null when unavailable).
+ * @return {string[]} Summary lines.
+ */
+function conditionSummary( trigger, type ) {
+	if ( ! type ) {
+		return [];
+	}
+
+	const schema = type.conditions_schema || {};
+	const conditions = trigger.conditions || {};
+
+	return Object.keys( schema )
+		.map( ( key ) => {
+			const field = schema[ key ];
+			const value = conditions[ key ];
+
+			if (
+				null === value ||
+				undefined === value ||
+				'' === value ||
+				value === field.default
+			) {
+				return null;
+			}
+
+			if ( 'toggle' === field.type ) {
+				return value ? field.label : null;
+			}
+
+			return `${ field.label }: ${ value }`;
+		} )
+		.filter( Boolean );
 }
 
 /**
@@ -404,6 +456,21 @@ export default function TriggerPanel() {
 		);
 	}
 
+	const addButton = (
+		<Button
+			size="small"
+			icon={ <PlusOutlined /> }
+			disabled={ ! types || 0 === types.length || triggers.length > 0 }
+			data-ppcert-trigger-add
+			onClick={ () => {
+				setEditIndex( null );
+				setModalOpen( true );
+			} }
+		>
+			{ __( 'Add trigger', 'pressprimer-certificate' ) }
+		</Button>
+	);
+
 	return (
 		<div className="ppcert-designer__prop-section" data-ppcert-triggers>
 			<div className="ppcert-designer__trigger-head">
@@ -416,79 +483,68 @@ export default function TriggerPanel() {
 						'pressprimer-certificate'
 					) }
 				</Text>
-				<Button
-					size="small"
-					icon={ <PlusOutlined /> }
-					disabled={ ! types || 0 === types.length }
-					data-ppcert-trigger-add
-					onClick={ () => {
-						setEditIndex( null );
-						setModalOpen( true );
-					} }
-				>
-					{ __( 'Add trigger', 'pressprimer-certificate' ) }
-				</Button>
+				{ triggers.length > 0 ? (
+					<Tooltip
+						title={ __(
+							'Certificates award one way in this version. Duplicate the template to award it another way.',
+							'pressprimer-certificate'
+						) }
+					>
+						{ /* span: tooltips need events a disabled button eats */ }
+						<span>{ addButton }</span>
+					</Tooltip>
+				) : (
+					addButton
+				) }
 			</div>
 
 			{ 0 === triggers.length ? (
 				<Empty
 					image={ Empty.PRESENTED_IMAGE_SIMPLE }
 					description={ __(
-						'No triggers yet.',
+						'No trigger yet.',
 						'pressprimer-certificate'
 					) }
 				/>
 			) : (
-				<List
-					size="small"
-					dataSource={ triggers }
-					renderItem={ ( trigger, index ) => {
-						let warning = '';
+				triggers.map( ( trigger, index ) => {
+					let warning = '';
 
-						if ( ! trigger.type_available ) {
-							warning = __(
-								'The plugin providing this trigger is not active.',
-								'pressprimer-certificate'
-							);
-						} else if ( ! trigger.source_found ) {
-							warning = __(
-								'The source for this trigger no longer exists.',
-								'pressprimer-certificate'
-							);
-						}
+					if ( ! trigger.type_available ) {
+						warning = __(
+							'The plugin providing this trigger is not active.',
+							'pressprimer-certificate'
+						);
+					} else if ( ! trigger.source_found ) {
+						warning = __(
+							'The source for this trigger no longer exists.',
+							'pressprimer-certificate'
+						);
+					}
 
-						return (
-							<List.Item
-								className="ppcert-designer__trigger-row"
-								data-ppcert-trigger-row={ index }
-							>
-								<div className="ppcert-designer__trigger-main">
-									<div>
-										<Tag>{ trigger.type_label }</Tag>
-										{ warning && (
-											<Tooltip title={ warning }>
-												<Tag
-													color="warning"
-													icon={ <WarningOutlined /> }
-													data-ppcert-trigger-warning
-												>
-													{ __(
-														'Attention',
-														'pressprimer-certificate'
-													) }
-												</Tag>
-											</Tooltip>
-										) }
-									</div>
-									<Text ellipsis>
-										{ trigger.source_label ||
-											trigger.source_ref ||
-											__(
-												'Any source',
-												'pressprimer-certificate'
-											) }
-									</Text>
-								</div>
+					const type =
+						( types || [] ).find(
+							( t ) => t.id === trigger.trigger_type
+						) || null;
+					const summary = conditionSummary( trigger, type );
+					const sourceNoun =
+						( type && type.source_label ) ||
+						__( 'Source', 'pressprimer-certificate' );
+
+					return (
+						<div
+							key={ trigger.id || `staged-${ index }` }
+							className="ppcert-designer__trigger-card"
+							data-ppcert-trigger-row={ index }
+						>
+							<div className="ppcert-designer__trigger-card-head">
+								<Text
+									strong
+									ellipsis
+									className="ppcert-designer__trigger-title"
+								>
+									{ trigger.type_label }
+								</Text>
 								<div className="ppcert-designer__trigger-actions">
 									<Switch
 										size="small"
@@ -534,10 +590,57 @@ export default function TriggerPanel() {
 										}
 									/>
 								</div>
-							</List.Item>
-						);
-					} }
-				/>
+							</div>
+
+							{ warning && (
+								<Tag
+									color="warning"
+									icon={ <WarningOutlined /> }
+									data-ppcert-trigger-warning
+								>
+									{ warning }
+								</Tag>
+							) }
+
+							<div className="ppcert-designer__trigger-card-line">
+								<Text
+									type="secondary"
+									className="ppcert-designer__trigger-card-label"
+								>
+									{ sourceNoun }
+								</Text>
+								<Text ellipsis>
+									{ trigger.source_label ||
+										trigger.source_ref ||
+										__(
+											'Any source',
+											'pressprimer-certificate'
+										) }
+								</Text>
+							</div>
+
+							{ summary.length > 0 && (
+								<div className="ppcert-designer__trigger-card-line">
+									<Text
+										type="secondary"
+										className="ppcert-designer__trigger-card-label"
+									>
+										{ __(
+											'Conditions',
+											'pressprimer-certificate'
+										) }
+									</Text>
+									<Text
+										ellipsis
+										data-ppcert-trigger-conditions={ index }
+									>
+										{ summary.join( ' · ' ) }
+									</Text>
+								</div>
+							) }
+						</div>
+					);
+				} )
 			) }
 
 			{ manualNote }

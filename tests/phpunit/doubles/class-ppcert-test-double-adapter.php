@@ -134,6 +134,7 @@ class PPCert_Test_Double_Adapter extends PressPrimer_Certificate_LMS_Adapter {
 			'min_score' => [
 				'type'    => 'number',
 				'label'   => 'Minimum score (%)',
+				'help'    => 'Leave blank to award on any passing score.',
 				'min'     => 0,
 				'max'     => 100,
 				'default' => null,
@@ -164,5 +165,23 @@ class PPCert_Test_Double_Adapter extends PressPrimer_Certificate_LMS_Adapter {
 	 */
 	public function get_label(): string {
 		return 'Double LMS';
+	}
+
+	/**
+	 * Source noun override.
+	 *
+	 * @return string
+	 */
+	public function get_source_group_label(): string {
+		return 'Course';
+	}
+
+	/**
+	 * Post-backed sources (unlocks the source-meta picker in tests).
+	 *
+	 * @return string[]
+	 */
+	public function get_source_post_types(): array {
+		return [ 'page' ];
 	}
 }

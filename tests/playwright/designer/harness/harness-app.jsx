@@ -20,10 +20,7 @@ import {
 	useDesignerStore,
 } from '../../../../src/designer/hooks/useDesignerStore';
 import DesignerApp from '../../../../src/designer/components/DesignerApp';
-import {
-	seedMergeFields,
-	seedMetaKeys,
-} from '../../../../src/designer/mergeFields';
+import { seedMetaKeys } from '../../../../src/designer/mergeFields';
 import { getBoot } from '../../../../src/designer/boot';
 
 const STORAGE_KEY = 'ppcert_harness_template';
@@ -49,6 +46,22 @@ window.ppcert_designer_data = {
 				italic: false,
 			},
 		},
+		merge_field: {
+			key: 'merge_field',
+			label: 'Merge Field',
+			icon: 'merge_field',
+			default_box: { w: 260, h: 28 },
+			default_props: {
+				token: '{{recipient.display_name}}',
+				font_family: 'source-sans-3',
+				font_size: 16,
+				color: '#1f2937',
+				align: 'left',
+				line_height: 1.2,
+				bold: false,
+				italic: false,
+			},
+		},
 		background: {
 			key: 'background',
 			label: 'Background',
@@ -64,36 +77,60 @@ window.ppcert_designer_data = {
 	},
 };
 
-seedMergeFields( {
-	groups: { recipient: 'Recipient', certificate: 'Certificate' },
-	fields: [
-		{
-			key: 'recipient.full_name',
-			group: 'recipient',
-			label: 'Recipient Full Name',
-			sample: 'Jordan Rivera',
-		},
-		{
-			key: 'certificate.issue_date',
-			group: 'certificate',
-			label: 'Issue Date',
-			sample: 'June 12, 2026',
-		},
-		{
-			key: 'certificate.credential_id',
-			group: 'certificate',
-			label: 'Credential ID',
-			sample: '7Q4M-K9P2-XT3A',
-		},
-		{
-			key: 'certificate.issuer_name',
-			group: 'certificate',
-			label: 'Issuer',
-			sample: 'Sunrise Training Academy',
-		},
-	],
-} );
+// Registry fixtures: core fields are untagged; source fields carry the
+// contributing trigger type (mirrors the server's adapter tagging). The
+// /merge-fields mock below scopes them by trigger_types - specs
+// exercise the real client scoping, so seedMergeFields is NOT used.
+const REGISTRY_FIELDS = [
+	{
+		key: 'recipient.full_name',
+		group: 'recipient',
+		label: 'Recipient Full Name',
+		sample: 'Jordan Rivera',
+		trigger_type: '',
+	},
+	{
+		key: 'certificate.issue_date',
+		group: 'certificate',
+		label: 'Issue Date',
+		sample: 'June 12, 2026',
+		trigger_type: '',
+	},
+	{
+		key: 'certificate.credential_id',
+		group: 'certificate',
+		label: 'Credential ID',
+		sample: '7Q4M-K9P2-XT3A',
+		trigger_type: '',
+	},
+	{
+		key: 'certificate.issuer_name',
+		group: 'certificate',
+		label: 'Issuer',
+		sample: 'Sunrise Training Academy',
+		trigger_type: '',
+	},
+	{
+		key: 'source.course_title',
+		group: 'source',
+		label: 'Course Title',
+		sample: 'Advanced Botany',
+		trigger_type: 'double_lms',
+	},
+	{
+		key: 'source.completion_date',
+		group: 'source',
+		label: 'Completion Date',
+		sample: 'June 10, 2026',
+		trigger_type: 'double_lms',
+	},
+];
+
 seedMetaKeys( 'user', [] );
+seedMetaKeys( 'post', [
+	{ key: 'course_code', sample: 'BOT-301' },
+	{ key: 'instructor', sample: 'Dr. Moss' },
+] );
 
 /**
  * The stored template (localStorage), falling back to the starter.
@@ -157,11 +194,14 @@ const DOUBLE_SOURCES = [
 const DOUBLE_TYPE = {
 	id: 'double_lms',
 	label: 'Double LMS',
+	source_label: 'Course',
 	has_sources: true,
+	source_post_types: [ 'page' ],
 	conditions_schema: {
 		min_score: {
 			type: 'number',
 			label: 'Minimum score (%)',
+			help: 'Leave blank to award on any passing score.',
 			min: 0,
 			max: 100,
 			default: null,
@@ -202,6 +242,37 @@ function enrichTrigger( trigger ) {
 apiFetch.use( ( options, next ) => {
 	const path = options.path || '';
 
+	if ( path.startsWith( '/ppcert/v1/merge-fields' ) ) {
+		// Mirror the controller: absent param = unscoped; present =
+		// adapter fields only for the listed types; a single scoped
+		// type relabels the source group with its noun.
+		const url = new URL( 'http://x' + path );
+		const scopeParam = url.searchParams.get( 'trigger_types' );
+		const scope =
+			null === scopeParam
+				? null
+				: scopeParam.split( ',' ).filter( Boolean );
+
+		const fields = REGISTRY_FIELDS.filter(
+			( field ) =>
+				null === scope ||
+				'' === field.trigger_type ||
+				scope.includes( field.trigger_type )
+		);
+
+		const groups = {
+			recipient: 'Recipient',
+			certificate: 'Certificate',
+			source: 'Source',
+		};
+
+		if ( scope && 1 === scope.length && scope[ 0 ] === DOUBLE_TYPE.id ) {
+			groups.source = DOUBLE_TYPE.source_label;
+		}
+
+		return Promise.resolve( { groups, fields } );
+	}
+
 	if ( path.startsWith( '/ppcert/v1/trigger-types' ) ) {
 		const url = new URL( 'http://x' + path );
 		const type = url.searchParams.get( 'type' );
@@ -222,6 +293,16 @@ apiFetch.use( ( options, next ) => {
 
 	if ( path.startsWith( '/ppcert/v1/templates/7/triggers' ) ) {
 		if ( 'PUT' === options.method ) {
+			// Server contract: one trigger per template in 1.0.
+			if ( ( options.data.triggers || [] ).length > 1 ) {
+				return Promise.reject( {
+					code: 'ppcert_too_many_triggers',
+					message:
+						'Certificates support a single award trigger in this version.',
+					data: { status: 400 },
+				} );
+			}
+
 			const rows = ( options.data.triggers || [] ).map( enrichTrigger );
 			window.localStorage.setItem( TRIGGERS_KEY, JSON.stringify( rows ) );
 			window.__ppcertLastTriggersPut = options.data.triggers;

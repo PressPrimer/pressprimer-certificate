@@ -118,7 +118,9 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 			$types[] = [
 				'id'                => $type['id'],
 				'label'             => $type['label'],
+				'source_label'      => $type['source_label'],
 				'has_sources'       => null !== $type['source_picker'],
+				'source_post_types' => $type['source_post_types'],
 				'conditions_schema' => self::schema_for_client( $type['conditions_schema'] ),
 			];
 		}
@@ -249,6 +251,17 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 			];
 		}
 
+		// 1.0 scope decision (2026-07-22): one trigger per template. The
+		// schema and issuance engine stay multi-trigger capable so a
+		// future release lifts this without a migration.
+		if ( count( $clean ) > 1 ) {
+			return new WP_Error(
+				'ppcert_too_many_triggers',
+				__( 'Certificates support a single award trigger in this version. Duplicate the template to award it another way.', 'pressprimer-certificate' ),
+				[ 'status' => 400 ]
+			);
+		}
+
 		$rows = PressPrimer_Certificate_Trigger::replace_for_template( (int) $template->id, $clean );
 
 		return new WP_REST_Response( self::enrich( $rows ), 200 );
@@ -353,6 +366,10 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 				'label'   => isset( $field['label'] ) ? (string) $field['label'] : $key,
 				'default' => array_key_exists( 'default', $field ) ? $field['default'] : null,
 			];
+
+			if ( isset( $field['help'] ) && is_string( $field['help'] ) && '' !== $field['help'] ) {
+				$entry['help'] = $field['help'];
+			}
 
 			if ( isset( $field['min'] ) && is_numeric( $field['min'] ) ) {
 				$entry['min'] = (float) $field['min'];

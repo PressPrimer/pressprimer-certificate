@@ -66,6 +66,17 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 	}
 
 	/**
+	 * Source noun for the Award tab and merge-field palette
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_source_group_label(): string {
+		return __( 'Quiz', 'pressprimer-certificate' );
+	}
+
+	/**
 	 * Availability: cheap constant/class checks (FR-002)
 	 *
 	 * PRESSPRIMER_QUIZ_VERSION is defined unconditionally in
@@ -154,6 +165,7 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 			'min_score' => [
 				'type'    => 'number',
 				'label'   => __( 'Minimum score (%)', 'pressprimer-certificate' ),
+				'help'    => __( 'Leave blank to award on any passing score. Enter a percentage to require more than the quiz\'s own pass mark.', 'pressprimer-certificate' ),
 				'min'     => 0,
 				'max'     => 100,
 				'default' => null,
