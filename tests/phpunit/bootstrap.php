@@ -579,6 +579,42 @@ if ( ! function_exists( 'get_current_user_id' ) ) {
 	}
 }
 
+if ( ! function_exists( 'current_user_can' ) ) {
+	/**
+	 * Stub: Capability check.
+	 *
+	 * $GLOBALS['ppcert_test_user_caps']: true grants everything
+	 * (default), false denies everything, an array grants only the
+	 * listed capabilities.
+	 *
+	 * @param string $capability Capability name.
+	 * @return bool
+	 */
+	function current_user_can( $capability ) {
+		$granted = isset( $GLOBALS['ppcert_test_user_caps'] ) ? $GLOBALS['ppcert_test_user_caps'] : true;
+
+		if ( is_array( $granted ) ) {
+			return in_array( $capability, $granted, true );
+		}
+
+		return (bool) $granted;
+	}
+}
+
+if ( ! function_exists( 'get_post' ) ) {
+	/**
+	 * Stub: Post lookup ($GLOBALS['ppcert_test_posts'][id] = object).
+	 *
+	 * @param int $post_id Post id.
+	 * @return object|null
+	 */
+	function get_post( $post_id ) {
+		$posts = isset( $GLOBALS['ppcert_test_posts'] ) ? $GLOBALS['ppcert_test_posts'] : [];
+
+		return isset( $posts[ (int) $post_id ] ) ? $posts[ (int) $post_id ] : null;
+	}
+}
+
 /**
  * Reset the in-memory transient store.
  *

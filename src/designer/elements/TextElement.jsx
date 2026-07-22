@@ -1,12 +1,9 @@
 /**
- * Text / merge_field canvas element (layout-schema `text`)
+ * Text canvas element (layout-schema `text`)
  *
  * Renders exactly per schema props. font-synthesis is disabled: bold
  * and italic only ever come from the real bundled variant files, the
  * same files the PDF renderer subsets (parity rule FR-005).
- *
- * Merge fields render their raw token until the registry routes land
- * (Prompt 3.4 replaces this with registry sample values).
  */
 
 /**
@@ -22,11 +19,6 @@ export default function TextElement( { element, box } ) {
 
 	return (
 		<div
-			className={
-				'merge_field' === element.type
-					? 'ppcert-designer__el-merge'
-					: undefined
-			}
 			style={ {
 				width: box.w,
 				height: box.h,
@@ -42,7 +34,7 @@ export default function TextElement( { element, box } ) {
 				whiteSpace: 'pre-wrap',
 			} }
 		>
-			{ 'merge_field' === element.type ? p.token : p.content }
+			{ p.content }
 		</div>
 	);
 }

@@ -7,13 +7,14 @@
  */
 
 import TextElement from './TextElement';
+import MergeFieldElement from './MergeFieldElement';
 import ShapeElement from './ShapeElement';
 import ImageElement from './ImageElement';
 import QrElement from './QrElement';
 
 const COMPONENTS = {
 	text: TextElement,
-	merge_field: TextElement,
+	merge_field: MergeFieldElement,
 	shape: ShapeElement,
 	image: ImageElement,
 	signature: ImageElement,

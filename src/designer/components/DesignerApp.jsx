@@ -13,6 +13,7 @@ import apiFetch from '@wordpress/api-fetch';
 import {
 	Layout,
 	Select,
+	Switch,
 	Tabs,
 	Tag,
 	Typography,
@@ -23,6 +24,8 @@ import {
 } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useDesignerStore } from '../hooks/useDesignerStore';
+import { DesignerViewContext } from '../view-context';
+import { loadMergeFields, getSampleMap } from '../mergeFields';
 import TemplateGallery from './TemplateGallery';
 import Canvas from './Canvas';
 import ElementPalette from './ElementPalette';
@@ -60,6 +63,13 @@ export default function DesignerApp( { boot } ) {
 	const [ loading, setLoading ] = useState( boot.template_id > 0 );
 	const [ loadError, setLoadError ] = useState( '' );
 	const [ zoom, setZoom ] = useState( 'fit' );
+	const [ tokenView, setTokenView ] = useState( false );
+	const [ samples, setSamples ] = useState( {} );
+
+	// Registry samples for merge-field canvas rendering (FR-004).
+	useEffect( () => {
+		loadMergeFields().then( () => setSamples( getSampleMap() ) );
+	}, [] );
 
 	// Deep link: ?action=edit&template_id=N loads directly.
 	useEffect( () => {
@@ -140,81 +150,100 @@ export default function DesignerApp( { boot } ) {
 	}
 
 	return (
-		<Layout className="ppcert-designer">
-			<Header className="ppcert-designer__toolbar">
-				<Button
-					type="text"
-					icon={ <ArrowLeftOutlined /> }
-					href={ boot.list_url }
-				>
-					{ __( 'Templates', 'pressprimer-certificate' ) }
-				</Button>
-				<Text strong className="ppcert-designer__title">
-					{ state.template.title }
-				</Text>
-				<Tag
-					color={
-						STATUS_COLORS[ state.template.status ] || 'default'
-					}
-				>
-					{ state.template.status }
-				</Tag>
-				<span className="ppcert-designer__toolbar-spacer" />
-				<Select
-					size="small"
-					value={ zoom }
-					onChange={ setZoom }
-					options={ ZOOM_OPTIONS }
-					popupMatchSelectWidth={ false }
-					aria-label={ __( 'Zoom', 'pressprimer-certificate' ) }
-					className="ppcert-designer__zoom"
-				/>
-				<Text type="secondary">
-					{ __(
-						'Saving and preview arrive in the next steps.',
-						'pressprimer-certificate'
-					) }
-				</Text>
-			</Header>
-
-			<Layout>
-				<Sider
-					width={ 200 }
-					theme="light"
-					className="ppcert-designer__palette"
-				>
-					<ElementPalette />
-				</Sider>
-
-				<Content className="ppcert-designer__canvas-region">
-					<Canvas layout={ state.layout } zoom={ zoom } />
-				</Content>
-
-				<Sider
-					width={ 300 }
-					theme="light"
-					className="ppcert-designer__sidebar"
-				>
-					<Tabs
-						defaultActiveKey="design"
-						items={ [
-							{
-								key: 'design',
-								label: __(
-									'Design',
-									'pressprimer-certificate'
-								),
-								children: <PropertiesPanel />,
-							},
-							{
-								key: 'award',
-								label: __( 'Award', 'pressprimer-certificate' ),
-								children: <TriggerPanel />,
-							},
-						] }
+		<DesignerViewContext.Provider value={ { tokenView, samples } }>
+			<Layout className="ppcert-designer">
+				<Header className="ppcert-designer__toolbar">
+					<Button
+						type="text"
+						icon={ <ArrowLeftOutlined /> }
+						href={ boot.list_url }
+					>
+						{ __( 'Templates', 'pressprimer-certificate' ) }
+					</Button>
+					<Text strong className="ppcert-designer__title">
+						{ state.template.title }
+					</Text>
+					<Tag
+						color={
+							STATUS_COLORS[ state.template.status ] || 'default'
+						}
+					>
+						{ state.template.status }
+					</Tag>
+					<span className="ppcert-designer__toolbar-spacer" />
+					<span className="ppcert-designer__token-toggle">
+						<Text type="secondary">
+							{ __( 'Tokens', 'pressprimer-certificate' ) }
+						</Text>
+						<Switch
+							size="small"
+							checked={ tokenView }
+							onChange={ setTokenView }
+							aria-label={ __(
+								'Show raw merge tokens',
+								'pressprimer-certificate'
+							) }
+						/>
+					</span>
+					<Select
+						size="small"
+						value={ zoom }
+						onChange={ setZoom }
+						options={ ZOOM_OPTIONS }
+						popupMatchSelectWidth={ false }
+						aria-label={ __( 'Zoom', 'pressprimer-certificate' ) }
+						className="ppcert-designer__zoom"
 					/>
-				</Sider>
+					<Text type="secondary">
+						{ __(
+							'Saving and preview arrive in the next steps.',
+							'pressprimer-certificate'
+						) }
+					</Text>
+				</Header>
+
+				<Layout>
+					<Sider
+						width={ 200 }
+						theme="light"
+						className="ppcert-designer__palette"
+					>
+						<ElementPalette />
+					</Sider>
+
+					<Content className="ppcert-designer__canvas-region">
+						<Canvas layout={ state.layout } zoom={ zoom } />
+					</Content>
+
+					<Sider
+						width={ 300 }
+						theme="light"
+						className="ppcert-designer__sidebar"
+					>
+						<Tabs
+							defaultActiveKey="design"
+							items={ [
+								{
+									key: 'design',
+									label: __(
+										'Design',
+										'pressprimer-certificate'
+									),
+									children: <PropertiesPanel />,
+								},
+								{
+									key: 'award',
+									label: __(
+										'Award',
+										'pressprimer-certificate'
+									),
+									children: <TriggerPanel />,
+								},
+							] }
+						/>
+					</Sider>
+				</Layout>
 			</Layout>
-		</Layout>
+		</DesignerViewContext.Provider>
 	);
 }

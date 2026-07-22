@@ -63,6 +63,12 @@ class PressPrimer_Certificate_Trigger_Registry {
 				'label'             => isset( $entry['label'] ) && is_string( $entry['label'] ) ? $entry['label'] : $id,
 				'source_picker'     => isset( $entry['source_picker'] ) && is_callable( $entry['source_picker'] ) ? $entry['source_picker'] : null,
 				'conditions_schema' => isset( $entry['conditions_schema'] ) && is_array( $entry['conditions_schema'] ) ? $entry['conditions_schema'] : [],
+				// Optional: post types this trigger's sources live in.
+				// The post-meta picker validates its post_id against the
+				// union of these (Feature 002 TR-002).
+				'source_post_types' => isset( $entry['source_post_types'] ) && is_array( $entry['source_post_types'] )
+					? array_values( array_filter( array_map( 'sanitize_key', $entry['source_post_types'] ) ) )
+					: [],
 			];
 		}
 

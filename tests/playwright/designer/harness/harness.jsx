@@ -27,6 +27,12 @@ import Canvas from '../../../../src/designer/components/Canvas';
 import ElementPalette from '../../../../src/designer/components/ElementPalette';
 import PropertiesPanel from '../../../../src/designer/components/PropertiesPanel';
 import { seedAttachmentUrl } from '../../../../src/designer/hooks/useAttachment';
+import {
+	seedMergeFields,
+	seedMetaKeys,
+	getSampleMap,
+} from '../../../../src/designer/mergeFields';
+import { DesignerViewContext } from '../../../../src/designer/view-context';
 
 // Boot fixture: installed before render - designer modules read boot
 // lazily via getBoot(), never at import time.
@@ -113,6 +119,60 @@ window.ppcert_designer_data = {
 	page_presets: {},
 };
 
+// Merge-field registry fixture (no REST in the harness) - a subset of
+// the core registry plus meta-key picker fixtures.
+seedMergeFields( {
+	groups: {
+		recipient: 'Recipient',
+		certificate: 'Certificate',
+		site: 'Site',
+	},
+	fields: [
+		{
+			key: 'recipient.display_name',
+			group: 'recipient',
+			label: 'Recipient Name',
+			sample: 'Jordan Rivera',
+		},
+		{
+			key: 'recipient.full_name',
+			group: 'recipient',
+			label: 'Recipient Full Name',
+			sample: 'Jordan Rivera',
+		},
+		{
+			key: 'recipient.email',
+			group: 'recipient',
+			label: 'Recipient Email',
+			sample: 'jordan@example.com',
+		},
+		{
+			key: 'certificate.credential_id',
+			group: 'certificate',
+			label: 'Credential ID',
+			sample: '7Q4M-K9P2-XT3A',
+		},
+		{
+			key: 'certificate.issue_date',
+			group: 'certificate',
+			label: 'Issue Date',
+			sample: 'July 22, 2026',
+		},
+		{
+			key: 'site.name',
+			group: 'site',
+			label: 'Site Name',
+			sample: 'Acme Academy',
+		},
+	],
+} );
+
+seedMetaKeys( 'user', [
+	{ key: 'license_no', sample: 'LIC-2201' },
+	{ key: 'membership_tier', sample: 'Gold' },
+	{ key: 'graduation_year', sample: '2026' },
+] );
+
 /**
  * Harness app: load the starter, expose the bridge, render the editor.
  *
@@ -121,6 +181,7 @@ window.ppcert_designer_data = {
 function Harness() {
 	const { state, dispatch } = useDesignerStore();
 	const [ zoom, setZoom ] = useState( 1 );
+	const [ tokenView, setTokenView ] = useState( false );
 
 	useEffect( () => {
 		if ( state.layout ) {
@@ -143,6 +204,7 @@ function Harness() {
 		getState: () => state,
 		dispatch,
 		setZoom,
+		setTokenView,
 		seedAttachment: seedAttachmentUrl,
 	};
 
@@ -151,17 +213,21 @@ function Harness() {
 	}
 
 	return (
-		<div className="ppcert-harness__editor">
-			<div className="ppcert-harness__palette">
-				<ElementPalette />
+		<DesignerViewContext.Provider
+			value={ { tokenView, samples: getSampleMap() } }
+		>
+			<div className="ppcert-harness__editor">
+				<div className="ppcert-harness__palette">
+					<ElementPalette />
+				</div>
+				<div className="ppcert-harness__canvas">
+					<Canvas layout={ state.layout } zoom={ zoom } />
+				</div>
+				<div className="ppcert-harness__panel">
+					<PropertiesPanel />
+				</div>
 			</div>
-			<div className="ppcert-harness__canvas">
-				<Canvas layout={ state.layout } zoom={ zoom } />
-			</div>
-			<div className="ppcert-harness__panel">
-				<PropertiesPanel />
-			</div>
-		</div>
+		</DesignerViewContext.Provider>
 	);
 }
 

@@ -27,6 +27,20 @@ class PPCert_Fake_WPDB {
 	public $prefix = 'wp_';
 
 	/**
+	 * Core meta table names, like the real thing.
+	 *
+	 * @var string
+	 */
+	public $usermeta = 'wp_usermeta';
+
+	/**
+	 * Core post meta table name.
+	 *
+	 * @var string
+	 */
+	public $postmeta = 'wp_postmeta';
+
+	/**
 	 * Last auto-increment id from insert().
 	 *
 	 * @var int
@@ -213,6 +227,35 @@ class PPCert_Fake_WPDB {
 	}
 
 	/**
+	 * wpdb::esc_like() - escape LIKE wildcards, like the real thing.
+	 *
+	 * @param string $text Raw text.
+	 * @return string Escaped text.
+	 */
+	public function esc_like( $text ) {
+		return addcslashes( (string) $text, '_%\\' );
+	}
+
+	/**
+	 * wpdb::get_var() - first column of the first matching row.
+	 *
+	 * @param string $prepared Encoded payload from prepare().
+	 * @return string|null Value or null.
+	 * @throws RuntimeException On an unsupported query shape.
+	 */
+	public function get_var( $prepared ) {
+		$matches = $this->run_query( $prepared );
+
+		if ( empty( $matches ) ) {
+			return null;
+		}
+
+		$first = array_values( (array) $matches[0] );
+
+		return isset( $first[0] ) ? (string) $first[0] : null;
+	}
+
+	/**
 	 * wpdb::get_row() - routes the known query shapes.
 	 *
 	 * @param string $prepared Encoded payload from prepare().
@@ -393,7 +436,134 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Merge-fields picker: distinct user meta keys.
+		if ( false !== strpos( $query, 'SELECT DISTINCT meta_key FROM %i' ) ) {
+			$needle = $this->like_to_substring( (string) $args[1] );
+			$keys   = [];
+
+			foreach ( $rows as $row ) {
+				$key = isset( $row['meta_key'] ) ? (string) $row['meta_key'] : '';
+
+				if ( '' === $key || '_' === $key[0] ) {
+					continue;
+				}
+
+				if ( '' !== $needle && false === strpos( $key, $needle ) ) {
+					continue;
+				}
+
+				$keys[ $key ] = true;
+			}
+
+			$keys = array_keys( $keys );
+			sort( $keys );
+			$keys = array_slice( $keys, 0, (int) $args[3] );
+
+			return array_map(
+				static function ( $key ) {
+					return [ 'meta_key' => $key ];
+				},
+				$keys
+			);
+		}
+
+		// Merge-fields picker: current-user sample value. Projected to the
+		// selected column so get_var() reads meta_value, not the row id.
+		if ( false !== strpos( $query, 'WHERE meta_key = %s AND user_id = %d' ) ) {
+			$matches = array_slice(
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return isset( $row['meta_key'], $row['user_id'] )
+							&& $row['meta_key'] === $args[1]
+							&& (int) $row['user_id'] === (int) $args[2]
+							&& '' !== (string) $row['meta_value'];
+					}
+				),
+				0,
+				1
+			);
+
+			return $this->project_column( $matches, 'meta_value' );
+		}
+
+		// Merge-fields picker: most-recent-user sample value.
+		if ( false !== strpos( $query, "WHERE meta_key = %s AND meta_value != '' ORDER BY user_id DESC" ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return isset( $row['meta_key'] )
+						&& $row['meta_key'] === $args[1]
+						&& '' !== (string) $row['meta_value'];
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return (int) $b['user_id'] <=> (int) $a['user_id'];
+				}
+			);
+
+			return $this->project_column( array_slice( $matches, 0, 1 ), 'meta_value' );
+		}
+
+		// Merge-fields picker: one post's meta keys + values.
+		if ( false !== strpos( $query, 'SELECT meta_key, meta_value FROM %i WHERE post_id = %d' ) ) {
+			$needle  = $this->like_to_substring( (string) $args[2] );
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args, $needle ) {
+					$key = isset( $row['meta_key'] ) ? (string) $row['meta_key'] : '';
+
+					if ( (int) $row['post_id'] !== (int) $args[1] || '' === $key || '_' === $key[0] ) {
+						return false;
+					}
+
+					return '' === $needle || false !== strpos( $key, $needle );
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return strcmp( (string) $a['meta_key'], (string) $b['meta_key'] );
+				}
+			);
+
+			return $matches;
+		}
+
 		throw new RuntimeException( 'PPCert_Fake_WPDB: unsupported query shape: ' . $query );
+	}
+
+	/**
+	 * Reduce a SQL LIKE pattern ('%needle%', esc_like-escaped) to its
+	 * substring needle.
+	 *
+	 * @param string $like LIKE pattern.
+	 * @return string Needle.
+	 */
+	private function like_to_substring( $like ) {
+		$needle = trim( $like, '%' );
+
+		return str_replace( [ '\\_', '\\%', '\\\\' ], [ '_', '%', '\\' ], $needle );
+	}
+
+	/**
+	 * Project rows down to one column (mirrors a SELECT column list).
+	 *
+	 * @param array[] $rows   Full rows.
+	 * @param string  $column Column to keep.
+	 * @return array[] Projected rows.
+	 */
+	private function project_column( $rows, $column ) {
+		return array_map(
+			static function ( $row ) use ( $column ) {
+				return [ $column => isset( $row[ $column ] ) ? $row[ $column ] : null ];
+			},
+			$rows
+		);
 	}
 
 	/**

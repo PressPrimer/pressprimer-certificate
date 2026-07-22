@@ -282,7 +282,11 @@ class Test_Hook_Contract extends TestCase {
 		$this->assertIsArray( $calls[0][0] );
 
 		$entry = $types['double_lms'];
-		$this->assertSame( [ 'id', 'label', 'source_picker', 'conditions_schema' ], array_keys( $entry ) );
+		$this->assertSame(
+			[ 'id', 'label', 'source_picker', 'conditions_schema', 'source_post_types' ],
+			array_keys( $entry ),
+			'Trigger type entry keys per HOOKS.md (source_post_types added for the post-meta picker, Prompt 3.4)'
+		);
 	}
 
 	/**
