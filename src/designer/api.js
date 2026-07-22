@@ -49,3 +49,52 @@ export function trashTemplate( id ) {
 		method: 'DELETE',
 	} );
 }
+
+/**
+ * Registered trigger types (available adapters only).
+ *
+ * @return {Promise<Array>} [ { id, label, has_sources, conditions_schema } ].
+ */
+export function getTriggerTypes() {
+	return apiFetch( { path: '/ppcert/v1/trigger-types' } );
+}
+
+/**
+ * Search a trigger type's sources.
+ *
+ * @param {string} type   Trigger type id.
+ * @param {string} search Search term.
+ * @return {Promise<Array>} [ { id, title } ].
+ */
+export function getTriggerSources( type, search = '' ) {
+	return apiFetch( {
+		path: `/ppcert/v1/trigger-types?type=${ encodeURIComponent(
+			type
+		) }&search=${ encodeURIComponent( search ) }`,
+	} );
+}
+
+/**
+ * Load a template's triggers (enriched rows).
+ *
+ * @param {number} id Template id.
+ * @return {Promise<Array>} Trigger rows.
+ */
+export function getTriggers( id ) {
+	return apiFetch( { path: `/ppcert/v1/templates/${ id }/triggers` } );
+}
+
+/**
+ * Replace a template's trigger set.
+ *
+ * @param {number} id       Template id.
+ * @param {Array}  triggers Trigger payloads.
+ * @return {Promise<Array>} The saved, enriched rows.
+ */
+export function saveTriggers( id, triggers ) {
+	return apiFetch( {
+		path: `/ppcert/v1/templates/${ id }/triggers`,
+		method: 'PUT',
+		data: { triggers },
+	} );
+}

@@ -349,6 +349,55 @@
 	gap: 6px;
 }
 
+/* Trigger panel */
+
+.ppcert-designer__trigger-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+}
+
+.ppcert-designer__trigger-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+}
+
+.ppcert-designer__trigger-main {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.ppcert-designer__trigger-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex: none;
+}
+
+.ppcert-designer__trigger-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding-top: 8px;
+}
+
+.ppcert-designer__trigger-label {
+	flex: none;
+	width: 110px;
+	font-size: 12px;
+	color: #6b7280;
+}
+
+.ppcert-designer__trigger-manual {
+	font-size: 12px;
+	margin-top: 8px;
+}
+
 .ppcert-designer__el-merge {
 	text-decoration: underline dashed rgba(107, 114, 128, 0.6);
 	text-underline-offset: 3px;

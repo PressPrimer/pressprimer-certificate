@@ -23,6 +23,9 @@ export const initialState = {
 	history: { past: [], future: [] },
 	dirty: false,
 	triggers: [],
+	// Trigger edits live outside the undo stack (FR-008) and save with
+	// the toolbar Save alongside the layout (FR-007).
+	triggersDirty: false,
 };
 
 /**
@@ -66,6 +69,22 @@ export function designerReducer( state, action ) {
 
 		case 'SET_SELECTION':
 			return { ...state, selection: action.ids };
+
+		case 'SET_TRIGGERS':
+			// Server truth (load or post-save adoption): not dirty.
+			return {
+				...state,
+				triggers: action.triggers,
+				triggersDirty: false,
+			};
+
+		case 'EDIT_TRIGGERS':
+			// Panel edits: pending until the next save.
+			return {
+				...state,
+				triggers: action.triggers,
+				triggersDirty: true,
+			};
 
 		case 'UNDO': {
 			if ( state.history.past.length === 0 ) {

@@ -34,7 +34,12 @@ import {
 import { useDesignerStore } from '../hooks/useDesignerStore';
 import { DesignerViewContext } from '../view-context';
 import { loadMergeFields, getSampleMap } from '../mergeFields';
-import { previewTemplate, saveTemplate } from '../api';
+import {
+	getTriggers,
+	previewTemplate,
+	saveTemplate,
+	saveTriggers,
+} from '../api';
 import TemplateGallery from './TemplateGallery';
 import Canvas from './Canvas';
 import ElementPalette from './ElementPalette';
@@ -101,6 +106,23 @@ export default function DesignerApp( { boot } ) {
 					layout: template.layout,
 				} );
 
+				// Triggers persist alongside the layout (FR-007): the
+				// replace-set response is the enriched server truth.
+				if ( state.triggersDirty ) {
+					return saveTriggers( template.id, state.triggers ).then(
+						( rows ) => {
+							dispatch( {
+								type: 'SET_TRIGGERS',
+								triggers: rows,
+							} );
+							return template;
+						}
+					);
+				}
+
+				return template;
+			} )
+			.then( () => {
 				message.success(
 					'published' === extra.status
 						? __( 'Template published.', 'pressprimer-certificate' )
@@ -235,9 +257,18 @@ export default function DesignerApp( { boot } ) {
 		return () => document.removeEventListener( 'keydown', onKeyDown );
 	}, [ dispatch ] );
 
+	// Triggers load once the template is known (deep link or create).
+	useEffect( () => {
+		if ( state.template && state.template.id > 0 ) {
+			getTriggers( state.template.id ).then( ( rows ) =>
+				dispatch( { type: 'SET_TRIGGERS', triggers: rows } )
+			);
+		}
+	}, [ state.template && state.template.id, dispatch ] ); // eslint-disable-line react-hooks/exhaustive-deps -- keyed by the id, not the object.
+
 	// Unsaved-changes navigation guard (FR-007).
 	useEffect( () => {
-		if ( ! state.dirty ) {
+		if ( ! state.dirty && ! state.triggersDirty ) {
 			return undefined;
 		}
 
@@ -250,7 +281,7 @@ export default function DesignerApp( { boot } ) {
 
 		return () =>
 			window.removeEventListener( 'beforeunload', onBeforeUnload );
-	}, [ state.dirty ] );
+	}, [ state.dirty, state.triggersDirty ] );
 
 	// Deep link: ?action=edit&template_id=N loads directly.
 	useEffect( () => {
@@ -339,7 +370,7 @@ export default function DesignerApp( { boot } ) {
 						icon={ <ArrowLeftOutlined /> }
 						onClick={ () => {
 							if (
-								state.dirty &&
+								( state.dirty || state.triggersDirty ) &&
 								// eslint-disable-next-line no-alert -- Intentional navigation guard (FR-007); matches core editor behavior.
 								! window.confirm(
 									__(
@@ -452,7 +483,9 @@ export default function DesignerApp( { boot } ) {
 						type="primary"
 						icon={ <SaveOutlined /> }
 						loading={ saving }
-						disabled={ ! state.dirty && ! saving }
+						disabled={
+							! state.dirty && ! state.triggersDirty && ! saving
+						}
 						onClick={ () => doSave() }
 						data-ppcert-action="save"
 					>

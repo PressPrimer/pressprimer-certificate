@@ -117,8 +117,89 @@ function mimicRebuild( layout ) {
 	return clean;
 }
 
+// Double-adapter fixtures (mirrors the PHPUnit test double).
+const DOUBLE_SOURCES = [
+	{ id: '101', title: 'Sample Course' },
+	{ id: '102', title: 'Advanced Botany' },
+];
+
+const DOUBLE_TYPE = {
+	id: 'double_lms',
+	label: 'Double LMS',
+	has_sources: true,
+	conditions_schema: {
+		min_score: {
+			type: 'number',
+			label: 'Minimum score (%)',
+			min: 0,
+			max: 100,
+			default: null,
+		},
+		notify: { type: 'toggle', label: 'Notify instructor', default: false },
+		mode: {
+			type: 'select',
+			label: 'Completion mode',
+			options: [ 'full', 'lessons_only' ],
+			default: 'full',
+		},
+		note: { type: 'text', label: 'Internal note', default: '' },
+	},
+};
+
+const TRIGGERS_KEY = 'ppcert_harness_triggers';
+
+/**
+ * Enrich a stored trigger the way the REST controller does.
+ *
+ * @param {Object} trigger Stored trigger.
+ * @return {Object} Enriched row.
+ */
+function enrichTrigger( trigger ) {
+	const source = DOUBLE_SOURCES.find(
+		( s ) => s.id === String( trigger.source_ref || '' )
+	);
+
+	return {
+		...trigger,
+		type_label: DOUBLE_TYPE.label,
+		type_available: true,
+		source_label: source ? source.title : '',
+		source_found: ! trigger.source_ref || !! source,
+	};
+}
+
 apiFetch.use( ( options, next ) => {
 	const path = options.path || '';
+
+	if ( path.startsWith( '/ppcert/v1/trigger-types' ) ) {
+		const url = new URL( 'http://x' + path );
+		const type = url.searchParams.get( 'type' );
+
+		if ( type ) {
+			const search = (
+				url.searchParams.get( 'search' ) || ''
+			).toLowerCase();
+			return Promise.resolve(
+				DOUBLE_SOURCES.filter( ( s ) =>
+					s.title.toLowerCase().includes( search )
+				)
+			);
+		}
+
+		return Promise.resolve( [ DOUBLE_TYPE ] );
+	}
+
+	if ( path.startsWith( '/ppcert/v1/templates/7/triggers' ) ) {
+		if ( 'PUT' === options.method ) {
+			const rows = ( options.data.triggers || [] ).map( enrichTrigger );
+			window.localStorage.setItem( TRIGGERS_KEY, JSON.stringify( rows ) );
+			window.__ppcertLastTriggersPut = options.data.triggers;
+			return Promise.resolve( rows );
+		}
+
+		const raw = window.localStorage.getItem( TRIGGERS_KEY );
+		return Promise.resolve( raw ? JSON.parse( raw ) : [] );
+	}
 
 	if ( ! path.startsWith( '/ppcert/v1/templates/7' ) ) {
 		return next( options );
