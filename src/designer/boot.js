@@ -14,6 +14,10 @@ const DEFAULTS = {
 	element_types: {},
 	starters: [],
 	page_presets: {},
+	// Manifest fitting thresholds (Feature 007 FR-004 parity contract).
+	fitting: { shrink_step_pt: 0.5, min_scale: 0.6 },
+	// Sample QR matrix from the PHP encoder (one encoder, ADR-004).
+	sample_qr: null,
 };
 
 /**

@@ -19,6 +19,7 @@ import { render, useEffect, useState } from '@wordpress/element';
 import manifest from '../../../../fonts/manifest.json';
 import starter from '../../../../templates/starter-formal-landscape.json';
 import '../../../../src/designer/style.css';
+import './fonts.css';
 import {
 	DesignerProvider,
 	useDesignerStore,
@@ -32,6 +33,7 @@ import {
 	seedMetaKeys,
 	getSampleMap,
 } from '../../../../src/designer/mergeFields';
+import { seedSampleQr } from '../../../../src/designer/qr';
 import { DesignerViewContext } from '../../../../src/designer/view-context';
 
 // Boot fixture: installed before render - designer modules read boot
@@ -71,7 +73,16 @@ window.ppcert_designer_data = {
 			label: 'Merge Field',
 			icon: 'merge_field',
 			default_box: { w: 260, h: 28 },
-			default_props: {},
+			default_props: {
+				token: '{{recipient.display_name}}',
+				font_family: 'source-sans-3',
+				font_size: 16,
+				color: '#1f2937',
+				align: 'left',
+				line_height: 1.2,
+				bold: false,
+				italic: false,
+			},
 		},
 		image: {
 			key: 'image',
@@ -208,6 +219,15 @@ function Harness() {
 		setTokenView,
 		setRulers,
 		seedAttachment: seedAttachmentUrl,
+		seedQr: seedSampleQr,
+		seedSamples: ( data ) => seedMergeFields( data ),
+		// Parity mode: strip designer chrome (safe margin, rulers) so the
+		// page screenshot is comparable to render_png() output.
+		setParity: ( on ) => {
+			document.body.classList.toggle( 'ppcert-parity', on );
+			setRulers( ! on );
+			dispatch( { type: 'SET_SELECTION', ids: [] } );
+		},
 	};
 
 	if ( ! state.layout ) {

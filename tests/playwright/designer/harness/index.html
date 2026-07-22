@@ -5,13 +5,25 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>PPCert Designer Canvas Harness</title>
 	<link rel="stylesheet" href="dist/style-harness.css">
+	<!-- Non-style.css imports (the @font-face rules) emit under the
+	     entry name. -->
+	<link rel="stylesheet" href="dist/harness.css">
 	<style>
+		/* Deterministic tests: no entrance/transition motion. */
+		*, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
 		body { margin: 0; }
 		#root { padding: 24px; }
 		.ppcert-harness__editor { display: flex; gap: 16px; align-items: flex-start; }
 		.ppcert-harness__palette { width: 180px; flex: none; }
 		.ppcert-harness__canvas { width: 900px; flex: none; }
 		.ppcert-harness__panel { width: 300px; flex: none; }
+		/* Parity mode (Feature 007 FR-005): the page screenshot must
+		   contain only what the PDF renders. The dashed merge underline
+		   is a designer affordance, not document content. */
+		.ppcert-parity .ppcert-designer__safe-margin { display: none; }
+		.ppcert-parity .ppcert-designer__page { box-shadow: none; }
+		.ppcert-parity .ppcert-harness__canvas { width: auto; }
+		.ppcert-parity .ppcert-designer__el-merge { text-decoration: none; }
 	</style>
 </head>
 <body>

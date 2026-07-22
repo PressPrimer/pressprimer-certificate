@@ -9,6 +9,8 @@
  */
 
 import { useDesignerView } from '../view-context';
+import { useTextFit } from './useTextFit';
+import { baselineCompensation } from './baseline';
 
 /**
  * The element.
@@ -28,26 +30,43 @@ export default function MergeFieldElement( { element, box } ) {
 
 	const display = tokenView || undefined === sample ? token : sample;
 
+	// The fitting rule applies to the displayed value exactly as the PDF
+	// applies it to the resolved value (Feature 007 FR-004).
+	const fitted = useTextFit( display, box, p );
+	const dy = baselineCompensation( p, fitted.size );
+
 	return (
 		<div
 			className="ppcert-designer__el-merge"
 			data-ppcert-merge-display={ tokenView ? 'token' : 'sample' }
+			data-ppcert-fitted={ fitted.truncated ? 'truncated' : undefined }
 			style={ {
 				width: box.w,
 				height: box.h,
 				color: p.color,
 				fontFamily: `"${ p.font_family }"`,
-				fontSize: p.font_size,
+				fontSize: fitted.size,
 				lineHeight: p.line_height,
 				fontWeight: p.bold ? 700 : 400,
 				fontStyle: p.italic ? 'italic' : 'normal',
 				fontSynthesis: 'none',
+				// TCPDF lays glyphs by plain advance widths (parity).
+				fontKerning: 'none',
+				fontVariantLigatures: 'none',
+				textRendering: 'optimizeSpeed',
+				fontOpticalSizing: 'none',
 				textAlign: p.align,
 				overflow: 'hidden',
 				whiteSpace: 'pre-wrap',
 			} }
 		>
-			{ display }
+			<div
+				style={ {
+					transform: dy ? `translateY(${ dy }px)` : undefined,
+				} }
+			>
+				{ fitted.text }
+			</div>
 		</div>
 	);
 }

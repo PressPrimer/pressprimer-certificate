@@ -1,0 +1,69 @@
+/**
+ * Harness webfonts: the exact bundled TTFs the PDF renderer subsets.
+ * Mirrors the @font-face CSS class-ppcert-admin.php injects in wp-admin
+ * (family name = slug, real variant files, no synthesis).
+ */
+
+@font-face {
+	font-family: playfair-display;
+	src: url(../../../../fonts/playfair-display/PlayfairDisplay-Regular.ttf) format("truetype");
+	font-weight: 400;
+	font-style: normal;
+	font-display: block;
+}
+
+@font-face {
+	font-family: playfair-display;
+	src: url(../../../../fonts/playfair-display/PlayfairDisplay-Bold.ttf) format("truetype");
+	font-weight: 700;
+	font-style: normal;
+	font-display: block;
+}
+
+@font-face {
+	font-family: playfair-display;
+	src: url(../../../../fonts/playfair-display/PlayfairDisplay-Italic.ttf) format("truetype");
+	font-weight: 400;
+	font-style: italic;
+	font-display: block;
+}
+
+@font-face {
+	font-family: playfair-display;
+	src: url(../../../../fonts/playfair-display/PlayfairDisplay-BoldItalic.ttf) format("truetype");
+	font-weight: 700;
+	font-style: italic;
+	font-display: block;
+}
+
+@font-face {
+	font-family: "source-sans-3";
+	src: url(../../../../fonts/source-sans-3/SourceSans3-Regular.ttf) format("truetype");
+	font-weight: 400;
+	font-style: normal;
+	font-display: block;
+}
+
+@font-face {
+	font-family: "source-sans-3";
+	src: url(../../../../fonts/source-sans-3/SourceSans3-Bold.ttf) format("truetype");
+	font-weight: 700;
+	font-style: normal;
+	font-display: block;
+}
+
+@font-face {
+	font-family: "source-sans-3";
+	src: url(../../../../fonts/source-sans-3/SourceSans3-It.ttf) format("truetype");
+	font-weight: 400;
+	font-style: italic;
+	font-display: block;
+}
+
+@font-face {
+	font-family: "source-sans-3";
+	src: url(../../../../fonts/source-sans-3/SourceSans3-BoldIt.ttf) format("truetype");
+	font-weight: 700;
+	font-style: italic;
+	font-display: block;
+}

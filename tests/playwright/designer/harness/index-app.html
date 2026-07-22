@@ -7,7 +7,10 @@
 	<!-- Shared CSS module: webpack emits the designer styles once, under
 	     the first entry's name. -->
 	<link rel="stylesheet" href="dist/style-harness.css">
+	<link rel="stylesheet" href="dist/harness.css">
 	<style>
+		/* Deterministic tests: no entrance/transition motion. */
+		*, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
 		body { margin: 0; }
 	</style>
 </head>

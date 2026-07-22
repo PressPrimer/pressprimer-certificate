@@ -248,6 +248,19 @@ class PressPrimer_Certificate_Admin {
 			];
 		}
 
+		// The canvas paints the PHP encoder's sample matrix - it never
+		// encodes QR codes itself (one encoder, ADR-004 / parity).
+		$sample_credential = 'SAMPLE000000';
+
+		foreach ( PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' ) as $field_key => $field ) {
+			if ( 'certificate.credential_id' === $field_key ) {
+				$sample_credential = preg_replace( '/[^A-Z0-9]/', '', strtoupper( (string) $field['sample'] ) );
+				break;
+			}
+		}
+
+		$sample_qr = PressPrimer_Certificate_QR_Service::generate( ppcert_verification_url( $sample_credential ) );
+
 		wp_localize_script(
 			'ppcert-designer',
 			'ppcert_designer_data',
@@ -256,6 +269,8 @@ class PressPrimer_Certificate_Admin {
 				'list_url'      => add_query_arg( 'page', 'pressprimer-certificate', admin_url( 'admin.php' ) ),
 				'fonts'         => $fonts,
 				'element_types' => PressPrimer_Certificate_Element_Types::get_types(),
+				'fitting'       => PressPrimer_Certificate_PDF_Renderer::fitting_thresholds(),
+				'sample_qr'     => is_wp_error( $sample_qr ) ? null : $sample_qr,
 				'starters'      => $starters,
 				'page_presets'  => [
 					'a4'     => [

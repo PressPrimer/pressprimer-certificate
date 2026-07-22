@@ -1324,7 +1324,20 @@ class PressPrimer_Certificate_PDF_Renderer {
 					imagefilledrectangle( $canvas, $x, $y, $x + $w, $y + $h, $fill_color );
 				}
 				if ( $has_stroke ) {
-					imagerectangle( $canvas, $x, $y, $x + $w, $y + $h, $stroke_color );
+					// Four filled bands CENTERED on each edge - GD's
+					// imagerectangle spreads thickness asymmetrically,
+					// while TCPDF (and the canvas SVG) center strokes on
+					// the path. [edge - floor(t/2), edge + ceil(t/2) - 1]
+					// covers exactly t pixels symmetrically.
+					$t_out = (int) floor( max( 1, $stroke_px ) / 2 );
+					$t_in  = max( 1, $stroke_px ) - $t_out;
+
+					// Top and bottom bands span the stroke's outer corners.
+					imagefilledrectangle( $canvas, $x - $t_out, $y - $t_out, $x + $w + $t_in - 1, $y + $t_in - 1, $stroke_color );
+					imagefilledrectangle( $canvas, $x - $t_out, $y + $h - $t_out, $x + $w + $t_in - 1, $y + $h + $t_in - 1, $stroke_color );
+					// Left and right bands fill between them.
+					imagefilledrectangle( $canvas, $x - $t_out, $y + $t_in, $x + $t_in - 1, $y + $h - $t_out - 1, $stroke_color );
+					imagefilledrectangle( $canvas, $x + $w - $t_out, $y + $t_in, $x + $w + $t_in - 1, $y + $h - $t_out - 1, $stroke_color );
 				}
 				break;
 		}

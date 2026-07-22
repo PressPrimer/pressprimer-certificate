@@ -144,6 +144,12 @@ test.describe( 'element properties', () => {
 
 		await selectElement( page, TITLE_ID );
 
+		// Room for 48pt at line-height 1.2: the fitting rule (Feature 007
+		// FR-004) must stay inert for this exact-reflection assertion.
+		const heightInput = page.locator( 'input[data-ppcert-prop="box-h"]' );
+		await heightInput.fill( '70' );
+		await heightInput.press( 'Enter' );
+
 		const sizeInput = page.locator( 'input[data-ppcert-prop="font_size"]' );
 		await sizeInput.fill( '48' );
 		await sizeInput.press( 'Enter' );
@@ -239,9 +245,10 @@ test.describe( 'element properties', () => {
 			.locator( '.ant-select-item-option', { hasText: 'Ellipse' } )
 			.click();
 
+		// Shapes render as SVG with centered strokes (parity, 3.8).
 		await expect(
-			page.locator( `[data-ppcert-el="${ added.id }"] > div` )
-		).toHaveCSS( 'border-radius', '50%' );
+			page.locator( `[data-ppcert-el="${ added.id }"] svg ellipse` )
+		).toBeVisible();
 	} );
 
 	test( 'background palette entry routes to the page section; color edit paints the page', async ( {
