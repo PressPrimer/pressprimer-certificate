@@ -92,8 +92,21 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 			? (string) $item->title
 			: __( '(untitled)', 'pressprimer-certificate' );
 
+		$trash_url = wp_nonce_url(
+			add_query_arg(
+				[
+					'page'        => 'pressprimer-certificate',
+					'action'      => 'trash',
+					'template_id' => (int) $item->id,
+				],
+				admin_url( 'admin.php' )
+			),
+			'ppcert_trash_template_' . (int) $item->id
+		);
+
 		$actions = [
-			'edit' => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'pressprimer-certificate' ) . '</a>',
+			'edit'  => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'pressprimer-certificate' ) . '</a>',
+			'trash' => '<a href="' . esc_url( $trash_url ) . '" class="submitdelete">' . esc_html__( 'Trash', 'pressprimer-certificate' ) . '</a>',
 		];
 
 		return '<strong><a href="' . esc_url( $edit_url ) . '">' . esc_html( $title ) . '</a></strong>'

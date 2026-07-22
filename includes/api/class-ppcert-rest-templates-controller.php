@@ -73,8 +73,30 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			'ppcert/v1',
 			'/templates/(?P<id>\d+)',
 			[
-				'methods'             => 'GET',
-				'callback'            => [ $this, 'get_template' ],
+				[
+					'methods'             => 'GET',
+					'callback'            => [ $this, 'get_template' ],
+					'permission_callback' => [ $this, 'can_manage' ],
+				],
+				[
+					'methods'             => 'PUT',
+					'callback'            => [ $this, 'update_template' ],
+					'permission_callback' => [ $this, 'can_manage' ],
+				],
+				[
+					'methods'             => 'DELETE',
+					'callback'            => [ $this, 'trash_template' ],
+					'permission_callback' => [ $this, 'can_manage' ],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppcert/v1',
+			'/templates/(?P<id>\d+)/preview',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'preview_template' ],
 				'permission_callback' => [ $this, 'can_manage' ],
 			]
 		);
@@ -195,6 +217,258 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 		}
 
 		return new WP_REST_Response( self::full( $row ), 200 );
+	}
+
+	/**
+	 * PUT /templates/{id} - save layout / title / status (FR-007)
+	 *
+	 * The submitted layout runs through the validator; the response
+	 * carries the REBUILT document and the client adopts it verbatim -
+	 * whatever the client sent, storage and canvas end up identical to
+	 * the validator's output. An expected_updated_at mismatch returns
+	 * 409 so the designer can warn before overwriting another session's
+	 * work (force=true overrides).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function update_template( $request ) {
+		$row = PressPrimer_Certificate_Template::get( absint( $request->get_param( 'id' ) ) );
+
+		if ( ! $row ) {
+			return new WP_Error(
+				'ppcert_template_not_found',
+				__( 'Template not found.', 'pressprimer-certificate' ),
+				[ 'status' => 404 ]
+			);
+		}
+
+		// Conflict gate before any mutation.
+		$expected = (string) $request->get_param( 'expected_updated_at' );
+		$current  = str_replace( ' ', 'T', (string) $row->updated_at ) . 'Z';
+
+		if ( '' !== $expected && $expected !== $current && ! $request->get_param( 'force' ) ) {
+			return new WP_Error(
+				'ppcert_template_conflict',
+				__( 'This template was changed elsewhere since you opened it.', 'pressprimer-certificate' ),
+				[
+					'status'     => 409,
+					'updated_at' => $current,
+				]
+			);
+		}
+
+		$args = [];
+
+		$raw_layout = $request->get_param( 'layout' );
+
+		if ( null !== $raw_layout ) {
+			if ( ! is_array( $raw_layout ) ) {
+				return new WP_Error(
+					'ppcert_invalid_layout',
+					__( 'The layout document must be an object.', 'pressprimer-certificate' ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			// The single sanitization path for layout documents: every
+			// submitted field is rebuilt against the schema.
+			$clean = PressPrimer_Certificate_Layout_Validator::validate( $raw_layout );
+
+			if ( is_wp_error( $clean ) ) {
+				$clean->add_data( [ 'status' => 400 ] );
+				return $clean;
+			}
+
+			$args['layout'] = $clean;
+		}
+
+		$title = $request->get_param( 'title' );
+		if ( null !== $title ) {
+			$args['title'] = (string) $title;
+		}
+
+		$status = $request->get_param( 'status' );
+		if ( null !== $status ) {
+			if ( ! in_array( $status, [ 'draft', 'published', 'archived' ], true ) ) {
+				return new WP_Error(
+					'ppcert_invalid_status',
+					__( 'Status must be draft, published, or archived.', 'pressprimer-certificate' ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			$args['status'] = $status;
+		}
+
+		$updated = PressPrimer_Certificate_Template::update( (int) $row->id, $args );
+
+		if ( is_wp_error( $updated ) ) {
+			$updated->add_data( [ 'status' => 500 ] );
+			return $updated;
+		}
+
+		return new WP_REST_Response( self::full( $updated ), 200 );
+	}
+
+	/**
+	 * DELETE /templates/{id} - move to trash (soft delete)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function trash_template( $request ) {
+		$result = PressPrimer_Certificate_Template::trash( absint( $request->get_param( 'id' ) ) );
+
+		if ( is_wp_error( $result ) ) {
+			$result->add_data( [ 'status' => 404 ] );
+			return $result;
+		}
+
+		return new WP_REST_Response( [ 'trashed' => true ], 200 );
+	}
+
+	/**
+	 * POST /templates/{id}/preview - sample-data PDF (FR-007)
+	 *
+	 * Renders the submitted layout (or the saved one) with registry
+	 * sample values through the same pipeline issuance uses - no
+	 * separate preview renderer. Returns a short-lived URL.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function preview_template( $request ) {
+		$row = PressPrimer_Certificate_Template::get( absint( $request->get_param( 'id' ) ) );
+
+		if ( ! $row ) {
+			return new WP_Error(
+				'ppcert_template_not_found',
+				__( 'Template not found.', 'pressprimer-certificate' ),
+				[ 'status' => 404 ]
+			);
+		}
+
+		$raw_layout = $request->get_param( 'layout' );
+		$layout     = is_array( $raw_layout ) ? $raw_layout : $row->layout;
+
+		$clean = PressPrimer_Certificate_Layout_Validator::validate( (array) $layout );
+
+		if ( is_wp_error( $clean ) ) {
+			$clean->add_data( [ 'status' => 400 ] );
+			return $clean;
+		}
+
+		// Registry samples as merge data (FR-004: the designer never
+		// hard-codes samples).
+		$merge_data = [];
+
+		foreach ( PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' ) as $key => $field ) {
+			$merge_data[ $key ] = (string) $field['sample'];
+		}
+
+		$sample_credential = isset( $merge_data['certificate.credential_id'] )
+			? preg_replace( '/[^A-Z0-9]/', '', strtoupper( $merge_data['certificate.credential_id'] ) )
+			: 'SAMPLE000000';
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$path     = $renderer->render_pdf(
+			$clean,
+			$merge_data,
+			[
+				'context'        => 'preview',
+				'credential_id'  => $sample_credential,
+				'certificate_id' => 0,
+				'title'          => (string) $row->title,
+			]
+		);
+
+		if ( is_wp_error( $path ) ) {
+			$path->add_data( [ 'status' => 500 ] );
+			return $path;
+		}
+
+		$stored = self::store_preview( $path, (int) $row->id );
+
+		if ( is_wp_error( $stored ) ) {
+			return $stored;
+		}
+
+		return new WP_REST_Response( $stored, 200 );
+	}
+
+	/**
+	 * Move a rendered preview into the short-lived previews directory
+	 *
+	 * Files land in uploads/ppcert-previews/ under unguessable names;
+	 * anything older than an hour is swept on each new preview.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $temp_path Rendered temp file (consumed).
+	 * @param int    $template_id Template id (filename hint only).
+	 * @return array|WP_Error { url }.
+	 */
+	private static function store_preview( $temp_path, $template_id ) {
+		$uploads = wp_upload_dir();
+
+		if ( ! empty( $uploads['error'] ) ) {
+			wp_delete_file( $temp_path );
+
+			return new WP_Error(
+				'ppcert_preview_storage',
+				__( 'The uploads directory is not writable.', 'pressprimer-certificate' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		$dir = trailingslashit( $uploads['basedir'] ) . 'ppcert-previews';
+
+		if ( ! wp_mkdir_p( $dir ) ) {
+			wp_delete_file( $temp_path );
+
+			return new WP_Error(
+				'ppcert_preview_storage',
+				__( 'The preview directory could not be created.', 'pressprimer-certificate' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		if ( ! file_exists( $dir . '/index.html' ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Empty directory-listing guard file, standard plugin pattern.
+			file_put_contents( $dir . '/index.html', '' );
+		}
+
+		// Sweep stale previews (older than an hour).
+		foreach ( (array) glob( $dir . '/preview-*.pdf' ) as $old ) {
+			if ( filemtime( $old ) < time() - HOUR_IN_SECONDS ) {
+				wp_delete_file( $old );
+			}
+		}
+
+		$name   = sprintf( 'preview-%d-%s.pdf', $template_id, wp_generate_password( 20, false, false ) );
+		$target = $dir . '/' . $name;
+
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.rename_rename -- Moving our own freshly rendered temp file on the local filesystem; WP_Filesystem is not initialized in REST context and failure is handled below.
+		if ( ! @rename( $temp_path, $target ) ) {
+			wp_delete_file( $temp_path );
+
+			return new WP_Error(
+				'ppcert_preview_storage',
+				__( 'The preview file could not be stored.', 'pressprimer-certificate' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		return [
+			'url' => trailingslashit( $uploads['baseurl'] ) . 'ppcert-previews/' . $name,
+		];
 	}
 
 	/**

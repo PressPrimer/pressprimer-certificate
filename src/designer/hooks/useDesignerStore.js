@@ -113,6 +113,18 @@ export function designerReducer( state, action ) {
 				template: action.template || state.template,
 			};
 
+		case 'ADOPT_SAVED':
+			// A successful save: the client adopts the validator's REBUILT
+			// document verbatim (FR-007). No history push - the visual
+			// state is (near-)identical and undo should step editing
+			// history, not saves.
+			return {
+				...state,
+				layout: action.layout,
+				template: action.template || state.template,
+				dirty: false,
+			};
+
 		default:
 			return state;
 	}

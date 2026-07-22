@@ -123,6 +123,123 @@ class PressPrimer_Certificate_Template {
 	}
 
 	/**
+	 * Update a template row (layout, title, status)
+	 *
+	 * The layout MUST already be validator-clean (the REST controller
+	 * runs the validator first). updated_at advances to now; the caller
+	 * handles conflict detection before calling.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int   $id   Template row id.
+	 * @param array $args {
+	 *     @type array  $layout Validator-clean layout document.
+	 *     @type string $title  Template title.
+	 *     @type string $status 'draft' | 'published' | 'archived'.
+	 * }
+	 * @return object|WP_Error The updated, hydrated row.
+	 */
+	public static function update( $id, array $args ) {
+		global $wpdb;
+
+		$row = self::get( $id );
+
+		if ( ! $row ) {
+			return new WP_Error(
+				'ppcert_template_not_found',
+				__( 'Template not found.', 'pressprimer-certificate' )
+			);
+		}
+
+		$data   = [];
+		$format = [];
+
+		if ( isset( $args['layout'] ) && is_array( $args['layout'] ) ) {
+			$layout                        = $args['layout'];
+			$data['layout_json']           = wp_json_encode( $layout );
+			$data['layout_schema_version'] = isset( $layout['layout_schema_version'] ) ? (int) $layout['layout_schema_version'] : 1;
+			$data['page_size']             = isset( $layout['page']['size'] ) ? (string) $layout['page']['size'] : $row->page_size;
+			$data['orientation']           = isset( $layout['page']['orientation'] ) ? (string) $layout['page']['orientation'] : $row->orientation;
+			$format[]                      = '%s';
+			$format[]                      = '%d';
+			$format[]                      = '%s';
+			$format[]                      = '%s';
+		}
+
+		if ( isset( $args['title'] ) && '' !== trim( (string) $args['title'] ) ) {
+			$data['title'] = substr( sanitize_text_field( (string) $args['title'] ), 0, 200 );
+			$format[]      = '%s';
+		}
+
+		if ( isset( $args['status'] ) && in_array( $args['status'], [ 'draft', 'published', 'archived' ], true ) ) {
+			$data['status'] = $args['status'];
+			$format[]       = '%s';
+		}
+
+		$data['updated_at'] = current_time( 'mysql', true );
+		$format[]           = '%s';
+
+		$updated = $wpdb->update(
+			self::table(),
+			$data,
+			[ 'id' => absint( $id ) ],
+			$format,
+			[ '%d' ]
+		);
+
+		if ( false === $updated ) {
+			return new WP_Error(
+				'ppcert_template_update_failed',
+				__( 'The template could not be saved.', 'pressprimer-certificate' )
+			);
+		}
+
+		return self::get( $id );
+	}
+
+	/**
+	 * Soft-delete a template (trash)
+	 *
+	 * Issued certificates keep rendering from their own snapshots, so a
+	 * trashed template never affects existing credentials.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $id Template row id.
+	 * @return true|WP_Error
+	 */
+	public static function trash( $id ) {
+		global $wpdb;
+
+		if ( ! self::get( $id ) ) {
+			return new WP_Error(
+				'ppcert_template_not_found',
+				__( 'Template not found.', 'pressprimer-certificate' )
+			);
+		}
+
+		$updated = $wpdb->update(
+			self::table(),
+			[
+				'deleted_at' => current_time( 'mysql', true ),
+				'updated_at' => current_time( 'mysql', true ),
+			],
+			[ 'id' => absint( $id ) ],
+			[ '%s', '%s' ],
+			[ '%d' ]
+		);
+
+		if ( false === $updated ) {
+			return new WP_Error(
+				'ppcert_template_trash_failed',
+				__( 'The template could not be moved to the trash.', 'pressprimer-certificate' )
+			);
+		}
+
+		return true;
+	}
+
+	/**
 	 * Get the bundled starter definitions from templates/*.json
 	 *
 	 * Each file carries a _meta block (slug, label); the returned layout

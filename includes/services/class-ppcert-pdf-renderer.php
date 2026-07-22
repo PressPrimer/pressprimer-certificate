@@ -85,7 +85,14 @@ class PressPrimer_Certificate_PDF_Renderer {
 			return $structure;
 		}
 
-		$context   = isset( $args['context'] ) ? (string) $args['context'] : 'download';
+		$context = isset( $args['context'] ) ? (string) $args['context'] : 'download';
+
+		// wp_tempnam() lives in wp-admin/includes/file.php, which REST and
+		// front-end requests (preview route, email hooks) never load.
+		if ( ! function_exists( 'wp_tempnam' ) && defined( 'ABSPATH' ) && file_exists( ABSPATH . 'wp-admin/includes/file.php' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+
 		$temp_path = wp_tempnam( 'ppcert-render' );
 
 		if ( ! $temp_path ) {

@@ -579,6 +579,76 @@ if ( ! function_exists( 'get_current_user_id' ) ) {
 	}
 }
 
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+	define( 'HOUR_IN_SECONDS', 3600 );
+}
+
+if ( ! function_exists( 'trailingslashit' ) ) {
+	/**
+	 * Stub: Append a trailing slash.
+	 *
+	 * @param string $value Path or URL.
+	 * @return string
+	 */
+	function trailingslashit( $value ) {
+		return rtrim( (string) $value, '/\\' ) . '/';
+	}
+}
+
+if ( ! function_exists( 'wp_upload_dir' ) ) {
+	/**
+	 * Stub: Uploads directory under the system temp dir.
+	 *
+	 * @return array
+	 */
+	function wp_upload_dir() {
+		$base = sys_get_temp_dir() . '/ppcert-test-uploads';
+
+		if ( ! is_dir( $base ) ) {
+			mkdir( $base, 0777, true );
+		}
+
+		return [
+			'basedir' => $base,
+			'baseurl' => 'http://example.test/wp-content/uploads',
+			'error'   => false,
+		];
+	}
+}
+
+if ( ! function_exists( 'wp_mkdir_p' ) ) {
+	/**
+	 * Stub: Recursive mkdir.
+	 *
+	 * @param string $dir Directory path.
+	 * @return bool
+	 */
+	function wp_mkdir_p( $dir ) {
+		return is_dir( $dir ) || mkdir( $dir, 0777, true );
+	}
+}
+
+if ( ! function_exists( 'wp_generate_password' ) ) {
+	/**
+	 * Stub: Random alphanumeric string.
+	 *
+	 * @param int  $length        Length.
+	 * @param bool $special_chars Unused.
+	 * @param bool $extra_special Unused.
+	 * @return string
+	 */
+	function wp_generate_password( $length = 12, $special_chars = true, $extra_special = false ) {
+		$alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+		$out      = '';
+
+		for ( $i = 0; $i < $length; $i++ ) {
+			$out .= $alphabet[ random_int( 0, strlen( $alphabet ) - 1 ) ];
+		}
+
+		return $out;
+	}
+}
+
 if ( ! function_exists( 'current_user_can' ) ) {
 	/**
 	 * Stub: Capability check.
@@ -1168,6 +1238,22 @@ if ( ! class_exists( 'WP_Error' ) ) {
 				$code  = isset( $codes[0] ) ? $codes[0] : '';
 			}
 			return isset( $this->error_data[ $code ] ) ? $this->error_data[ $code ] : null;
+		}
+
+		/**
+		 * Add data for a code (matches WP core).
+		 *
+		 * @param mixed      $data Error data.
+		 * @param string|int $code Error code, or '' for the first code.
+		 * @return void
+		 */
+		public function add_data( $data, $code = '' ) {
+			if ( '' === $code ) {
+				$codes = $this->get_error_codes();
+				$code  = isset( $codes[0] ) ? $codes[0] : '';
+			}
+
+			$this->error_data[ $code ] = $data;
 		}
 
 		/**

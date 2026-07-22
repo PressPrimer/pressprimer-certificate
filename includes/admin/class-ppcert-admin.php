@@ -47,6 +47,49 @@ class PressPrimer_Certificate_Admin {
 	public function init() {
 		add_action( 'admin_menu', [ $this, 'register_menus' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+		add_action( 'admin_init', [ $this, 'handle_trash_action' ] );
+	}
+
+	/**
+	 * Handle the list table's Trash row action
+	 *
+	 * Nonce-verified, capability-gated soft delete, then a redirect back
+	 * to the list with a notice flag.
+	 *
+	 * @since 1.0.0
+	 */
+	public function handle_trash_action() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+
+		if ( 'pressprimer-certificate' !== $page || 'trash' !== $action ) {
+			return;
+		}
+
+		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES ) ) {
+			wp_die( esc_html__( 'You are not allowed to trash certificate templates.', 'pressprimer-certificate' ) );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified by check_admin_referer immediately below.
+		$template_id = isset( $_GET['template_id'] ) ? absint( wp_unslash( $_GET['template_id'] ) ) : 0;
+
+		check_admin_referer( 'ppcert_trash_template_' . $template_id );
+
+		$result  = PressPrimer_Certificate_Template::trash( $template_id );
+		$trashed = ! is_wp_error( $result ) ? 1 : 0;
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page'           => 'pressprimer-certificate',
+					'ppcert_trashed' => $trashed,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	/**
@@ -121,6 +164,19 @@ class PressPrimer_Certificate_Admin {
 		);
 
 		echo '<div class="wrap">';
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag set by the nonce-verified trash handler.
+		if ( isset( $_GET['ppcert_trashed'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag.
+			$trashed = absint( wp_unslash( $_GET['ppcert_trashed'] ) );
+
+			echo '<div class="notice notice-' . ( $trashed ? 'success' : 'error' ) . ' is-dismissible"><p>';
+			echo $trashed
+				? esc_html__( 'Template moved to the trash.', 'pressprimer-certificate' )
+				: esc_html__( 'The template could not be trashed.', 'pressprimer-certificate' );
+			echo '</p></div>';
+		}
+
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'PPCert Templates', 'pressprimer-certificate' ) . '</h1> ';
 		echo '<a href="' . esc_url( $add_new_url ) . '" class="page-title-action">' . esc_html__( 'Add New', 'pressprimer-certificate' ) . '</a>';
 		echo '<hr class="wp-header-end" />';

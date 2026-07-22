@@ -21,6 +21,14 @@ module.exports = {
 			'harness',
 			'harness.jsx'
 		),
+		'harness-app': path.resolve(
+			process.cwd(),
+			'tests',
+			'playwright',
+			'designer',
+			'harness',
+			'harness-app.jsx'
+		),
 	},
 	output: {
 		path: path.resolve(
