@@ -170,6 +170,12 @@ class PressPrimer_Certificate_Plugin {
 			$settings_admin = new PressPrimer_Certificate_Admin_Settings();
 			$settings_admin->init();
 		}
+
+		// Earned certificates on the user-edit screen (Phase 5B item 9).
+		if ( class_exists( 'PressPrimer_Certificate_Admin_User_Profile' ) ) {
+			$user_profile = new PressPrimer_Certificate_Admin_User_Profile();
+			$user_profile->init();
+		}
 	}
 
 	/**

@@ -488,6 +488,54 @@ class PPCert_Fake_WPDB {
 			return array_slice( $matches, (int) $args[9], (int) $args[8] );
 		}
 
+		// Certificate::get_recent_for_recipient - newest first for the
+		// user profile.
+		if ( false !== strpos( $query, 'WHERE c.recipient_id = %d ORDER BY c.issued_at DESC, c.id DESC LIMIT %d OFFSET %d' ) ) {
+			$templates = $this->rows( (string) $args[1] );
+			$matches   = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['recipient_id'] === (int) $args[2];
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					$by_date = strcmp( (string) $b['issued_at'], (string) $a['issued_at'] );
+					return 0 !== $by_date ? $by_date : ( (int) $b['id'] <=> (int) $a['id'] );
+				}
+			);
+
+			$matches = array_slice( $matches, (int) $args[4], (int) $args[3] );
+
+			return array_map(
+				static function ( $row ) use ( $templates ) {
+					$row['template_title'] = null;
+					foreach ( $templates as $template ) {
+						if ( (int) $template['id'] === (int) $row['template_id'] ) {
+							$row['template_title'] = isset( $template['title'] ) ? $template['title'] : null;
+							break;
+						}
+					}
+					return $row;
+				},
+				$matches
+			);
+		}
+
+		// Certificate::count_for_recipient.
+		if ( false !== strpos( $query, 'SELECT COUNT(*) FROM %i WHERE recipient_id = %d' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['recipient_id'] === (int) $args[1];
+				}
+			);
+
+			return [ [ 'count' => count( $matches ) ] ];
+		}
+
 		// Certificate::get_batch_for_recipient - the privacy batch query.
 		if ( false !== strpos( $query, 'WHERE c.recipient_id = %d ORDER BY c.id ASC LIMIT %d OFFSET %d' ) ) {
 			$templates = $this->rows( (string) $args[1] );

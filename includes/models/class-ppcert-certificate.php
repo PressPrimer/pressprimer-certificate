@@ -433,6 +433,59 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * A recipient's certificates, most recently earned first
+	 *
+	 * The user-profile listing (Phase 5B item 9): newest issued_at at
+	 * the top, id as the tiebreaker, template titles joined in.
+	 * Separate from get_batch_for_recipient because ORDER direction is
+	 * never interpolated - each direction is its own prepared statement
+	 * (CLAUDE.md SQL rules).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $recipient_id Recipient user id.
+	 * @param int $limit        Page size.
+	 * @param int $offset       Row offset.
+	 * @return object[] Hydrated rows with a template_title property.
+	 */
+	public static function get_recent_for_recipient( $recipient_id, $limit, $offset = 0 ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT c.*, t.title AS template_title FROM %i c LEFT JOIN %i t ON t.id = c.template_id WHERE c.recipient_id = %d ORDER BY c.issued_at DESC, c.id DESC LIMIT %d OFFSET %d',
+				self::table(),
+				PressPrimer_Certificate_Template::table(),
+				absint( $recipient_id ),
+				absint( $limit ),
+				absint( $offset )
+			)
+		);
+
+		return array_map( [ __CLASS__, 'hydrate' ], (array) $rows );
+	}
+
+	/**
+	 * Count a recipient's certificates
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $recipient_id Recipient user id.
+	 * @return int
+	 */
+	public static function count_for_recipient( $recipient_id ) {
+		global $wpdb;
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM %i WHERE recipient_id = %d',
+				self::table(),
+				absint( $recipient_id )
+			)
+		);
+	}
+
+	/**
 	 * Hydrate a raw row: decode the JSON snapshot columns
 	 *
 	 * Adds `layout_snapshot` and `merge_data` array properties (null when

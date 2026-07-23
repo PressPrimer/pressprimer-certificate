@@ -1188,14 +1188,19 @@ if ( ! function_exists( 'rest_url' ) ) {
 
 if ( ! function_exists( 'add_query_arg' ) ) {
 	/**
-	 * Stub: Append one query arg.
+	 * Stub: Append one query arg; the two-arg form uses a fixed
+	 * current-request URL like WordPress uses \$_SERVER['REQUEST_URI'].
 	 *
-	 * @param string $key   Arg name.
-	 * @param string $value Arg value.
-	 * @param string $url   Base URL.
+	 * @param string      $key   Arg name.
+	 * @param string      $value Arg value.
+	 * @param string|null $url   Base URL (current request when omitted).
 	 * @return string
 	 */
-	function add_query_arg( $key, $value, $url ) {
+	function add_query_arg( $key, $value, $url = null ) {
+		if ( null === $url ) {
+			$url = 'https://test.example/wp-admin/user-edit.php?user_id=7';
+		}
+
 		$separator = false === strpos( $url, '?' ) ? '?' : '&';
 		return $url . $separator . $key . '=' . $value;
 	}
@@ -1603,5 +1608,45 @@ if ( ! function_exists( 'wp_unschedule_event' ) ) {
 	function wp_unschedule_event( $timestamp, $hook ) {
 		unset( $GLOBALS['ppcert_test_cron'][ $hook ] );
 		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_kses_post' ) ) {
+	/**
+	 * Stub: Pass-through post-context sanitizer (assertions target markup).
+	 *
+	 * @param string $content Content.
+	 * @return string
+	 */
+	function wp_kses_post( $content ) {
+		return (string) $content;
+	}
+}
+
+if ( ! function_exists( 'paginate_links' ) ) {
+	/**
+	 * Stub: Simple numbered page links honoring base/current/total.
+	 *
+	 * @param array $args Arguments.
+	 * @return string
+	 */
+	function paginate_links( $args = [] ) {
+		$total   = isset( $args['total'] ) ? (int) $args['total'] : 1;
+		$current = isset( $args['current'] ) ? (int) $args['current'] : 1;
+		$base    = isset( $args['base'] ) ? (string) $args['base'] : '?page=%#%';
+
+		if ( $total < 2 ) {
+			return '';
+		}
+
+		$links = [];
+
+		for ( $i = 1; $i <= $total; $i++ ) {
+			$links[] = $i === $current
+				? '<span class="page-numbers current">' . $i . '</span>'
+				: '<a class="page-numbers" href="' . str_replace( '%#%', (string) $i, $base ) . '">' . $i . '</a>';
+		}
+
+		return implode( ' ', $links );
 	}
 }
