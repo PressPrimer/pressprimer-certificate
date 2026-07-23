@@ -51,8 +51,11 @@ class PressPrimer_Certificate_Element_Types {
 			];
 
 		$default_font = '' !== $appearance['default_font'] ? $appearance['default_font'] : 'source-sans-3';
-		$text_color   = '' !== $appearance['primary_color'] ? $appearance['primary_color'] : '#1f2937';
-		$accent_color = '' !== $appearance['accent_color'] ? $appearance['accent_color'] : '#1f2937';
+
+		// Brand colors are SHAPE colors; text has its own default and
+		// falls back to near-black (Ryan, 2026-07-23).
+		$text_color  = ! empty( $appearance['text_color'] ) ? $appearance['text_color'] : '#1f2937';
+		$shape_color = '' !== $appearance['primary_color'] ? $appearance['primary_color'] : '#1f2937';
 
 		$types = [
 			'text'        => [
@@ -134,7 +137,7 @@ class PressPrimer_Certificate_Element_Types {
 				],
 				'default_props' => [
 					'shape'        => 'rect',
-					'stroke_color' => $accent_color,
+					'stroke_color' => $shape_color,
 					'stroke_width' => 1,
 					'fill_color'   => '',
 					'radius'       => 0,
@@ -149,7 +152,7 @@ class PressPrimer_Certificate_Element_Types {
 					'h' => 60,
 				],
 				'default_props' => [
-					'dark_color'  => '' !== $appearance['primary_color'] ? $appearance['primary_color'] : '#000000',
+					'dark_color'  => ! empty( $appearance['text_color'] ) ? $appearance['text_color'] : '#000000',
 					'light_color' => '',
 				],
 			],

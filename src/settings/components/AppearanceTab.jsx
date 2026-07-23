@@ -109,9 +109,16 @@ const ColorSetting = ( { label, help, value, onChange } ) => {
 							onChange( colorToHex( color ) )
 						}
 						disabledAlpha
-						showText
+						// An unset color is the design default, not
+						// transparency - antd's cleared-state "Transparent"
+						// label would misdescribe the output.
+						showText={ () =>
+							hasValue
+								? value
+								: __( 'Default', 'pressprimer-certificate' )
+						}
 					/>
-					{ hasValue ? (
+					{ hasValue && (
 						<Button
 							type="link"
 							icon={ <UndoOutlined /> }
@@ -120,10 +127,6 @@ const ColorSetting = ( { label, help, value, onChange } ) => {
 						>
 							{ __( 'Clear', 'pressprimer-certificate' ) }
 						</Button>
-					) : (
-						<Text type="secondary">
-							({ __( 'Not set', 'pressprimer-certificate' ) })
-						</Text>
 					) }
 				</Space>
 			</Form.Item>
@@ -212,6 +215,7 @@ const ImageSetting = ( { label, help, value, previewUrl, onChange } ) => {
  * @param {string} props.font         Selected font slug ('' = default).
  * @param {string} props.primary      Primary hex ('' = default).
  * @param {string} props.accent       Accent hex ('' = default).
+ * @param {string} props.text         Text hex ('' = design ink).
  * @param {string} props.logoUrl      Logo image URL.
  * @param {string} props.signatureUrl Signature image URL.
  */
@@ -219,22 +223,25 @@ const CertificatePreview = ( {
 	font,
 	primary,
 	accent,
+	text,
 	logoUrl,
 	signatureUrl,
 } ) => {
 	const fontFamily = `"${ font || 'source-sans-3' }"`;
-	const primaryColor = primary || '#1f2a44';
-	const accentColor = accent || '#b8860b';
+	// Brand colors style shapes; text falls back to the design ink.
+	const borderColor = primary || '#b8860b';
+	const ruleColor = accent || primary || '#b8860b';
+	const textColor = text || '#1f2a44';
 
 	return (
 		<div className="ppcert-appearance-preview">
 			<div
 				className="ppcert-appearance-preview__page"
-				style={ { borderColor: accentColor } }
+				style={ { borderColor } }
 			>
 				<div
 					className="ppcert-appearance-preview__inner"
-					style={ { borderColor: accentColor } }
+					style={ { borderColor } }
 				>
 					{ logoUrl && (
 						<img
@@ -245,7 +252,7 @@ const CertificatePreview = ( {
 					) }
 					<div
 						className="ppcert-appearance-preview__title"
-						style={ { fontFamily, color: primaryColor } }
+						style={ { fontFamily, color: textColor } }
 					>
 						{ __(
 							'Certificate of Completion',
@@ -263,13 +270,13 @@ const CertificatePreview = ( {
 					</div>
 					<div
 						className="ppcert-appearance-preview__name"
-						style={ { fontFamily, color: primaryColor } }
+						style={ { fontFamily, color: textColor } }
 					>
 						Jordan Rivera
 					</div>
 					<div
 						className="ppcert-appearance-preview__rule"
-						style={ { background: accentColor } }
+						style={ { background: ruleColor } }
 					/>
 					<div
 						className="ppcert-appearance-preview__body"
@@ -474,7 +481,7 @@ const AppearanceTab = ( { settings, updateSetting, settingsData } ) => {
 								'pressprimer-certificate'
 							) }
 							help={ __(
-								'Titles, names, and body text.',
+								'The main shape color: borders, frames, and rules.',
 								'pressprimer-certificate'
 							) }
 							value={ settings.appearance_primary_color || '' }
@@ -492,7 +499,7 @@ const AppearanceTab = ( { settings, updateSetting, settingsData } ) => {
 								'pressprimer-certificate'
 							) }
 							help={ __(
-								'Borders, rules, and decorative shapes.',
+								'Secondary shapes and decorative details.',
 								'pressprimer-certificate'
 							) }
 							value={ settings.appearance_accent_color || '' }
@@ -503,12 +510,28 @@ const AppearanceTab = ( { settings, updateSetting, settingsData } ) => {
 								)
 							}
 						/>
+
+						<ColorSetting
+							label={ __(
+								'Text color',
+								'pressprimer-certificate'
+							) }
+							help={ __(
+								'Headings, names, and body text. Unset keeps each design\u2019s own ink.',
+								'pressprimer-certificate'
+							) }
+							value={ settings.appearance_text_color || '' }
+							onChange={ ( value ) =>
+								updateSetting( 'appearance_text_color', value )
+							}
+						/>
 					</div>
 
 					<CertificatePreview
 						font={ settings.appearance_default_font || '' }
 						primary={ settings.appearance_primary_color || '' }
 						accent={ settings.appearance_accent_color || '' }
+						text={ settings.appearance_text_color || '' }
 						logoUrl={ logoUrl }
 						signatureUrl={ signatureUrl }
 					/>

@@ -38,8 +38,9 @@ class PressPrimer_Certificate_Appearance_Service {
 	 *     @type string $default_font  Registered font slug, or ''.
 	 *     @type int    $signature_id  Attachment id, or 0.
 	 *     @type int    $logo_id       Attachment id, or 0.
-	 *     @type string $primary_color Hex color, or ''.
-	 *     @type string $accent_color  Hex color, or ''.
+	 *     @type string $primary_color Hex color for shapes, or ''.
+	 *     @type string $accent_color  Hex color for shapes, or ''.
+	 *     @type string $text_color    Hex color for text + QR ink, or ''.
 	 *     @type string $page_size     'letter' (default) or 'a4'.
 	 * }
 	 */
@@ -64,17 +65,20 @@ class PressPrimer_Certificate_Appearance_Service {
 			'logo_id'       => isset( $settings['appearance_logo_id'] ) ? absint( $settings['appearance_logo_id'] ) : 0,
 			'primary_color' => isset( $settings['appearance_primary_color'] ) ? (string) $settings['appearance_primary_color'] : '',
 			'accent_color'  => isset( $settings['appearance_accent_color'] ) ? (string) $settings['appearance_accent_color'] : '',
+			'text_color'    => isset( $settings['appearance_text_color'] ) ? (string) $settings['appearance_text_color'] : '',
 		];
 	}
 
 	/**
 	 * Apply the brand colors to a starter layout via its color roles
 	 *
-	 * Starters declare which of their hexes play the primary and accent
-	 * roles (_meta.color_roles). Cloning a starter substitutes those
-	 * hexes with the site's Appearance selections; unmapped colors
-	 * (neutral grays, the playful confetti) stay untouched. Layouts
-	 * pass through unchanged when no brand colors are set.
+	 * Starters declare which of their hexes play each role
+	 * (_meta.color_roles). Primary and accent are SHAPE colors - boxes,
+	 * borders, rules, geometric decoration - and the text role covers
+	 * text plus QR ink (Ryan, 2026-07-23: brand colors never restyle
+	 * text; text has its own optional default). Unmapped colors
+	 * (neutral grays, the playful confetti) stay untouched, and layouts
+	 * pass through unchanged when no colors are set.
 	 *
 	 * @since 1.0.0
 	 *
@@ -90,6 +94,7 @@ class PressPrimer_Certificate_Appearance_Service {
 		foreach ( [
 			'primary' => 'primary_color',
 			'accent'  => 'accent_color',
+			'text'    => 'text_color',
 		] as $role => $setting_key ) {
 			$brand = strtolower( (string) $appearance[ $setting_key ] );
 
@@ -144,5 +149,77 @@ class PressPrimer_Certificate_Appearance_Service {
 		$key = strtolower( (string) $value );
 
 		return isset( $replacements[ $key ] ) ? $replacements[ $key ] : $value;
+	}
+
+	/**
+	 * Fill a starter's image slots with the default signature and logo
+	 *
+	 * Starters declare where a signature image and a logo belong
+	 * (_meta.image_slots). A slot only materializes when the matching
+	 * Appearance default is set: the signature slot may replace the
+	 * starter's typed signature element ('replaces'), and the logo slot
+	 * inserts a fresh image element. No default, no change - designs
+	 * never grow empty placeholder boxes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $layout Starter layout document.
+	 * @param array $slots  Map of slot key => box (+ optional 'replaces').
+	 * @return array Layout with the user's artwork in place.
+	 */
+	public static function apply_image_slots( array $layout, array $slots ) {
+		$appearance = self::get();
+
+		if ( empty( $layout['elements'] ) || ! is_array( $layout['elements'] ) ) {
+			return $layout;
+		}
+
+		$fills = [
+			'signature' => [ 'signature', $appearance['signature_id'], 'el_sigslot1' ],
+			'logo'      => [ 'image', $appearance['logo_id'], 'el_logoslot' ],
+		];
+
+		foreach ( $fills as $slot_key => $fill ) {
+			list( $type, $attachment_id, $element_id ) = $fill;
+
+			if ( $attachment_id < 1 || empty( $slots[ $slot_key ] ) || ! is_array( $slots[ $slot_key ] ) ) {
+				continue;
+			}
+
+			$slot = $slots[ $slot_key ];
+
+			if ( ! isset( $slot['x'], $slot['y'], $slot['w'], $slot['h'] ) ) {
+				continue;
+			}
+
+			// A signature slot may replace the typed signature element.
+			if ( ! empty( $slot['replaces'] ) ) {
+				$layout['elements'] = array_values(
+					array_filter(
+						$layout['elements'],
+						static function ( $element ) use ( $slot ) {
+							return ! isset( $element['id'] ) || $element['id'] !== $slot['replaces'];
+						}
+					)
+				);
+			}
+
+			$layout['elements'][] = [
+				'id'    => $element_id,
+				'type'  => $type,
+				'x'     => (float) $slot['x'],
+				'y'     => (float) $slot['y'],
+				'w'     => (float) $slot['w'],
+				'h'     => (float) $slot['h'],
+				'z'     => count( $layout['elements'] ) + 1,
+				'props' => [
+					'attachment_id' => $attachment_id,
+					'fit'           => 'contain',
+					'opacity'       => 1,
+				],
+			];
+		}
+
+		return $layout;
 	}
 }

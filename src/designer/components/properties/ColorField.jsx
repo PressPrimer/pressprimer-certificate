@@ -34,9 +34,11 @@ const PRESETS = [
  */
 function presetGroups() {
 	const appearance = getBoot().appearance || {};
-	const brand = [ appearance.primary_color, appearance.accent_color ].filter(
-		Boolean
-	);
+	const brand = [
+		appearance.primary_color,
+		appearance.accent_color,
+		appearance.text_color,
+	].filter( Boolean );
 
 	if ( ! brand.length ) {
 		return PRESETS;

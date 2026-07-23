@@ -159,11 +159,17 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 
 			$layout = $starters[ $starter_slug ]['layout'];
 
-			// Brand the clone: the Appearance primary/accent selections
-			// substitute the starter's role-mapped colors (Prompt 5.2).
+			// Brand the clone: the Appearance color selections substitute
+			// the starter's role-mapped colors (shapes take primary/accent,
+			// text and QR ink take the text color), and the default
+			// signature/logo fill the starter's image slots.
 			$layout = PressPrimer_Certificate_Appearance_Service::apply_brand_colors(
 				$layout,
 				$starters[ $starter_slug ]['color_roles']
+			);
+			$layout = PressPrimer_Certificate_Appearance_Service::apply_image_slots(
+				$layout,
+				$starters[ $starter_slug ]['image_slots']
 			);
 
 			if ( '' === $title ) {

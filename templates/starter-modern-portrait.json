@@ -4,11 +4,28 @@
     "label": "Modern (Portrait)",
     "color_roles": {
       "primary": [
-        "#111827"
+        "#0f766e"
       ],
       "accent": [
-        "#0f766e"
+        "#f59e0b"
+      ],
+      "text": [
+        "#111827"
       ]
+    },
+    "image_slots": {
+      "logo": {
+        "x": 60,
+        "y": 36,
+        "w": 140,
+        "h": 42
+      },
+      "signature": {
+        "x": 355,
+        "y": 630,
+        "w": 180,
+        "h": 60
+      }
     }
   },
   "layout_schema_version": 1,

@@ -4,11 +4,26 @@
     "label": "Formal (Landscape)",
     "color_roles": {
       "primary": [
-        "#1f2a44"
-      ],
-      "accent": [
         "#b8860b"
+      ],
+      "text": [
+        "#1f2a44"
       ]
+    },
+    "image_slots": {
+      "logo": {
+        "x": 361,
+        "y": 44,
+        "w": 120,
+        "h": 36
+      },
+      "signature": {
+        "x": 341,
+        "y": 437,
+        "w": 160,
+        "h": 48,
+        "replaces": "el_frmsign1"
+      }
     }
   },
   "layout_schema_version": 1,

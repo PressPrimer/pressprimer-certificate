@@ -376,6 +376,9 @@ class PressPrimer_Certificate_Template {
 			$roles = isset( $decoded['_meta']['color_roles'] ) && is_array( $decoded['_meta']['color_roles'] )
 				? $decoded['_meta']['color_roles']
 				: [];
+			$slots = isset( $decoded['_meta']['image_slots'] ) && is_array( $decoded['_meta']['image_slots'] )
+				? $decoded['_meta']['image_slots']
+				: [];
 
 			unset( $decoded['_meta'] );
 
@@ -384,6 +387,7 @@ class PressPrimer_Certificate_Template {
 				'label'       => $label,
 				'layout'      => $decoded,
 				'color_roles' => $roles,
+				'image_slots' => $slots,
 			];
 		}
 

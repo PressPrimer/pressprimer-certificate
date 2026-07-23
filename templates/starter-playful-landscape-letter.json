@@ -4,12 +4,26 @@
     "label": "Playful (Landscape)",
     "color_roles": {
       "primary": [
-        "#0f172a"
+        "#38bdf8"
       ],
-      "accent": [
-        "#38bdf8",
+      "text": [
+        "#0f172a",
         "#0ea5e9"
       ]
+    },
+    "image_slots": {
+      "logo": {
+        "x": 336,
+        "y": 40,
+        "w": 120,
+        "h": 40
+      },
+      "signature": {
+        "x": 296,
+        "y": 397,
+        "w": 200,
+        "h": 60
+      }
     }
   },
   "layout_schema_version": 1,

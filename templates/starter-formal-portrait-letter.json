@@ -4,11 +4,26 @@
     "label": "Formal (Portrait)",
     "color_roles": {
       "primary": [
-        "#1f2a44"
-      ],
-      "accent": [
         "#b8860b"
+      ],
+      "text": [
+        "#1f2a44"
       ]
+    },
+    "image_slots": {
+      "logo": {
+        "x": 246,
+        "y": 60,
+        "w": 120,
+        "h": 40
+      },
+      "signature": {
+        "x": 226,
+        "y": 580,
+        "w": 160,
+        "h": 48,
+        "replaces": "el_fptsign1"
+      }
     }
   },
   "layout_schema_version": 1,

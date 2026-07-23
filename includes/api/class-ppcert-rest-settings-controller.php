@@ -155,7 +155,7 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 			}
 		}
 
-		foreach ( [ 'appearance_primary_color', 'appearance_accent_color' ] as $color_field ) {
+		foreach ( [ 'appearance_primary_color', 'appearance_accent_color', 'appearance_text_color' ] as $color_field ) {
 			if ( isset( $data[ $color_field ] ) ) {
 				if ( '' === $data[ $color_field ] ) {
 					$sanitized[ $color_field ] = '';

@@ -60,6 +60,7 @@ class Test_Appearance extends TestCase {
 			'appearance_default_font'  => 'quicksand',
 			'appearance_primary_color' => '#123456',
 			'appearance_accent_color'  => '#654321',
+			'appearance_text_color'    => '#0a0b0c',
 			'appearance_signature_id'  => 41,
 			'appearance_logo_id'       => 42,
 		];
@@ -68,9 +69,12 @@ class Test_Appearance extends TestCase {
 
 		$this->assertSame( 'quicksand', $types['text']['default_props']['font_family'] );
 		$this->assertSame( 'quicksand', $types['merge_field']['default_props']['font_family'] );
-		$this->assertSame( '#123456', $types['text']['default_props']['color'] );
-		$this->assertSame( '#123456', $types['qr']['default_props']['dark_color'] );
-		$this->assertSame( '#654321', $types['shape']['default_props']['stroke_color'] );
+
+		// Text + QR ink follow the TEXT color; shapes take primary
+		// (brand colors never restyle text - Ryan, 2026-07-23).
+		$this->assertSame( '#0a0b0c', $types['text']['default_props']['color'] );
+		$this->assertSame( '#0a0b0c', $types['qr']['default_props']['dark_color'] );
+		$this->assertSame( '#123456', $types['shape']['default_props']['stroke_color'] );
 		$this->assertSame( 41, $types['signature']['default_props']['attachment_id'] );
 		$this->assertSame( 42, $types['image']['default_props']['attachment_id'] );
 	}
@@ -98,7 +102,7 @@ class Test_Appearance extends TestCase {
 	public function test_apply_brand_colors_substitutes_roles() {
 		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [
 			'appearance_primary_color' => '#ff0000',
-			'appearance_accent_color'  => '#00ff00',
+			'appearance_text_color'    => '#00cc00',
 		];
 
 		$layout = [
@@ -127,15 +131,16 @@ class Test_Appearance extends TestCase {
 		];
 
 		$roles = [
-			'primary' => [ '#1f2a44' ],
-			'accent'  => [ '#b8860b' ],
+			'primary' => [ '#b8860b' ],
+			'text'    => [ '#1f2a44' ],
 		];
 
 		$branded = PressPrimer_Certificate_Appearance_Service::apply_brand_colors( $layout, $roles );
 
-		// Case-insensitive substitution on mapped colors.
-		$this->assertSame( '#ff0000', $branded['elements'][0]['props']['color'] );
-		$this->assertSame( '#00ff00', $branded['elements'][1]['props']['stroke_color'] );
+		// Case-insensitive substitution: primary restyles the shape,
+		// the text role restyles the mapped ink.
+		$this->assertSame( '#ff0000', $branded['elements'][1]['props']['stroke_color'] );
+		$this->assertSame( '#00cc00', $branded['elements'][0]['props']['color'] );
 
 		// Unmapped colors and empty values stay untouched.
 		$this->assertSame( '#6b7280', $branded['elements'][2]['props']['color'] );
@@ -176,8 +181,7 @@ class Test_Appearance extends TestCase {
 	 */
 	public function test_starter_clone_is_branded() {
 		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [
-			'appearance_primary_color' => '#222222',
-			'appearance_accent_color'  => '#c0ffee',
+			'appearance_primary_color' => '#c0ffee',
 		];
 
 		$controller = new PressPrimer_Certificate_REST_Templates_Controller();
@@ -187,21 +191,104 @@ class Test_Appearance extends TestCase {
 
 		$this->assertNotInstanceOf( WP_Error::class, $response );
 
-		$layout = $response->get_data()['layout'];
-		$colors = [];
+		$layout       = $response->get_data()['layout'];
+		$text_colors  = [];
+		$shape_colors = [];
 
 		foreach ( $layout['elements'] as $element ) {
-			foreach ( [ 'color', 'stroke_color', 'dark_color' ] as $prop ) {
-				if ( isset( $element['props'][ $prop ] ) && '' !== $element['props'][ $prop ] ) {
-					$colors[] = strtolower( $element['props'][ $prop ] );
-				}
+			if ( isset( $element['props']['color'] ) ) {
+				$text_colors[] = strtolower( $element['props']['color'] );
+			}
+			if ( isset( $element['props']['stroke_color'] ) && '' !== $element['props']['stroke_color'] ) {
+				$shape_colors[] = strtolower( $element['props']['stroke_color'] );
 			}
 		}
 
-		$this->assertContains( '#222222', $colors );
-		$this->assertContains( '#c0ffee', $colors );
-		$this->assertNotContains( '#1f2a44', $colors );
-		$this->assertNotContains( '#b8860b', $colors );
+		// The gold shapes take primary; text keeps the design ink when
+		// no text color is set.
+		$this->assertContains( '#c0ffee', $shape_colors );
+		$this->assertNotContains( '#b8860b', $shape_colors );
+		$this->assertContains( '#1f2a44', $text_colors );
+		$this->assertNotContains( '#c0ffee', $text_colors );
+	}
+
+	/**
+	 * A set text color restyles the starter's ink, including the QR.
+	 *
+	 * @return void
+	 */
+	public function test_starter_clone_text_color() {
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [
+			'appearance_text_color' => '#101010',
+		];
+
+		$controller = new PressPrimer_Certificate_REST_Templates_Controller();
+		$response   = $controller->create_template(
+			new WP_REST_Request( [ 'starter' => 'starter-formal-landscape' ] )
+		);
+
+		$layout = $response->get_data()['layout'];
+
+		foreach ( $layout['elements'] as $element ) {
+			if ( 'qr' === $element['type'] ) {
+				$this->assertSame( '#101010', strtolower( $element['props']['dark_color'] ) );
+			}
+			if ( 'text' === $element['type'] && 'el_frmtitle' === $element['id'] ) {
+				$this->assertSame( '#101010', strtolower( $element['props']['color'] ) );
+			}
+		}
+	}
+
+	/**
+	 * Image slots: the default signature replaces the typed signature
+	 * and the logo inserts; nothing changes when the defaults are unset.
+	 *
+	 * @return void
+	 */
+	public function test_starter_clone_fills_image_slots() {
+		$controller = new PressPrimer_Certificate_REST_Templates_Controller();
+
+		// Unset defaults: no slot materializes, typed signature stays.
+		$response = $controller->create_template(
+			new WP_REST_Request( [ 'starter' => 'starter-formal-landscape' ] )
+		);
+
+		$ids = array_column( $response->get_data()['layout']['elements'], 'id' );
+		$this->assertContains( 'el_frmsign1', $ids );
+		$this->assertNotContains( 'el_sigslot1', $ids );
+		$this->assertNotContains( 'el_logoslot', $ids );
+
+		// With defaults set: signature replaces the typed element, the
+		// logo inserts, both carrying the chosen attachments.
+		$GLOBALS['ppcert_test_image_attachments'] = [ 41, 42 ];
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [
+			'appearance_signature_id' => 41,
+			'appearance_logo_id'      => 42,
+		];
+
+		$response = $controller->create_template(
+			new WP_REST_Request( [ 'starter' => 'starter-formal-landscape' ] )
+		);
+
+		$elements = $response->get_data()['layout']['elements'];
+		$by_id    = array_column( $elements, null, 'id' );
+
+		$this->assertArrayNotHasKey( 'el_frmsign1', $by_id );
+		$this->assertArrayHasKey( 'el_sigslot1', $by_id );
+		$this->assertArrayHasKey( 'el_logoslot', $by_id );
+		$this->assertSame( 'signature', $by_id['el_sigslot1']['type'] );
+		$this->assertSame( 41, (int) $by_id['el_sigslot1']['props']['attachment_id'] );
+		$this->assertSame( 'image', $by_id['el_logoslot']['type'] );
+		$this->assertSame( 42, (int) $by_id['el_logoslot']['props']['attachment_id'] );
+
+		// Modern has no typed signature: the slot simply inserts.
+		$response = $controller->create_template(
+			new WP_REST_Request( [ 'starter' => 'starter-modern-landscape' ] )
+		);
+
+		$ids = array_column( $response->get_data()['layout']['elements'], 'id' );
+		$this->assertContains( 'el_sigslot1', $ids );
+		$this->assertContains( 'el_logoslot', $ids );
 	}
 }
 
