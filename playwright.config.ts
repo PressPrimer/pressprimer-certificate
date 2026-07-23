@@ -11,6 +11,19 @@ import { defineConfig } from '@playwright/test';
  * closes the canvas-vs-PDF parity loop on top of these projects
  * (Feature 007 FR-005 — a parity failure is a release blocker).
  */
+/**
+ * Deterministic text rendering across platforms: Linux Chromium
+ * (FreeType) applies LCD subpixel AA and subpixel glyph positioning
+ * that macOS (CoreText) does not, which pushed the text-heaviest
+ * starter past the parity budget on CI while passing locally. Grayscale
+ * AA + whole-pixel positioning renders near-identically on both.
+ */
+const RENDER_ARGS = [
+	'--disable-lcd-text',
+	'--disable-font-subpixel-positioning',
+	'--force-color-profile=srgb',
+];
+
 export default defineConfig( {
 	testDir: './tests/playwright',
 	fullyParallel: false,
@@ -20,6 +33,10 @@ export default defineConfig( {
 		{
 			name: 'parity-pdf',
 			testMatch: /parity\/.*\.spec\.ts/,
+			use: {
+				browserName: 'chromium',
+				launchOptions: { args: RENDER_ARGS },
+			},
 		},
 		{
 			name: 'designer-canvas',
@@ -27,6 +44,7 @@ export default defineConfig( {
 			use: {
 				browserName: 'chromium',
 				viewport: { width: 1400, height: 900 },
+				launchOptions: { args: RENDER_ARGS },
 			},
 		},
 	],
