@@ -48,6 +48,50 @@ class PressPrimer_Certificate_Admin {
 		add_action( 'admin_menu', [ $this, 'register_menus' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_init', [ $this, 'handle_trash_action' ] );
+		add_action( 'admin_init', [ $this, 'handle_duplicate_action' ] );
+	}
+
+	/**
+	 * Handle the list table's Duplicate row action
+	 *
+	 * Nonce-verified, capability-gated design copy (triggers do not
+	 * copy - duplication exists to award the same design from a
+	 * different trigger), then a redirect back to the list.
+	 *
+	 * @since 1.0.0
+	 */
+	public function handle_duplicate_action() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+
+		if ( 'pressprimer-certificate' !== $page || 'duplicate' !== $action ) {
+			return;
+		}
+
+		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES ) ) {
+			wp_die( esc_html__( 'You are not allowed to duplicate certificate templates.', 'pressprimer-certificate' ) );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified by check_admin_referer immediately below.
+		$template_id = isset( $_GET['template_id'] ) ? absint( wp_unslash( $_GET['template_id'] ) ) : 0;
+
+		check_admin_referer( 'ppcert_duplicate_template_' . $template_id );
+
+		$result     = PressPrimer_Certificate_Template::duplicate( $template_id, get_current_user_id() );
+		$duplicated = ! is_wp_error( $result ) ? 1 : 0;
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page'              => 'pressprimer-certificate',
+					'ppcert_duplicated' => $duplicated,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	/**
@@ -122,7 +166,7 @@ class PressPrimer_Certificate_Admin {
 
 		$this->templates_hook = add_submenu_page(
 			'pressprimer-certificate',
-			__( 'PPCert Templates', 'pressprimer-certificate' ),
+			__( 'Certificate Templates', 'pressprimer-certificate' ),
 			__( 'Templates', 'pressprimer-certificate' ),
 			PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES,
 			'pressprimer-certificate',
@@ -177,10 +221,28 @@ class PressPrimer_Certificate_Admin {
 			echo '</p></div>';
 		}
 
-		echo '<h1 class="wp-heading-inline">' . esc_html__( 'PPCert Templates', 'pressprimer-certificate' ) . '</h1> ';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag set by the nonce-verified duplicate handler.
+		if ( isset( $_GET['ppcert_duplicated'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag.
+			$duplicated = absint( wp_unslash( $_GET['ppcert_duplicated'] ) );
+
+			echo '<div class="notice notice-' . ( $duplicated ? 'success' : 'error' ) . ' is-dismissible"><p>';
+			echo $duplicated
+				? esc_html__( 'Template duplicated. The copy is a draft with no trigger - open it to attach one.', 'pressprimer-certificate' )
+				: esc_html__( 'The template could not be duplicated.', 'pressprimer-certificate' );
+			echo '</p></div>';
+		}
+
+		echo '<h1 class="wp-heading-inline">' . esc_html__( 'Certificate Templates', 'pressprimer-certificate' ) . '</h1> ';
 		echo '<a href="' . esc_url( $add_new_url ) . '" class="page-title-action">' . esc_html__( 'Add New', 'pressprimer-certificate' ) . '</a>';
 		echo '<hr class="wp-header-end" />';
+
+		echo '<form method="get">';
+		echo '<input type="hidden" name="page" value="pressprimer-certificate" />';
+		$list_table->search_box( __( 'Search templates', 'pressprimer-certificate' ), 'ppcert-templates' );
 		$list_table->display();
+		echo '</form>';
+
 		echo '</div>';
 	}
 

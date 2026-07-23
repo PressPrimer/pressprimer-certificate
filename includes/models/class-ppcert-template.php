@@ -60,6 +60,109 @@ class PressPrimer_Certificate_Template {
 	}
 
 	/**
+	 * Query templates for the admin list: filters, search, pagination
+	 *
+	 * Fixed-shape sentinel SQL (the Certificate::query pattern): every
+	 * filter is present in the statement with a sentinel guard, so the
+	 * prepared shape never varies. The integration filter matches
+	 * templates owning a trigger whose type is in the CSV list via
+	 * FIND_IN_SET (no dynamic placeholder counts).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args {
+	 *     @type string   $status        Status filter ('' = all).
+	 *     @type string   $search        Title search ('' = none).
+	 *     @type string[] $trigger_types Trigger type ids ([] = all).
+	 *     @type int      $page          1-based page.
+	 *     @type int      $per_page      Page size (default 20).
+	 * }
+	 * @return array { items: object[], total: int }
+	 */
+	public static function query( array $args = [] ) {
+		global $wpdb;
+
+		$status    = isset( $args['status'] ) ? sanitize_key( (string) $args['status'] ) : '';
+		$search    = isset( $args['search'] ) ? (string) $args['search'] : '';
+		$types     = isset( $args['trigger_types'] ) && is_array( $args['trigger_types'] ) ? $args['trigger_types'] : [];
+		$types_csv = implode( ',', array_map( 'sanitize_key', $types ) );
+		$per_page  = isset( $args['per_page'] ) && absint( $args['per_page'] ) > 0 ? min( 100, absint( $args['per_page'] ) ) : 20;
+		$page      = isset( $args['page'] ) && absint( $args['page'] ) > 0 ? absint( $args['page'] ) : 1;
+
+		$search_like = '' !== $search ? '%' . $wpdb->esc_like( $search ) . '%' : '';
+
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) )",
+				self::table(),
+				$status,
+				$status,
+				$search_like,
+				$search_like,
+				$types_csv,
+				PressPrimer_Certificate_Trigger::table(),
+				$types_csv
+			)
+		);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT t.* FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) ) ORDER BY t.updated_at DESC LIMIT %d OFFSET %d",
+				self::table(),
+				$status,
+				$status,
+				$search_like,
+				$search_like,
+				$types_csv,
+				PressPrimer_Certificate_Trigger::table(),
+				$types_csv,
+				$per_page,
+				( $page - 1 ) * $per_page
+			)
+		);
+
+		return [
+			'items' => array_map( [ __CLASS__, 'hydrate' ], (array) $rows ),
+			'total' => $total,
+		];
+	}
+
+	/**
+	 * Duplicate a template
+	 *
+	 * Copies the design only - triggers deliberately do NOT copy: the
+	 * single-trigger rule makes duplication the reuse path for awarding
+	 * the same design from a DIFFERENT trigger, and copying the original
+	 * trigger would double-award every completion.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $id        Source template row id.
+	 * @param int $author_id Author for the copy.
+	 * @return int|WP_Error New template row id.
+	 */
+	public static function duplicate( $id, $author_id ) {
+		$source = self::get( $id );
+
+		if ( ! $source || ! is_array( $source->layout ) ) {
+			return new WP_Error(
+				'ppcert_invalid_template',
+				__( 'Template not found.', 'pressprimer-certificate' )
+			);
+		}
+
+		return self::create(
+			[
+				/* translators: %s: source template title */
+				'title'     => substr( sprintf( __( '%s (Copy)', 'pressprimer-certificate' ), (string) $source->title ), 0, 200 ),
+				'layout'    => $source->layout,
+				'author_id' => absint( $author_id ),
+				'status'    => 'draft',
+			]
+		);
+	}
+
+	/**
 	 * Create a template row
 	 *
 	 * The layout MUST already be validator-clean - the REST controller

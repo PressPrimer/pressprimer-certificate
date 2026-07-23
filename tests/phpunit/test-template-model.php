@@ -251,3 +251,203 @@ class Test_Template_Model extends TestCase {
 		}
 	}
 }
+
+/**
+ * Templates admin list query + duplication (Phase 5B items 3-4)
+ *
+ * @since 1.0.0
+ */
+class Test_Template_List_And_Duplicate extends TestCase {
+
+	/**
+	 * The fake wpdb for the current test.
+	 *
+	 * @var PPCert_Fake_WPDB
+	 */
+	private $wpdb;
+
+	/**
+	 * Reset state.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		ppcert_tests_reset_hooks();
+		$this->wpdb = ppcert_tests_reset_wpdb();
+	}
+
+	/**
+	 * Seed a template row.
+	 *
+	 * @param array $overrides Column overrides.
+	 * @return int Row id.
+	 */
+	private function seed_template( array $overrides = [] ) {
+		static $seq = 0;
+		$seq++;
+
+		return $this->wpdb->seed_row(
+			'wp_ppcert_templates',
+			array_merge(
+				[
+					'uuid'                  => 'tpl-list-' . $seq,
+					'title'                 => 'Template ' . $seq,
+					'status'                => 'draft',
+					'author_id'             => 1,
+					'page_size'             => 'a4',
+					'orientation'           => 'landscape',
+					'layout_schema_version' => 1,
+					'layout_json'           => '{"layout_schema_version":1,"page":{"size":"a4","orientation":"landscape","width":842,"height":595},"background":{"color":"#ffffff"},"elements":[]}',
+					'updated_at'            => '2026-07-0' . min( 9, $seq ) . ' 00:00:00',
+					'deleted_at'            => null,
+				],
+				$overrides
+			)
+		);
+	}
+
+	/**
+	 * Filters combine: status + integration trigger types + search.
+	 *
+	 * @return void
+	 */
+	public function test_query_filters_and_search() {
+		$published_ld = $this->seed_template(
+			[
+				'title'  => 'Sales Onboarding',
+				'status' => 'published',
+			]
+		);
+		$published_ppq = $this->seed_template( [ 'status' => 'published' ] );
+		$this->seed_template( [ 'title' => 'Draft LearnDash' ] );
+
+		$this->wpdb->seed_row(
+			'wp_ppcert_triggers',
+			[
+				'template_id'  => $published_ld,
+				'trigger_type' => 'learndash_course',
+				'source_ref'   => '11',
+				'is_active'    => 1,
+			]
+		);
+		$this->wpdb->seed_row(
+			'wp_ppcert_triggers',
+			[
+				'template_id'  => $published_ppq,
+				'trigger_type' => 'ppq_quiz',
+				'source_ref'   => '12',
+				'is_active'    => 1,
+			]
+		);
+
+		// Unfiltered: all three.
+		$result = PressPrimer_Certificate_Template::query();
+		$this->assertSame( 3, $result['total'] );
+
+		// Published only.
+		$result = PressPrimer_Certificate_Template::query( [ 'status' => 'published' ] );
+		$this->assertSame( 2, $result['total'] );
+
+		// Published with a LearnDash trigger - Ryan's example filter.
+		$result = PressPrimer_Certificate_Template::query(
+			[
+				'status'        => 'published',
+				'trigger_types' => [ 'learndash_course', 'learndash_lesson' ],
+			]
+		);
+		$this->assertSame( 1, $result['total'] );
+		$this->assertSame( 'Sales Onboarding', $result['items'][0]->title );
+
+		// Title search.
+		$result = PressPrimer_Certificate_Template::query( [ 'search' => 'onboard' ] );
+		$this->assertSame( 1, $result['total'] );
+
+		// Pagination: page 2 of size 2 carries one row.
+		$result = PressPrimer_Certificate_Template::query(
+			[
+				'per_page' => 2,
+				'page'     => 2,
+			]
+		);
+		$this->assertSame( 3, $result['total'] );
+		$this->assertCount( 1, $result['items'] );
+	}
+
+	/**
+	 * Batch trigger fetch maps rows per template.
+	 *
+	 * @return void
+	 */
+	public function test_get_for_templates_batches() {
+		$a = $this->seed_template();
+		$b = $this->seed_template();
+		$this->seed_template();
+
+		$this->wpdb->seed_row(
+			'wp_ppcert_triggers',
+			[
+				'template_id'  => $a,
+				'trigger_type' => 'ppq_quiz',
+				'source_ref'   => '5',
+				'is_active'    => 1,
+			]
+		);
+
+		$map = PressPrimer_Certificate_Trigger::get_for_templates( [ $a, $b ] );
+
+		$this->assertArrayHasKey( $a, $map );
+		$this->assertArrayNotHasKey( $b, $map );
+		$this->assertSame( 'ppq_quiz', $map[ $a ][0]->trigger_type );
+
+		$this->assertSame( [], PressPrimer_Certificate_Trigger::get_for_templates( [] ) );
+	}
+
+	/**
+	 * Duplication copies the design as a fresh draft and never copies
+	 * triggers (the reuse path is attaching a DIFFERENT trigger).
+	 *
+	 * @return void
+	 */
+	public function test_duplicate_copies_design_not_triggers() {
+		$source = $this->seed_template(
+			[
+				'title'  => 'Original',
+				'status' => 'published',
+			]
+		);
+
+		$this->wpdb->seed_row(
+			'wp_ppcert_triggers',
+			[
+				'template_id'  => $source,
+				'trigger_type' => 'learndash_course',
+				'source_ref'   => '11',
+				'is_active'    => 1,
+			]
+		);
+
+		$GLOBALS['ppcert_test_current_user'] = 4;
+
+		$copy_id = PressPrimer_Certificate_Template::duplicate( $source, 4 );
+
+		$this->assertIsInt( $copy_id );
+		$this->assertNotSame( $source, $copy_id );
+
+		$copy     = PressPrimer_Certificate_Template::get( $copy_id );
+		$original = PressPrimer_Certificate_Template::get( $source );
+
+		$this->assertSame( 'Original (Copy)', $copy->title );
+		$this->assertSame( 'draft', $copy->status );
+		$this->assertSame( 4, (int) $copy->author_id );
+		$this->assertNotSame( $original->uuid, $copy->uuid );
+		$this->assertSame( $original->layout, $copy->layout );
+
+		$this->assertSame( [], PressPrimer_Certificate_Trigger::get_for_template( $copy_id ) );
+		$this->assertCount( 1, PressPrimer_Certificate_Trigger::get_for_template( $source ) );
+
+		// A missing source errors cleanly.
+		$missing = PressPrimer_Certificate_Template::duplicate( 99999, 4 );
+		$this->assertInstanceOf( WP_Error::class, $missing );
+	}
+}

@@ -89,6 +89,44 @@ class PressPrimer_Certificate_Trigger {
 	}
 
 	/**
+	 * Batch-fetch triggers for a set of templates
+	 *
+	 * One query for the templates list's Trigger column (never a query
+	 * per row). FIND_IN_SET keeps the prepared shape fixed regardless of
+	 * how many ids the page holds.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int[] $template_ids Template row ids.
+	 * @return array Map of template_id => trigger rows.
+	 */
+	public static function get_for_templates( array $template_ids ) {
+		global $wpdb;
+
+		$ids = array_filter( array_map( 'absint', $template_ids ) );
+
+		if ( empty( $ids ) ) {
+			return [];
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT * FROM %i WHERE FIND_IN_SET( template_id, %s ) ORDER BY id ASC',
+				self::table(),
+				implode( ',', $ids )
+			)
+		);
+
+		$map = [];
+
+		foreach ( array_map( [ __CLASS__, 'hydrate' ], (array) $rows ) as $trigger ) {
+			$map[ (int) $trigger->template_id ][] = $trigger;
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Find active triggers for a source event
 	 *
 	 * The hot path: issuance listeners call this on every candidate event.

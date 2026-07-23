@@ -417,6 +417,77 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Trigger::get_for_templates - batch fetch by template id CSV.
+		if ( false !== strpos( $query, 'WHERE FIND_IN_SET( template_id, %s )' ) ) {
+			$ids = array_map( 'intval', explode( ',', (string) $args[1] ) );
+
+			return $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $ids ) {
+					return in_array( (int) $row['template_id'], $ids, true );
+				}
+			);
+		}
+
+		// Template::query - the templates admin list (sentinel filters +
+		// EXISTS trigger-type subquery). args: [templates_table, status x2,
+		// search x2, types_csv, triggers_table, types_csv, (limit, offset)].
+		if ( false !== strpos( $query, 'FROM %i t WHERE t.deleted_at IS NULL' ) ) {
+			$status    = (string) $args[1];
+			$needle    = $this->like_to_substring( (string) $args[3] );
+			$types_csv = (string) $args[5];
+			$types     = '' !== $types_csv ? explode( ',', $types_csv ) : [];
+			$trigger_rows = $this->rows( (string) $args[6] );
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $status, $needle, $types, $trigger_rows ) {
+					if ( ! empty( $row['deleted_at'] ) ) {
+						return false;
+					}
+
+					if ( '' !== $status && $row['status'] !== $status ) {
+						return false;
+					}
+
+					if ( '' !== $needle && false === stripos( isset( $row['title'] ) ? (string) $row['title'] : '', $needle ) ) {
+						return false;
+					}
+
+					if ( ! empty( $types ) ) {
+						$has_type = false;
+
+						foreach ( $trigger_rows as $trigger ) {
+							if ( (int) $trigger['template_id'] === (int) $row['id']
+								&& in_array( (string) $trigger['trigger_type'], $types, true ) ) {
+								$has_type = true;
+								break;
+							}
+						}
+
+						if ( ! $has_type ) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return strcmp( isset( $b['updated_at'] ) ? $b['updated_at'] : '', isset( $a['updated_at'] ) ? $a['updated_at'] : '' );
+				}
+			);
+
+			if ( false !== strpos( $query, 'SELECT COUNT(*)' ) ) {
+				return [ [ 'count' => count( $matches ) ] ];
+			}
+
+			return array_slice( $matches, (int) $args[9], (int) $args[8] );
+		}
+
 		// Certificate::get_batch_for_recipient - the privacy batch query.
 		if ( false !== strpos( $query, 'WHERE c.recipient_id = %d ORDER BY c.id ASC LIMIT %d OFFSET %d' ) ) {
 			$templates = $this->rows( (string) $args[1] );

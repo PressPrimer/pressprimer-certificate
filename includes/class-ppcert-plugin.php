@@ -259,6 +259,65 @@ class PressPrimer_Certificate_Plugin {
 	}
 
 	/**
+	 * Map integrations to their trigger type ids
+	 *
+	 * Built from the bundled adapter classes WITHOUT requiring their
+	 * source plugins to be active - the templates list must name and
+	 * filter by integrations whose plugins are currently deactivated
+	 * (their trigger rows still exist).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Map of integration label => string[] trigger type ids.
+	 */
+	public static function get_integration_map() {
+		$map = [];
+
+		foreach ( self::get_adapter_classes() as $adapter_class ) {
+			if ( ! class_exists( $adapter_class ) ) {
+				continue;
+			}
+
+			$adapter = new $adapter_class();
+
+			$map[ $adapter->get_integration_label() ][] = $adapter->get_id();
+		}
+
+		ksort( $map );
+
+		return $map;
+	}
+
+	/**
+	 * Per-trigger-type display details (integration + short label)
+	 *
+	 * Same adapter-class derivation as get_integration_map(): works for
+	 * deactivated integrations whose trigger rows still exist.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Map of trigger type id => [ integration, short_label ].
+	 */
+	public static function get_trigger_type_details() {
+		$details = [];
+
+		foreach ( self::get_adapter_classes() as $adapter_class ) {
+			if ( ! class_exists( $adapter_class ) ) {
+				continue;
+			}
+
+			$adapter = new $adapter_class();
+
+			$details[ $adapter->get_id() ] = [
+				'integration' => $adapter->get_integration_label(),
+				'short_label' => $adapter->get_short_label(),
+			];
+		}
+
+		return $details;
+	}
+
+	/**
 	 * Initialize REST API
 	 *
 	 * Registers REST API controllers under the ppcert/v1 namespace.
