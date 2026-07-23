@@ -740,6 +740,14 @@ if ( ! function_exists( 'get_posts' ) ) {
 				continue;
 			}
 
+			if ( isset( $args['post_parent'] ) && (int) ( $post->post_parent ?? 0 ) !== (int) $args['post_parent'] ) {
+				continue;
+			}
+
+			if ( isset( $args['post_parent__in'] ) && ! in_array( (int) ( $post->post_parent ?? 0 ), array_map( 'intval', (array) $args['post_parent__in'] ), true ) ) {
+				continue;
+			}
+
 			if ( ! empty( $args['s'] ) && false === stripos( (string) $post->post_title, (string) $args['s'] ) ) {
 				continue;
 			}

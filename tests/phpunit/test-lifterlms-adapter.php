@@ -28,6 +28,62 @@ if ( ! defined( 'LEARNDASH_VERSION' ) ) {
 	define( 'LEARNDASH_VERSION', '4.23.0-test' );
 }
 
+if ( ! function_exists( 'llms_get_post' ) ) {
+	/**
+	 * Stub: LLMS model factory ($GLOBALS['ppcert_test_llms_posts'][id] = object).
+	 *
+	 * @param int $post_id Post id.
+	 * @return object|null
+	 */
+	function llms_get_post( $post_id ) { // phpcs:ignore Universal.Files.SeparateFunctionsFromOO.Mixed -- LLMS API stub for the adapters under test.
+		return isset( $GLOBALS['ppcert_test_llms_posts'][ (int) $post_id ] )
+			? $GLOBALS['ppcert_test_llms_posts'][ (int) $post_id ]
+			: null;
+	}
+}
+
+/**
+ * Minimal LLMS model double: get()/get_lessons() from a data map.
+ */
+class PPCert_Test_LLMS_Model { // phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound -- Model stub for the adapters under test.
+
+	/**
+	 * Model data.
+	 *
+	 * @var array
+	 */
+	private $data;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param array $data Data map ('lessons' key feeds get_lessons()).
+	 */
+	public function __construct( array $data ) {
+		$this->data = $data;
+	}
+
+	/**
+	 * Field getter (mirrors the LLMS model contract).
+	 *
+	 * @param string $key Field key.
+	 * @return mixed
+	 */
+	public function get( $key ) {
+		return isset( $this->data[ $key ] ) ? $this->data[ $key ] : null;
+	}
+
+	/**
+	 * Lesson list getter (mirrors LLMS_Course).
+	 *
+	 * @param string $return_type Return shape.
+	 * @return array
+	 */
+	public function get_lessons( $return_type = 'lessons' ) {
+		return isset( $this->data['lessons'] ) ? $this->data['lessons'] : [];
+	}
+}
+
 /**
  * Unavailable-variant double: the deactivated-LifterLMS scenario.
  */
@@ -337,5 +393,164 @@ class Test_LifterLMS_Adapter extends TestCase { // phpcs:ignore Generic.Files.On
 		// The two-step picker metadata reaches the client.
 		$this->assertSame( 'Course completed', $data[1]['short_label'] );
 		$this->assertSame( [], $data[1]['source_levels'] );
+	}
+
+	/*
+	 * ------------------------------------------------------------------
+	 * Quiz trigger (1.0 scope addition, Ryan 2026-07-23).
+	 * ------------------------------------------------------------------
+	 */
+
+	/**
+	 * An LLMS attempt double for the quiz-passed hook.
+	 *
+	 * @param float $grade Grade percent.
+	 * @return PPCert_Test_LLMS_Model
+	 */
+	private function llms_attempt( $grade ) {
+		return new PPCert_Test_LLMS_Model(
+			[
+				'grade'     => $grade,
+				'lesson_id' => 410,
+			]
+		);
+	}
+
+	/**
+	 * Seed the quiz fixture posts + LLMS relationship models.
+	 *
+	 * @return void
+	 */
+	private function seed_quiz_fixtures() {
+		$GLOBALS['ppcert_test_posts'][402] = (object) [
+			'ID'          => 402,
+			'post_type'   => 'llms_quiz',
+			'post_status' => 'publish',
+			'post_title'  => 'Watercolor Final Quiz',
+			'post_author' => 9,
+		];
+		$GLOBALS['ppcert_test_posts'][410] = (object) [
+			'ID'          => 410,
+			'post_type'   => 'lesson',
+			'post_status' => 'publish',
+			'post_title'  => 'Wet on Wet',
+			'post_author' => 9,
+		];
+
+		$GLOBALS['ppcert_test_llms_posts'] = [
+			401 => new PPCert_Test_LLMS_Model(
+				[
+					'lessons' => [
+						new PPCert_Test_LLMS_Model( [ 'quiz' => 402 ] ),
+						new PPCert_Test_LLMS_Model( [ 'quiz' => 0 ] ),
+					],
+				]
+			),
+			410 => new PPCert_Test_LLMS_Model( [ 'parent_course' => 401 ] ),
+		];
+	}
+
+	/**
+	 * Quiz registration: cascade declared, fields tagged, min_score help.
+	 *
+	 * @return void
+	 */
+	public function test_quiz_registration_and_cascade_declaration() {
+		$adapter = new PressPrimer_Certificate_LifterLMS_Quiz_Adapter();
+		$adapter->register();
+
+		$types = PressPrimer_Certificate_Trigger_Registry::get_types();
+		$this->assertArrayHasKey( 'lms_lifterlms_quiz', $types );
+		$this->assertSame( 'Quiz passed (LifterLMS)', $types['lms_lifterlms_quiz']['label'] );
+		$this->assertSame( 'LifterLMS', $types['lms_lifterlms_quiz']['integration'] );
+		$this->assertSame( [ 'llms_quiz' ], $types['lms_lifterlms_quiz']['source_post_types'] );
+		$this->assertSame( 'course', $types['lms_lifterlms_quiz']['source_levels'][0]['key'] );
+		$this->assertArrayHasKey( 'min_score', $types['lms_lifterlms_quiz']['conditions_schema'] );
+
+		$fields = PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' );
+		$this->assertContains( 'lms_lifterlms_quiz', $fields['source.quiz_title']['trigger_types'] );
+		$this->assertContains( 'lms_lifterlms_quiz', $fields['source.course_title']['trigger_types'] );
+	}
+
+	/**
+	 * A passed quiz issues once with merge data resolved from the
+	 * attempt and its parent course; min_score gates the boundary and
+	 * retakes suppress.
+	 *
+	 * @return void
+	 */
+	public function test_quiz_pass_min_score_boundary_and_suppression() {
+		$this->seed_quiz_fixtures();
+		$adapter = new PressPrimer_Certificate_LifterLMS_Quiz_Adapter();
+		$adapter->register();
+
+		$this->wpdb->seed_row(
+			'wp_ppcert_triggers',
+			[
+				'uuid'            => 'trg-llmsq-test',
+				'template_id'     => $this->template_id,
+				'trigger_type'    => 'lms_lifterlms_quiz',
+				'source_ref'      => '402',
+				'conditions_json' => wp_json_encode( [ 'min_score' => 80.0 ] ),
+				'is_active'       => 1,
+			]
+		);
+
+		// The hook is pass-only, but the trigger bar still applies.
+		do_action( 'lifterlms_quiz_passed', 7, 402, $this->llms_attempt( 79.99 ) );
+		$this->assertCount( 0, $this->wpdb->rows( 'wp_ppcert_certificates' ) );
+
+		do_action( 'lifterlms_quiz_passed', 7, 402, $this->llms_attempt( 80.0 ) );
+		$rows = $this->wpdb->rows( 'wp_ppcert_certificates' );
+		$this->assertCount( 1, $rows );
+		$this->assertSame( 'lms_lifterlms_quiz', $rows[0]['source_type'] );
+		$this->assertSame( '402', $rows[0]['source_ref'] );
+
+		// Retake pass: suppressed.
+		do_action( 'lifterlms_quiz_passed', 7, 402, $this->llms_attempt( 95.0 ) );
+		$this->assertCount( 1, $this->wpdb->rows( 'wp_ppcert_certificates' ) );
+
+		// The issued certificate's merge data carries the parent course
+		// resolved through the attempt's lesson.
+		$merge = json_decode( $rows[0]['merge_data_json'], true );
+		$this->assertSame( 'Watercolor Foundations', $merge['source.course_title'] );
+
+		// Resolvers on a shared-contract context.
+		$resolved = $adapter->resolve_merge_data(
+			[
+				'src_quiz_title'    => 'Watercolor Final Quiz',
+				'src_score_display' => '80%',
+				'src_grade_display' => 'Passed',
+				'lms_course_title'  => 'Watercolor Foundations',
+				'src_completed_at'  => '2026-06-12 09:30:00',
+				'lms_instructor'    => 'Prof. Marisol Vega',
+			]
+		);
+		$this->assertSame( 'Watercolor Final Quiz', $resolved['source.quiz_title'] );
+		$this->assertSame( '80%', $resolved['source.score'] );
+		$this->assertSame( 'Watercolor Foundations', $resolved['source.course_title'] );
+	}
+
+	/**
+	 * The quiz cascade scopes to the chosen course's lesson quizzes.
+	 *
+	 * @return void
+	 */
+	public function test_quiz_cascade_scopes_to_course_lessons() {
+		$this->seed_quiz_fixtures();
+		$adapter = new PressPrimer_Certificate_LifterLMS_Quiz_Adapter();
+
+		$this->assertSame(
+			[ 'Watercolor Foundations' ],
+			array_column( $adapter->get_level_options( 'course', [] ), 'title' )
+		);
+
+		$this->assertSame(
+			[ '402' ],
+			array_column( $adapter->get_sources_for_parents( [ 'course' => 401 ] ), 'id' )
+		);
+
+		// Unknown course: empty, never the global list.
+		$this->assertSame( [], $adapter->get_sources_for_parents( [ 'course' => 999 ] ) );
 	}
 }

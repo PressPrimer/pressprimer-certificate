@@ -147,7 +147,7 @@ class PressPrimer_Certificate_LearnDash_Topic_Adapter extends PressPrimer_Certif
 			return [];
 		}
 
-		return $this->ld_posts_to_options( (array) learndash_get_topic_list( $lesson_id, $course_id ), $search );
+		return $this->posts_to_options( (array) learndash_get_topic_list( $lesson_id, $course_id ), $search );
 	}
 
 	/**

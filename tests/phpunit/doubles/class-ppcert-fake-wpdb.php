@@ -285,6 +285,23 @@ class PPCert_Fake_WPDB {
 	}
 
 	/**
+	 * wpdb::get_col() - first column of each matching row.
+	 *
+	 * @param string $prepared Encoded payload from prepare().
+	 * @return array Column values.
+	 * @throws RuntimeException On an unsupported query shape.
+	 */
+	public function get_col( $prepared ) {
+		return array_map(
+			static function ( $row ) {
+				$values = array_values( (array) $row );
+				return isset( $values[0] ) ? $values[0] : null;
+			},
+			$this->run_query( $prepared )
+		);
+	}
+
+	/**
 	 * Read queries executed (test instrumentation, e.g. asserting the
 	 * checksum gate reaches the endpoint before any DB work).
 	 *
@@ -433,6 +450,28 @@ class PPCert_Fake_WPDB {
 						&& isset( $row['source_ref'] ) && $row['source_ref'] === $args[2]
 						&& 1 === (int) $row['is_active'];
 				}
+			);
+		}
+
+		// LearnPress quiz cascade: quiz item ids of a course's sections.
+		// Test convenience: seed wp_learnpress_section_items rows carrying
+		// section_course_id directly (the real query joins the sections
+		// table; the double flattens the join).
+		if ( false !== strpos( $query, "AND si.item_type = 'lp_quiz'" ) ) {
+			$course_id = (int) $args[2];
+
+			return array_map(
+				static function ( $row ) {
+					return [ 'item_id' => $row['item_id'] ];
+				},
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $course_id ) {
+						return isset( $row['section_course_id'], $row['item_id'] )
+							&& (int) $row['section_course_id'] === $course_id
+							&& ( ! isset( $row['item_type'] ) || 'lp_quiz' === $row['item_type'] );
+					}
+				)
 			);
 		}
 

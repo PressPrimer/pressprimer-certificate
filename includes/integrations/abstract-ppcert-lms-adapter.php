@@ -364,6 +364,47 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Published posts to sorted id/title picker options
+	 *
+	 * Shared by every hierarchical picker (LD steps, LLMS lesson
+	 * quizzes, Tutor topics, LP sections): filters to published, applies
+	 * the search term, sorts by title, caps at 50.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $posts  Post objects (nulls tolerated).
+	 * @param string $search Search term.
+	 * @return array<int,array{id:string,title:string}>
+	 */
+	protected function posts_to_options( array $posts, string $search = '' ): array {
+		$options = [];
+
+		foreach ( $posts as $post ) {
+			if ( ! is_object( $post ) || 'publish' !== (string) $post->post_status ) {
+				continue;
+			}
+
+			if ( '' !== $search && false === stripos( (string) $post->post_title, $search ) ) {
+				continue;
+			}
+
+			$options[] = [
+				'id'    => (string) $post->ID,
+				'title' => (string) $post->post_title,
+			];
+		}
+
+		usort(
+			$options,
+			static function ( $a, $b ) {
+				return strcasecmp( $a['title'], $b['title'] );
+			}
+		);
+
+		return array_slice( $options, 0, 50 );
+	}
+
+	/**
 	 * The shared course merge-field set (FR-004: course_title,
 	 * completion_date, instructor; source.meta.* resolves dynamically
 	 * from source_post_id)
@@ -441,6 +482,103 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 			// converts its LMS's own value before it lands here.
 			'src_completed_at' => $completed_at,
 			'lms_instructor'   => $instructor,
+		];
+	}
+
+	/**
+	 * The shared quiz merge-field set: quiz fields plus parent-course
+	 * context (used by every LMS quiz adapter)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	protected function quiz_merge_fields(): array {
+		$course = $this->course_merge_fields();
+
+		return [
+			'source' => [
+				'quiz_title'   => [
+					'key'      => 'source.quiz_title',
+					'label'    => __( 'Quiz Title', 'pressprimer-certificate' ),
+					'sample'   => __( 'Advanced Botany Quiz', 'pressprimer-certificate' ),
+					'resolver' => [ $this, 'resolve_source_quiz_title' ],
+				],
+				'score'        => [
+					'key'      => 'source.score',
+					'label'    => __( 'Quiz Score', 'pressprimer-certificate' ),
+					'sample'   => '92%',
+					'resolver' => [ $this, 'resolve_source_score' ],
+				],
+				'grade'        => [
+					'key'      => 'source.grade',
+					'label'    => __( 'Quiz Result', 'pressprimer-certificate' ),
+					'sample'   => __( 'Passed', 'pressprimer-certificate' ),
+					'resolver' => [ $this, 'resolve_source_grade' ],
+				],
+				'pass_date'    => [
+					'key'      => 'source.pass_date',
+					'label'    => __( 'Pass Date', 'pressprimer-certificate' ),
+					'sample'   => __( 'June 12, 2026', 'pressprimer-certificate' ),
+					'resolver' => [ $this, 'resolve_source_completed_date' ],
+				],
+				'course_title' => $course['source']['course_title'],
+				'instructor'   => $course['source']['instructor'],
+			],
+		];
+	}
+
+	/**
+	 * The shared quiz resolve_merge_data() map
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return array<string,string>
+	 */
+	protected function resolve_quiz_merge_data( array $context ): array {
+		return [
+			'source.quiz_title'   => $this->resolve_source_quiz_title( $context ),
+			'source.score'        => $this->resolve_source_score( $context ),
+			'source.grade'        => $this->resolve_source_grade( $context ),
+			'source.pass_date'    => $this->resolve_source_completed_date( $context ),
+			'source.course_title' => $this->resolve_course_title( $context ),
+			'source.instructor'   => $this->resolve_course_instructor( $context ),
+		];
+	}
+
+	/**
+	 * Build the shared quiz issuance context
+	 *
+	 * Display strings precomputed per the shared source-context
+	 * contract; instructor resolves from the parent course's author,
+	 * falling back to the quiz's own.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Post|object $quiz         Quiz post.
+	 * @param float          $percent      Score percent (already rounded).
+	 * @param object|null    $course       Parent course post (optional).
+	 * @param string         $completed_at Completion datetime, UTC.
+	 * @return array
+	 */
+	protected function build_quiz_context( $quiz, float $percent, $course, string $completed_at ): array {
+		$instructor = '';
+		$author_src = is_object( $course ) && ! empty( $course->post_author ) ? $course : $quiz;
+
+		if ( ! empty( $author_src->post_author ) ) {
+			$author     = get_userdata( (int) $author_src->post_author );
+			$instructor = $author ? (string) $author->display_name : '';
+		}
+
+		return [
+			'source_post_id'    => (int) $quiz->ID,
+			'src_quiz_title'    => (string) $quiz->post_title,
+			'src_score_display' => $this->format_percent_display( $percent ),
+			'src_grade_display' => __( 'Passed', 'pressprimer-certificate' ),
+			'lms_course_title'  => is_object( $course ) ? (string) $course->post_title : '',
+			'src_completed_at'  => $completed_at,
+			'lms_instructor'    => $instructor,
 		];
 	}
 

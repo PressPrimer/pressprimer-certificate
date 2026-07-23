@@ -151,7 +151,7 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 			}
 		}
 
-		return $this->ld_posts_to_options( array_values( $posts ), $search );
+		return $this->posts_to_options( array_values( $posts ), $search );
 	}
 
 	/**
@@ -215,46 +215,15 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 	}
 
 	/**
-	 * Contributed merge fields: quiz set plus the parent course title
-	 * and instructor from the shared course set
+	 * Contributed merge fields: the shared quiz set (quiz fields plus
+	 * parent-course context)
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array
 	 */
 	public function get_merge_fields(): array {
-		$course = $this->course_merge_fields();
-
-		return [
-			'source' => [
-				'quiz_title'   => [
-					'key'      => 'source.quiz_title',
-					'label'    => __( 'Quiz Title', 'pressprimer-certificate' ),
-					'sample'   => __( 'Advanced Botany Quiz', 'pressprimer-certificate' ),
-					'resolver' => [ $this, 'resolve_source_quiz_title' ],
-				],
-				'score'        => [
-					'key'      => 'source.score',
-					'label'    => __( 'Quiz Score', 'pressprimer-certificate' ),
-					'sample'   => '92%',
-					'resolver' => [ $this, 'resolve_source_score' ],
-				],
-				'grade'        => [
-					'key'      => 'source.grade',
-					'label'    => __( 'Quiz Result', 'pressprimer-certificate' ),
-					'sample'   => __( 'Passed', 'pressprimer-certificate' ),
-					'resolver' => [ $this, 'resolve_source_grade' ],
-				],
-				'pass_date'    => [
-					'key'      => 'source.pass_date',
-					'label'    => __( 'Pass Date', 'pressprimer-certificate' ),
-					'sample'   => __( 'June 12, 2026', 'pressprimer-certificate' ),
-					'resolver' => [ $this, 'resolve_source_completed_date' ],
-				],
-				'course_title' => $course['source']['course_title'],
-				'instructor'   => $course['source']['instructor'],
-			],
-		];
+		return $this->quiz_merge_fields();
 	}
 
 	/**
@@ -266,14 +235,7 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 	 * @return array<string,string>
 	 */
 	public function resolve_merge_data( array $context ): array {
-		return [
-			'source.quiz_title'   => $this->resolve_source_quiz_title( $context ),
-			'source.score'        => $this->resolve_source_score( $context ),
-			'source.grade'        => $this->resolve_source_grade( $context ),
-			'source.pass_date'    => $this->resolve_source_completed_date( $context ),
-			'source.course_title' => $this->resolve_course_title( $context ),
-			'source.instructor'   => $this->resolve_course_instructor( $context ),
-		];
+		return $this->resolve_quiz_merge_data( $context );
 	}
 
 	/**
@@ -329,25 +291,7 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 			? (int) $quizdata['completed']
 			: time();
 
-		$instructor = '';
-		$author_src = $course ? $course : $quiz;
-
-		if ( ! empty( $author_src->post_author ) ) {
-			$author     = get_userdata( (int) $author_src->post_author );
-			$instructor = $author ? (string) $author->display_name : '';
-		}
-
-		// Shared source-context contract: display strings precomputed
-		// so the shared resolvers stay passthroughs.
-		$context = [
-			'source_post_id'    => $quiz_id,
-			'src_quiz_title'    => (string) $quiz->post_title,
-			'src_score_display' => $this->format_percent_display( $percent ),
-			'src_grade_display' => __( 'Passed', 'pressprimer-certificate' ),
-			'lms_course_title'  => $course ? (string) $course->post_title : '',
-			'src_completed_at'  => gmdate( 'Y-m-d H:i:s', $completed_ts ),
-			'lms_instructor'    => $instructor,
-		];
+		$context = $this->build_quiz_context( $quiz, $percent, $course, gmdate( 'Y-m-d H:i:s', $completed_ts ) );
 
 		foreach ( $triggers as $trigger ) {
 			// Condition: numeric min_score raises the bar above the

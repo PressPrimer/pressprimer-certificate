@@ -144,44 +144,7 @@ class PressPrimer_Certificate_LearnDash_Adapter extends PressPrimer_Certificate_
 
 		$ids = learndash_course_get_steps_by_type( $course_id, $post_type );
 
-		return $this->ld_posts_to_options( array_map( 'get_post', array_filter( array_map( 'absint', (array) $ids ) ) ), $search );
-	}
-
-	/**
-	 * Published posts to sorted id/title picker options
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array  $posts  Post objects (nulls tolerated).
-	 * @param string $search Search term.
-	 * @return array<int,array{id:string,title:string}>
-	 */
-	protected function ld_posts_to_options( array $posts, string $search = '' ): array {
-		$options = [];
-
-		foreach ( $posts as $post ) {
-			if ( ! is_object( $post ) || 'publish' !== (string) $post->post_status ) {
-				continue;
-			}
-
-			if ( '' !== $search && false === stripos( (string) $post->post_title, $search ) ) {
-				continue;
-			}
-
-			$options[] = [
-				'id'    => (string) $post->ID,
-				'title' => (string) $post->post_title,
-			];
-		}
-
-		usort(
-			$options,
-			static function ( $a, $b ) {
-				return strcasecmp( $a['title'], $b['title'] );
-			}
-		);
-
-		return array_slice( $options, 0, 50 );
+		return $this->posts_to_options( array_map( 'get_post', array_filter( array_map( 'absint', (array) $ids ) ) ), $search );
 	}
 
 	/**

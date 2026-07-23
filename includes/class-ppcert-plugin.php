@@ -204,23 +204,41 @@ class PressPrimer_Certificate_Plugin {
 		add_action(
 			'ppcert_loaded',
 			static function () {
-				$adapters = [
-					'PressPrimer_Certificate_LearnDash_Adapter',
-					'PressPrimer_Certificate_LearnDash_Lesson_Adapter',
-					'PressPrimer_Certificate_LearnDash_Quiz_Adapter',
-					'PressPrimer_Certificate_LearnDash_Topic_Adapter',
-					'PressPrimer_Certificate_LifterLMS_Adapter',
-					'PressPrimer_Certificate_PPA_Adapter',
-					'PressPrimer_Certificate_PPQ_Adapter',
-				];
-
-				foreach ( $adapters as $adapter_class ) {
+				foreach ( self::get_adapter_classes() as $adapter_class ) {
 					if ( class_exists( $adapter_class ) ) {
 						( new $adapter_class() )->register();
 					}
 				}
 			}
 		);
+	}
+
+	/**
+	 * The bundled adapter classes
+	 *
+	 * Shared with the triggers REST controller, which asks unregistered
+	 * (deactivated-plugin) trigger types for their integration name so
+	 * the Award tab can say which plugin must be reactivated.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string[] Class names.
+	 */
+	public static function get_adapter_classes() {
+		return [
+			'PressPrimer_Certificate_LearnDash_Adapter',
+			'PressPrimer_Certificate_LearnDash_Lesson_Adapter',
+			'PressPrimer_Certificate_LearnDash_Quiz_Adapter',
+			'PressPrimer_Certificate_LearnDash_Topic_Adapter',
+			'PressPrimer_Certificate_LearnPress_Adapter',
+			'PressPrimer_Certificate_LearnPress_Quiz_Adapter',
+			'PressPrimer_Certificate_LifterLMS_Adapter',
+			'PressPrimer_Certificate_LifterLMS_Quiz_Adapter',
+			'PressPrimer_Certificate_PPA_Adapter',
+			'PressPrimer_Certificate_PPQ_Adapter',
+			'PressPrimer_Certificate_TutorLMS_Adapter',
+			'PressPrimer_Certificate_TutorLMS_Quiz_Adapter',
+		];
 	}
 
 	/**
