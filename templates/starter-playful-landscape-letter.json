@@ -1,0 +1,254 @@
+{
+  "_meta": {
+    "slug": "starter-playful-landscape-letter",
+    "label": "Playful (Landscape)",
+    "color_roles": {
+      "primary": [
+        "#0f172a"
+      ],
+      "accent": [
+        "#38bdf8",
+        "#0ea5e9"
+      ]
+    }
+  },
+  "layout_schema_version": 1,
+  "page": {
+    "size": "letter",
+    "orientation": "landscape",
+    "width": 792,
+    "height": 612
+  },
+  "background": {
+    "color": "#fffdf7",
+    "attachment_id": 0
+  },
+  "elements": [
+    {
+      "id": "el_plfframe",
+      "type": "shape",
+      "x": 24,
+      "y": 24,
+      "w": 744,
+      "h": 564,
+      "z": 1,
+      "props": {
+        "shape": "rect",
+        "stroke_color": "#38bdf8",
+        "stroke_width": 3,
+        "fill_color": "",
+        "radius": 18
+      }
+    },
+    {
+      "id": "el_plfdot01",
+      "type": "shape",
+      "x": 58,
+      "y": 56,
+      "w": 20,
+      "h": 20,
+      "z": 2,
+      "props": {
+        "shape": "ellipse",
+        "stroke_color": "#fb7185",
+        "stroke_width": 0,
+        "fill_color": "#fb7185",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_plfdot02",
+      "type": "shape",
+      "x": 724,
+      "y": 64,
+      "w": 14,
+      "h": 14,
+      "z": 3,
+      "props": {
+        "shape": "ellipse",
+        "stroke_color": "#facc15",
+        "stroke_width": 0,
+        "fill_color": "#facc15",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_plfdot03",
+      "type": "shape",
+      "x": 68,
+      "y": 513,
+      "w": 16,
+      "h": 16,
+      "z": 4,
+      "props": {
+        "shape": "ellipse",
+        "stroke_color": "#34d399",
+        "stroke_width": 0,
+        "fill_color": "#34d399",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_plfdot04",
+      "type": "shape",
+      "x": 648,
+      "y": 517,
+      "w": 22,
+      "h": 22,
+      "z": 5,
+      "props": {
+        "shape": "ellipse",
+        "stroke_color": "#a78bfa",
+        "stroke_width": 0,
+        "fill_color": "#a78bfa",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_plftitle",
+      "type": "text",
+      "x": 96.0,
+      "y": 92,
+      "w": 600,
+      "h": 42,
+      "z": 6,
+      "props": {
+        "content": "Certificate of Achievement",
+        "font_family": "quicksand",
+        "font_size": 30,
+        "color": "#0ea5e9",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_plfkick1",
+      "type": "text",
+      "x": 96.0,
+      "y": 162,
+      "w": 600,
+      "h": 20,
+      "z": 7,
+      "props": {
+        "content": "proudly awarded to",
+        "font_family": "quicksand",
+        "font_size": 14,
+        "color": "#64748b",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_plfname1",
+      "type": "merge_field",
+      "x": 96.0,
+      "y": 200,
+      "w": 600,
+      "h": 54,
+      "z": 8,
+      "props": {
+        "token": "{{recipient.full_name}}",
+        "font_family": "quicksand",
+        "font_size": 42,
+        "color": "#0f172a",
+        "align": "center",
+        "line_height": 1.1,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_plfsubj1",
+      "type": "text",
+      "x": 146.0,
+      "y": 286,
+      "w": 500,
+      "h": 44,
+      "z": 9,
+      "props": {
+        "content": "for bringing energy, effort, and excellence to every step of the journey",
+        "font_family": "quicksand",
+        "font_size": 15,
+        "color": "#475569",
+        "align": "center",
+        "line_height": 1.5,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_plfcrse1",
+      "type": "text",
+      "x": 146.0,
+      "y": 340,
+      "w": 500,
+      "h": 28,
+      "z": 10,
+      "props": {
+        "content": "Course Name",
+        "font_family": "quicksand",
+        "font_size": 20,
+        "color": "#0f172a",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_plfissue",
+      "type": "merge_field",
+      "x": 100,
+      "y": 499,
+      "w": 240,
+      "h": 18,
+      "z": 11,
+      "props": {
+        "token": "{{certificate.issue_date}}",
+        "font_family": "quicksand",
+        "font_size": 11,
+        "color": "#64748b",
+        "align": "left",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_plfissr1",
+      "type": "merge_field",
+      "x": 100,
+      "y": 525,
+      "w": 300,
+      "h": 18,
+      "z": 12,
+      "props": {
+        "token": "{{certificate.issuer_name}}",
+        "font_family": "quicksand",
+        "font_size": 11,
+        "color": "#0f172a",
+        "align": "left",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_plfqr001",
+      "type": "qr",
+      "x": 676,
+      "y": 483,
+      "w": 64,
+      "h": 64,
+      "z": 13,
+      "props": {
+        "dark_color": "#0f172a",
+        "light_color": ""
+      }
+    }
+  ]
+}

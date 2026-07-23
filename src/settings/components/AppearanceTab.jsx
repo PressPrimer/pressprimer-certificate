@@ -14,7 +14,15 @@
 
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { Button, ColorPicker, Form, Select, Space, Typography } from 'antd';
+import {
+	Button,
+	ColorPicker,
+	Form,
+	Segmented,
+	Select,
+	Space,
+	Typography,
+} from 'antd';
 import {
 	DeleteOutlined,
 	PictureOutlined,
@@ -337,6 +345,48 @@ const AppearanceTab = ( { settings, updateSetting, settingsData } ) => {
 
 				<div className="ppcert-appearance-columns">
 					<div className="ppcert-appearance-controls">
+						<div className="ppcert-settings-field">
+							<Form.Item
+								label={ __(
+									'Certificate size',
+									'pressprimer-certificate'
+								) }
+								help={ __(
+									'The default page size for new certificates. Every starter template ships natively in both sizes.',
+									'pressprimer-certificate'
+								) }
+							>
+								<Segmented
+									value={
+										settings.appearance_page_size ||
+										'letter'
+									}
+									options={ [
+										{
+											label: __(
+												'Letter',
+												'pressprimer-certificate'
+											),
+											value: 'letter',
+										},
+										{
+											label: __(
+												'A4',
+												'pressprimer-certificate'
+											),
+											value: 'a4',
+										},
+									] }
+									onChange={ ( value ) =>
+										updateSetting(
+											'appearance_page_size',
+											value
+										)
+									}
+								/>
+							</Form.Item>
+						</div>
+
 						<div className="ppcert-settings-field">
 							<Form.Item
 								label={ __(

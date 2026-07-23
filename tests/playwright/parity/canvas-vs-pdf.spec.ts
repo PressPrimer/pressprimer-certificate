@@ -46,6 +46,12 @@ const STARTERS = [
 	'starter-modern-portrait',
 	'starter-playful-landscape',
 	'starter-playful-portrait',
+	'starter-formal-landscape-letter',
+	'starter-formal-portrait-letter',
+	'starter-modern-landscape-letter',
+	'starter-modern-portrait-letter',
+	'starter-playful-landscape-letter',
+	'starter-playful-portrait-letter',
 ];
 
 test.use( { viewport: { width: 1100, height: 800 }, deviceScaleFactor: 2 } );

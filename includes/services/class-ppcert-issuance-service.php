@@ -73,6 +73,8 @@ class PressPrimer_Certificate_Issuance_Service {
 	 *     @type array  $context      Adapter-supplied resolution context.
 	 *     @type bool   $force        Bypass duplicate suppression (manual
 	 *                                "Issue anyway" - 003 Edge Cases). Default false.
+	 *     @type string $issued_at    UTC MySQL datetime override for manual
+	 *                                backdating (Phase 5B item 6). Default now.
 	 * }
 	 * @return int|WP_Error Certificate row id (existing id when suppressed),
 	 *                      or WP_Error on abort.
@@ -165,8 +167,13 @@ class PressPrimer_Certificate_Issuance_Service {
 		/** This action is documented in docs/architecture/HOOKS.md */
 		do_action( 'ppcert_before_issue', $context );
 
-		// Steps 5-7 inside the pre-insert error boundary.
-		$issued_at = current_time( 'mysql', true );
+		// Steps 5-7 inside the pre-insert error boundary. Manual
+		// issuance may backdate via the validated issued_at override;
+		// everything else stamps now (UTC everywhere).
+		$issued_at = isset( $args['issued_at'] )
+			&& preg_match( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', (string) $args['issued_at'] )
+			? (string) $args['issued_at']
+			: current_time( 'mysql', true );
 
 		try {
 			$certificate_id = self::resolve_and_insert( $template, $context, $issued_at );

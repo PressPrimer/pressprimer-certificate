@@ -515,18 +515,24 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 	/**
 	 * The blank layout (the low-emphasis "Start blank" card)
 	 *
+	 * Landscape at the Appearance default certificate size (Letter
+	 * unless the site chose A4 - Phase 5B item 7).
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return array
 	 */
 	private static function blank_layout() {
+		$size = PressPrimer_Certificate_Appearance_Service::get()['page_size'];
+		$dims = 'a4' === $size ? [ 842, 595 ] : [ 792, 612 ];
+
 		return [
 			'layout_schema_version' => 1,
 			'page'                  => [
-				'size'        => 'a4',
+				'size'        => $size,
 				'orientation' => 'landscape',
-				'width'       => 842,
-				'height'      => 595,
+				'width'       => $dims[0],
+				'height'      => $dims[1],
 			],
 			'background'            => [
 				'color'         => '#ffffff',

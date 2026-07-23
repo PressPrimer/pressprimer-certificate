@@ -126,6 +126,15 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 			$sanitized['verification_page_id'] = absint( $data['verification_page_id'] );
 		}
 
+		// Appearance: certificate size is a fixed choice.
+		if ( isset( $data['appearance_page_size'] ) ) {
+			$size = sanitize_key( (string) $data['appearance_page_size'] );
+
+			if ( in_array( $size, [ 'a4', 'letter' ], true ) ) {
+				$sanitized['appearance_page_size'] = $size;
+			}
+		}
+
 		// Appearance: the default font must be a registered slug.
 		if ( isset( $data['appearance_default_font'] ) ) {
 			$font = sanitize_key( (string) $data['appearance_default_font'] );

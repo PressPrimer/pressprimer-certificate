@@ -11,8 +11,9 @@
 import { render, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import { Button, Modal, Select, message } from 'antd';
+import { Button, DatePicker, Modal, Select, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 
 // Ecosystem convention: toasts clear the WP admin bar.
 message.config( { top: 50, duration: 5, maxCount: 3 } );
@@ -26,6 +27,7 @@ function IssueApp() {
 	const [ open, setOpen ] = useState( false );
 	const [ templateId, setTemplateId ] = useState( null );
 	const [ recipient, setRecipient ] = useState( null );
+	const [ earnedDate, setEarnedDate ] = useState( () => dayjs() );
 	const [ users, setUsers ] = useState( [] );
 	const [ submitting, setSubmitting ] = useState( false );
 
@@ -34,6 +36,7 @@ function IssueApp() {
 	const reset = () => {
 		setTemplateId( null );
 		setRecipient( null );
+		setEarnedDate( dayjs() );
 		setUsers( [] );
 	};
 
@@ -55,6 +58,9 @@ function IssueApp() {
 			data: {
 				template_id: templateId,
 				recipient_id: recipient,
+				earned_date: earnedDate
+					? earnedDate.format( 'YYYY-MM-DD' )
+					: undefined,
 				force,
 			},
 		} )
@@ -188,6 +194,27 @@ function IssueApp() {
 							value: user.id,
 							label: `${ user.name } (${ user.email })`,
 						} ) ) }
+						className="ppcert-issue__control"
+					/>
+
+					<label
+						className="ppcert-issue__label"
+						htmlFor="ppcert-issue-earned"
+					>
+						{ __( 'Earned date', 'pressprimer-certificate' ) }
+					</label>
+					<DatePicker
+						id="ppcert-issue-earned"
+						value={ earnedDate }
+						data-ppcert-issue-earned
+						allowClear={ false }
+						getPopupContainer={ ( node ) => node.parentElement }
+						disabledDate={ ( current ) =>
+							current && current > dayjs().endOf( 'day' )
+						}
+						onChange={ ( value ) =>
+							setEarnedDate( value || dayjs() )
+						}
 						className="ppcert-issue__control"
 					/>
 				</div>

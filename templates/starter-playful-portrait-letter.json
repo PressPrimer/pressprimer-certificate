@@ -1,0 +1,254 @@
+{
+  "_meta": {
+    "slug": "starter-playful-portrait-letter",
+    "label": "Playful (Portrait)",
+    "color_roles": {
+      "primary": [
+        "#0f172a"
+      ],
+      "accent": [
+        "#38bdf8",
+        "#0ea5e9"
+      ]
+    }
+  },
+  "layout_schema_version": 1,
+  "page": {
+    "size": "letter",
+    "orientation": "portrait",
+    "width": 612,
+    "height": 792
+  },
+  "background": {
+    "color": "#fffdf7",
+    "attachment_id": 0
+  },
+  "elements": [
+    {
+      "id": "el_pptframe",
+      "type": "shape",
+      "x": 24,
+      "y": 24,
+      "w": 564,
+      "h": 744,
+      "z": 1,
+      "props": {
+        "shape": "rect",
+        "stroke_color": "#38bdf8",
+        "stroke_width": 3,
+        "fill_color": "",
+        "radius": 18
+      }
+    },
+    {
+      "id": "el_pptdot01",
+      "type": "shape",
+      "x": 56,
+      "y": 52,
+      "w": 18,
+      "h": 18,
+      "z": 2,
+      "props": {
+        "shape": "ellipse",
+        "stroke_color": "#fb7185",
+        "stroke_width": 0,
+        "fill_color": "#fb7185",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_pptdot02",
+      "type": "shape",
+      "x": 545,
+      "y": 66,
+      "w": 14,
+      "h": 14,
+      "z": 3,
+      "props": {
+        "shape": "ellipse",
+        "stroke_color": "#facc15",
+        "stroke_width": 0,
+        "fill_color": "#facc15",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_pptdot03",
+      "type": "shape",
+      "x": 56,
+      "y": 618,
+      "w": 16,
+      "h": 16,
+      "z": 4,
+      "props": {
+        "shape": "ellipse",
+        "stroke_color": "#34d399",
+        "stroke_width": 0,
+        "fill_color": "#34d399",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_pptdot04",
+      "type": "shape",
+      "x": 547,
+      "y": 614,
+      "w": 20,
+      "h": 20,
+      "z": 5,
+      "props": {
+        "shape": "ellipse",
+        "stroke_color": "#a78bfa",
+        "stroke_width": 0,
+        "fill_color": "#a78bfa",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_ppttitle",
+      "type": "text",
+      "x": 68.5,
+      "y": 120,
+      "w": 475,
+      "h": 40,
+      "z": 6,
+      "props": {
+        "content": "Certificate of Achievement",
+        "font_family": "quicksand",
+        "font_size": 28,
+        "color": "#0ea5e9",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_pptkick1",
+      "type": "text",
+      "x": 68.5,
+      "y": 190,
+      "w": 475,
+      "h": 20,
+      "z": 7,
+      "props": {
+        "content": "proudly awarded to",
+        "font_family": "quicksand",
+        "font_size": 14,
+        "color": "#64748b",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_pptname1",
+      "type": "merge_field",
+      "x": 68.5,
+      "y": 230,
+      "w": 475,
+      "h": 48,
+      "z": 8,
+      "props": {
+        "token": "{{recipient.full_name}}",
+        "font_family": "quicksand",
+        "font_size": 38,
+        "color": "#0f172a",
+        "align": "center",
+        "line_height": 1.1,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_pptsubj1",
+      "type": "text",
+      "x": 93.5,
+      "y": 310,
+      "w": 425,
+      "h": 64,
+      "z": 9,
+      "props": {
+        "content": "for bringing energy, effort, and excellence to every step of the journey",
+        "font_family": "quicksand",
+        "font_size": 15,
+        "color": "#475569",
+        "align": "center",
+        "line_height": 1.5,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_pptcrse1",
+      "type": "text",
+      "x": 93.5,
+      "y": 386,
+      "w": 425,
+      "h": 28,
+      "z": 10,
+      "props": {
+        "content": "Course Name",
+        "font_family": "quicksand",
+        "font_size": 18,
+        "color": "#0f172a",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_pptissr1",
+      "type": "merge_field",
+      "x": 60,
+      "y": 650,
+      "w": 300,
+      "h": 18,
+      "z": 11,
+      "props": {
+        "token": "{{certificate.issuer_name}}",
+        "font_family": "quicksand",
+        "font_size": 11,
+        "color": "#0f172a",
+        "align": "left",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_pptissue",
+      "type": "merge_field",
+      "x": 60,
+      "y": 676,
+      "w": 220,
+      "h": 18,
+      "z": 12,
+      "props": {
+        "token": "{{certificate.issue_date}}",
+        "font_family": "quicksand",
+        "font_size": 11,
+        "color": "#64748b",
+        "align": "left",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_pptqr001",
+      "type": "qr",
+      "x": 496,
+      "y": 662,
+      "w": 60,
+      "h": 60,
+      "z": 13,
+      "props": {
+        "dark_color": "#0f172a",
+        "light_color": ""
+      }
+    }
+  ]
+}

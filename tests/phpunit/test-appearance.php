@@ -204,3 +204,195 @@ class Test_Appearance extends TestCase {
 		$this->assertNotContains( '#b8860b', $colors );
 	}
 }
+
+/**
+ * Certificate size + earned date additions (Phase 5B items 6-7)
+ *
+ * @since 1.0.0
+ */
+class Test_Size_And_Earned_Date extends TestCase {
+
+	/**
+	 * The fake wpdb for the current test.
+	 *
+	 * @var PPCert_Fake_WPDB
+	 */
+	private $wpdb;
+
+	/**
+	 * Reset state.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		ppcert_tests_reset_hooks();
+		$this->wpdb = ppcert_tests_reset_wpdb();
+
+		$GLOBALS['ppcert_test_options']      = [];
+		$GLOBALS['ppcert_test_user_caps']    = true;
+		$GLOBALS['ppcert_test_current_user'] = 1;
+		$GLOBALS['ppcert_test_users']        = [
+			7 => (object) [
+				'ID'           => 7,
+				'display_name' => 'Dana Whitfield',
+				'user_email'   => 'dana@example.test',
+			],
+		];
+	}
+
+	/**
+	 * Appearance page size defaults to letter and honors a stored a4.
+	 *
+	 * @return void
+	 */
+	public function test_page_size_defaults_to_letter() {
+		$this->assertSame( 'letter', PressPrimer_Certificate_Appearance_Service::get()['page_size'] );
+
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'appearance_page_size' => 'a4' ];
+		$this->assertSame( 'a4', PressPrimer_Certificate_Appearance_Service::get()['page_size'] );
+
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'appearance_page_size' => 'tabloid' ];
+		$this->assertSame( 'letter', PressPrimer_Certificate_Appearance_Service::get()['page_size'] );
+	}
+
+	/**
+	 * Blank templates use the selected size, Letter by default.
+	 *
+	 * @return void
+	 */
+	public function test_blank_template_uses_selected_size() {
+		$controller = new PressPrimer_Certificate_REST_Templates_Controller();
+
+		$response = $controller->create_template( new WP_REST_Request( [] ) );
+		$layout   = $response->get_data()['layout'];
+
+		$this->assertSame( 'letter', $layout['page']['size'] );
+		$this->assertSame( 792, (int) $layout['page']['width'] );
+		$this->assertSame( 612, (int) $layout['page']['height'] );
+
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'appearance_page_size' => 'a4' ];
+
+		$response = $controller->create_template( new WP_REST_Request( [] ) );
+		$layout   = $response->get_data()['layout'];
+
+		$this->assertSame( 'a4', $layout['page']['size'] );
+		$this->assertSame( 842, (int) $layout['page']['width'] );
+	}
+
+	/**
+	 * Letter starters register alongside A4 with the -letter slug.
+	 *
+	 * @return void
+	 */
+	public function test_letter_starters_register() {
+		$starters = PressPrimer_Certificate_Template::get_starters();
+
+		foreach ( [ 'formal', 'modern', 'playful' ] as $design ) {
+			foreach ( [ 'landscape', 'portrait' ] as $orientation ) {
+				$base = "starter-{$design}-{$orientation}";
+
+				$this->assertArrayHasKey( $base, $starters );
+				$this->assertArrayHasKey( $base . '-letter', $starters );
+				$this->assertSame( 'letter', $starters[ $base . '-letter' ]['layout']['page']['size'] );
+				$this->assertSame(
+					$starters[ $base ]['label'],
+					$starters[ $base . '-letter' ]['label'],
+					'Variants share the design label'
+				);
+				$this->assertSame(
+					$starters[ $base ]['color_roles'],
+					$starters[ $base . '-letter' ]['color_roles'],
+					'Variants share color roles'
+				);
+			}
+		}
+	}
+
+	/**
+	 * Backdated manual issuance stores the earned date (local noon in
+	 * UTC); today issues at the current moment; future dates reject.
+	 *
+	 * @return void
+	 */
+	public function test_manual_issue_earned_date() {
+		$layout = [
+			'layout_schema_version' => 1,
+			'page'                  => [
+				'size'        => 'letter',
+				'orientation' => 'landscape',
+				'width'       => 792,
+				'height'      => 612,
+			],
+			'background'            => [ 'color' => '#ffffff' ],
+			'elements'              => [],
+		];
+
+		$template_id = $this->wpdb->seed_row(
+			'wp_ppcert_templates',
+			[
+				'uuid'                  => 'tpl-earned',
+				'title'                 => 'Earned Date Test',
+				'status'                => 'published',
+				'author_id'             => 1,
+				'page_size'             => 'letter',
+				'orientation'           => 'landscape',
+				'layout_schema_version' => 1,
+				'layout_json'           => wp_json_encode( $layout ),
+				'updated_at'            => '2026-07-01 00:00:00',
+				'deleted_at'            => null,
+			]
+		);
+
+		$controller = new PressPrimer_Certificate_REST_Certificates_Controller();
+
+		// Backdated: stored as that date (noon local -> UTC).
+		$response = $controller->issue(
+			new WP_REST_Request(
+				[
+					'template_id'  => $template_id,
+					'recipient_id' => 7,
+					'earned_date'  => '2026-01-15',
+				]
+			)
+		);
+
+		$this->assertSame( 201, $response->get_status() );
+
+		$rows = $this->wpdb->rows( 'wp_ppcert_certificates' );
+		$this->assertStringStartsWith( '2026-01-15', $rows[0]['issued_at'] );
+
+		// Future dates reject with no row.
+		$future = $controller->issue(
+			new WP_REST_Request(
+				[
+					'template_id'  => $template_id,
+					'recipient_id' => 7,
+					'earned_date'  => gmdate( 'Y-m-d', time() + 5 * DAY_IN_SECONDS ),
+					'force'        => true,
+				]
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $future );
+		$this->assertSame( 'ppcert_invalid_earned_date', $future->get_error_code() );
+		$this->assertCount( 1, $this->wpdb->rows( 'wp_ppcert_certificates' ) );
+
+		// Today: stamps the current moment, not midnight.
+		$today = $controller->issue(
+			new WP_REST_Request(
+				[
+					'template_id'  => $template_id,
+					'recipient_id' => 7,
+					'earned_date'  => gmdate( 'Y-m-d' ),
+					'force'        => true,
+				]
+			)
+		);
+
+		$this->assertSame( 201, $today->get_status() );
+
+		$rows = $this->wpdb->rows( 'wp_ppcert_certificates' );
+		$this->assertSame( gmdate( 'Y-m-d H:i' ), substr( $rows[1]['issued_at'], 0, 16 ) );
+	}
+}

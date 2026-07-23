@@ -40,6 +40,7 @@ class PressPrimer_Certificate_Appearance_Service {
 	 *     @type int    $logo_id       Attachment id, or 0.
 	 *     @type string $primary_color Hex color, or ''.
 	 *     @type string $accent_color  Hex color, or ''.
+	 *     @type string $page_size     'letter' (default) or 'a4'.
 	 * }
 	 */
 	public static function get() {
@@ -54,7 +55,10 @@ class PressPrimer_Certificate_Appearance_Service {
 			$font = '';
 		}
 
+		$page_size = isset( $settings['appearance_page_size'] ) ? sanitize_key( (string) $settings['appearance_page_size'] ) : '';
+
 		return [
+			'page_size'     => in_array( $page_size, [ 'a4', 'letter' ], true ) ? $page_size : 'letter',
 			'default_font'  => $font,
 			'signature_id'  => isset( $settings['appearance_signature_id'] ) ? absint( $settings['appearance_signature_id'] ) : 0,
 			'logo_id'       => isset( $settings['appearance_logo_id'] ) ? absint( $settings['appearance_logo_id'] ) : 0,

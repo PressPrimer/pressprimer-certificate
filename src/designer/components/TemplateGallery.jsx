@@ -11,8 +11,9 @@
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import { Card, Col, Row, Typography, message, Spin } from 'antd';
+import { Card, Col, Row, Segmented, Typography, message, Spin } from 'antd';
 import { FileAddOutlined } from '@ant-design/icons';
+import { getBoot } from '../boot';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -82,6 +83,32 @@ function StarterThumb( { layout } ) {
 export default function TemplateGallery( { starters, onCreate } ) {
 	const [ creating, setCreating ] = useState( '' );
 
+	// Certificate size (Phase 5B item 7): every starter design ships
+	// natively in both sizes; the toggle defaults to the Appearance
+	// setting and switches which variant each card creates.
+	const [ pageSize, setPageSize ] = useState(
+		() => getBoot().appearance?.page_size || 'letter'
+	);
+
+	// Group variants by design: the '-letter' suffix marks the Letter
+	// document of the same design.
+	const designs = [];
+	const byBase = {};
+
+	starters.forEach( ( starter ) => {
+		const isLetter = starter.slug.endsWith( '-letter' );
+		const base = isLetter
+			? starter.slug.slice( 0, -'-letter'.length )
+			: starter.slug;
+
+		if ( ! byBase[ base ] ) {
+			byBase[ base ] = { base, label: starter.label, variants: {} };
+			designs.push( byBase[ base ] );
+		}
+
+		byBase[ base ].variants[ isLetter ? 'letter' : 'a4' ] = starter;
+	} );
+
 	const create = async ( starterSlug ) => {
 		setCreating( starterSlug || 'blank' );
 
@@ -117,27 +144,60 @@ export default function TemplateGallery( { starters, onCreate } ) {
 				) }
 			</Paragraph>
 
+			<div className="ppcert-designer__gallery-size">
+				<Text type="secondary">
+					{ __( 'Certificate size:', 'pressprimer-certificate' ) }
+				</Text>
+				<Segmented
+					value={ pageSize }
+					options={ [
+						{
+							label: __( 'Letter', 'pressprimer-certificate' ),
+							value: 'letter',
+						},
+						{
+							label: __( 'A4', 'pressprimer-certificate' ),
+							value: 'a4',
+						},
+					] }
+					onChange={ setPageSize }
+				/>
+			</div>
+
 			<Row gutter={ [ 16, 16 ] }>
-				{ starters.map( ( starter ) => (
-					<Col key={ starter.slug }>
-						<Card
-							hoverable
-							className="ppcert-designer__gallery-card"
-							onClick={ () => create( starter.slug ) }
-							cover={
-								creating === starter.slug ? (
-									<div className="ppcert-designer__thumb-loading">
-										<Spin />
-									</div>
-								) : (
-									<StarterThumb layout={ starter.layout } />
-								)
-							}
-						>
-							<Card.Meta title={ starter.label } />
-						</Card>
-					</Col>
-				) ) }
+				{ designs.map( ( design ) => {
+					const starter =
+						design.variants[ pageSize ] ||
+						design.variants.a4 ||
+						design.variants.letter;
+
+					if ( ! starter ) {
+						return null;
+					}
+
+					return (
+						<Col key={ design.base }>
+							<Card
+								hoverable
+								className="ppcert-designer__gallery-card"
+								onClick={ () => create( starter.slug ) }
+								cover={
+									creating === starter.slug ? (
+										<div className="ppcert-designer__thumb-loading">
+											<Spin />
+										</div>
+									) : (
+										<StarterThumb
+											layout={ starter.layout }
+										/>
+									)
+								}
+							>
+								<Card.Meta title={ design.label } />
+							</Card>
+						</Col>
+					);
+				} ) }
 
 				<Col>
 					<Card

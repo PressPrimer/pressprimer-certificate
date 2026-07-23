@@ -218,6 +218,36 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 		$template_id  = absint( $request->get_param( 'template_id' ) );
 		$recipient_id = absint( $request->get_param( 'recipient_id' ) );
 		$force        = (bool) $request->get_param( 'force' );
+		$earned_date  = sanitize_text_field( (string) $request->get_param( 'earned_date' ) );
+
+		// Earned date (Phase 5B item 6): a Y-m-d site-local date. Today
+		// stamps the exact current moment; a backdate stores that date
+		// at local noon, converted to UTC (never a future date).
+		$issued_at_override = null;
+
+		if ( '' !== $earned_date ) {
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $earned_date ) ) {
+				return new WP_Error(
+					'ppcert_invalid_earned_date',
+					__( 'The earned date must be a valid date.', 'pressprimer-certificate' ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			$today_local = get_date_from_gmt( current_time( 'mysql', true ), 'Y-m-d' );
+
+			if ( $earned_date > $today_local ) {
+				return new WP_Error(
+					'ppcert_invalid_earned_date',
+					__( 'The earned date cannot be in the future.', 'pressprimer-certificate' ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			if ( $earned_date !== $today_local ) {
+				$issued_at_override = get_gmt_from_date( $earned_date . ' 12:00:00' );
+			}
+		}
 
 		if ( ! $force ) {
 			$existing = PressPrimer_Certificate_Certificate::find_duplicate(
@@ -240,16 +270,20 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 			}
 		}
 
-		$result = PressPrimer_Certificate_Issuance_Service::issue(
-			[
-				'template_id'  => $template_id,
-				'recipient_id' => $recipient_id,
-				'source_type'  => 'manual',
-				'source_ref'   => null,
-				'issued_by'    => get_current_user_id(),
-				'force'        => $force,
-			]
-		);
+		$issue_args = [
+			'template_id'  => $template_id,
+			'recipient_id' => $recipient_id,
+			'source_type'  => 'manual',
+			'source_ref'   => null,
+			'issued_by'    => get_current_user_id(),
+			'force'        => $force,
+		];
+
+		if ( null !== $issued_at_override ) {
+			$issue_args['issued_at'] = $issued_at_override;
+		}
+
+		$result = PressPrimer_Certificate_Issuance_Service::issue( $issue_args );
 
 		if ( is_wp_error( $result ) ) {
 			$result->add_data( [ 'status' => 400 ] );

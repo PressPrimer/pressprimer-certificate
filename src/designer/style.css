@@ -566,3 +566,10 @@
 	display: block;
 	margin-bottom: 8px;
 }
+
+.ppcert-designer__gallery-size {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 16px;
+}
