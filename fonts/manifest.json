@@ -96,6 +96,118 @@
                     }
                 }
             }
+        },
+        "eb-garamond": {
+            "label": "EB Garamond",
+            "license": "SIL OFL 1.1",
+            "license_file": "eb-garamond/OFL.txt",
+            "source": "octaviopardo/EBGaramond12 foundry statics, master @ 106a4a6d3779 (fetched 2026-07-23)",
+            "variants": {
+                "regular": {
+                    "tcpdf_font": "ebgaramond",
+                    "ttf": "eb-garamond/EBGaramond-Regular.ttf",
+                    "metrics": {
+                        "ascent": 1007,
+                        "descent": -298,
+                        "cap_height": 658,
+                        "units": "per-1000-em"
+                    }
+                },
+                "bold": {
+                    "tcpdf_font": "ebgaramondb",
+                    "ttf": "eb-garamond/EBGaramond-Bold.ttf",
+                    "metrics": {
+                        "ascent": 1007,
+                        "descent": -298,
+                        "cap_height": 658,
+                        "units": "per-1000-em"
+                    }
+                },
+                "italic": {
+                    "tcpdf_font": "ebgaramondi",
+                    "ttf": "eb-garamond/EBGaramond-Italic.ttf",
+                    "metrics": {
+                        "ascent": 1007,
+                        "descent": -298,
+                        "cap_height": 658,
+                        "units": "per-1000-em"
+                    }
+                },
+                "bold_italic": {
+                    "tcpdf_font": "ebgaramondbi",
+                    "ttf": "eb-garamond/EBGaramond-BoldItalic.ttf",
+                    "metrics": {
+                        "ascent": 1007,
+                        "descent": -298,
+                        "cap_height": 658,
+                        "units": "per-1000-em"
+                    }
+                }
+            }
+        },
+        "quicksand": {
+            "label": "Quicksand",
+            "license": "SIL OFL 1.1",
+            "license_file": "quicksand/OFL.txt",
+            "source": "andrew-paglinawan/QuicksandFamily foundry statics, master @ be4b9d638e1c (fetched 2026-07-23); no italics upstream",
+            "variants": {
+                "regular": {
+                    "tcpdf_font": "quicksand",
+                    "ttf": "quicksand/Quicksand-Regular.ttf",
+                    "metrics": {
+                        "ascent": 1000,
+                        "descent": -250,
+                        "cap_height": 700,
+                        "units": "per-1000-em"
+                    }
+                },
+                "bold": {
+                    "tcpdf_font": "quicksandb",
+                    "ttf": "quicksand/Quicksand-Bold.ttf",
+                    "metrics": {
+                        "ascent": 1000,
+                        "descent": -250,
+                        "cap_height": 700,
+                        "units": "per-1000-em"
+                    }
+                }
+            }
+        },
+        "great-vibes": {
+            "label": "Great Vibes",
+            "license": "SIL OFL 1.1",
+            "license_file": "great-vibes/OFL.txt",
+            "source": "google/fonts ofl/greatvibes foundry static, main @ c1eda9233c33 (fetched 2026-07-23); single-weight script",
+            "variants": {
+                "regular": {
+                    "tcpdf_font": "greatvibes",
+                    "ttf": "great-vibes/GreatVibes-Regular.ttf",
+                    "metrics": {
+                        "ascent": 851,
+                        "descent": -401,
+                        "cap_height": 980,
+                        "units": "per-1000-em"
+                    }
+                }
+            }
+        },
+        "alex-brush": {
+            "label": "Alex Brush",
+            "license": "SIL OFL 1.1",
+            "license_file": "alex-brush/OFL.txt",
+            "source": "google/fonts ofl/alexbrush foundry static, main @ fffdadf0f0c9 (fetched 2026-07-23); single-weight script",
+            "variants": {
+                "regular": {
+                    "tcpdf_font": "alexbrush",
+                    "ttf": "alex-brush/AlexBrush-Regular.ttf",
+                    "metrics": {
+                        "ascent": 825,
+                        "descent": -425,
+                        "cap_height": 801,
+                        "units": "per-1000-em"
+                    }
+                }
+            }
         }
     },
     "fitting": {

@@ -139,6 +139,21 @@
 	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
 	flex: none;
 	user-select: none;
+
+	/* Grayscale antialiasing matches the PDF raster's glyph weight -
+	 * Chromium's default smoothing renders text heavier than TCPDF
+	 * rasterizes it, which the parity suite reads as pixel drift on
+	 * thin-stroked script faces. Part of the parity contract. */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+
+	/* TCPDF lays glyphs out by advance width alone - no GPOS kerning,
+	 * no ligatures. The canvas must do the same or long centered lines
+	 * accumulate per-glyph offsets toward both ends. These inherit into
+	 * every text and merge-field element. Part of the parity contract
+	 * (the fitting measurer sets the same properties). */
+	font-kerning: none;
+	font-variant-ligatures: none;
 }
 
 .ppcert-designer__safe-margin {

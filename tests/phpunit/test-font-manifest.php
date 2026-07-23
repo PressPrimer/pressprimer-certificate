@@ -49,13 +49,25 @@ class Test_Font_Manifest extends TestCase {
 	 * @return void
 	 */
 	public function test_families_and_variants_complete() {
-		$this->assertSame( [ 'playfair-display', 'source-sans-3' ], array_keys( $this->manifest['families'] ) );
+		// The final 5.1 roster: variant coverage differs per family -
+		// Quicksand has no upstream italics and the two scripts are
+		// single-weight by design (Ryan, 2026-07-23).
+		$expected_variants = [
+			'playfair-display' => [ 'regular', 'bold', 'italic', 'bold_italic' ],
+			'source-sans-3'    => [ 'regular', 'bold', 'italic', 'bold_italic' ],
+			'eb-garamond'      => [ 'regular', 'bold', 'italic', 'bold_italic' ],
+			'quicksand'        => [ 'regular', 'bold' ],
+			'great-vibes'      => [ 'regular' ],
+			'alex-brush'       => [ 'regular' ],
+		];
+
+		$this->assertSame( array_keys( $expected_variants ), array_keys( $this->manifest['families'] ) );
 
 		foreach ( $this->manifest['families'] as $slug => $family ) {
 			$this->assertSame(
-				[ 'regular', 'bold', 'italic', 'bold_italic' ],
+				$expected_variants[ $slug ],
 				array_keys( $family['variants'] ),
-				"{$slug} must ship four real variants"
+				"{$slug} must ship its bundled variant set"
 			);
 
 			$this->assertSame( 'SIL OFL 1.1', $family['license'] );

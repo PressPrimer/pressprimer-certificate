@@ -44,6 +44,8 @@ const STARTERS = [
 	'starter-formal-portrait',
 	'starter-modern-landscape',
 	'starter-modern-portrait',
+	'starter-playful-landscape',
+	'starter-playful-portrait',
 ];
 
 test.use( { viewport: { width: 1100, height: 800 }, deviceScaleFactor: 2 } );

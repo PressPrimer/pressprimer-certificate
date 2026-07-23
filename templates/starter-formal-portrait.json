@@ -1,41 +1,248 @@
 {
   "_meta": {
     "slug": "starter-formal-portrait",
-    "label": "Formal (Portrait)",
-    "provisional": "Development starter per Prompt 3.1 (portrait variant added in the Award-tab review pass); the final six-starter set lands at Prompt 5.1 (ROADMAP Open Decision 6)."
+    "label": "Formal (Portrait)"
   },
   "layout_schema_version": 1,
-  "page": { "size": "a4", "orientation": "portrait", "width": 595, "height": 842 },
-  "background": { "color": "#fdfcf8", "attachment_id": 0 },
+  "page": {
+    "size": "a4",
+    "orientation": "portrait",
+    "width": 595,
+    "height": 842
+  },
+  "background": {
+    "color": "#fdfcf8",
+    "attachment_id": 0
+  },
   "elements": [
-    { "id": "el_fptbordr", "type": "shape", "x": 30, "y": 30, "w": 535, "h": 782, "z": 1,
-      "props": { "shape": "rect", "stroke_color": "#b8860b", "stroke_width": 2, "fill_color": "", "radius": 0 } },
-    { "id": "el_fptinner", "type": "shape", "x": 38, "y": 38, "w": 519, "h": 766, "z": 2,
-      "props": { "shape": "rect", "stroke_color": "#b8860b", "stroke_width": 0.5, "fill_color": "", "radius": 0 } },
-    { "id": "el_fpttitle", "type": "text", "x": 60, "y": 130, "w": 475, "h": 42, "z": 3,
-      "props": { "content": "Certificate of Completion", "font_family": "playfair-display", "font_size": 30,
-                 "color": "#1f2a44", "align": "center", "line_height": 1.2, "bold": true, "italic": false } },
-    { "id": "el_fptaward", "type": "text", "x": 60, "y": 210, "w": 475, "h": 22, "z": 4,
-      "props": { "content": "This certificate is proudly presented to", "font_family": "source-sans-3", "font_size": 13,
-                 "color": "#6b7280", "align": "center", "line_height": 1.2, "bold": false, "italic": false } },
-    { "id": "el_fptname1", "type": "merge_field", "x": 60, "y": 254, "w": 475, "h": 48, "z": 5,
-      "props": { "token": "{{recipient.full_name}}", "font_family": "playfair-display", "font_size": 38,
-                 "color": "#1f2a44", "align": "center", "line_height": 1.2, "bold": false, "italic": true } },
-    { "id": "el_fptrule1", "type": "shape", "x": 168, "y": 316, "w": 260, "h": 1, "z": 6,
-      "props": { "shape": "line", "stroke_color": "#b8860b", "stroke_width": 1, "fill_color": "", "radius": 0 } },
-    { "id": "el_fptsubj1", "type": "text", "x": 60, "y": 338, "w": 475, "h": 24, "z": 7,
-      "props": { "content": "for successfully completing the program", "font_family": "source-sans-3", "font_size": 14,
-                 "color": "#374151", "align": "center", "line_height": 1.3, "bold": false, "italic": false } },
-    { "id": "el_fptissr1", "type": "merge_field", "x": 60, "y": 700, "w": 300, "h": 20, "z": 8,
-      "props": { "token": "{{certificate.issuer_name}}", "font_family": "source-sans-3", "font_size": 11,
-                 "color": "#6b7280", "align": "left", "line_height": 1.2, "bold": true, "italic": false } },
-    { "id": "el_fptissue", "type": "merge_field", "x": 60, "y": 726, "w": 220, "h": 20, "z": 9,
-      "props": { "token": "{{certificate.issue_date}}", "font_family": "source-sans-3", "font_size": 11,
-                 "color": "#374151", "align": "left", "line_height": 1.2, "bold": false, "italic": false } },
-    { "id": "el_fptcred1", "type": "merge_field", "x": 60, "y": 752, "w": 260, "h": 20, "z": 10,
-      "props": { "token": "{{certificate.credential_id}}", "font_family": "source-sans-3", "font_size": 11,
-                 "color": "#374151", "align": "left", "line_height": 1.2, "bold": false, "italic": false } },
-    { "id": "el_fptqr001", "type": "qr", "x": 487, "y": 712, "w": 60, "h": 60, "z": 11,
-      "props": { "dark_color": "#1f2a44", "light_color": "" } }
+    {
+      "id": "el_fptbordr",
+      "type": "shape",
+      "x": 30,
+      "y": 30,
+      "w": 535,
+      "h": 782,
+      "z": 1,
+      "props": {
+        "shape": "rect",
+        "stroke_color": "#b8860b",
+        "stroke_width": 2,
+        "fill_color": "",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_fptinner",
+      "type": "shape",
+      "x": 38,
+      "y": 38,
+      "w": 519,
+      "h": 766,
+      "z": 2,
+      "props": {
+        "shape": "rect",
+        "stroke_color": "#b8860b",
+        "stroke_width": 0.5,
+        "fill_color": "",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_fpttitle",
+      "type": "text",
+      "x": 60,
+      "y": 130,
+      "w": 475,
+      "h": 42,
+      "z": 3,
+      "props": {
+        "content": "Certificate of Completion",
+        "font_family": "playfair-display",
+        "font_size": 30,
+        "color": "#1f2a44",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_fptaward",
+      "type": "text",
+      "x": 60,
+      "y": 208,
+      "w": 475,
+      "h": 22,
+      "z": 4,
+      "props": {
+        "content": "This certificate is proudly presented to",
+        "font_family": "eb-garamond",
+        "font_size": 13,
+        "color": "#6b7280",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": true
+      }
+    },
+    {
+      "id": "el_fptname1",
+      "type": "merge_field",
+      "x": 60,
+      "y": 248,
+      "w": 475,
+      "h": 60,
+      "z": 5,
+      "props": {
+        "token": "{{recipient.full_name}}",
+        "font_family": "great-vibes",
+        "font_size": 44,
+        "color": "#1f2a44",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_fptrule1",
+      "type": "shape",
+      "x": 168,
+      "y": 324,
+      "w": 260,
+      "h": 1,
+      "z": 6,
+      "props": {
+        "shape": "line",
+        "stroke_color": "#b8860b",
+        "stroke_width": 1,
+        "fill_color": "",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_fptsubj1",
+      "type": "text",
+      "x": 60,
+      "y": 346,
+      "w": 475,
+      "h": 24,
+      "z": 7,
+      "props": {
+        "content": "for successfully completing the program",
+        "font_family": "eb-garamond",
+        "font_size": 14,
+        "color": "#374151",
+        "align": "center",
+        "line_height": 1.3,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_fptsign1",
+      "type": "merge_field",
+      "x": 178,
+      "y": 600,
+      "w": 240,
+      "h": 36,
+      "z": 8,
+      "props": {
+        "token": "{{certificate.issuer_name}}",
+        "font_family": "alex-brush",
+        "font_size": 24,
+        "color": "#1f2a44",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_fptsigl1",
+      "type": "shape",
+      "x": 178,
+      "y": 642,
+      "w": 240,
+      "h": 1,
+      "z": 9,
+      "props": {
+        "shape": "line",
+        "stroke_color": "#9ca3af",
+        "stroke_width": 0.75,
+        "fill_color": "",
+        "radius": 0
+      }
+    },
+    {
+      "id": "el_fptsigc1",
+      "type": "text",
+      "x": 178,
+      "y": 648,
+      "w": 240,
+      "h": 16,
+      "z": 10,
+      "props": {
+        "content": "Authorized Signature",
+        "font_family": "eb-garamond",
+        "font_size": 10,
+        "color": "#6b7280",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_fptissue",
+      "type": "merge_field",
+      "x": 60,
+      "y": 726,
+      "w": 220,
+      "h": 20,
+      "z": 11,
+      "props": {
+        "token": "{{certificate.issue_date}}",
+        "font_family": "eb-garamond",
+        "font_size": 11,
+        "color": "#374151",
+        "align": "left",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_fptcred1",
+      "type": "merge_field",
+      "x": 60,
+      "y": 752,
+      "w": 260,
+      "h": 20,
+      "z": 12,
+      "props": {
+        "token": "{{certificate.credential_id}}",
+        "font_family": "eb-garamond",
+        "font_size": 11,
+        "color": "#374151",
+        "align": "left",
+        "line_height": 1.2,
+        "bold": false,
+        "italic": false
+      }
+    },
+    {
+      "id": "el_fptqr001",
+      "type": "qr",
+      "x": 487,
+      "y": 712,
+      "w": 60,
+      "h": 60,
+      "z": 13,
+      "props": {
+        "dark_color": "#1f2a44",
+        "light_color": ""
+      }
+    }
   ]
 }

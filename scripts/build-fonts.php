@@ -26,8 +26,11 @@ require $ppcert_root . '/vendor/autoload.php';
 
 /**
  * The bundled font set. Slugs are the layout font_family values
- * (CONVENTIONS.md); families are provisional until Prompt 5.1 finalizes
- * the bundle alongside the starter templates.
+ * (CONVENTIONS.md). Finalized at Prompt 5.1 (six families, all SIL
+ * OFL 1.1): variant lists differ per family - Quicksand has no
+ * italics upstream, and the two scripts are single-weight by design.
+ * The designer gates bold/italic on bundled variants, and the
+ * renderer falls back to regular, so partial families are safe.
  */
 $ppcert_font_config = [
 	'playfair-display' => [
@@ -52,6 +55,46 @@ $ppcert_font_config = [
 			'bold'        => 'source-sans-3/SourceSans3-Bold.ttf',
 			'italic'      => 'source-sans-3/SourceSans3-It.ttf',
 			'bold_italic' => 'source-sans-3/SourceSans3-BoldIt.ttf',
+		],
+	],
+	'eb-garamond'      => [
+		'label'        => 'EB Garamond',
+		'license'      => 'SIL OFL 1.1',
+		'license_file' => 'eb-garamond/OFL.txt',
+		'source'       => 'octaviopardo/EBGaramond12 foundry statics, master @ 106a4a6d3779 (fetched 2026-07-23)',
+		'variants'     => [
+			'regular'     => 'eb-garamond/EBGaramond-Regular.ttf',
+			'bold'        => 'eb-garamond/EBGaramond-Bold.ttf',
+			'italic'      => 'eb-garamond/EBGaramond-Italic.ttf',
+			'bold_italic' => 'eb-garamond/EBGaramond-BoldItalic.ttf',
+		],
+	],
+	'quicksand'        => [
+		'label'        => 'Quicksand',
+		'license'      => 'SIL OFL 1.1',
+		'license_file' => 'quicksand/OFL.txt',
+		'source'       => 'andrew-paglinawan/QuicksandFamily foundry statics, master @ be4b9d638e1c (fetched 2026-07-23); no italics upstream',
+		'variants'     => [
+			'regular' => 'quicksand/Quicksand-Regular.ttf',
+			'bold'    => 'quicksand/Quicksand-Bold.ttf',
+		],
+	],
+	'great-vibes'      => [
+		'label'        => 'Great Vibes',
+		'license'      => 'SIL OFL 1.1',
+		'license_file' => 'great-vibes/OFL.txt',
+		'source'       => 'google/fonts ofl/greatvibes foundry static, main @ c1eda9233c33 (fetched 2026-07-23); single-weight script',
+		'variants'     => [
+			'regular' => 'great-vibes/GreatVibes-Regular.ttf',
+		],
+	],
+	'alex-brush'       => [
+		'label'        => 'Alex Brush',
+		'license'      => 'SIL OFL 1.1',
+		'license_file' => 'alex-brush/OFL.txt',
+		'source'       => 'google/fonts ofl/alexbrush foundry static, main @ fffdadf0f0c9 (fetched 2026-07-23); single-weight script',
+		'variants'     => [
+			'regular' => 'alex-brush/AlexBrush-Regular.ttf',
 		],
 	],
 ];

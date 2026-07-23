@@ -95,8 +95,12 @@ class PressPrimer_Certificate_Activator {
 		// page is detected via the stored ID).
 		PressPrimer_Certificate_Verification_Page::create_page();
 
-		// TODO (Prompt 5.1): seed the starter templates into
-		// wp_ppcert_templates (is_starter = 1), re-seeding only if missing.
+		// Starter templates are file-based (templates/starter-*.json read
+		// by Template::get_starters()): the gallery lists them and
+		// creation clones the layout into a user row, so plugin updates
+		// refresh starters automatically and no DB seeding is needed.
+		// The is_starter column stays dormant for premium template packs
+		// (resolved at Prompt 5.1; supersedes the 1.2 seeding TODO).
 
 		// Register the view-page rewrite before flushing so
 		// /certificate/{credential_id}/ resolves from first activation.
