@@ -83,7 +83,10 @@ class PressPrimer_Certificate_Appearance_Service {
 
 		$replacements = [];
 
-		foreach ( [ 'primary' => 'primary_color', 'accent' => 'accent_color' ] as $role => $setting_key ) {
+		foreach ( [
+			'primary' => 'primary_color',
+			'accent'  => 'accent_color',
+		] as $role => $setting_key ) {
 			$brand = strtolower( (string) $appearance[ $setting_key ] );
 
 			if ( '' === $brand || empty( $roles[ $role ] ) || ! is_array( $roles[ $role ] ) ) {

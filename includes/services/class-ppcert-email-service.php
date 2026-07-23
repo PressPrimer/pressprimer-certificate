@@ -211,14 +211,14 @@ class PressPrimer_Certificate_Email_Service {
 	 */
 	public static function settings() {
 		$defaults = [
-			'email_issued_enabled'      => 1,
-			'email_issued_subject'      => __( 'Your certificate: {subject}', 'pressprimer-certificate' ),
-			'email_issued_body'         => __(
+			'email_issued_enabled' => 1,
+			'email_issued_subject' => __( 'Your certificate: {subject}', 'pressprimer-certificate' ),
+			'email_issued_body'    => __(
 				"Hi {recipient_name},\n\nCongratulations! Your certificate for {subject} is now available.\n\nCredential ID: {credential_id}\nVerify it any time: {verification_url}\n\n{issuer_name}",
 				'pressprimer-certificate'
 			),
-			'email_from_name'           => (string) get_bloginfo( 'name' ),
-			'email_from_address'        => (string) get_bloginfo( 'admin_email' ),
+			'email_from_name'      => (string) get_bloginfo( 'name' ),
+			'email_from_address'   => (string) get_bloginfo( 'admin_email' ),
 		];
 
 		$stored = get_option( 'ppcert_settings', [] );
