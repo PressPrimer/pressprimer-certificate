@@ -394,6 +394,12 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 				'id'             => (int) $row->id,
 				'trigger_type'   => $type_id,
 				'type_label'     => $available ? $types[ $type_id ]['label'] : $type_id,
+				// Known even for inert types (deactivated plugin): the
+				// Award card names the plugin to reactivate instead of
+				// dumping the raw type id.
+				'integration'    => $available
+					? $types[ $type_id ]['integration']
+					: self::known_integration_label( $type_id ),
 				'type_available' => $available,
 				'source_ref'     => '' !== $source ? $source : null,
 				'source_label'   => $source_label,
@@ -404,6 +410,35 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 		}
 
 		return $items;
+	}
+
+	/**
+	 * Integration name for a bundled trigger type whose plugin is
+	 * deactivated ('' for unknown/third-party types)
+	 *
+	 * The bundled adapter classes always exist - only their
+	 * registration is availability-gated - so they can still name
+	 * their integration.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $type_id Trigger type id.
+	 * @return string
+	 */
+	private static function known_integration_label( $type_id ) {
+		foreach ( PressPrimer_Certificate_Plugin::get_adapter_classes() as $adapter_class ) {
+			if ( ! class_exists( $adapter_class ) ) {
+				continue;
+			}
+
+			$adapter = new $adapter_class();
+
+			if ( $adapter->get_id() === $type_id ) {
+				return $adapter->get_integration_label();
+			}
+		}
+
+		return '';
 	}
 
 	/**

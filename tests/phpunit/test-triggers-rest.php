@@ -285,6 +285,12 @@ class Test_Triggers_REST extends TestCase {
 					'conditions'   => [ 'legacy_setting' => 'keep' ],
 					'is_active'    => true,
 				],
+				[
+					'trigger_type' => 'lms_learndash',
+					'source_ref'   => '77',
+					'conditions'   => [],
+					'is_active'    => true,
+				],
 			]
 		);
 
@@ -300,9 +306,16 @@ class Test_Triggers_REST extends TestCase {
 		// Unknown source id: the orphan badge case.
 		$this->assertFalse( $data[1]['source_found'] );
 
-		// Inert type: unavailable, conditions preserved.
+		// Inert type: unavailable, conditions preserved; a third-party
+		// type has no known integration name.
 		$this->assertFalse( $data[2]['type_available'] );
 		$this->assertSame( [ 'legacy_setting' => 'keep' ], $data[2]['conditions'] );
+		$this->assertSame( '', $data[2]['integration'] );
+
+		// A BUNDLED type with its plugin deactivated still names its
+		// integration - the Award card says which plugin to reactivate.
+		$this->assertFalse( $data[3]['type_available'] );
+		$this->assertSame( 'LearnDash', $data[3]['integration'] );
 	}
 
 	/**

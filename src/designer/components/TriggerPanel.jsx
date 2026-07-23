@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	Alert,
 	Button,
@@ -707,19 +707,19 @@ export default function TriggerPanel() {
 				/>
 			) : (
 				triggers.map( ( trigger, index ) => {
-					let warning = '';
+					// A trigger whose plugin is deactivated: name the
+					// plugin to reactivate; the raw type id, source ref,
+					// and conditions mean nothing to the user (Ryan,
+					// 2026-07-23 review).
+					const inert = ! trigger.type_available;
 
-					if ( ! trigger.type_available ) {
-						warning = __(
-							'The plugin providing this trigger is not active.',
-							'pressprimer-certificate'
-						);
-					} else if ( ! trigger.source_found ) {
-						warning = __(
-							'The source for this trigger no longer exists.',
-							'pressprimer-certificate'
-						);
-					}
+					const warning =
+						! inert && ! trigger.source_found
+							? __(
+									'The source for this trigger no longer exists.',
+									'pressprimer-certificate'
+							  )
+							: '';
 
 					const type =
 						( types || [] ).find(
@@ -744,8 +744,35 @@ export default function TriggerPanel() {
 								strong
 								className="ppcert-designer__trigger-title"
 							>
-								{ trigger.type_label }
+								{ inert
+									? __(
+											'Trigger deactivated',
+											'pressprimer-certificate'
+									  )
+									: trigger.type_label }
 							</Text>
+
+							{ inert && (
+								<Text
+									type="secondary"
+									className="ppcert-designer__trigger-card-value"
+									data-ppcert-trigger-warning
+								>
+									{ trigger.integration
+										? sprintf(
+												/* translators: %s: plugin name */
+												__(
+													'%s must be active to use this trigger.',
+													'pressprimer-certificate'
+												),
+												trigger.integration
+										  )
+										: __(
+												'The plugin providing this trigger is not active.',
+												'pressprimer-certificate'
+										  ) }
+								</Text>
+							) }
 
 							{ warning && (
 								<Tag
@@ -757,24 +784,26 @@ export default function TriggerPanel() {
 								</Tag>
 							) }
 
-							<div className="ppcert-designer__trigger-card-line">
-								<Text
-									type="secondary"
-									className="ppcert-designer__trigger-card-label"
-								>
-									{ sourceNoun }
-								</Text>
-								{ /* Wraps, never truncates: the card has
-								     the vertical room (Ryan, 2026-07-22). */ }
-								<Text className="ppcert-designer__trigger-card-value">
-									{ trigger.source_label ||
-										trigger.source_ref ||
-										__(
-											'Any source',
-											'pressprimer-certificate'
-										) }
-								</Text>
-							</div>
+							{ ! inert && (
+								<div className="ppcert-designer__trigger-card-line">
+									<Text
+										type="secondary"
+										className="ppcert-designer__trigger-card-label"
+									>
+										{ sourceNoun }
+									</Text>
+									{ /* Wraps, never truncates: the card has
+									     the vertical room (Ryan, 2026-07-22). */ }
+									<Text className="ppcert-designer__trigger-card-value">
+										{ trigger.source_label ||
+											trigger.source_ref ||
+											__(
+												'Any source',
+												'pressprimer-certificate'
+											) }
+									</Text>
+								</div>
+							) }
 
 							{ summary.length > 0 && (
 								<div className="ppcert-designer__trigger-card-line">

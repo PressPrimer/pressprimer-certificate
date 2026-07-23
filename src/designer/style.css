@@ -64,6 +64,11 @@
 .ppcert-designer__sidebar {
 	border-left: 1px solid #e5e7eb;
 	padding: 0 12px;
+
+	/* The sidebar must never push the viewport into a horizontal
+	   scrollbar - anything wider than the rail is a bug, not a reason
+	   to scroll the whole admin. */
+	overflow-x: hidden;
 }
 
 .ppcert-designer__canvas-region {
@@ -211,8 +216,16 @@
 
 .ppcert-designer__prop-grid {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	gap: 8px;
+}
+
+/* Ant's InputNumber ships a fixed 90px width; inside the two-column
+   grid that overflows the 300px sidebar by a few pixels and forces a
+   browser horizontal scrollbar. Let the inputs shrink to their cell. */
+.ppcert-designer__prop-grid .ant-input-number {
+	width: 100%;
+	min-width: 0;
 }
 
 .ppcert-designer__prop-row {

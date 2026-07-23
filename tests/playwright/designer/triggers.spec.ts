@@ -149,6 +149,44 @@ test.describe( 'trigger panel', () => {
 		expect( sent[ 0 ].is_active ).toBe( false );
 	} );
 
+	test( 'a deactivated integration names the plugin, hides the source', async ( {
+		page,
+	} ) => {
+		await page.goto( HARNESS_URL );
+		await page.evaluate( () => {
+			window.localStorage.removeItem( 'ppcert_harness_template' );
+			window.localStorage.setItem(
+				'ppcert_harness_triggers',
+				JSON.stringify( [
+					{
+						trigger_type: 'double_lms',
+						type_label: 'double_lms',
+						integration: 'Double LMS',
+						type_available: false,
+						source_ref: '999',
+						source_label: '',
+						source_found: false,
+						conditions: {},
+						is_active: true,
+					},
+				] )
+			);
+		} );
+		await page.reload();
+		await page.waitForSelector( '[data-ppcert-canvas-scale]' );
+		await page.getByRole( 'tab', { name: 'Award' } ).click();
+
+		const card = page.locator( '[data-ppcert-trigger-row="0"]' );
+		await expect( card ).toContainText( 'Trigger deactivated' );
+		await expect( card ).toContainText(
+			'Double LMS must be active to use this trigger.'
+		);
+
+		// No raw type id, no meaningless source ref.
+		await expect( card ).not.toContainText( 'double_lms' );
+		await expect( card ).not.toContainText( '999' );
+	} );
+
 	test( 'orphaned source shows the warning badge', async ( { page } ) => {
 		await page.goto( HARNESS_URL );
 		await page.evaluate( () => {
