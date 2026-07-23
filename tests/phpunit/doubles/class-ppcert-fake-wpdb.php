@@ -453,6 +453,65 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Certificates admin list (fixed-shape query): sentinel-driven
+		// filters + FIND_IN_SET recipient search. args: [table,
+		// template_id x2, status x2, source_type x2, search,
+		// credential_like, recipient_csv, (per_page, offset)].
+		if ( false !== strpos( $query, "OR FIND_IN_SET( recipient_id, %s )" ) ) {
+			$template_id   = (int) $args[1];
+			$status        = (string) $args[3];
+			$source_type   = (string) $args[5];
+			$search        = (string) $args[7];
+			$needle        = $this->like_to_substring( (string) $args[8] );
+			$recipient_ids = array_filter( array_map( 'intval', explode( ',', (string) $args[9] ) ) );
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $template_id, $status, $source_type, $search, $needle, $recipient_ids ) {
+					if ( $template_id > 0 && (int) $row['template_id'] !== $template_id ) {
+						return false;
+					}
+
+					if ( '' !== $status && (string) $row['status'] !== $status ) {
+						return false;
+					}
+
+					if ( '' !== $source_type && (string) $row['source_type'] !== $source_type ) {
+						return false;
+					}
+
+					if ( '' !== $search ) {
+						$credential_hit = '' !== $needle && false !== stripos( (string) $row['credential_id'], $needle );
+						$recipient_hit  = in_array( (int) $row['recipient_id'], $recipient_ids, true );
+
+						if ( ! $credential_hit && ! $recipient_hit ) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					$by_date = strcmp( (string) $b['issued_at'], (string) $a['issued_at'] );
+
+					return 0 !== $by_date ? $by_date : ( (int) $b['id'] <=> (int) $a['id'] );
+				}
+			);
+
+			if ( 0 === strpos( $query, 'SELECT COUNT(*)' ) ) {
+				return [ [ 'total' => count( $matches ) ] ];
+			}
+
+			$per_page = (int) $args[10];
+			$offset   = (int) $args[11];
+
+			return array_slice( $matches, $offset, $per_page );
+		}
+
 		// LearnPress quiz cascade: quiz item ids of a course's sections.
 		// Test convenience: seed wp_learnpress_section_items rows carrying
 		// section_course_id directly (the real query joins the sections

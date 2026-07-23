@@ -120,3 +120,30 @@ a.ant-btn-default:link,
 a.ant-btn-default:visited {
 	color: rgba(0, 0, 0, 0.88);
 }
+
+/*
+ * Issue Certificate modal (Certificates screen).
+ *
+ * @since 1.0.0
+ */
+#ppcert-issue-root {
+	margin-left: 8px;
+	vertical-align: middle;
+}
+
+.ppcert-issue__form {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding-top: 8px;
+}
+
+.ppcert-issue__label {
+	font-size: 12px;
+	color: #6b7280;
+}
+
+.ppcert-issue__control {
+	width: 100%;
+	margin-bottom: 10px;
+}

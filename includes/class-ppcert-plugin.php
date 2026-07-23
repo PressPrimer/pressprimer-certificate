@@ -158,18 +158,24 @@ class PressPrimer_Certificate_Plugin {
 			$admin = new PressPrimer_Certificate_Admin();
 			$admin->init();
 		}
+
+		// Certificates screen: issued list + manual issuance (FR-003).
+		if ( class_exists( 'PressPrimer_Certificate_Admin_Certificates' ) ) {
+			$certificates_admin = new PressPrimer_Certificate_Admin_Certificates();
+			$certificates_admin->init();
+		}
 	}
 
 	/**
 	 * Initialize frontend components
 	 *
-	 * Loads public-facing functionality: shortcodes, the recipient wallet,
-	 * and the public verification page.
+	 * Loads public-facing functionality: the certificate view page and
+	 * the public verification page. (The recipient wallet is an
+	 * Educator 2.0 paid feature - scope decision 2026-07-23.)
 	 *
 	 * @since 1.0.0
 	 */
 	private function init_frontend() {
-		// Initialize shortcodes (the ppcert_my_certificates wallet shortcode)
 		if ( class_exists( 'PressPrimer_Certificate_Shortcodes' ) ) {
 			$shortcodes = new PressPrimer_Certificate_Shortcodes();
 			$shortcodes->init();
@@ -271,9 +277,9 @@ class PressPrimer_Certificate_Plugin {
 	/**
 	 * Initialize Gutenberg blocks
 	 *
-	 * Registers block types for the block editor. The my-certificates
-	 * wallet block (mirroring the [ppcert_my_certificates] shortcode)
-	 * ships with Feature 5 (Recipient Wallet).
+	 * Registers block types for the block editor. (The my-certificates
+	 * wallet block moved to Educator 2.0 with the wallet - scope
+	 * decision 2026-07-23.)
 	 *
 	 * @since 1.0.0
 	 */

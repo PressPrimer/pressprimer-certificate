@@ -77,6 +77,103 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * Query certificates for the admin list (FR-003)
+	 *
+	 * Fixed-shape SQL: every filter is always present with a sentinel
+	 * ("0"/'') meaning "no filter", so the prepared statement is one
+	 * stable string (no clause interpolation). Recipient search resolves
+	 * user ids first (name/email/login) and matches via FIND_IN_SET;
+	 * credential search matches the normalized stored form. Ordering is
+	 * hardcoded newest-first.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args {
+	 *     Optional filters.
+	 *
+	 *     @type int    $template_id Filter to one template. Default 0 (all).
+	 *     @type string $status      'issued'|'revoked'|'expired'. Default '' (all).
+	 *     @type string $source_type Trigger type or 'manual'. Default '' (all).
+	 *     @type string $search      Recipient name/email or credential ID.
+	 *     @type int    $per_page    Page size (1-100). Default 20.
+	 *     @type int    $page        1-based page. Default 1.
+	 * }
+	 * @return array{items:array,total:int} Hydrated rows + unpaged total.
+	 */
+	public static function query( array $args = [] ) {
+		global $wpdb;
+
+		$template_id = isset( $args['template_id'] ) ? absint( $args['template_id'] ) : 0;
+		$status      = isset( $args['status'] ) && in_array( $args['status'], [ 'issued', 'revoked', 'expired' ], true )
+			? (string) $args['status']
+			: '';
+		$source_type = isset( $args['source_type'] ) ? sanitize_key( (string) $args['source_type'] ) : '';
+		$search      = isset( $args['search'] ) ? sanitize_text_field( (string) $args['search'] ) : '';
+		$per_page    = isset( $args['per_page'] ) ? min( 100, max( 1, absint( $args['per_page'] ) ) ) : 20;
+		$page        = isset( $args['page'] ) ? max( 1, absint( $args['page'] ) ) : 1;
+
+		// Recipient matches: resolve user ids by name/email/login.
+		$recipient_csv = '';
+
+		if ( '' !== $search ) {
+			$user_ids = get_users(
+				[
+					'search'         => '*' . $search . '*',
+					'search_columns' => [ 'user_login', 'user_email', 'user_nicename', 'display_name' ],
+					'fields'         => 'ID',
+					'number'         => 100,
+				]
+			);
+
+			$recipient_csv = implode( ',', array_map( 'absint', (array) $user_ids ) );
+		}
+
+		// Credential matches compare against the normalized stored form.
+		$credential_like = '%' . $wpdb->esc_like(
+			PressPrimer_Certificate_Credential_ID_Service::normalize( $search )
+		) . '%';
+
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR status = %s ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id LIKE %s OR FIND_IN_SET( recipient_id, %s ) )",
+				self::table(),
+				$template_id,
+				$template_id,
+				$status,
+				$status,
+				$source_type,
+				$source_type,
+				$search,
+				$credential_like,
+				$recipient_csv
+			)
+		);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR status = %s ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id LIKE %s OR FIND_IN_SET( recipient_id, %s ) ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
+				self::table(),
+				$template_id,
+				$template_id,
+				$status,
+				$status,
+				$source_type,
+				$source_type,
+				$search,
+				$credential_like,
+				$recipient_csv,
+				$per_page,
+				( $page - 1 ) * $per_page
+			)
+		);
+
+		return [
+			'items' => array_map( [ __CLASS__, 'hydrate' ], (array) $rows ),
+			'total' => $total,
+		];
+	}
+
+	/**
 	 * Get one certificate by credential ID
 	 *
 	 * Input is normalized first (case, separators, confusables) so any

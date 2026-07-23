@@ -445,6 +445,47 @@ if ( ! function_exists( 'get_date_from_gmt' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_users' ) ) {
+	/**
+	 * Stub: User query over $GLOBALS['ppcert_test_users'] supporting the
+	 * arguments the certificate list/user-search use (search with *
+	 * wildcards over name/email/login, fields => 'ID', number).
+	 *
+	 * @param array $args Query args.
+	 * @return array Users or ids.
+	 */
+	function get_users( $args = [] ) {
+		$users   = isset( $GLOBALS['ppcert_test_users'] ) ? $GLOBALS['ppcert_test_users'] : [];
+		$term    = isset( $args['search'] ) ? strtolower( trim( (string) $args['search'], '*' ) ) : '';
+		$matches = [];
+
+		foreach ( $users as $user ) {
+			$haystack = strtolower(
+				( $user->display_name ?? '' ) . ' ' . ( $user->user_email ?? '' ) . ' ' . ( $user->user_login ?? '' )
+			);
+
+			if ( '' === $term || false !== strpos( $haystack, $term ) ) {
+				$matches[] = $user;
+			}
+		}
+
+		if ( isset( $args['number'] ) && (int) $args['number'] > 0 ) {
+			$matches = array_slice( $matches, 0, (int) $args['number'] );
+		}
+
+		if ( isset( $args['fields'] ) && 'ID' === $args['fields'] ) {
+			return array_map(
+				static function ( $user ) {
+					return (int) $user->ID;
+				},
+				$matches
+			);
+		}
+
+		return $matches;
+	}
+}
+
 if ( ! function_exists( 'get_gmt_from_date' ) ) {
 	/**
 	 * Stub: Convert a site-local datetime string to UTC (identity in
