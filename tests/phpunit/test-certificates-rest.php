@@ -15,6 +15,34 @@
 use PHPUnit\Framework\TestCase;
 
 /**
+ * Controller double: captures the stream instead of exiting
+ *
+ * @since 1.0.0
+ */
+class PPCert_Test_Streaming_Certificates_Controller extends PressPrimer_Certificate_REST_Certificates_Controller {
+
+	/**
+	 * The captured stream call, or null.
+	 *
+	 * @var array|null
+	 */
+	public $streamed = null;
+
+	/**
+	 * Capture instead of streaming + exiting.
+	 *
+	 * @param string $pdf_path Rendered temp file path.
+	 * @param string $filename Download filename.
+	 */
+	protected function stream_pdf( $pdf_path, $filename ) {
+		$this->streamed = [
+			'path'     => $pdf_path,
+			'filename' => $filename,
+		];
+	}
+}
+
+/**
  * Certificates REST test case
  *
  * @since 1.0.0
@@ -333,6 +361,75 @@ class Test_Certificates_REST extends TestCase {
 		$missing = $this->controller->get_detail( new WP_REST_Request( [ 'id' => 99999 ] ) );
 		$this->assertInstanceOf( WP_Error::class, $missing );
 		$this->assertSame( 404, $missing->get_error_data()['status'] );
+	}
+
+	/**
+	 * Public download (005 FR-004): a renderable credential streams a
+	 * real PDF with the expected filename and records the event with an
+	 * anonymous actor.
+	 *
+	 * @return void
+	 */
+	public function test_public_download_streams_pdf_and_records_event() {
+		$snapshot = (string) file_get_contents( PPCERT_PLUGIN_DIR . 'tests/phpunit/fixtures/sample-document.json' );
+
+		$this->seed_certificate(
+			[
+				'credential_id'        => 'D0WN00000001',
+				'layout_snapshot_json' => $snapshot,
+			]
+		);
+
+		// Logged out: public-by-URL, anonymous event actor.
+		$GLOBALS['ppcert_test_current_user'] = 0;
+		$GLOBALS['ppcert_test_user_caps']    = [];
+
+		$controller = new PPCert_Test_Streaming_Certificates_Controller();
+		$controller->download_pdf( new WP_REST_Request( [ 'credential_id' => 'D0WN-0000-0001' ] ) );
+
+		$this->assertNotNull( $controller->streamed );
+		$this->assertSame( 'certificate-d0wn00000001.pdf', $controller->streamed['filename'] );
+
+		$this->assertFileExists( $controller->streamed['path'] );
+		$head = (string) file_get_contents( $controller->streamed['path'], false, null, 0, 5 );
+		$this->assertSame( '%PDF-', $head );
+		unlink( $controller->streamed['path'] );
+
+		$events = $this->wpdb->rows( 'wp_ppcert_events' );
+		$this->assertCount( 1, $events );
+		$this->assertSame( 'downloaded', $events[0]['event_type'] );
+		$this->assertNull( $events[0]['actor_id'] );
+	}
+
+	/**
+	 * Public download: unknown credentials 404, revoked certificates 410.
+	 *
+	 * @return void
+	 */
+	public function test_public_download_rejects_missing_and_revoked() {
+		$controller = new PPCert_Test_Streaming_Certificates_Controller();
+
+		$missing = $controller->download_pdf( new WP_REST_Request( [ 'credential_id' => 'XXXX00000000' ] ) );
+		$this->assertInstanceOf( WP_Error::class, $missing );
+		$this->assertSame( 404, $missing->get_error_data()['status'] );
+
+		$snapshot = (string) file_get_contents( PPCERT_PLUGIN_DIR . 'tests/phpunit/fixtures/sample-document.json' );
+
+		$this->seed_certificate(
+			[
+				'credential_id'        => 'REV000000001',
+				'status'               => 'revoked',
+				'layout_snapshot_json' => $snapshot,
+			]
+		);
+
+		$revoked = $controller->download_pdf( new WP_REST_Request( [ 'credential_id' => 'REV000000001' ] ) );
+		$this->assertInstanceOf( WP_Error::class, $revoked );
+		$this->assertSame( 'ppcert_certificate_revoked', $revoked->get_error_code() );
+		$this->assertSame( 410, $revoked->get_error_data()['status'] );
+
+		$this->assertNull( $controller->streamed );
+		$this->assertCount( 0, $this->wpdb->rows( 'wp_ppcert_events' ) );
 	}
 
 	/**

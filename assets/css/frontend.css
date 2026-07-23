@@ -1,6 +1,6 @@
 /**
- * PressPrimer Certificate - front-end styles (verification page; the
- * wallet arrives in Prompt 4.6). Deliberately light: the page renders
+ * PressPrimer Certificate - front-end styles (verification page and
+ * certificate view page). Deliberately light: both pages render
  * through the site's theme (Feature 006 US-3).
  */
 
@@ -54,6 +54,85 @@
 
 .ppcert-verify__details dd {
 	margin: 0;
+}
+
+/* Certificate view page (/certificate/{credential_id}/) */
+
+.ppcert-view__banner {
+	font-weight: 600;
+	padding: 0.5em 0.75em;
+	margin-bottom: 1em;
+	border-left: 4px solid #64748b;
+	background: rgba(100, 116, 139, 0.08);
+}
+
+.ppcert-view__banner--expired {
+	border-left-color: #b45309;
+	background: rgba(180, 83, 9, 0.08);
+}
+
+.ppcert-view__banner--revoked {
+	border-left-color: #b91c1c;
+	background: rgba(185, 28, 28, 0.08);
+}
+
+.ppcert-view__preview {
+	margin: 0 0 1em;
+}
+
+.ppcert-view__preview img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	border: 1px solid rgba(100, 116, 139, 0.3);
+	box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.ppcert-view__card {
+	padding: 2em 1.5em;
+	margin-bottom: 1em;
+	text-align: center;
+	border: 1px solid rgba(100, 116, 139, 0.3);
+	background: rgba(100, 116, 139, 0.04);
+}
+
+.ppcert-view__card-recipient {
+	font-size: 1.4em;
+	font-weight: 700;
+	margin: 0 0 0.25em;
+}
+
+.ppcert-view__card-subject {
+	font-size: 1.1em;
+	margin: 0 0 0.25em;
+}
+
+.ppcert-view__card-date {
+	margin: 0;
+	opacity: 0.75;
+}
+
+.ppcert-view__details {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 0.25em 1em;
+	margin: 0.75em 0 0;
+}
+
+.ppcert-view__details dt {
+	font-weight: 600;
+}
+
+.ppcert-view__details dd {
+	margin: 0;
+}
+
+.ppcert-view__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1em;
+	align-items: center;
+	margin-top: 1em;
 }
 
 .ppcert-hidden {

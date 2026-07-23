@@ -81,6 +81,18 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 			]
 		);
 
+		// Public download (Feature 005 FR-004): resolves strictly by full
+		// credential ID - the same public-by-URL model as the view page.
+		register_rest_route(
+			'ppcert/v1',
+			'/certificates/(?P<credential_id>[A-Za-z0-9\-]+)/pdf',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'download_pdf' ],
+				'permission_callback' => '__return_true',
+			]
+		);
+
 		register_rest_route(
 			'ppcert/v1',
 			'/users/search',
@@ -248,6 +260,92 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 		$certificate = PressPrimer_Certificate_Certificate::get( (int) $result );
 
 		return new WP_REST_Response( $this->prepare_item( $certificate ), 201 );
+	}
+
+	/**
+	 * GET /certificates/{credential_id}/pdf - public download (005 FR-004)
+	 *
+	 * Public by URL: the non-guessable credential ID is the access token,
+	 * matching the view page's visibility model. Renders from the
+	 * immutable snapshot and records a `downloaded` event (anonymous
+	 * actor when logged out). Revoked certificates are not served - the
+	 * artifact was administratively withdrawn.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The request.
+	 * @return WP_Error On failure (success streams the file and exits).
+	 */
+	public function download_pdf( $request ) {
+		$certificate = PressPrimer_Certificate_Certificate::get_by_credential_id(
+			(string) $request->get_param( 'credential_id' )
+		);
+
+		if ( ! $certificate || ! is_array( $certificate->layout_snapshot ) ) {
+			return new WP_Error(
+				'ppcert_certificate_not_found',
+				__( 'Certificate not found.', 'pressprimer-certificate' ),
+				[ 'status' => 404 ]
+			);
+		}
+
+		if ( 'revoked' === PressPrimer_Certificate_Certificate::effective_status( $certificate ) ) {
+			return new WP_Error(
+				'ppcert_certificate_revoked',
+				__( 'This certificate has been revoked.', 'pressprimer-certificate' ),
+				[ 'status' => 410 ]
+			);
+		}
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$pdf_path = $renderer->render_pdf(
+			$certificate->layout_snapshot,
+			is_array( $certificate->merge_data ) ? $certificate->merge_data : [],
+			[
+				'context'       => 'download',
+				'credential_id' => (string) $certificate->credential_id,
+			]
+		);
+
+		if ( is_wp_error( $pdf_path ) ) {
+			$pdf_path->add_data( [ 'status' => 500 ] );
+
+			return $pdf_path;
+		}
+
+		PressPrimer_Certificate_Certificate::record_event(
+			(int) $certificate->id,
+			'downloaded',
+			get_current_user_id() > 0 ? get_current_user_id() : null
+		);
+
+		$this->stream_pdf(
+			$pdf_path,
+			'certificate-' . strtolower( (string) $certificate->credential_id ) . '.pdf'
+		);
+	}
+
+	/**
+	 * Stream a rendered PDF and exit
+	 *
+	 * Separated so tests can override streaming; production always exits
+	 * here (REST response serialization never sees the binary).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $pdf_path Rendered temp file path.
+	 * @param string $filename Download filename.
+	 */
+	protected function stream_pdf( $pdf_path, $filename ) {
+		nocache_headers();
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		header( 'Content-Length: ' . (string) filesize( $pdf_path ) );
+
+		readfile( $pdf_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming a locally rendered temp file.
+		wp_delete_file( $pdf_path );
+
+		exit;
 	}
 
 	/**

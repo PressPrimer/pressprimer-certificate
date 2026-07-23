@@ -374,6 +374,58 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Certificate::get_batch_for_recipient - the privacy batch query.
+		if ( false !== strpos( $query, 'WHERE c.recipient_id = %d ORDER BY c.id ASC LIMIT %d OFFSET %d' ) ) {
+			$templates = $this->rows( (string) $args[1] );
+			$matches   = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['recipient_id'] === (int) $args[2];
+				}
+			);
+
+			$matches = array_slice( $matches, (int) $args[4], (int) $args[3] );
+
+			return array_map(
+				static function ( $row ) use ( $templates ) {
+					$row['template_title'] = null;
+					foreach ( $templates as $template ) {
+						if ( (int) $template['id'] === (int) $row['template_id'] ) {
+							$row['template_title'] = isset( $template['title'] ) ? $template['title'] : null;
+							break;
+						}
+					}
+					return $row;
+				},
+				$matches
+			);
+		}
+
+		// Privacy::user_credits - the credit ledger with type names.
+		if ( false !== strpos( $query, 'WHERE cr.user_id = %d' ) ) {
+			$types   = $this->rows( (string) $args[1] );
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['user_id'] === (int) $args[2];
+				}
+			);
+
+			return array_map(
+				static function ( $row ) use ( $types ) {
+					$row['credit_type_name'] = null;
+					foreach ( $types as $type ) {
+						if ( (int) $type['id'] === (int) $row['credit_type_id'] ) {
+							$row['credit_type_name'] = isset( $type['name'] ) ? $type['name'] : null;
+							break;
+						}
+					}
+					return $row;
+				},
+				$matches
+			);
+		}
+
 		// Certificate::get_by_credential_id.
 		if ( false !== strpos( $query, 'WHERE credential_id = %s' ) ) {
 			return $this->filter_rows(

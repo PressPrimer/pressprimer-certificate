@@ -402,6 +402,37 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * One batch of a recipient's certificates, oldest first
+	 *
+	 * The privacy exporter/eraser's paging query (Feature 008 FR-005):
+	 * template titles join in for the export's subject field, fixed
+	 * batch stride, no filtering beyond the recipient.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $recipient_id Recipient user id.
+	 * @param int $limit        Batch size.
+	 * @param int $offset       Row offset.
+	 * @return object[] Hydrated rows with a template_title property.
+	 */
+	public static function get_batch_for_recipient( $recipient_id, $limit, $offset = 0 ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT c.*, t.title AS template_title FROM %i c LEFT JOIN %i t ON t.id = c.template_id WHERE c.recipient_id = %d ORDER BY c.id ASC LIMIT %d OFFSET %d',
+				self::table(),
+				PressPrimer_Certificate_Template::table(),
+				absint( $recipient_id ),
+				absint( $limit ),
+				absint( $offset )
+			)
+		);
+
+		return array_map( [ __CLASS__, 'hydrate' ], (array) $rows );
+	}
+
+	/**
 	 * Hydrate a raw row: decode the JSON snapshot columns
 	 *
 	 * Adds `layout_snapshot` and `merge_data` array properties (null when

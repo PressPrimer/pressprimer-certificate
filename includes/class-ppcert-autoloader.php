@@ -44,6 +44,7 @@ class PressPrimer_Certificate_Autoloader {
 		'integrations',
 		'database',
 		'utilities',
+		'blocks',
 	];
 
 	/**

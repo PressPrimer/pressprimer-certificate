@@ -184,8 +184,13 @@ class PressPrimer_Certificate_Plugin {
 		// The public verification page: shortcode, assets, admin notice.
 		PressPrimer_Certificate_Verification_Page::init();
 
-		// WordPress privacy handlers (personal data export/erase) are
-		// wired here when Feature 8 (Foundation, Prompt 4.6) ships.
+		// The public certificate view page: /certificate/{credential_id}/.
+		PressPrimer_Certificate_View_Page::init();
+
+		// WordPress privacy handlers (personal data export/erase) - the
+		// filters run in admin and cron contexts, so this registers
+		// unconditionally.
+		PressPrimer_Certificate_Privacy::init();
 	}
 
 	/**

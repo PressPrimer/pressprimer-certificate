@@ -21,6 +21,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Define the plugin path constant used by the autoloader.
 define( 'PPCERT_PLUGIN_DIR', dirname( __DIR__, 2 ) . '/' );
 
+// URL + version constants used by asset registration code paths.
+define( 'PPCERT_PLUGIN_URL', 'https://test.example/wp-content/plugins/pressprimer-certificate/' );
+
+if ( ! defined( 'PPCERT_VERSION' ) ) {
+	define( 'PPCERT_VERSION', '1.0.0-test' );
+}
+
 // Load Composer autoloader (PHPUnit, etc.).
 require_once PPCERT_PLUGIN_DIR . 'vendor/autoload.php';
 
@@ -1389,6 +1396,122 @@ if ( ! class_exists( 'WP_Error' ) ) {
 		 */
 		public function has_errors() {
 			return ! empty( $this->errors );
+		}
+	}
+}
+
+if ( ! function_exists( 'esc_url' ) ) {
+	/**
+	 * Stub: Pass-through URL escaper (assertions target the URL value).
+	 *
+	 * @param string $url URL.
+	 * @return string
+	 */
+	function esc_url( $url ) {
+		return (string) $url;
+	}
+}
+
+if ( ! function_exists( 'get_user_by' ) ) {
+	/**
+	 * Stub: Look a user up by email or id in the test users store.
+	 *
+	 * @param string     $field 'email' or 'id'.
+	 * @param string|int $value Lookup value.
+	 * @return object|false
+	 */
+	function get_user_by( $field, $value ) {
+		$users = isset( $GLOBALS['ppcert_test_users'] ) ? $GLOBALS['ppcert_test_users'] : [];
+
+		if ( 'id' === $field ) {
+			return isset( $users[ (int) $value ] ) ? $users[ (int) $value ] : false;
+		}
+
+		if ( 'email' === $field ) {
+			foreach ( $users as $user ) {
+				if ( isset( $user->user_email ) && strtolower( $user->user_email ) === strtolower( (string) $value ) ) {
+					return $user;
+				}
+			}
+		}
+
+		return false;
+	}
+}
+
+if ( ! function_exists( 'register_block_type' ) ) {
+	/**
+	 * Stub: Capture block registrations.
+	 *
+	 * Tests read $GLOBALS['ppcert_test_blocks'][name] = $args.
+	 *
+	 * @param string $name Block name.
+	 * @param array  $args Block arguments.
+	 * @return bool
+	 */
+	function register_block_type( $name, $args = [] ) {
+		$GLOBALS['ppcert_test_blocks'][ $name ] = $args;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'add_rewrite_rule' ) ) {
+	/**
+	 * Stub: Capture rewrite rule registrations.
+	 *
+	 * Tests read $GLOBALS['ppcert_test_rewrites'][regex] = $query.
+	 *
+	 * @param string $regex    Rule regex.
+	 * @param string $query    Query mapping.
+	 * @param string $position 'top' or 'bottom'.
+	 * @return void
+	 */
+	function add_rewrite_rule( $regex, $query, $position = 'bottom' ) {
+		$GLOBALS['ppcert_test_rewrites'][ $regex ] = [
+			'query'    => $query,
+			'position' => $position,
+		];
+	}
+}
+
+if ( ! function_exists( 'status_header' ) ) {
+	/**
+	 * Stub: Capture the sent status code.
+	 *
+	 * @param int $code HTTP status code.
+	 * @return void
+	 */
+	function status_header( $code ) {
+		$GLOBALS['ppcert_test_status_header'] = (int) $code;
+	}
+}
+
+if ( ! function_exists( 'nocache_headers' ) ) {
+	/**
+	 * Stub: No-op cache header suppression.
+	 *
+	 * @return void
+	 */
+	function nocache_headers() {
+	}
+}
+
+if ( ! class_exists( 'WP_Post' ) ) {
+	/**
+	 * Stub: Property-bag post object (matches core's constructor shape).
+	 */
+	#[\AllowDynamicProperties]
+	class WP_Post {
+
+		/**
+		 * Copy properties off the source object.
+		 *
+		 * @param object $post Source data.
+		 */
+		public function __construct( $post ) {
+			foreach ( get_object_vars( $post ) as $key => $value ) {
+				$this->$key = $value;
+			}
 		}
 	}
 }

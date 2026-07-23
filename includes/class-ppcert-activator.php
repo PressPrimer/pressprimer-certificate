@@ -98,6 +98,10 @@ class PressPrimer_Certificate_Activator {
 		// TODO (Prompt 5.1): seed the starter templates into
 		// wp_ppcert_templates (is_starter = 1), re-seeding only if missing.
 
+		// Register the view-page rewrite before flushing so
+		// /certificate/{credential_id}/ resolves from first activation.
+		PressPrimer_Certificate_View_Page::register_rewrites();
+
 		// Flush rewrite rules
 		flush_rewrite_rules();
 
