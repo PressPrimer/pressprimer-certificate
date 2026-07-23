@@ -540,12 +540,68 @@ export function updatePagePreset( layout, size, orientation, presets ) {
 		height: preset[ 1 ],
 	};
 
-	return {
-		...layout,
-		page,
-		elements: layout.elements.map( ( element ) => ( {
+	const oldWidth = layout.page.width;
+	const oldHeight = layout.page.height;
+
+	if (
+		! oldWidth ||
+		! oldHeight ||
+		( oldWidth === page.width && oldHeight === page.height )
+	) {
+		return {
+			...layout,
+			page,
+			elements: layout.elements.map( ( element ) => ( {
+				...element,
+				...clampBox( element, page ),
+			} ) ),
+		};
+	}
+
+	// Rescale the design to the new page (Ryan's Award-tab review,
+	// 2026-07-22): uniform scale by the smaller axis ratio - never
+	// distorting element aspect - then center the scaled design. A4 <->
+	// Letter is near-lossless; an orientation flip shrinks the design
+	// to fit with even margins on the long axis. Font sizes, stroke
+	// widths, and corner radii scale with the boxes; the change is one
+	// undo step like any layout mutation.
+	const scale = Math.min( page.width / oldWidth, page.height / oldHeight );
+	const offsetX = ( page.width - oldWidth * scale ) / 2;
+	const offsetY = ( page.height - oldHeight * scale ) / 2;
+
+	const scaleProp = ( value, min ) =>
+		'number' === typeof value
+			? Math.max( min, roundPt( value * scale ) )
+			: value;
+
+	const elements = layout.elements.map( ( element ) => {
+		const raw = element.props || {};
+		const props = {
+			...raw,
+			// Validator floor for font_size is 6pt.
+			font_size: scaleProp( raw.font_size, 6 ),
+			stroke_width: scaleProp( raw.stroke_width, 0 ),
+			radius: scaleProp( raw.radius, 0 ),
+		};
+
+		// Only carry keys the element actually had.
+		Object.keys( props ).forEach( ( key ) => {
+			if ( undefined === props[ key ] ) {
+				delete props[ key ];
+			}
+		} );
+
+		const scaled = {
 			...element,
-			...clampBox( element, page ),
-		} ) ),
-	};
+			x: roundPt( element.x * scale + offsetX ),
+			y: roundPt( element.y * scale + offsetY ),
+			w: roundPt( element.w * scale ),
+			h: roundPt( element.h * scale ),
+			props,
+		};
+
+		return { ...scaled, ...clampBox( scaled, page ) };
+	} );
+
+	return { ...layout, page, elements };
 }

@@ -39,7 +39,12 @@ const SAMPLES_PATH = path.join(
 	'starter-samples.json'
 );
 
-const STARTERS = [ 'starter-formal-landscape', 'starter-modern-landscape' ];
+const STARTERS = [
+	'starter-formal-landscape',
+	'starter-formal-portrait',
+	'starter-modern-landscape',
+	'starter-modern-portrait',
+];
 
 test.use( { viewport: { width: 1100, height: 800 }, deviceScaleFactor: 2 } );
 

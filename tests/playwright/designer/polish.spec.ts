@@ -63,6 +63,96 @@ test.describe( 'designer polish', () => {
 		expect( pageState.width ).toBe( 792 );
 	} );
 
+	test( 'page preset change rescales the design uniformly and is undoable', async ( {
+		page,
+	} ) => {
+		await page.goto( CANVAS_URL );
+		await page.waitForSelector( '[data-ppcert-canvas-scale]' );
+
+		const before = await page.evaluate( () => {
+			const layout = ( window as any ).__ppcertHarness.getState().layout;
+			return {
+				page: layout.page,
+				title: layout.elements.find(
+					( el: any ) => 'el_frmtitle' === el.id
+				),
+				qr: layout.elements.find(
+					( el: any ) => 'el_frmqr001' === el.id
+				),
+			};
+		} );
+
+		// A4 landscape -> A4 portrait.
+		await page
+			.locator(
+				'[data-ppcert-prop="page-orientation"] .ant-segmented-item',
+				{ hasText: 'Portrait' }
+			)
+			.click();
+
+		// The rescale is announced, never silent.
+		await expect(
+			page.getByText( 'Design scaled to fit the new page.', {
+				exact: false,
+			} )
+		).toBeVisible();
+
+		const after = await page.evaluate( () => {
+			const layout = ( window as any ).__ppcertHarness.getState().layout;
+			return {
+				page: layout.page,
+				title: layout.elements.find(
+					( el: any ) => 'el_frmtitle' === el.id
+				),
+				qr: layout.elements.find(
+					( el: any ) => 'el_frmqr001' === el.id
+				),
+			};
+		} );
+
+		// Uniform scale by the smaller axis ratio, centered on the long
+		// axis - same math as updatePagePreset.
+		const scale = Math.min(
+			after.page.width / before.page.width,
+			after.page.height / before.page.height
+		);
+		const offsetX = ( after.page.width - before.page.width * scale ) / 2;
+		const offsetY = ( after.page.height - before.page.height * scale ) / 2;
+
+		expect( after.title.w ).toBeCloseTo( before.title.w * scale, 1 );
+		expect( after.title.x ).toBeCloseTo(
+			before.title.x * scale + offsetX,
+			1
+		);
+		expect( after.title.y ).toBeCloseTo(
+			before.title.y * scale + offsetY,
+			1
+		);
+		expect( after.title.props.font_size ).toBeCloseTo(
+			before.title.props.font_size * scale,
+			1
+		);
+
+		// Uniform scaling keeps the QR square.
+		expect( after.qr.w ).toBeCloseTo( after.qr.h, 5 );
+
+		// One undo step restores the exact original design.
+		await page.evaluate( () =>
+			( window as any ).__ppcertHarness.dispatch( { type: 'UNDO' } )
+		);
+
+		const restored = await page.evaluate( () => {
+			const layout = ( window as any ).__ppcertHarness.getState().layout;
+			return layout.elements.find(
+				( el: any ) => 'el_frmtitle' === el.id
+			);
+		} );
+
+		expect( restored.x ).toBe( before.title.x );
+		expect( restored.w ).toBe( before.title.w );
+		expect( restored.props.font_size ).toBe( before.title.props.font_size );
+	} );
+
 	test( 'toolbar rename marks dirty and persists with save', async ( {
 		page,
 	} ) => {

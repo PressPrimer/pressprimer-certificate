@@ -5,7 +5,7 @@
  */
 
 import { __, sprintf } from '@wordpress/i18n';
-import { Button, Segmented, Select, Tooltip, Typography } from 'antd';
+import { Button, Segmented, Select, Tooltip, Typography, message } from 'antd';
 import { PictureOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDesignerStore } from '../../hooks/useDesignerStore';
 import { updateBackground, updatePagePreset } from '../../schema/geometry';
@@ -64,10 +64,24 @@ export default function PageSection() {
 	const presets = getBoot().page_presets;
 
 	const setPreset = ( size, orientation ) => {
-		dispatch( {
-			type: 'APPLY_LAYOUT',
-			layout: updatePagePreset( layout, size, orientation, presets ),
-		} );
+		const next = updatePagePreset( layout, size, orientation, presets );
+
+		dispatch( { type: 'APPLY_LAYOUT', layout: next } );
+
+		// Rescaling must never be silent: name what just happened and
+		// that it is one undo step.
+		if (
+			next.elements.length > 0 &&
+			( next.page.width !== layout.page.width ||
+				next.page.height !== layout.page.height )
+		) {
+			message.info(
+				__(
+					'Design scaled to fit the new page. Undo restores it.',
+					'pressprimer-certificate'
+				)
+			);
+		}
 	};
 
 	return (
