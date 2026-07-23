@@ -74,6 +74,18 @@ jobs:
       - name: Install npm dependencies
         run: npm install
 
+      # The parity suite screenshots the real designer canvas and
+      # compares it against the PDF raster, so it needs a browser and
+      # the built harness bundle - not just the PHP side.
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build designer harness
+        run: npm run build:harness
+
+      - name: Run designer suite
+        run: npx playwright test --project=designer-canvas
+
       - name: Run parity suite (GD path)
         run: npx playwright test --project=parity-pdf
 
