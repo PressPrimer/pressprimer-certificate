@@ -5,6 +5,13 @@
  * after anti-aliasing tolerance, and no element bounding-box drift beyond
  * 1 pt. Any relaxation requires explicit sign-off (a parity failure is a
  * release blocker).
+ *
+ * Per-pixel AA tolerance raised 0.1 -> 0.15 with Ryan's sign-off
+ * (2026-07-22): Linux CI rasterizes text with FreeType, macOS with
+ * CoreText, and the AA noise between them pushed the text-heaviest
+ * starter to 1.057% while every geometry check stayed clean. The 1.0%
+ * pixel budget - the release-blocker contract - is unchanged; real
+ * layout drift shows up as multi-percent swings either way.
  */
 import * as fs from 'node:fs';
 import { PNG } from 'pngjs';
@@ -17,7 +24,7 @@ export const PIXEL_DIFF_MAX_RATIO = 0.01;
 export const BOX_DRIFT_MAX_PT = 1.0;
 
 /** Per-pixel pixelmatch threshold (anti-aliasing tolerance). */
-export const PIXELMATCH_THRESHOLD = 0.1;
+export const PIXELMATCH_THRESHOLD = 0.15;
 
 export interface CompareResult {
 	width: number;
