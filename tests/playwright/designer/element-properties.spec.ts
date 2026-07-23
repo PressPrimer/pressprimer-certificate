@@ -12,9 +12,12 @@ import * as path from 'path';
 const HARNESS_URL =
 	'file://' + path.resolve( __dirname, 'harness', 'index.html' );
 
-const TITLE_ID = 'el_frmtitle';
-const QR_ID = 'el_frmqr001';
-const ELEMENT_COUNT = 11;
+// Element count derives from the real starter document so starter
+// redesigns can never silently strand these specs.
+import { TITLE, QR, ELEMENT_COUNT } from './starter-fixture';
+
+const TITLE_ID = TITLE.id;
+const QR_ID = QR.id;
 
 const PNG_1PX =
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';

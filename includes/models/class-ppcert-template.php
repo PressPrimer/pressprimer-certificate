@@ -270,13 +270,17 @@ class PressPrimer_Certificate_Template {
 
 			$slug  = sanitize_key( (string) $decoded['_meta']['slug'] );
 			$label = isset( $decoded['_meta']['label'] ) ? (string) $decoded['_meta']['label'] : $slug;
+			$roles = isset( $decoded['_meta']['color_roles'] ) && is_array( $decoded['_meta']['color_roles'] )
+				? $decoded['_meta']['color_roles']
+				: [];
 
 			unset( $decoded['_meta'] );
 
 			$starters[ $slug ] = [
-				'slug'   => $slug,
-				'label'  => $label,
-				'layout' => $decoded,
+				'slug'        => $slug,
+				'label'       => $label,
+				'layout'      => $decoded,
+				'color_roles' => $roles,
 			];
 		}
 

@@ -12,11 +12,9 @@ import * as path from 'path';
 const HARNESS_URL =
 	'file://' + path.resolve( __dirname, 'harness', 'index.html' );
 
-/** Element geometry from templates/starter-formal-landscape.json. */
-const TITLE = { id: 'el_frmtitle', x: 121, y: 96, w: 600, h: 44 };
-const NAME = { id: 'el_frmname1', x: 121, y: 212 };
-const QR = { id: 'el_frmqr001', x: 752, y: 475, w: 60, h: 60 };
-const ELEMENT_COUNT = 11;
+// Element geometry derives from the real starter document so starter
+// redesigns can never silently strand these specs.
+import { TITLE, NAME, QR, ELEMENT_COUNT } from './starter-fixture';
 
 async function boot( page: Page, zoom: number | 'fit' ): Promise< void > {
 	await page.goto( HARNESS_URL );

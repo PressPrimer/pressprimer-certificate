@@ -107,8 +107,7 @@ class Test_Email_Service extends TestCase {
 	}
 
 	/**
-	 * The issued email sends with substituted tokens and the PDF attached
-	 * (an empty-layout PDF is well under the threshold).
+	 * The issued email sends with substituted tokens and the PDF attached.
 	 *
 	 * @return void
 	 */
@@ -125,7 +124,7 @@ class Test_Email_Service extends TestCase {
 		$this->assertStringContainsString( '7Q4M-K9P2-XT3A', $mail['body'], 'Display-form credential in the body' );
 		$this->assertStringContainsString( 'ppcert_id=7Q4MK9P2XT3A', $mail['body'], 'Working verification link' );
 		$this->assertStringContainsString( 'From: Sunrise Training Academy <admin@sunrise.example>', $mail['headers'][0] );
-		$this->assertCount( 1, $mail['attachments'], 'PDF attached under the threshold' );
+		$this->assertCount( 1, $mail['attachments'], 'PDF always attaches' );
 		$this->assertStringEndsWith( 'certificate-7Q4M-K9P2-XT3A.pdf', $mail['attachments'][0], 'Recipient-friendly attachment filename' );
 	}
 
@@ -149,19 +148,24 @@ class Test_Email_Service extends TestCase {
 	}
 
 	/**
-	 * Over-threshold PDFs are not attached: the email goes link-only and
-	 * the temp file is cleaned up.
+	 * A broken snapshot degrades to link-only: the email still sends with
+	 * the verification URL in the body (no size threshold exists - the
+	 * PDF attaches whenever rendering succeeds).
 	 *
 	 * @return void
 	 */
-	public function test_attach_threshold_link_only() {
-		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'email_attach_threshold_mb' => 0 ];
+	public function test_render_failure_degrades_to_link_only() {
+		$this->wpdb->mutate_row(
+			'wp_ppcert_certificates',
+			$this->certificate_id,
+			[ 'layout_snapshot_json' => '{"broken":true}' ]
+		);
 
 		$sent = PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [] );
 
 		$this->assertTrue( $sent );
 		$mail = $GLOBALS['ppcert_test_mail'][0];
-		$this->assertCount( 0, $mail['attachments'], 'Zero-MB threshold forces link-only' );
+		$this->assertCount( 0, $mail['attachments'], 'Unrenderable snapshot sends link-only' );
 		$this->assertStringContainsString( 'ppcert_id=', $mail['body'] );
 	}
 

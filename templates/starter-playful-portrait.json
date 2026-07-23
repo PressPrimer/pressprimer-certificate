@@ -1,7 +1,16 @@
 {
   "_meta": {
     "slug": "starter-playful-portrait",
-    "label": "Playful (Portrait)"
+    "label": "Playful (Portrait)",
+    "color_roles": {
+      "primary": [
+        "#0f172a"
+      ],
+      "accent": [
+        "#38bdf8",
+        "#0ea5e9"
+      ]
+    }
   },
   "layout_schema_version": 1,
   "page": {

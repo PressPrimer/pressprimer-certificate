@@ -1,7 +1,15 @@
 {
   "_meta": {
     "slug": "starter-modern-portrait",
-    "label": "Modern (Portrait)"
+    "label": "Modern (Portrait)",
+    "color_roles": {
+      "primary": [
+        "#111827"
+      ],
+      "accent": [
+        "#0f766e"
+      ]
+    }
   },
   "layout_schema_version": 1,
   "page": {

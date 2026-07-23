@@ -302,6 +302,49 @@ class PPCert_Fake_WPDB {
 	}
 
 	/**
+	 * wpdb::query() - supports the event pruner's batched DELETE.
+	 *
+	 * @param string $prepared Encoded payload from prepare().
+	 * @return int Rows affected.
+	 * @throws RuntimeException On an unsupported query shape.
+	 */
+	public function query( $prepared ) {
+		$payload = json_decode( (string) $prepared, true );
+
+		if ( ! is_array( $payload ) || ! isset( $payload['q'], $payload['args'] ) ) {
+			throw new RuntimeException( 'PPCert_Fake_WPDB: unprepared query: ' . (string) $prepared );
+		}
+
+		$query = $payload['q'];
+		$args  = $payload['args'];
+		$table = isset( $args[0] ) ? (string) $args[0] : '';
+
+		// Event pruner: DELETE prunable rows older than the cutoff.
+		if ( false !== strpos( $query, "DELETE FROM %i WHERE event_type IN ( 'verified', 'viewed' ) AND created_at < %s LIMIT %d" ) ) {
+			$cutoff  = (string) $args[1];
+			$limit   = (int) $args[2];
+			$rows    = $this->rows( $table );
+			$deleted = 0;
+
+			foreach ( $rows as $row ) {
+				if ( $deleted >= $limit ) {
+					break;
+				}
+
+				if ( in_array( $row['event_type'], [ 'verified', 'viewed' ], true )
+					&& isset( $row['created_at'] ) && $row['created_at'] < $cutoff ) {
+					unset( $this->tables[ $table ][ $row['id'] ] );
+					++$deleted;
+				}
+			}
+
+			return $deleted;
+		}
+
+		throw new RuntimeException( 'PPCert_Fake_WPDB: unsupported query() shape: ' . $query );
+	}
+
+	/**
 	 * Read queries executed (test instrumentation, e.g. asserting the
 	 * checksum gate reaches the endpoint before any DB work).
 	 *

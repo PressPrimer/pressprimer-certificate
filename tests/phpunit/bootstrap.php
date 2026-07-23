@@ -912,12 +912,21 @@ if ( ! class_exists( 'WP_REST_Request' ) ) {
 		private $params;
 
 		/**
+		 * JSON body params.
+		 *
+		 * @var array
+		 */
+		private $json;
+
+		/**
 		 * Constructor.
 		 *
 		 * @param array $params Request params.
+		 * @param array $json   JSON body params.
 		 */
-		public function __construct( $params = [] ) {
+		public function __construct( $params = [], $json = [] ) {
 			$this->params = $params;
+			$this->json   = $json;
 		}
 
 		/**
@@ -928,6 +937,15 @@ if ( ! class_exists( 'WP_REST_Request' ) ) {
 		 */
 		public function get_param( $key ) {
 			return isset( $this->params[ $key ] ) ? $this->params[ $key ] : null;
+		}
+
+		/**
+		 * Get the decoded JSON body.
+		 *
+		 * @return array
+		 */
+		public function get_json_params() {
+			return $this->json;
 		}
 	}
 }
@@ -1513,5 +1531,77 @@ if ( ! class_exists( 'WP_Post' ) ) {
 				$this->$key = $value;
 			}
 		}
+	}
+}
+
+if ( ! defined( 'DAY_IN_SECONDS' ) ) {
+	define( 'DAY_IN_SECONDS', 86400 );
+}
+
+if ( ! function_exists( 'sanitize_email' ) ) {
+	/**
+	 * Stub: Strip characters not allowed in email addresses.
+	 *
+	 * @param string $email Email address.
+	 * @return string
+	 */
+	function sanitize_email( $email ) {
+		return (string) preg_replace( '/[^a-zA-Z0-9.!#$%&\'*+\/=?^_`{|}~@\-]/', '', (string) $email );
+	}
+}
+
+if ( ! function_exists( 'is_email' ) ) {
+	/**
+	 * Stub: Loose email validity check.
+	 *
+	 * @param string $email Email address.
+	 * @return string|false The email when valid.
+	 */
+	function is_email( $email ) {
+		return false !== filter_var( (string) $email, FILTER_VALIDATE_EMAIL ) ? (string) $email : false;
+	}
+}
+
+if ( ! function_exists( 'wp_next_scheduled' ) ) {
+	/**
+	 * Stub: Cron schedule store.
+	 *
+	 * Tests read/write $GLOBALS['ppcert_test_cron'][hook] = timestamp.
+	 *
+	 * @param string $hook Hook name.
+	 * @return int|false
+	 */
+	function wp_next_scheduled( $hook ) {
+		return isset( $GLOBALS['ppcert_test_cron'][ $hook ] ) ? $GLOBALS['ppcert_test_cron'][ $hook ] : false;
+	}
+}
+
+if ( ! function_exists( 'wp_schedule_event' ) ) {
+	/**
+	 * Stub: Record a scheduled event.
+	 *
+	 * @param int    $timestamp  First run.
+	 * @param string $recurrence Recurrence key.
+	 * @param string $hook       Hook name.
+	 * @return bool
+	 */
+	function wp_schedule_event( $timestamp, $recurrence, $hook ) {
+		$GLOBALS['ppcert_test_cron'][ $hook ] = (int) $timestamp;
+		$GLOBALS['ppcert_test_cron_recurrence'][ $hook ] = (string) $recurrence;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_unschedule_event' ) ) {
+	/**
+	 * Stub: Remove a scheduled event.
+	 *
+	 * @param int    $timestamp Scheduled time.
+	 * @param string $hook      Hook name.
+	 * @return bool
+	 */
+	function wp_unschedule_event( $timestamp, $hook ) {
+		unset( $GLOBALS['ppcert_test_cron'][ $hook ] );
+		return true;
 	}
 }

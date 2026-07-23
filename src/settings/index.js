@@ -1,11 +1,27 @@
 /**
- * PressPrimer Certificate – Settings entry point.
+ * Settings entry point
  *
- * The settings app arrives with the Foundation feature, following the free
- * Quiz plugin's SettingsPage.jsx patterns (Ant Design tabs, message.config,
- * apiFetch with relative /ppcert/v1/ paths). Mount pattern: render into
- * #ppcert-settings-root with bootstrap data from the ppcert_settings_data
- * localized object. This placeholder keeps the webpack entry valid from
- * the first commit.
+ * Mounts the React settings page (Feature 008 FR-004) into
+ * #ppcert-settings-root with bootstrap data from ppcert_settings_data,
+ * following the Quiz/Assignment settings-panel pattern.
+ *
+ * @package
+ * @since 1.0.0
  */
-export {};
+
+import { render } from '@wordpress/element';
+import { message } from 'antd';
+import SettingsPage from './components/SettingsPage';
+import './style.css';
+
+// Ecosystem convention: toasts clear the WP admin bar.
+message.config( { top: 50, duration: 5, maxCount: 3 } );
+
+const root = document.getElementById( 'ppcert-settings-root' );
+
+if ( root ) {
+	render(
+		<SettingsPage settingsData={ window.ppcert_settings_data || {} } />,
+		root
+	);
+}

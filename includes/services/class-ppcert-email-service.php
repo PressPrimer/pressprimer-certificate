@@ -18,8 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Email service class
  *
  * Sends the issued email through wp_mail(): toggleable in settings
- * (default on), subject/body with token substitution, PDF attached when
- * under the size threshold (default 2 MB) else link-only. Every part is
+ * (default on), subject/body with token substitution, and the PDF
+ * always attached when rendering succeeds. Every part is
  * filterable via ppcert_email_enabled / ppcert_email_content (HOOKS.md) -
  * the issuance service's dispatch point calls send_issued(), and the two
  * filters fire HERE with their documented signatures.
@@ -30,14 +30,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 1.0.0
  */
 class PressPrimer_Certificate_Email_Service {
-
-	/**
-	 * Default attach-PDF size threshold in megabytes
-	 *
-	 * @since 1.0.0
-	 * @var int
-	 */
-	const DEFAULT_ATTACH_THRESHOLD_MB = 2;
 
 	/**
 	 * Send the issued email for a certificate
@@ -88,10 +80,10 @@ class PressPrimer_Certificate_Email_Service {
 			'attachments' => [],
 		];
 
-		// Attach the PDF when it fits under the threshold; link-only
-		// otherwise (FR-004). The temp file is deleted after sending
-		// (Feature 007 FR-006 - nothing persists).
-		$attachment_path = self::maybe_render_attachment( $certificate, $template, $settings );
+		// The PDF always attaches when rendering succeeds; the temp
+		// file is deleted after sending (Feature 007 FR-006 - nothing
+		// persists).
+		$attachment_path = self::render_attachment( $certificate, $template );
 
 		if ( '' !== $attachment_path ) {
 			$content['attachments'][] = $attachment_path;
@@ -120,16 +112,20 @@ class PressPrimer_Certificate_Email_Service {
 	}
 
 	/**
-	 * Render the PDF attachment when under the size threshold
+	 * Render the PDF attachment
+	 *
+	 * Always attached when rendering succeeds (Ryan, 2026-07-23: no
+	 * size threshold - the email carries the certificate no matter
+	 * what); a render failure degrades to link-only via the body's
+	 * verification URL.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param object      $certificate Certificate row (hydrated).
 	 * @param object|null $template    Template row.
-	 * @param array       $settings    Effective settings.
 	 * @return string Attachment temp path, or '' for link-only.
 	 */
-	private static function maybe_render_attachment( $certificate, $template, $settings ) {
+	private static function render_attachment( $certificate, $template ) {
 		if ( ! is_array( $certificate->layout_snapshot ) ) {
 			return '';
 		}
@@ -149,13 +145,6 @@ class PressPrimer_Certificate_Email_Service {
 		);
 
 		if ( is_wp_error( $path ) ) {
-			return '';
-		}
-
-		$threshold_bytes = (int) $settings['email_attach_threshold_mb'] * 1024 * 1024;
-
-		if ( filesize( $path ) > $threshold_bytes ) {
-			wp_delete_file( $path );
 			return '';
 		}
 
@@ -225,10 +214,9 @@ class PressPrimer_Certificate_Email_Service {
 			'email_issued_enabled'      => 1,
 			'email_issued_subject'      => __( 'Your certificate: {subject}', 'pressprimer-certificate' ),
 			'email_issued_body'         => __(
-				"Hi {recipient_name},\n\nCongratulations - your certificate for {subject} has been issued.\n\nCredential ID: {credential_id}\nVerify it any time: {verification_url}\n\n{issuer_name}",
+				"Hi {recipient_name},\n\nCongratulations! Your certificate for {subject} is now available.\n\nCredential ID: {credential_id}\nVerify it any time: {verification_url}\n\n{issuer_name}",
 				'pressprimer-certificate'
 			),
-			'email_attach_threshold_mb' => self::DEFAULT_ATTACH_THRESHOLD_MB,
 			'email_from_name'           => (string) get_bloginfo( 'name' ),
 			'email_from_address'        => (string) get_bloginfo( 'admin_email' ),
 		];

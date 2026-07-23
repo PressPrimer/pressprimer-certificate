@@ -102,6 +102,9 @@ class PressPrimer_Certificate_Activator {
 		// The is_starter column stays dormant for premium template packs
 		// (resolved at Prompt 5.1; supersedes the 1.2 seeding TODO).
 
+		// Schedule the daily events-retention cleanup (008 TR-003).
+		PressPrimer_Certificate_Event_Pruner::schedule();
+
 		// Register the view-page rewrite before flushing so
 		// /certificate/{credential_id}/ resolves from first activation.
 		PressPrimer_Certificate_View_Page::register_rewrites();

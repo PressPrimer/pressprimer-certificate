@@ -1,0 +1,461 @@
+/**
+ * Settings Panel Styles
+ *
+ * Matches the Quiz/Assignment settings panels for visual consistency.
+ *
+ * @package PressPrimer_Certificate
+ * @since 1.0.0
+ */
+
+.ppcert-settings-container {
+	background: #f0f2f5;
+	min-height: calc(100vh - 32px); /* Account for WP admin bar */
+	padding: 24px;
+}
+
+.ppcert-settings-header {
+	background: #334155;
+	padding: 12px;
+	padding-left: 32px;
+	border-radius: 12px;
+	margin-bottom: 24px;
+	color: #fff;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.ppcert-settings-header-content {
+	flex: 1;
+	padding: 20px 0;
+}
+
+.ppcert-settings-header h1 {
+	margin: 0 0 8px 0;
+	font-size: 28px;
+	font-weight: 600;
+	color: #fff;
+}
+
+.ppcert-settings-header p {
+	margin: 0;
+	color: rgba(255, 255, 255, 0.75);
+	font-size: 15px;
+}
+
+.ppcert-settings-header-mascot {
+	height: 130px;
+	width: auto;
+	flex-shrink: 0;
+}
+
+/* Main settings layout */
+.ppcert-settings-layout {
+	display: flex;
+	gap: 24px;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	overflow: hidden;
+}
+
+/* Vertical tabs sidebar */
+.ppcert-settings-tabs {
+	width: 220px;
+	min-width: 220px;
+	background: #fafafa;
+	border-right: 1px solid #f0f0f0;
+	padding: 16px 0;
+}
+
+.ppcert-settings-tab {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 14px 20px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 14px;
+	color: #1d2327;
+	text-align: left;
+	transition: all 0.2s ease;
+	position: relative;
+}
+
+.ppcert-settings-tab:hover {
+	background: #f0f0f0;
+	color: #2271b1;
+}
+
+.ppcert-settings-tab--active {
+	background: #fff;
+	color: #2271b1;
+	font-weight: 600;
+}
+
+.ppcert-settings-tab--active::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: #2271b1;
+}
+
+.ppcert-settings-tab .anticon {
+	font-size: 18px;
+}
+
+/* Tab content area */
+.ppcert-settings-content {
+	flex: 1;
+	padding: 24px;
+	min-height: 600px;
+}
+
+.ppcert-settings-section {
+	margin-bottom: 32px;
+}
+
+.ppcert-settings-section:last-child {
+	margin-bottom: 0;
+}
+
+.ppcert-settings-section-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0 0 8px 0;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.ppcert-settings-section-description {
+	color: #646970;
+	margin-bottom: 16px;
+	font-size: 13px;
+}
+
+/* Form field styling */
+.ppcert-settings-field {
+	margin-bottom: 20px;
+}
+
+.ppcert-settings-field:last-child {
+	margin-bottom: 0;
+}
+
+.ppcert-settings-field .ant-form-item {
+	margin-bottom: 0;
+}
+
+.ppcert-settings-field .ant-form-item-label > label {
+	font-weight: 500;
+}
+
+/* Danger zone styling */
+.ppcert-danger-zone {
+	border: 1px solid #ff4d4f;
+	border-radius: 8px;
+	padding: 20px;
+	background: #fff2f0;
+}
+
+.ppcert-danger-zone .ppcert-settings-section-title {
+	color: #cf1322;
+}
+
+/* Save button footer */
+.ppcert-settings-footer {
+	display: flex;
+	justify-content: flex-end;
+	padding: 16px 24px;
+	background: #fafafa;
+	border-top: 1px solid #f0f0f0;
+	margin: 0 -24px -24px -24px;
+}
+
+/* System info table */
+.ppcert-system-info {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.ppcert-system-info th,
+.ppcert-system-info td {
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.ppcert-system-info th {
+	width: 200px;
+	font-weight: 500;
+	color: #1d2327;
+	background: #fafafa;
+}
+
+.ppcert-system-info td {
+	color: #3c434a;
+}
+
+.ppcert-system-info tr:last-child th,
+.ppcert-system-info tr:last-child td {
+	border-bottom: none;
+}
+
+/* Token list for email templates */
+.ppcert-token-list {
+	background: #fafafa;
+	border: 1px solid #f0f0f0;
+	border-radius: 6px;
+	padding: 12px 16px;
+	margin-top: 8px;
+}
+
+.ppcert-token-list code {
+	background: #e6f7ff;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+	color: #1890ff;
+}
+
+/* Status tab: copy-to-clipboard bar */
+.ppcert-status-copy-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: #f0f6fc;
+	border: 1px solid #c5d9ed;
+	border-radius: 6px;
+	padding: 12px 16px;
+	margin-bottom: 24px;
+}
+
+.ppcert-status-copy-bar-text {
+	color: #2271b1;
+	font-size: 13px;
+}
+
+/* Status tab: two-column grid */
+.ppcert-status-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0 32px;
+}
+
+.ppcert-status-grid .ppcert-settings-section {
+	margin-bottom: 24px;
+}
+
+/* stylelint-disable-next-line no-descending-specificity -- Width override
+   for the grid layout; never competes with the tr:last-child border rule. */
+.ppcert-status-grid .ppcert-system-info th {
+	width: 140px;
+}
+
+/* Status tab: active plugins list */
+.ppcert-status-plugin-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 4px 0;
+}
+
+.ppcert-status-plugin-item {
+	background: #fafafa;
+	border: 1px solid #f0f0f0;
+	border-radius: 4px;
+	padding: 4px 10px;
+	font-size: 12px;
+	color: #3c434a;
+	line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 1024px) {
+
+	.ppcert-settings-layout {
+		flex-direction: column;
+	}
+
+	.ppcert-settings-tabs {
+		width: 100%;
+		min-width: 100%;
+		border-right: none;
+		border-bottom: 1px solid #f0f0f0;
+		display: flex;
+		flex-wrap: wrap;
+		padding: 8px;
+	}
+
+	.ppcert-settings-tab {
+		padding: 10px 16px;
+	}
+
+	.ppcert-settings-tab--active::before {
+		display: none;
+	}
+
+	.ppcert-settings-tab--active {
+		background: #2271b1;
+		color: #fff;
+		border-radius: 4px;
+	}
+
+	.ppcert-settings-tab--active:hover {
+		color: #fff;
+	}
+
+	.ppcert-status-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media screen and (max-width: 600px) {
+
+	.ppcert-settings-container {
+		padding: 12px;
+	}
+
+	.ppcert-settings-header {
+		padding: 16px;
+	}
+
+	.ppcert-settings-content {
+		padding: 16px;
+	}
+
+	.ppcert-system-info th {
+		width: 120px;
+	}
+
+	.ppcert-status-copy-bar {
+		flex-direction: column;
+		gap: 8px;
+		text-align: center;
+	}
+
+	.ppcert-status-grid .ppcert-system-info th {
+		width: 100px;
+	}
+}
+
+/* Appearance tab: signature/logo preview thumbnails */
+.ppcert-settings-image-preview {
+	max-height: 60px;
+	max-width: 160px;
+	border: 1px solid #f0f0f0;
+	border-radius: 4px;
+	padding: 4px;
+	background: #fff;
+}
+
+/* Appearance tab: controls + live preview side by side */
+.ppcert-appearance-columns {
+	display: flex;
+	gap: 32px;
+	align-items: flex-start;
+	flex-wrap: wrap;
+}
+
+.ppcert-appearance-controls {
+	flex: 0 1 380px;
+	min-width: 300px;
+}
+
+.ppcert-appearance-preview {
+	flex: 1 1 420px;
+	max-width: 620px;
+	position: sticky;
+	top: 48px;
+}
+
+.ppcert-appearance-preview__page {
+	aspect-ratio: 842 / 595;
+	background: #fdfcf8;
+	border: 3px solid #b8860b;
+	border-radius: 2px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+	padding: 6px;
+	margin-bottom: 8px;
+}
+
+.ppcert-appearance-preview__inner {
+	height: 100%;
+	border: 1px solid #b8860b;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 2%;
+	padding: 8% 6% 6%;
+	text-align: center;
+	overflow: hidden;
+}
+
+.ppcert-appearance-preview__logo {
+	max-height: 12%;
+	max-width: 30%;
+	object-fit: contain;
+}
+
+.ppcert-appearance-preview__title {
+	font-size: 1.55em;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.ppcert-appearance-preview__kicker {
+	font-size: 0.8em;
+	color: #6b7280;
+}
+
+.ppcert-appearance-preview__name {
+	font-size: 1.9em;
+	line-height: 1.2;
+}
+
+.ppcert-appearance-preview__rule {
+	width: 38%;
+	height: 1px;
+}
+
+.ppcert-appearance-preview__body {
+	font-size: 0.85em;
+	color: #374151;
+}
+
+.ppcert-appearance-preview__signature {
+
+	/* A signature belongs low on the page: auto top margin pushes it
+	 * toward the bottom border, like the real formal starters. */
+	margin-top: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 40%;
+}
+
+.ppcert-appearance-preview__signature-image {
+	max-height: 34px;
+	max-width: 80%;
+	object-fit: contain;
+	margin-bottom: 2px;
+}
+
+.ppcert-appearance-preview__signature-line {
+	width: 100%;
+	height: 1px;
+	background: #9ca3af;
+}
+
+.ppcert-appearance-preview__signature-caption {
+	font-size: 0.65em;
+	color: #6b7280;
+	margin-top: 4px;
+}

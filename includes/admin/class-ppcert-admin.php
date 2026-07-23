@@ -244,7 +244,7 @@ class PressPrimer_Certificate_Admin {
 
 			// Canvas text must render the real bundled variants - the PDF
 			// uses them, and synthetic styling would break parity.
-			wp_add_inline_style( 'ppcert-designer', $this->build_font_face_css( $fonts ) );
+			wp_add_inline_style( 'ppcert-designer', self::build_font_face_css( $fonts ) );
 		}
 
 		// Read-only routing context; capability enforcement happens on
@@ -283,6 +283,8 @@ class PressPrimer_Certificate_Admin {
 				'list_url'      => add_query_arg( 'page', 'pressprimer-certificate', admin_url( 'admin.php' ) ),
 				'fonts'         => $fonts,
 				'element_types' => PressPrimer_Certificate_Element_Types::get_types(),
+				// Appearance brand colors feed the ColorField presets.
+				'appearance'    => PressPrimer_Certificate_Appearance_Service::get(),
 				'fitting'       => PressPrimer_Certificate_PDF_Renderer::fitting_thresholds(),
 				'sample_qr'     => is_wp_error( $sample_qr ) ? null : $sample_qr,
 				'starters'      => $starters,
@@ -310,10 +312,14 @@ class PressPrimer_Certificate_Admin {
 	 *
 	 * @since 1.0.0
 	 *
+	 * Public and static so the settings screen reuses it - the
+	 * Appearance tab's font picker and preview render each family in
+	 * its real face.
+	 *
 	 * @param array $fonts Map of font slug => family definition.
 	 * @return string CSS.
 	 */
-	private function build_font_face_css( array $fonts ) {
+	public static function build_font_face_css( array $fonts ) {
 		$variant_face = [
 			'regular'     => [ 400, 'normal' ],
 			'bold'        => [ 700, 'normal' ],

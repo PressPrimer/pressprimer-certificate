@@ -11,9 +11,9 @@ import * as path from 'path';
 const HARNESS_URL =
 	'file://' + path.resolve( __dirname, 'harness', 'index.html' );
 
-const TITLE = { id: 'el_frmtitle', x: 121, y: 96, w: 600, h: 44 };
-const QR = { id: 'el_frmqr001', x: 752, y: 475, w: 60, h: 60 };
-const ELEMENT_COUNT = 11;
+// Element geometry derives from the real starter document so starter
+// redesigns can never silently strand these specs.
+import { TITLE, QR, ELEMENT_COUNT } from './starter-fixture';
 
 async function boot( page: Page ): Promise< void > {
 	await page.goto( HARNESS_URL );
@@ -52,14 +52,18 @@ test.describe( 'guardrails', () => {
 
 		// No invisible grid (UX decision 2026-07-22): unless a guide is
 		// shown, the element lands exactly where the pointer puts it.
+		// The delta must keep every title edge AND center more than
+		// SNAP_TOLERANCE_PT from every other element's edges/centers -
+		// +39 stopped qualifying when 5.1 put the credential field's
+		// left edge (x=461) 1pt from the dragged title's center.
 		const from = await centerOf( page, TITLE.id );
 		await page.mouse.move( from.x, from.y );
 		await page.mouse.down();
-		await page.mouse.move( from.x + 39, from.y + 18, { steps: 5 } );
+		await page.mouse.move( from.x + 50, from.y + 18, { steps: 5 } );
 		await page.mouse.up();
 
 		const title = await getElement( page, TITLE.id );
-		expect( title.x ).toBe( TITLE.x + 39 );
+		expect( title.x ).toBe( TITLE.x + 50 );
 		expect( title.y ).toBe( TITLE.y + 18 );
 	} );
 

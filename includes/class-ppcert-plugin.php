@@ -164,6 +164,12 @@ class PressPrimer_Certificate_Plugin {
 			$certificates_admin = new PressPrimer_Certificate_Admin_Certificates();
 			$certificates_admin->init();
 		}
+
+		// Settings screen (Feature 008 FR-004).
+		if ( class_exists( 'PressPrimer_Certificate_Admin_Settings' ) ) {
+			$settings_admin = new PressPrimer_Certificate_Admin_Settings();
+			$settings_admin->init();
+		}
 	}
 
 	/**
@@ -269,6 +275,7 @@ class PressPrimer_Certificate_Plugin {
 			'PressPrimer_Certificate_REST_Merge_Fields_Controller',
 			'PressPrimer_Certificate_REST_Triggers_Controller',
 			'PressPrimer_Certificate_REST_Verification_Controller',
+			'PressPrimer_Certificate_REST_Settings_Controller',
 		];
 
 		foreach ( $controllers as $controller_class ) {
@@ -298,13 +305,13 @@ class PressPrimer_Certificate_Plugin {
 	/**
 	 * Initialize cron jobs
 	 *
-	 * Registers scheduled tasks. The events retention cleanup (prunable
-	 * verified/viewed rows in wp_ppcert_events per DATABASE.md) is
-	 * registered here when the Issuance Engine ships.
+	 * The daily ppcert_prune_events retention cleanup (prunable
+	 * verified/viewed rows in wp_ppcert_events per DATABASE.md);
+	 * scheduled by the activator, cleared by the deactivator.
 	 *
 	 * @since 1.0.0
 	 */
 	private function init_cron() {
-		// Intentionally empty until the events table cleanup lands.
+		PressPrimer_Certificate_Event_Pruner::init();
 	}
 }

@@ -37,7 +37,22 @@ class PressPrimer_Certificate_Element_Types {
 	 * @return array Map of type key => definition.
 	 */
 	public static function get_types() {
-		$default_font = 'source-sans-3';
+		// Appearance defaults (Prompt 5.2): every new element starts from
+		// the site's chosen font/colors/artwork; the built-in values
+		// apply when a setting is unset.
+		$appearance = class_exists( 'PressPrimer_Certificate_Appearance_Service' )
+			? PressPrimer_Certificate_Appearance_Service::get()
+			: [
+				'default_font'  => '',
+				'signature_id'  => 0,
+				'logo_id'       => 0,
+				'primary_color' => '',
+				'accent_color'  => '',
+			];
+
+		$default_font = '' !== $appearance['default_font'] ? $appearance['default_font'] : 'source-sans-3';
+		$text_color   = '' !== $appearance['primary_color'] ? $appearance['primary_color'] : '#1f2937';
+		$accent_color = '' !== $appearance['accent_color'] ? $appearance['accent_color'] : '#1f2937';
 
 		$types = [
 			'text'        => [
@@ -52,7 +67,7 @@ class PressPrimer_Certificate_Element_Types {
 					'content'     => __( 'Your text', 'pressprimer-certificate' ),
 					'font_family' => $default_font,
 					'font_size'   => 16,
-					'color'       => '#1f2937',
+					'color'       => $text_color,
 					'align'       => 'left',
 					'line_height' => 1.2,
 					'bold'        => false,
@@ -74,7 +89,7 @@ class PressPrimer_Certificate_Element_Types {
 					'token'       => '{{recipient.display_name}}',
 					'font_family' => $default_font,
 					'font_size'   => 16,
-					'color'       => '#1f2937',
+					'color'       => $text_color,
 					'align'       => 'left',
 					'line_height' => 1.2,
 					'bold'        => false,
@@ -90,7 +105,7 @@ class PressPrimer_Certificate_Element_Types {
 					'h' => 140,
 				],
 				'default_props' => [
-					'attachment_id' => 0,
+					'attachment_id' => $appearance['logo_id'],
 					'fit'           => 'contain',
 					'opacity'       => 1,
 				],
@@ -104,7 +119,7 @@ class PressPrimer_Certificate_Element_Types {
 					'h' => 60,
 				],
 				'default_props' => [
-					'attachment_id' => 0,
+					'attachment_id' => $appearance['signature_id'],
 					'fit'           => 'contain',
 					'opacity'       => 1,
 				],
@@ -119,7 +134,7 @@ class PressPrimer_Certificate_Element_Types {
 				],
 				'default_props' => [
 					'shape'        => 'rect',
-					'stroke_color' => '#1f2937',
+					'stroke_color' => $accent_color,
 					'stroke_width' => 1,
 					'fill_color'   => '',
 					'radius'       => 0,
@@ -134,7 +149,7 @@ class PressPrimer_Certificate_Element_Types {
 					'h' => 60,
 				],
 				'default_props' => [
-					'dark_color'  => '#000000',
+					'dark_color'  => '' !== $appearance['primary_color'] ? $appearance['primary_color'] : '#000000',
 					'light_color' => '',
 				],
 			],

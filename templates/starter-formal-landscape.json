@@ -1,7 +1,15 @@
 {
   "_meta": {
     "slug": "starter-formal-landscape",
-    "label": "Formal (Landscape)"
+    "label": "Formal (Landscape)",
+    "color_roles": {
+      "primary": [
+        "#1f2a44"
+      ],
+      "accent": [
+        "#b8860b"
+      ]
+    }
   },
   "layout_schema_version": 1,
   "page": {
@@ -129,7 +137,7 @@
       "h": 24,
       "z": 7,
       "props": {
-        "content": "for successfully completing the program",
+        "content": "for successfully completing",
         "font_family": "eb-garamond",
         "font_size": 14,
         "color": "#374151",

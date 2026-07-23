@@ -31,6 +31,8 @@ class PressPrimer_Certificate_Deactivator {
 	 * @since 1.0.0
 	 */
 	public static function deactivate() {
+		PressPrimer_Certificate_Event_Pruner::unschedule();
+
 		flush_rewrite_rules();
 	}
 }

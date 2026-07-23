@@ -8,6 +8,7 @@
 
 import { __ } from '@wordpress/i18n';
 import { ColorPicker } from 'antd';
+import { getBoot } from '../../boot';
 
 const PRESETS = [
 	{
@@ -27,6 +28,30 @@ const PRESETS = [
 ];
 
 /**
+ * Preset groups with the site's Appearance brand colors first.
+ *
+ * @return {Array} Preset groups.
+ */
+function presetGroups() {
+	const appearance = getBoot().appearance || {};
+	const brand = [ appearance.primary_color, appearance.accent_color ].filter(
+		Boolean
+	);
+
+	if ( ! brand.length ) {
+		return PRESETS;
+	}
+
+	return [
+		{
+			label: __( 'Brand colors', 'pressprimer-certificate' ),
+			colors: brand,
+		},
+		...PRESETS,
+	];
+}
+
+/**
  * The field.
  *
  * @param {Object}   props           Props.
@@ -42,7 +67,7 @@ export default function ColorField( { value, onChange, clearable = false } ) {
 			disabledAlpha
 			showText
 			value={ value || null }
-			presets={ PRESETS }
+			presets={ presetGroups() }
 			allowClear={ clearable }
 			onClear={ clearable ? () => onChange( '' ) : undefined }
 			onChangeComplete={ ( color ) => onChange( color.toHexString() ) }
