@@ -111,12 +111,14 @@ test.describe( 'guardrails', () => {
 	} ) => {
 		await boot( page );
 
-		// Proposed center lands within tolerance of the page center
-		// (421): the guide shows mid-drag and the drop aligns exactly.
+		// Proposed center lands 3pt from the page center (within the 4pt
+		// tolerance): the guide shows mid-drag and the drop aligns
+		// exactly. The delta derives from the starter's QR position.
+		const toNearCenter = 421 + 3 - ( QR.x + QR.w / 2 );
 		const from = await centerOf( page, QR.id );
 		await page.mouse.move( from.x, from.y );
 		await page.mouse.down();
-		await page.mouse.move( from.x - 358, from.y, { steps: 8 } );
+		await page.mouse.move( from.x + toNearCenter, from.y, { steps: 8 } );
 
 		await expect( page.locator( '[data-ppcert-guide="v"]' ) ).toBeVisible();
 

@@ -97,9 +97,9 @@
       "id": "el_fptname1",
       "type": "merge_field",
       "x": 60,
-      "y": 248,
+      "y": 266,
       "w": 475,
-      "h": 60,
+      "h": 56,
       "z": 5,
       "props": {
         "token": "{{recipient.full_name}}",
@@ -148,13 +148,32 @@
       }
     },
     {
+      "id": "el_fptcrse1",
+      "type": "text",
+      "x": 60,
+      "y": 380,
+      "w": 475,
+      "h": 28,
+      "z": 8,
+      "props": {
+        "content": "Course Name",
+        "font_family": "playfair-display",
+        "font_size": 18,
+        "color": "#1f2a44",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
       "id": "el_fptsign1",
       "type": "merge_field",
       "x": 178,
-      "y": 600,
+      "y": 648,
       "w": 240,
-      "h": 36,
-      "z": 8,
+      "h": 32,
+      "z": 9,
       "props": {
         "token": "{{certificate.issuer_name}}",
         "font_family": "alex-brush",
@@ -170,10 +189,10 @@
       "id": "el_fptsigl1",
       "type": "shape",
       "x": 178,
-      "y": 642,
+      "y": 682,
       "w": 240,
       "h": 1,
-      "z": 9,
+      "z": 10,
       "props": {
         "shape": "line",
         "stroke_color": "#9ca3af",
@@ -186,10 +205,10 @@
       "id": "el_fptsigc1",
       "type": "text",
       "x": 178,
-      "y": 648,
+      "y": 688,
       "w": 240,
       "h": 16,
-      "z": 10,
+      "z": 11,
       "props": {
         "content": "Authorized Signature",
         "font_family": "eb-garamond",
@@ -208,7 +227,7 @@
       "y": 726,
       "w": 220,
       "h": 20,
-      "z": 11,
+      "z": 12,
       "props": {
         "token": "{{certificate.issue_date}}",
         "font_family": "eb-garamond",
@@ -221,29 +240,10 @@
       }
     },
     {
-      "id": "el_fptcred1",
-      "type": "merge_field",
-      "x": 60,
-      "y": 752,
-      "w": 260,
-      "h": 20,
-      "z": 12,
-      "props": {
-        "token": "{{certificate.credential_id}}",
-        "font_family": "eb-garamond",
-        "font_size": 11,
-        "color": "#374151",
-        "align": "left",
-        "line_height": 1.2,
-        "bold": false,
-        "italic": false
-      }
-    },
-    {
       "id": "el_fptqr001",
       "type": "qr",
-      "x": 487,
-      "y": 712,
+      "x": 477,
+      "y": 724,
       "w": 60,
       "h": 60,
       "z": 13,

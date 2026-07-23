@@ -113,13 +113,32 @@
       }
     },
     {
+      "id": "el_mptcrse1",
+      "type": "text",
+      "x": 60,
+      "y": 314,
+      "w": 475,
+      "h": 30,
+      "z": 6,
+      "props": {
+        "content": "Course Name",
+        "font_family": "source-sans-3",
+        "font_size": 20,
+        "color": "#111827",
+        "align": "left",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
       "id": "el_mptrule1",
       "type": "shape",
       "x": 60,
       "y": 700,
       "w": 475,
       "h": 1,
-      "z": 6,
+      "z": 7,
       "props": {
         "shape": "line",
         "stroke_color": "#e5e7eb",
@@ -135,28 +154,9 @@
       "y": 722,
       "w": 200,
       "h": 18,
-      "z": 7,
-      "props": {
-        "token": "{{certificate.issue_date}}",
-        "font_family": "source-sans-3",
-        "font_size": 11,
-        "color": "#6b7280",
-        "align": "left",
-        "line_height": 1.2,
-        "bold": false,
-        "italic": false
-      }
-    },
-    {
-      "id": "el_mptcred1",
-      "type": "merge_field",
-      "x": 280,
-      "y": 722,
-      "w": 190,
-      "h": 18,
       "z": 8,
       "props": {
-        "token": "{{certificate.credential_id}}",
+        "token": "{{certificate.issue_date}}",
         "font_family": "source-sans-3",
         "font_size": 11,
         "color": "#6b7280",

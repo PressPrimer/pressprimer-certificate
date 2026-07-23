@@ -11,7 +11,15 @@ import * as path from 'path';
 const HARNESS_URL =
 	'file://' + path.resolve( __dirname, 'harness', 'index.html' );
 
-const NAME_ID = 'el_frmname1';
+import { STARTER, NAME } from './starter-fixture';
+
+const NAME_ID = NAME.id;
+
+// The starter's own merge fields - derived so starter redesigns keep
+// this spec honest.
+const STARTER_MERGE_COUNT = STARTER.elements.filter(
+	( el ) => 'merge_field' === el.type
+).length;
 
 async function boot( page: Page ): Promise< void > {
 	await page.goto( HARNESS_URL );
@@ -109,8 +117,8 @@ test.describe( 'merge fields', () => {
 	} ) => {
 		await boot( page );
 
-		// Insert one registry field on top of the starter's four
-		// merge elements.
+		// Insert one registry field on top of the starter's own merge
+		// elements.
 		await openMergeMenu( page );
 		await page.click(
 			'[data-ppcert-merge-field="recipient.display_name"]'
@@ -123,7 +131,7 @@ test.describe( 'merge fields', () => {
 		const mergeCount = await page
 			.locator( '[data-ppcert-merge-display]' )
 			.count();
-		expect( mergeCount ).toBeGreaterThanOrEqual( 5 );
+		expect( mergeCount ).toBe( STARTER_MERGE_COUNT + 1 );
 
 		// Flip to token view: every merge element shows raw tokens.
 		await page.evaluate( () =>

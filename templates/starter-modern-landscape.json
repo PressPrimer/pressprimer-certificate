@@ -113,13 +113,32 @@
       }
     },
     {
+      "id": "el_modcrse1",
+      "type": "text",
+      "x": 80,
+      "y": 300,
+      "w": 620,
+      "h": 32,
+      "z": 6,
+      "props": {
+        "content": "Course Name",
+        "font_family": "source-sans-3",
+        "font_size": 22,
+        "color": "#111827",
+        "align": "left",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
       "id": "el_modrule1",
       "type": "shape",
       "x": 80,
       "y": 460,
       "w": 660,
       "h": 1,
-      "z": 6,
+      "z": 7,
       "props": {
         "shape": "line",
         "stroke_color": "#e5e7eb",
@@ -135,28 +154,9 @@
       "y": 482,
       "w": 200,
       "h": 18,
-      "z": 7,
-      "props": {
-        "token": "{{certificate.issue_date}}",
-        "font_family": "source-sans-3",
-        "font_size": 11,
-        "color": "#6b7280",
-        "align": "left",
-        "line_height": 1.2,
-        "bold": false,
-        "italic": false
-      }
-    },
-    {
-      "id": "el_modcred1",
-      "type": "merge_field",
-      "x": 300,
-      "y": 482,
-      "w": 240,
-      "h": 18,
       "z": 8,
       "props": {
-        "token": "{{certificate.credential_id}}",
+        "token": "{{certificate.issue_date}}",
         "font_family": "source-sans-3",
         "font_size": 11,
         "color": "#6b7280",
@@ -188,7 +188,7 @@
     {
       "id": "el_modqr001",
       "type": "qr",
-      "x": 690,
+      "x": 684,
       "y": 472,
       "w": 56,
       "h": 56,

@@ -97,9 +97,9 @@
       "id": "el_frmname1",
       "type": "merge_field",
       "x": 121,
-      "y": 198,
+      "y": 222,
       "w": 600,
-      "h": 66,
+      "h": 58,
       "z": 5,
       "props": {
         "token": "{{recipient.full_name}}",
@@ -148,13 +148,32 @@
       }
     },
     {
+      "id": "el_frmcrse1",
+      "type": "text",
+      "x": 121,
+      "y": 338,
+      "w": 600,
+      "h": 30,
+      "z": 8,
+      "props": {
+        "content": "Course Name",
+        "font_family": "playfair-display",
+        "font_size": 20,
+        "color": "#1f2a44",
+        "align": "center",
+        "line_height": 1.2,
+        "bold": true,
+        "italic": false
+      }
+    },
+    {
       "id": "el_frmsign1",
       "type": "merge_field",
       "x": 301,
-      "y": 388,
+      "y": 455,
       "w": 240,
-      "h": 38,
-      "z": 8,
+      "h": 32,
+      "z": 9,
       "props": {
         "token": "{{certificate.issuer_name}}",
         "font_family": "alex-brush",
@@ -170,10 +189,10 @@
       "id": "el_frmsigl1",
       "type": "shape",
       "x": 301,
-      "y": 432,
+      "y": 489,
       "w": 240,
       "h": 1,
-      "z": 9,
+      "z": 10,
       "props": {
         "shape": "line",
         "stroke_color": "#9ca3af",
@@ -186,10 +205,10 @@
       "id": "el_frmsigc1",
       "type": "text",
       "x": 301,
-      "y": 438,
+      "y": 495,
       "w": 240,
       "h": 16,
-      "z": 10,
+      "z": 11,
       "props": {
         "content": "Authorized Signature",
         "font_family": "eb-garamond",
@@ -205,10 +224,10 @@
       "id": "el_frmissue",
       "type": "merge_field",
       "x": 121,
-      "y": 492,
+      "y": 520,
       "w": 260,
       "h": 20,
-      "z": 11,
+      "z": 12,
       "props": {
         "token": "{{certificate.issue_date}}",
         "font_family": "eb-garamond",
@@ -221,29 +240,10 @@
       }
     },
     {
-      "id": "el_frmcred1",
-      "type": "merge_field",
-      "x": 461,
-      "y": 492,
-      "w": 260,
-      "h": 20,
-      "z": 12,
-      "props": {
-        "token": "{{certificate.credential_id}}",
-        "font_family": "eb-garamond",
-        "font_size": 11,
-        "color": "#374151",
-        "align": "right",
-        "line_height": 1.2,
-        "bold": false,
-        "italic": false
-      }
-    },
-    {
       "id": "el_frmqr001",
       "type": "qr",
-      "x": 752,
-      "y": 475,
+      "x": 724,
+      "y": 481,
       "w": 60,
       "h": 60,
       "z": 13,

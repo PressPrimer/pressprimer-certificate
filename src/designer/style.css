@@ -498,9 +498,11 @@
 	font-size: 12px;
 }
 
+/* Merge fields render without extra adornment: the dashed-underline
+ * affordance read as part of the design (Ryan, 2026-07-23) - the
+ * Samples|Tokens toggle is the way to see what is dynamic. */
 .ppcert-designer__el-merge {
-	text-decoration: underline dashed rgba(107, 114, 128, 0.6);
-	text-underline-offset: 3px;
+	text-decoration: none;
 }
 
 .ppcert-designer__el-qr {
