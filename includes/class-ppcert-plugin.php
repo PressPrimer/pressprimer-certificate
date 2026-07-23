@@ -206,6 +206,7 @@ class PressPrimer_Certificate_Plugin {
 			static function () {
 				$adapters = [
 					'PressPrimer_Certificate_PPQ_Adapter',
+					'PressPrimer_Certificate_PPA_Adapter',
 				];
 
 				foreach ( $adapters as $adapter_class ) {
