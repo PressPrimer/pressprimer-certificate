@@ -102,6 +102,7 @@ export default function MediaSection( { element } ) {
 					size="small"
 					value={ p.fit }
 					data-ppcert-prop="fit"
+					popupMatchSelectWidth={ false }
 					onChange={ ( fit ) => patch( { fit } ) }
 					options={ [
 						{

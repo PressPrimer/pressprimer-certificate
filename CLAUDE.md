@@ -247,6 +247,8 @@ Applies to: constants, global functions, classes, hooks, AJAX actions, options, 
 - The **designer canvas** itself is custom React (absolutely positioned elements over the page background at true size). Its **chrome** (sidebars, panels, toolbars, modals) uses Ant Design.
 - `WP_List_Table` (PHP) is acceptable for list views (issued certificates list, templates list) that link to React detail/editor pages.
 - Follow the free Quiz plugin's established patterns for: settings tab save models, `message.config({ top: 50, duration: 5, maxCount: 3 })` in every entry point, radio card selectors, alerts, empty states, loading states, and the central Ant Design Select reset. See `../pressprimer-quiz/CLAUDE.md` "Admin UI Development", "Settings Tab & React Admin Surface Conventions", and "UI Component Patterns" - those sections are authoritative for Certificate too.
+- **Nothing may render under the WordPress admin bar.** Floating UI near the top of the screen (tooltips, popovers, dropdowns on toolbar controls) must open DOWNWARD (`placement="bottom"`), never upward into the admin bar, and toasts keep the `top: 50` message config. Ant Design's default z-index layers sit below the admin bar's 99999, so anything that flips upward at the top of the viewport disappears behind it - treat that as a bug, not a cosmetic issue.
+- **Select dropdowns must be fully readable.** Every Ant Design Select gets `popupMatchSelectWidth={ false }` so the option list sizes to its widest entry - a narrow control must never truncate its menu options. Property-panel selects use the shared fixed-width classes rather than shrinking to the current value.
 
 ### apiFetch Path Convention (CRITICAL)
 

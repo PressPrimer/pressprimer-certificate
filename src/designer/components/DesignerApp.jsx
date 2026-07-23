@@ -16,6 +16,7 @@ import {
 	Select,
 	Tabs,
 	Tag,
+	Tooltip,
 	Typography,
 	Button,
 	Spin,
@@ -398,28 +399,40 @@ export default function DesignerApp( { boot } ) {
 					>
 						{ __( 'Templates', 'pressprimer-certificate' ) }
 					</Button>
-					<Text
-						strong
-						className="ppcert-designer__title"
-						editable={ {
-							tooltip: __(
-								'Rename template',
-								'pressprimer-certificate'
-							),
-							onChange: ( title ) => {
-								const clean = title.trim();
-
-								if ( clean && clean !== state.template.title ) {
-									dispatch( {
-										type: 'RENAME_TEMPLATE',
-										title: clean,
-									} );
-								}
-							},
-						} }
+					{ /* Placement bottom: the toolbar sits directly under
+					     the WP admin bar, and the editable's built-in
+					     tooltip (always top) disappears behind it. Nothing
+					     may render under the admin bar (CLAUDE.md). */ }
+					<Tooltip
+						title={ __(
+							'Rename template',
+							'pressprimer-certificate'
+						) }
+						placement="bottom"
 					>
-						{ state.template.title }
-					</Text>
+						<Text
+							strong
+							className="ppcert-designer__title"
+							editable={ {
+								tooltip: false,
+								onChange: ( title ) => {
+									const clean = title.trim();
+
+									if (
+										clean &&
+										clean !== state.template.title
+									) {
+										dispatch( {
+											type: 'RENAME_TEMPLATE',
+											title: clean,
+										} );
+									}
+								},
+							} }
+						>
+							{ state.template.title }
+						</Text>
+					</Tooltip>
 					<Tag
 						color={
 							STATUS_COLORS[ state.template.status ] || 'default'

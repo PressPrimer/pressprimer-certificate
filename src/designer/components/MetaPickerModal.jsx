@@ -16,6 +16,10 @@ const { Text } = Typography;
 
 const KEY_PATTERN = /^[a-z0-9_-]{1,64}$/;
 
+// Server page size (REST KEY_LIMIT): a full page means more keys may
+// exist - the cap is surfaced, never silent.
+const KEY_LIMIT = 50;
+
 /**
  * The modal.
  *
@@ -129,6 +133,19 @@ export default function MetaPickerModal( {
 						</List.Item>
 					) }
 				/>
+			) }
+
+			{ ! loading && items.length >= KEY_LIMIT && (
+				<Text
+					type="secondary"
+					className="ppcert-designer__meta-cap"
+					data-ppcert-meta-cap
+				>
+					{ __(
+						'Showing the first 50 matching keys. Type to narrow the list.',
+						'pressprimer-certificate'
+					) }
+				</Text>
 			) }
 
 			<div className="ppcert-designer__meta-raw">

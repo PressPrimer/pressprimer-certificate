@@ -531,66 +531,22 @@ export default function TriggerPanel() {
 						( type && type.source_label ) ||
 						__( 'Source', 'pressprimer-certificate' );
 
+					// Ryan's Award-tab layout (2026-07-22 review): with a
+					// single trigger there is vertical room - the trigger
+					// name, the source, and the controls each get their
+					// own full-width line; nothing is squeezed or cut off.
 					return (
 						<div
 							key={ trigger.id || `staged-${ index }` }
 							className="ppcert-designer__trigger-card"
 							data-ppcert-trigger-row={ index }
 						>
-							<div className="ppcert-designer__trigger-card-head">
-								<Text
-									strong
-									ellipsis
-									className="ppcert-designer__trigger-title"
-								>
-									{ trigger.type_label }
-								</Text>
-								<div className="ppcert-designer__trigger-actions">
-									<Switch
-										size="small"
-										checked={ trigger.is_active }
-										data-ppcert-trigger-toggle={ index }
-										onChange={ ( checked ) =>
-											edit(
-												triggers.map( ( row, i ) =>
-													i === index
-														? {
-																...row,
-																is_active:
-																	checked,
-														  }
-														: row
-												)
-											)
-										}
-									/>
-									<Button
-										size="small"
-										type="text"
-										icon={ <EditOutlined /> }
-										disabled={ ! trigger.type_available }
-										data-ppcert-trigger-edit={ index }
-										onClick={ () => {
-											setEditIndex( index );
-											setModalOpen( true );
-										} }
-									/>
-									<Button
-										size="small"
-										type="text"
-										danger
-										icon={ <DeleteOutlined /> }
-										data-ppcert-trigger-remove={ index }
-										onClick={ () =>
-											edit(
-												triggers.filter(
-													( row, i ) => i !== index
-												)
-											)
-										}
-									/>
-								</div>
-							</div>
+							<Text
+								strong
+								className="ppcert-designer__trigger-title"
+							>
+								{ trigger.type_label }
+							</Text>
 
 							{ warning && (
 								<Tag
@@ -609,7 +565,9 @@ export default function TriggerPanel() {
 								>
 									{ sourceNoun }
 								</Text>
-								<Text ellipsis>
+								{ /* Wraps, never truncates: the card has
+								     the vertical room (Ryan, 2026-07-22). */ }
+								<Text className="ppcert-designer__trigger-card-value">
 									{ trigger.source_label ||
 										trigger.source_ref ||
 										__(
@@ -631,13 +589,72 @@ export default function TriggerPanel() {
 										) }
 									</Text>
 									<Text
-										ellipsis
+										className="ppcert-designer__trigger-card-value"
 										data-ppcert-trigger-conditions={ index }
 									>
 										{ summary.join( ' · ' ) }
 									</Text>
 								</div>
 							) }
+
+							<div className="ppcert-designer__trigger-controls">
+								<span className="ppcert-designer__trigger-active">
+									<Text type="secondary">
+										{ __(
+											'Active',
+											'pressprimer-certificate'
+										) }
+									</Text>
+									<Switch
+										size="small"
+										checked={ trigger.is_active }
+										data-ppcert-trigger-toggle={ index }
+										onChange={ ( checked ) =>
+											edit(
+												triggers.map( ( row, i ) =>
+													i === index
+														? {
+																...row,
+																is_active:
+																	checked,
+														  }
+														: row
+												)
+											)
+										}
+									/>
+								</span>
+								<span className="ppcert-designer__trigger-actions">
+									<Button
+										size="small"
+										icon={ <EditOutlined /> }
+										disabled={ ! trigger.type_available }
+										data-ppcert-trigger-edit={ index }
+										onClick={ () => {
+											setEditIndex( index );
+											setModalOpen( true );
+										} }
+									>
+										{ __(
+											'Edit',
+											'pressprimer-certificate'
+										) }
+									</Button>
+									<Button
+										size="small"
+										danger
+										icon={ <DeleteOutlined /> }
+										data-ppcert-trigger-remove={ index }
+										onClick={ () =>
+											edit(
+												triggers.filter(
+													( row, i ) => i !== index
+												)
+											)
+										}
+									/>
+								</span>
+							</div>
 						</div>
 					);
 				} )

@@ -240,6 +240,14 @@
 	min-width: 0;
 }
 
+/* Selects never shrink to their current value (CLAUDE.md: dropdowns
+   must be fully readable) - a stable control width fits the widest
+   enumerated entry, and popupMatchSelectWidth={false} lets the menu
+   size to its own content. */
+.ppcert-designer__prop-control .ant-select {
+	min-width: 110px;
+}
+
 .ppcert-designer__prop-wide {
 	width: 100%;
 }
@@ -369,16 +377,26 @@
 	background: #fafafa;
 }
 
-.ppcert-designer__trigger-card-head {
+.ppcert-designer__trigger-title {
+	display: block;
+	line-height: 1.35;
+}
+
+.ppcert-designer__trigger-controls {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: 8px;
+	margin-top: 4px;
+	padding-top: 8px;
+	border-top: 1px solid #eef0f2;
 }
 
-.ppcert-designer__trigger-title {
-	min-width: 0;
-	flex: 1;
+.ppcert-designer__trigger-active {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
 }
 
 .ppcert-designer__trigger-card-line {
@@ -392,6 +410,13 @@
 .ppcert-designer__trigger-card-label {
 	flex: none;
 	font-size: 12px;
+}
+
+/* Long source names and condition summaries wrap instead of
+   truncating - the single-trigger card has the vertical room. */
+.ppcert-designer__trigger-card-value {
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 .ppcert-designer__trigger-card .ant-tag {
@@ -436,6 +461,12 @@
 	display: block;
 	max-width: 240px;
 	padding: 2px 8px 6px;
+	font-size: 12px;
+}
+
+.ppcert-designer__meta-cap {
+	display: block;
+	margin-top: 4px;
 	font-size: 12px;
 }
 

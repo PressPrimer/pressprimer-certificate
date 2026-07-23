@@ -40,6 +40,7 @@ export default function ShapeSection( { element } ) {
 					size="small"
 					value={ p.shape }
 					data-ppcert-prop="shape"
+					popupMatchSelectWidth={ false }
 					onChange={ ( shape ) => patch( { shape } ) }
 					options={ [
 						{
