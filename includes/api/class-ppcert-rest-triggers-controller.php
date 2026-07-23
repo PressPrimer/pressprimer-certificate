@@ -54,11 +54,17 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 				'callback'            => [ $this, 'get_types' ],
 				'permission_callback' => [ $this, 'can_manage' ],
 				'args'                => [
-					'type'   => [
+					'type'    => [
 						'sanitize_callback' => 'sanitize_key',
 					],
-					'search' => [
+					'search'  => [
 						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'level'   => [
+						'sanitize_callback' => 'sanitize_key',
+					],
+					'parents' => [
+						'sanitize_callback' => [ __CLASS__, 'sanitize_parents' ],
 					],
 				],
 			]
@@ -94,6 +100,28 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 	}
 
 	/**
+	 * Sanitize the cascade parents map (level key => selected id)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $value Raw value.
+	 * @return array<string,string>
+	 */
+	public static function sanitize_parents( $value ) {
+		$clean = [];
+
+		foreach ( (array) $value as $key => $id ) {
+			$key = sanitize_key( (string) $key );
+
+			if ( '' !== $key && is_scalar( $id ) ) {
+				$clean[ $key ] = sanitize_text_field( (string) $id );
+			}
+		}
+
+		return $clean;
+	}
+
+	/**
 	 * GET /trigger-types - types list, or a type's sources (?type=&search=)
 	 *
 	 * Only registered types appear: adapters register through
@@ -109,7 +137,12 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 		$type_id = (string) $request->get_param( 'type' );
 
 		if ( '' !== $type_id ) {
-			return $this->get_sources( $type_id, (string) $request->get_param( 'search' ) );
+			return $this->get_sources(
+				$type_id,
+				(string) $request->get_param( 'search' ),
+				(string) $request->get_param( 'level' ),
+				self::sanitize_parents( $request->get_param( 'parents' ) )
+			);
 		}
 
 		$types = [];
@@ -118,26 +151,47 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 			$types[] = [
 				'id'                => $type['id'],
 				'label'             => $type['label'],
+				'integration'       => $type['integration'],
+				'short_label'       => $type['short_label'],
 				'source_label'      => $type['source_label'],
 				'has_sources'       => null !== $type['source_picker'],
+				'source_levels'     => $type['source_levels'],
 				'source_post_types' => $type['source_post_types'],
 				'conditions_schema' => self::schema_for_client( $type['conditions_schema'] ),
 			];
 		}
 
+		// FR-005 positioning: adapter lists render alphabetically -
+		// integration first, then trigger - no LMS is headlined by
+		// registration order.
+		usort(
+			$types,
+			static function ( $a, $b ) {
+				$by_integration = strcasecmp( $a['integration'], $b['integration'] );
+
+				return 0 !== $by_integration ? $by_integration : strcasecmp( $a['short_label'], $b['short_label'] );
+			}
+		);
+
 		return new WP_REST_Response( $types, 200 );
 	}
 
 	/**
-	 * Sources for one type via its registered source_picker
+	 * Sources for one type via its registered pickers
+	 *
+	 * No level: the source options themselves - scoped by parents for
+	 * hierarchical types, flat otherwise. With ?level=: that cascade
+	 * level's options (e.g. the course list, or a course's lessons).
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $type_id Trigger type id.
 	 * @param string $search  Search term.
+	 * @param string $level   Cascade level key ('' = the sources).
+	 * @param array  $parents Cascade selections (level key => id).
 	 * @return WP_REST_Response|WP_Error
 	 */
-	private function get_sources( $type_id, $search ) {
+	private function get_sources( $type_id, $search, $level = '', $parents = [] ) {
 		$type = PressPrimer_Certificate_Trigger_Registry::get_type( $type_id );
 
 		if ( null === $type ) {
@@ -148,12 +202,19 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 			);
 		}
 
-		if ( null === $type['source_picker'] ) {
+		if ( '' !== $level ) {
+			$sources = null !== $type['level_picker']
+				? call_user_func( $type['level_picker'], $level, $parents, $search )
+				: [];
+		} elseif ( ! empty( $parents ) && null !== $type['scoped_picker'] ) {
+			$sources = call_user_func( $type['scoped_picker'], $parents, $search );
+		} elseif ( null !== $type['source_picker'] ) {
+			$sources = call_user_func( $type['source_picker'], $search );
+		} else {
 			return new WP_REST_Response( [], 200 );
 		}
 
-		$sources = call_user_func( $type['source_picker'], $search );
-		$items   = [];
+		$items = [];
 
 		foreach ( (array) $sources as $source ) {
 			if ( ! is_array( $source ) || ! isset( $source['id'] ) ) {

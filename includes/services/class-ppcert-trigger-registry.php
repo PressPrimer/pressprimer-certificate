@@ -58,13 +58,37 @@ class PressPrimer_Certificate_Trigger_Registry {
 				continue;
 			}
 
+			$label = isset( $entry['label'] ) && is_string( $entry['label'] ) ? $entry['label'] : $id;
+
+			// Cascade levels ({key,label} pairs) for hierarchical source
+			// pickers; malformed entries are dropped.
+			$source_levels = [];
+
+			if ( isset( $entry['source_levels'] ) && is_array( $entry['source_levels'] ) ) {
+				foreach ( $entry['source_levels'] as $level ) {
+					if ( is_array( $level ) && ! empty( $level['key'] ) && is_string( $level['key'] ) ) {
+						$source_levels[] = [
+							'key'   => sanitize_key( $level['key'] ),
+							'label' => isset( $level['label'] ) && is_string( $level['label'] ) ? $level['label'] : $level['key'],
+						];
+					}
+				}
+			}
+
 			$types[ $id ] = [
 				'id'                => $id,
-				'label'             => isset( $entry['label'] ) && is_string( $entry['label'] ) ? $entry['label'] : $id,
+				'label'             => $label,
+				// Two-step picker metadata: the integration name leads,
+				// then its triggers by short label.
+				'integration'       => isset( $entry['integration'] ) && is_string( $entry['integration'] ) ? $entry['integration'] : $label,
+				'short_label'       => isset( $entry['short_label'] ) && is_string( $entry['short_label'] ) ? $entry['short_label'] : $label,
 				// Noun for the type's sources ("Quiz", "Course") - labels
 				// the Award tab source line and the palette source group.
 				'source_label'      => isset( $entry['source_label'] ) && is_string( $entry['source_label'] ) ? $entry['source_label'] : '',
 				'source_picker'     => isset( $entry['source_picker'] ) && is_callable( $entry['source_picker'] ) ? $entry['source_picker'] : null,
+				'source_levels'     => $source_levels,
+				'level_picker'      => isset( $entry['level_picker'] ) && is_callable( $entry['level_picker'] ) ? $entry['level_picker'] : null,
+				'scoped_picker'     => isset( $entry['scoped_picker'] ) && is_callable( $entry['scoped_picker'] ) ? $entry['scoped_picker'] : null,
 				'conditions_schema' => isset( $entry['conditions_schema'] ) && is_array( $entry['conditions_schema'] ) ? $entry['conditions_schema'] : [],
 				// Optional: post types this trigger's sources live in.
 				// The post-meta picker validates its post_id against the

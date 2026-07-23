@@ -445,6 +445,21 @@ if ( ! function_exists( 'get_date_from_gmt' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_gmt_from_date' ) ) {
+	/**
+	 * Stub: Convert a site-local datetime string to UTC (identity in
+	 * tests - the test site runs on UTC).
+	 *
+	 * @param string $date_string Local datetime (Y-m-d H:i:s).
+	 * @param string $format      Output format.
+	 * @return string
+	 */
+	function get_gmt_from_date( $date_string, $format = 'Y-m-d H:i:s' ) {
+		$timestamp = strtotime( $date_string . ' +0000' );
+		return false === $timestamp ? '' : gmdate( $format, $timestamp );
+	}
+}
+
 if ( ! function_exists( 'home_url' ) ) {
 	/**
 	 * Stub: Site home URL.
@@ -700,6 +715,50 @@ if ( ! function_exists( 'get_post' ) ) {
 		$posts = isset( $GLOBALS['ppcert_test_posts'] ) ? $GLOBALS['ppcert_test_posts'] : [];
 
 		return isset( $posts[ (int) $post_id ] ) ? $posts[ (int) $post_id ] : null;
+	}
+}
+
+if ( ! function_exists( 'get_posts' ) ) {
+	/**
+	 * Stub: Post query over $GLOBALS['ppcert_test_posts'] supporting the
+	 * arguments the course adapters' source lookup uses (post_type,
+	 * post_status, s title search, numberposts, orderby title ASC).
+	 *
+	 * @param array $args Query args.
+	 * @return array Post objects.
+	 */
+	function get_posts( $args = [] ) {
+		$posts   = isset( $GLOBALS['ppcert_test_posts'] ) ? $GLOBALS['ppcert_test_posts'] : [];
+		$matches = [];
+
+		foreach ( $posts as $post ) {
+			if ( isset( $args['post_type'] ) && ( ! isset( $post->post_type ) || $post->post_type !== $args['post_type'] ) ) {
+				continue;
+			}
+
+			if ( isset( $args['post_status'] ) && ( ! isset( $post->post_status ) || $post->post_status !== $args['post_status'] ) ) {
+				continue;
+			}
+
+			if ( ! empty( $args['s'] ) && false === stripos( (string) $post->post_title, (string) $args['s'] ) ) {
+				continue;
+			}
+
+			$matches[] = $post;
+		}
+
+		if ( isset( $args['orderby'] ) && 'title' === $args['orderby'] ) {
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return strcasecmp( (string) $a->post_title, (string) $b->post_title );
+				}
+			);
+		}
+
+		$limit = isset( $args['numberposts'] ) ? (int) $args['numberposts'] : -1;
+
+		return $limit > 0 ? array_slice( $matches, 0, $limit ) : $matches;
 	}
 }
 

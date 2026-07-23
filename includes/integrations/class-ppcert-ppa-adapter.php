@@ -80,6 +80,28 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	}
 
 	/**
+	 * Integration name for the two-step trigger picker
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_integration_label(): string {
+		return __( 'PressPrimer Assignment', 'pressprimer-certificate' );
+	}
+
+	/**
+	 * Short trigger label (integration already chosen)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_short_label(): string {
+		return __( 'Assignment passed', 'pressprimer-certificate' );
+	}
+
+	/**
 	 * Availability: cheap constant/class checks (FR-002)
 	 *
 	 * PRESSPRIMER_ASSIGNMENT_VERSION is defined unconditionally in
@@ -200,13 +222,13 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 					'key'      => 'source.grade',
 					'label'    => __( 'Assignment Grade', 'pressprimer-certificate' ),
 					'sample'   => '92%',
-					'resolver' => [ $this, 'resolve_grade' ],
+					'resolver' => [ $this, 'resolve_source_grade' ],
 				],
 				'completion_date'  => [
 					'key'      => 'source.completion_date',
 					'label'    => __( 'Completion Date', 'pressprimer-certificate' ),
 					'sample'   => __( 'June 12, 2026', 'pressprimer-certificate' ),
-					'resolver' => [ $this, 'resolve_completion_date' ],
+					'resolver' => [ $this, 'resolve_source_completed_date' ],
 				],
 			],
 		];
@@ -223,8 +245,8 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	public function resolve_merge_data( array $context ): array {
 		return [
 			'source.assignment_title' => $this->resolve_assignment_title( $context ),
-			'source.grade'            => $this->resolve_grade( $context ),
-			'source.completion_date'  => $this->resolve_completion_date( $context ),
+			'source.grade'            => $this->resolve_source_grade( $context ),
+			'source.completion_date'  => $this->resolve_source_completed_date( $context ),
 		];
 	}
 
@@ -265,16 +287,19 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 		$assignment = PressPrimer_Assignment_Assignment::get( (int) $submission->assignment_id );
 		$percent    = $this->grade_percent( $submission, $assignment );
 
+		// Shared source-context contract (abstract adapter): display
+		// strings precomputed, shared resolvers stay passthroughs. PPA's
+		// grade renders as a percentage.
 		$context = [
 			// Assignments are not posts: no source_post_id, so
 			// source.meta.* resolves empty (class docblock).
 			'source_post_id'       => 0,
-			'ppa_assignment_id'    => (int) $submission->assignment_id,
 			'ppa_assignment_title' => is_object( $assignment ) ? (string) $assignment->title : '',
-			'ppa_grade_percent'    => $percent,
+			'src_grade_display'    => $this->format_percent_display( $percent ),
 			// PPA stores graded_at in UTC (current_time('mysql', true)
-			// in PressPrimer_Assignment_Grading_Service::grade()).
-			'ppa_graded_at'        => isset( $submission->graded_at ) ? (string) $submission->graded_at : '',
+			// in PressPrimer_Assignment_Grading_Service::grade()) - the
+			// shared contract's expectation, no conversion needed.
+			'src_completed_at'     => isset( $submission->graded_at ) ? (string) $submission->graded_at : '',
 		];
 
 		foreach ( $triggers as $trigger ) {
@@ -348,42 +373,5 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	 */
 	public function resolve_assignment_title( array $context ) {
 		return isset( $context['ppa_assignment_title'] ) ? (string) $context['ppa_assignment_title'] : '';
-	}
-
-	/**
-	 * Resolve the grade as a display percentage (86.5% / 92%).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $context Issuance context.
-	 * @return string
-	 */
-	public function resolve_grade( array $context ) {
-		if ( ! isset( $context['ppa_grade_percent'] ) || ! is_numeric( $context['ppa_grade_percent'] ) ) {
-			return '';
-		}
-
-		$formatted = rtrim( rtrim( number_format( (float) $context['ppa_grade_percent'], 2, '.', '' ), '0' ), '.' );
-
-		return $formatted . '%';
-	}
-
-	/**
-	 * Resolve the completion date in the site date format.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $context Issuance context.
-	 * @return string
-	 */
-	public function resolve_completion_date( array $context ) {
-		if ( empty( $context['ppa_graded_at'] ) ) {
-			return '';
-		}
-
-		// PPA's graded_at is UTC (unlike PPQ's local finished_at), so
-		// get_date_from_gmt is the correct formatter here - the same
-		// rule as ppcert's own tables (CLAUDE.md Datetime Standard).
-		return (string) get_date_from_gmt( (string) $context['ppa_graded_at'], get_option( 'date_format' ) );
 	}
 }

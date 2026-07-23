@@ -281,7 +281,7 @@ class Test_PPA_Adapter extends TestCase { // phpcs:ignore Generic.Files.OneObjec
 		$this->assertArrayHasKey( 'source.assignment_title', $fields );
 		$this->assertArrayHasKey( 'source.grade', $fields );
 		$this->assertArrayHasKey( 'source.completion_date', $fields );
-		$this->assertSame( 'ppa_assignment', $fields['source.grade']['trigger_type'] );
+		$this->assertContains( 'ppa_assignment', $fields['source.grade']['trigger_types'] );
 
 		// Deactivated PPA: a fresh registry sees nothing from the
 		// unavailable variant.
@@ -439,11 +439,11 @@ class Test_PPA_Adapter extends TestCase { // phpcs:ignore Generic.Files.OneObjec
 	 * @return void
 	 */
 	public function test_merge_resolvers() {
+		// Shared source-context contract: display strings precomputed.
 		$context = [
-			'ppa_assignment_id'    => 11,
 			'ppa_assignment_title' => 'Field Research Essay',
-			'ppa_grade_percent'    => 92.0,
-			'ppa_graded_at'        => '2026-06-12 14:30:00',
+			'src_grade_display'    => '92%',
+			'src_completed_at'     => '2026-06-12 14:30:00',
 		];
 
 		$resolved = $this->adapter->resolve_merge_data( $context );

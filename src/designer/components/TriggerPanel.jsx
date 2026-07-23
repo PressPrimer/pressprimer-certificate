@@ -39,7 +39,11 @@ import {
 	InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useDesignerStore } from '../hooks/useDesignerStore';
-import { getTriggerTypes, getTriggerSources } from '../api';
+import {
+	getTriggerTypes,
+	getTriggerSources,
+	getTriggerLevelOptions,
+} from '../api';
 
 const { Text, Paragraph } = Typography;
 
@@ -200,7 +204,10 @@ function conditionSummary( trigger, type ) {
  * @return {JSX.Element} Modal.
  */
 function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
+	const [ integration, setIntegration ] = useState( null );
 	const [ typeId, setTypeId ] = useState( null );
+	const [ levels, setLevels ] = useState( {} );
+	const [ levelOptions, setLevelOptions ] = useState( {} );
 	const [ sourceRef, setSourceRef ] = useState( null );
 	const [ sourceLabel, setSourceLabel ] = useState( '' );
 	const [ sources, setSources ] = useState( [] );
@@ -209,6 +216,21 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 
 	const type = types.find( ( t ) => t.id === typeId ) || null;
 
+	// Integration-first picking (Ryan's Award-tab review, 2026-07-23):
+	// the list is already integration+label sorted server-side; keep
+	// that order for the unique integration names.
+	const integrations = types.reduce( ( list, t ) => {
+		if ( ! list.includes( t.integration ) ) {
+			list.push( t.integration );
+		}
+		return list;
+	}, [] );
+
+	const sourceLevels = ( type && type.source_levels ) || [];
+	const levelsComplete = sourceLevels.every(
+		( level ) => levels[ level.key ]
+	);
+
 	// (Re)initialize whenever the modal opens.
 	useEffect( () => {
 		if ( ! open ) {
@@ -216,12 +238,18 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 		}
 
 		if ( initial ) {
+			const initialType = types.find(
+				( t ) => t.id === initial.trigger_type
+			);
+
+			setIntegration( initialType ? initialType.integration : null );
 			setTypeId( initial.trigger_type );
 			setSourceRef( initial.source_ref );
 			setSourceLabel( initial.source_label || initial.source_ref || '' );
 			setConditions( { ...initial.conditions } );
 			setIsActive( initial.is_active );
 		} else {
+			setIntegration( null );
 			setTypeId( null );
 			setSourceRef( null );
 			setSourceLabel( '' );
@@ -229,20 +257,54 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 			setIsActive( true );
 		}
 
+		setLevels( {} );
+		setLevelOptions( {} );
 		setSources( [] );
-	}, [ open, initial ] );
+	}, [ open, initial, types ] );
 
-	// Initial source list when a type with sources is chosen.
+	// Source options load once the cascade is satisfied (immediately
+	// for flat types). While editing, the stored source stays selected
+	// until the user touches the cascade.
 	useEffect( () => {
-		if ( ! open || ! type || ! type.has_sources ) {
+		if ( ! open || ! type || ! type.has_sources || ! levelsComplete ) {
 			return;
 		}
 
-		getTriggerSources( type.id ).then( setSources );
-	}, [ open, type ] );
+		getTriggerSources( type.id, '', levels ).then( setSources );
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- levels is captured via levelsComplete + the change handlers.
+	}, [ open, type, levelsComplete ] );
+
+	// First cascade level's options load when a hierarchical type is
+	// chosen.
+	useEffect( () => {
+		if ( ! open || ! type || 0 === sourceLevels.length ) {
+			return;
+		}
+
+		const first = sourceLevels[ 0 ].key;
+
+		getTriggerLevelOptions( type.id, first, {} ).then( ( options ) =>
+			setLevelOptions( ( prev ) => ( { ...prev, [ first ]: options } ) )
+		);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by the type id.
+	}, [ open, type && type.id ] );
+
+	const onIntegrationChange = ( next ) => {
+		setIntegration( next );
+		setTypeId( null );
+		setLevels( {} );
+		setLevelOptions( {} );
+		setSources( [] );
+		setSourceRef( null );
+		setSourceLabel( '' );
+		setConditions( {} );
+	};
 
 	const onTypeChange = ( next ) => {
 		setTypeId( next );
+		setLevels( {} );
+		setLevelOptions( {} );
+		setSources( [] );
 		setSourceRef( null );
 		setSourceLabel( '' );
 
@@ -250,6 +312,35 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 		setConditions(
 			schemaDefaults( nextType ? nextType.conditions_schema : {} )
 		);
+	};
+
+	const onLevelChange = ( index, id ) => {
+		const key = sourceLevels[ index ].key;
+		const next = {};
+
+		// Keep this level and everything above it; deeper selections
+		// and the source reset.
+		sourceLevels.slice( 0, index ).forEach( ( level ) => {
+			next[ level.key ] = levels[ level.key ];
+		} );
+		next[ key ] = id;
+
+		setLevels( next );
+		setSources( [] );
+		setSourceRef( null );
+		setSourceLabel( '' );
+
+		const deeper = sourceLevels[ index + 1 ];
+
+		if ( deeper ) {
+			getTriggerLevelOptions( type.id, deeper.key, next ).then(
+				( options ) =>
+					setLevelOptions( ( prev ) => ( {
+						...prev,
+						[ deeper.key ]: options,
+					} ) )
+			);
+		}
 	};
 
 	const canSubmit = !! type && ( ! type.has_sources || null !== sourceRef );
@@ -290,33 +381,127 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 			<div className="ppcert-designer__trigger-form">
 				<div className="ppcert-designer__prop-row">
 					<span className="ppcert-designer__trigger-label">
-						{ __( 'When', 'pressprimer-certificate' ) }
+						{ __( 'Integration', 'pressprimer-certificate' ) }
 					</span>
 					<span className="ppcert-designer__prop-control">
 						<Select
 							size="small"
 							getPopupContainer={ ( node ) => node.parentElement }
-							value={ typeId }
-							data-ppcert-trigger-type
+							value={ integration }
+							data-ppcert-trigger-integration
 							placeholder={ __(
-								'Choose a trigger…',
+								'Choose a plugin…',
 								'pressprimer-certificate'
 							) }
 							popupMatchSelectWidth={ false }
-							onChange={ onTypeChange }
-							options={ types.map( ( t ) => ( {
-								value: t.id,
-								label: t.label,
+							onChange={ onIntegrationChange }
+							options={ integrations.map( ( name ) => ( {
+								value: name,
+								label: name,
 							} ) ) }
 							className="ppcert-designer__prop-wide"
 						/>
 					</span>
 				</div>
 
+				{ integration && (
+					<div className="ppcert-designer__prop-row">
+						<span className="ppcert-designer__trigger-label">
+							{ __( 'Trigger', 'pressprimer-certificate' ) }
+						</span>
+						<span className="ppcert-designer__prop-control">
+							<Select
+								size="small"
+								getPopupContainer={ ( node ) =>
+									node.parentElement
+								}
+								value={ typeId }
+								data-ppcert-trigger-type
+								placeholder={ __(
+									'Choose a trigger…',
+									'pressprimer-certificate'
+								) }
+								popupMatchSelectWidth={ false }
+								onChange={ onTypeChange }
+								options={ types
+									.filter(
+										( t ) => t.integration === integration
+									)
+									.map( ( t ) => ( {
+										value: t.id,
+										label: t.short_label,
+									} ) ) }
+								className="ppcert-designer__prop-wide"
+							/>
+						</span>
+					</div>
+				) }
+
+				{ type &&
+					type.has_sources &&
+					sourceLevels.map( ( level, index ) => {
+						const enabled = sourceLevels
+							.slice( 0, index )
+							.every( ( earlier ) => levels[ earlier.key ] );
+
+						return (
+							<div
+								key={ level.key }
+								className="ppcert-designer__prop-row"
+							>
+								<span className="ppcert-designer__trigger-label">
+									{ level.label }
+								</span>
+								<span className="ppcert-designer__prop-control">
+									<Select
+										size="small"
+										getPopupContainer={ ( node ) =>
+											node.parentElement
+										}
+										showSearch
+										disabled={ ! enabled }
+										value={ levels[ level.key ] || null }
+										data-ppcert-trigger-level={ level.key }
+										placeholder={ __(
+											'Search…',
+											'pressprimer-certificate'
+										) }
+										filterOption={ false }
+										popupMatchSelectWidth={ false }
+										onSearch={ ( term ) =>
+											getTriggerLevelOptions(
+												type.id,
+												level.key,
+												levels,
+												term
+											).then( ( options ) =>
+												setLevelOptions( ( prev ) => ( {
+													...prev,
+													[ level.key ]: options,
+												} ) )
+											)
+										}
+										onChange={ ( id ) =>
+											onLevelChange( index, id )
+										}
+										options={ (
+											levelOptions[ level.key ] || []
+										).map( ( option ) => ( {
+											value: option.id,
+											label: option.title,
+										} ) ) }
+										className="ppcert-designer__prop-wide"
+									/>
+								</span>
+							</div>
+						);
+					} ) }
+
 				{ type && type.has_sources && (
 					<div className="ppcert-designer__prop-row">
 						<span className="ppcert-designer__trigger-label">
-							{ __( 'Source', 'pressprimer-certificate' ) }
+							{ type.source_label ||
+								__( 'Source', 'pressprimer-certificate' ) }
 						</span>
 						<span className="ppcert-designer__prop-control">
 							<Select
@@ -325,6 +510,7 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 									node.parentElement
 								}
 								showSearch
+								disabled={ ! levelsComplete }
 								value={ sourceRef }
 								data-ppcert-trigger-source
 								placeholder={ __(
@@ -334,18 +520,31 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 								filterOption={ false }
 								popupMatchSelectWidth={ false }
 								onSearch={ ( term ) =>
-									getTriggerSources( type.id, term ).then(
-										setSources
-									)
+									getTriggerSources(
+										type.id,
+										term,
+										levels
+									).then( setSources )
 								}
 								onChange={ ( id, option ) => {
 									setSourceRef( id );
 									setSourceLabel( option.label );
 								} }
-								options={ sources.map( ( source ) => ( {
-									value: source.id,
-									label: source.title,
-								} ) ) }
+								options={
+									// While editing an untouched cascade the
+									// stored source is the only option.
+									sources.length || null === sourceRef
+										? sources.map( ( source ) => ( {
+												value: source.id,
+												label: source.title,
+										  } ) )
+										: [
+												{
+													value: sourceRef,
+													label: sourceLabel,
+												},
+										  ]
+								}
 								className="ppcert-designer__prop-wide"
 							/>
 						</span>
@@ -486,7 +685,7 @@ export default function TriggerPanel() {
 				{ triggers.length > 0 ? (
 					<Tooltip
 						title={ __(
-							'Certificates award one way in this version. Duplicate the template to award it another way.',
+							'Only one trigger can be added per certificate. To use another trigger, clone the certificate.',
 							'pressprimer-certificate'
 						) }
 					>

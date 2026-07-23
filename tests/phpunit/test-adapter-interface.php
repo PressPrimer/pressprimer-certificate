@@ -60,7 +60,7 @@ class Test_Adapter_Interface extends TestCase {
 		$this->assertArrayHasKey( 'source', $fields );
 		$this->assertArrayHasKey( 'course_title', $fields['source'] );
 		$this->assertSame( 'Introduction to Botany', $fields['source']['course_title']['sample'] );
-		$this->assertSame( 'double_lms', $fields['source']['course_title']['trigger_type'] );
+		$this->assertSame( [ 'double_lms' ], $fields['source']['course_title']['trigger_types'] );
 
 		// The registration glue exposes the source noun and post types.
 		$this->assertSame( 'Course', $types['double_lms']['source_label'] );

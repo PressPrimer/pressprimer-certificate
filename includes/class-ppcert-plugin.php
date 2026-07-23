@@ -205,8 +205,13 @@ class PressPrimer_Certificate_Plugin {
 			'ppcert_loaded',
 			static function () {
 				$adapters = [
-					'PressPrimer_Certificate_PPQ_Adapter',
+					'PressPrimer_Certificate_LearnDash_Adapter',
+					'PressPrimer_Certificate_LearnDash_Lesson_Adapter',
+					'PressPrimer_Certificate_LearnDash_Quiz_Adapter',
+					'PressPrimer_Certificate_LearnDash_Topic_Adapter',
+					'PressPrimer_Certificate_LifterLMS_Adapter',
 					'PressPrimer_Certificate_PPA_Adapter',
+					'PressPrimer_Certificate_PPQ_Adapter',
 				];
 
 				foreach ( $adapters as $adapter_class ) {

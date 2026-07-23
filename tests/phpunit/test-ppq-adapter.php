@@ -405,11 +405,13 @@ class Test_PPQ_Adapter extends TestCase { // phpcs:ignore Generic.Files.OneObjec
 	 * @return void
 	 */
 	public function test_merge_resolvers() {
+		// Shared source-context contract: the listener precomputes
+		// display strings; resolvers are passthroughs.
 		$context = [
-			'ppq_quiz_id'       => 7,
-			'ppq_quiz_title'    => 'Advanced Botany Quiz',
-			'ppq_score_percent' => 92.0,
-			'ppq_finished_at'   => '2026-06-12 09:30:00',
+			'src_quiz_title'    => 'Advanced Botany Quiz',
+			'src_score_display' => '92%',
+			'src_grade_display' => 'Passed',
+			'src_completed_at'  => '2026-06-12 09:30:00',
 		];
 
 		$resolved = $this->adapter->resolve_merge_data( $context );

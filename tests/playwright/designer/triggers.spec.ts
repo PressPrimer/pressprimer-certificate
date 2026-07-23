@@ -32,9 +32,13 @@ function getTriggersState( page: Page ): Promise< any[] > {
 
 async function addDoubleTrigger( page: Page ): Promise< void > {
 	await page.click( '[data-ppcert-trigger-add]' );
-	await page.click( '[data-ppcert-trigger-type]' );
+	await page.click( '[data-ppcert-trigger-integration]' );
 	await page
 		.locator( '.ant-select-item-option', { hasText: 'Double LMS' } )
+		.click();
+	await page.click( '[data-ppcert-trigger-type]' );
+	await page
+		.locator( '.ant-select-item-option', { hasText: 'Course completed' } )
 		.click();
 
 	// Source search narrows via the adapter's picker.
@@ -185,5 +189,79 @@ test.describe( 'trigger panel', () => {
 
 		expect( await getTriggersState( page ) ).toHaveLength( 0 );
 		await expect( page.getByText( 'No trigger yet.' ) ).toBeVisible();
+	} );
+
+	test( 'hierarchical types cascade: course first, then its lessons', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		await page.click( '[data-ppcert-trigger-add]' );
+		await page.click( '[data-ppcert-trigger-integration]' );
+		await page
+			.locator( '.ant-select-item-option', { hasText: 'Double LMS' } )
+			.click();
+		await page.click( '[data-ppcert-trigger-type]' );
+		await page
+			.locator( '.ant-select-item-option', {
+				hasText: 'Lesson completed',
+			} )
+			.click();
+
+		// The source select waits for the cascade (the data attribute
+		// lands on antd's wrapper div, so assert the disabled class).
+		await expect(
+			page.locator( '[data-ppcert-trigger-source]' )
+		).toHaveClass( /ant-select-disabled/ );
+
+		// Course level: pick Botany 101.
+		await page.click( '[data-ppcert-trigger-level="course"]' );
+		await page
+			.locator( '.ant-select-item-option', { hasText: 'Botany 101' } )
+			.click();
+
+		// Now the source select offers only that course's lessons.
+		await page.click( '[data-ppcert-trigger-source]' );
+		await expect(
+			page.locator( '.ant-select-item-option', { hasText: 'Brushes' } )
+		).toHaveCount( 0 );
+		await page
+			.locator( '.ant-select-item-option', { hasText: 'Leaves' } )
+			.click();
+
+		await page.click( '[data-ppcert-trigger-submit]' );
+
+		const card = page.locator( '[data-ppcert-trigger-row="0"]' );
+		await expect( card ).toContainText( 'Lesson completed (Double LMS)' );
+		await expect( card ).toContainText( 'Leaves' );
+
+		// The staged payload stores the final source only.
+		await page.locator( '[data-ppcert-action="save"]' ).click();
+		await expect( page.getByText( 'Template saved.' ) ).toBeVisible();
+
+		const sent = await page.evaluate(
+			() => ( window as any ).__ppcertLastTriggersPut
+		);
+		expect( sent[ 0 ].trigger_type ).toBe( 'double_lms_lesson' );
+		expect( sent[ 0 ].source_ref ).toBe( '202' );
+	} );
+
+	test( 'the disabled Add button explains the single-trigger rule', async ( {
+		page,
+	} ) => {
+		await boot( page );
+		await addDoubleTrigger( page );
+		await page.click( '[data-ppcert-trigger-submit]' );
+
+		await expect(
+			page.locator( '[data-ppcert-trigger-add]' )
+		).toBeDisabled();
+
+		await page.hover( '[data-ppcert-trigger-add]' );
+		await expect(
+			page.getByText(
+				'Only one trigger can be added per certificate. To use another trigger, clone the certificate.'
+			)
+		).toBeVisible();
 	} );
 } );

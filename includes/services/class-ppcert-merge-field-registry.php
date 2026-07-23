@@ -110,7 +110,12 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 			$clean = array_filter(
 				$clean,
 				static function ( $field ) use ( $scope ) {
-					return '' === $field['trigger_type'] || in_array( $field['trigger_type'], $scope, true );
+					// Untagged (core) fields always pass; tagged fields
+					// pass when ANY of their contributing trigger types
+					// is in scope (shared keys like source.course_title
+					// carry every course adapter's tag).
+					return empty( $field['trigger_types'] )
+						|| array_intersect( $field['trigger_types'], $scope );
 				}
 			);
 		}
@@ -688,15 +693,25 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 			$field_group = $parts[0];
 		}
 
+		// Empty = core field (always in scope); adapters tag their
+		// fields with their trigger type id(s) for designer scoping. A
+		// key shared by several trigger types (source.course_title
+		// across course adapters) carries all of their tags.
+		$trigger_types = [];
+
+		if ( isset( $field['trigger_types'] ) && is_array( $field['trigger_types'] ) ) {
+			$trigger_types = array_values( array_filter( array_map( 'strval', $field['trigger_types'] ) ) );
+		} elseif ( isset( $field['trigger_type'] ) && is_string( $field['trigger_type'] ) && '' !== $field['trigger_type'] ) {
+			$trigger_types = [ $field['trigger_type'] ];
+		}
+
 		return [
-			'group'        => $field_group,
-			'key'          => $key,
-			'label'        => isset( $field['label'] ) ? (string) $field['label'] : $key,
-			'sample'       => isset( $field['sample'] ) && is_scalar( $field['sample'] ) ? (string) $field['sample'] : '',
-			'resolver'     => isset( $field['resolver'] ) && is_callable( $field['resolver'] ) ? $field['resolver'] : null,
-			// '' = core field (always in scope); adapters tag their fields
-			// with their trigger type id for designer scoping.
-			'trigger_type' => isset( $field['trigger_type'] ) && is_string( $field['trigger_type'] ) ? $field['trigger_type'] : '',
+			'group'         => $field_group,
+			'key'           => $key,
+			'label'         => isset( $field['label'] ) ? (string) $field['label'] : $key,
+			'sample'        => isset( $field['sample'] ) && is_scalar( $field['sample'] ) ? (string) $field['sample'] : '',
+			'resolver'      => isset( $field['resolver'] ) && is_callable( $field['resolver'] ) ? $field['resolver'] : null,
+			'trigger_types' => $trigger_types,
 		];
 	}
 

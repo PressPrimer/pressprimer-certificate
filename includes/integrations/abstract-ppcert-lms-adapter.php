@@ -178,6 +178,84 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Integration name for the two-step trigger picker ("LearnDash",
+	 * "PressPrimer Quiz")
+	 *
+	 * The designer's Add-trigger modal leads with the integration, then
+	 * lists its triggers (Ryan's Award-tab review, 2026-07-23).
+	 * Adapters override with the translated plugin name.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_integration_label(): string {
+		return $this->get_label();
+	}
+
+	/**
+	 * Short trigger label for the second picker step ("Course
+	 * completed") - the integration is already chosen, so the full
+	 * label's bracket suffix would be noise.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_short_label(): string {
+		return $this->get_label();
+	}
+
+	/**
+	 * Parent levels the source picker cascades through before the
+	 * source itself
+	 *
+	 * Empty = flat picker (the default). A hierarchical adapter returns
+	 * ordered levels, e.g. [ [ 'key' => 'course', 'label' => 'Course' ],
+	 * [ 'key' => 'lesson', 'label' => 'Lesson' ] ] - the designer
+	 * renders one select per level and only then the source select,
+	 * scoped by get_sources_for_parents() (Ryan's Award-tab review,
+	 * 2026-07-23: same-named lessons/topics/quizzes need context).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<int,array{key:string,label:string}>
+	 */
+	public function get_source_levels(): array {
+		return [];
+	}
+
+	/**
+	 * Options for one parent level of the cascade
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $level   Level key from get_source_levels().
+	 * @param array  $parents Earlier level selections (key => id).
+	 * @param string $search  Search term.
+	 * @return array<int,array{id:string,title:string}>
+	 */
+	public function get_level_options( string $level, array $parents, string $search = '' ): array {
+		return [];
+	}
+
+	/**
+	 * Sources scoped to the chosen parent levels
+	 *
+	 * Flat adapters fall through to get_sources(); hierarchical
+	 * adapters override to scope by parents.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $parents Level selections (key => id).
+	 * @param string $search  Search term.
+	 * @return array<int,array{id:string,title:string}>
+	 */
+	public function get_sources_for_parents( array $parents, string $search = '' ): array {
+		return $this->get_sources( $search );
+	}
+
+	/**
 	 * Post types this adapter's sources live in
 	 *
 	 * Empty when sources are not posts (PPQ quizzes live in a custom
@@ -208,13 +286,258 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 		$types[ $this->get_id() ] = [
 			'id'                => $this->get_id(),
 			'label'             => $this->get_label(),
+			'integration'       => $this->get_integration_label(),
+			'short_label'       => $this->get_short_label(),
 			'source_label'      => $this->get_source_group_label(),
 			'source_picker'     => [ $this, 'get_sources' ],
+			'source_levels'     => $this->get_source_levels(),
+			'level_picker'      => [ $this, 'get_level_options' ],
+			'scoped_picker'     => [ $this, 'get_sources_for_parents' ],
 			'source_post_types' => $this->get_source_post_types(),
 			'conditions_schema' => $this->get_conditions_schema(),
 		];
 
 		return $types;
+	}
+
+	/*
+	 * ------------------------------------------------------------------
+	 * Shared course helpers (TR-001: course-field resolution lives in
+	 * the abstract class, never in core services). The four LMS course
+	 * adapters share sources, merge fields, and resolvers; each LMS
+	 * listener builds the same context via build_course_context().
+	 *
+	 * SHARED SOURCE-CONTEXT CONTRACT: source.* token keys are
+	 * polymorphic - "the thing that triggered this certificate" - and
+	 * the registry keeps ONE resolver per token key. Any adapter that
+	 * registers a token key another adapter may also register MUST use
+	 * the shared resolver below and write its shared context key:
+	 *
+	 *   src_completed_at   (UTC datetime)     -> source.completion_date,
+	 *                                            source.pass_date
+	 *   src_quiz_title     (string)           -> source.quiz_title
+	 *   src_score_display  ("86.5%", ready)   -> source.score
+	 *   src_grade_display  ("Passed"/"92%")   -> source.grade
+	 *   lms_course_title   (string)           -> source.course_title
+	 *   lms_lesson_title   (string)           -> source.lesson_title
+	 *   lms_instructor     (string)           -> source.instructor
+	 *
+	 * Listeners precompute display strings (score/grade) so the shared
+	 * resolvers are passthroughs and never need per-LMS branches.
+	 * ------------------------------------------------------------------
+	 */
+
+	/**
+	 * Selectable sources from a post type (published, searchable)
+	 *
+	 * The course adapters' get_sources() implementation: LMS courses are
+	 * posts, unlike PPQ/PPA sources.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $post_type Course post type slug.
+	 * @param string $search    Search term.
+	 * @return array<int,array{id:string,title:string}>
+	 */
+	protected function get_post_sources( string $post_type, string $search = '' ): array {
+		$posts = get_posts(
+			[
+				'post_type'   => $post_type,
+				'post_status' => 'publish',
+				's'           => $search,
+				'numberposts' => 50,
+				'orderby'     => 'title',
+				'order'       => 'ASC',
+			]
+		);
+
+		$sources = [];
+
+		foreach ( (array) $posts as $post ) {
+			$sources[] = [
+				'id'    => (string) $post->ID,
+				'title' => (string) $post->post_title,
+			];
+		}
+
+		return $sources;
+	}
+
+	/**
+	 * The shared course merge-field set (FR-004: course_title,
+	 * completion_date, instructor; source.meta.* resolves dynamically
+	 * from source_post_id)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	protected function course_merge_fields(): array {
+		return [
+			'source' => [
+				'course_title'    => [
+					'key'      => 'source.course_title',
+					'label'    => __( 'Course Title', 'pressprimer-certificate' ),
+					'sample'   => __( 'Introduction to Botany', 'pressprimer-certificate' ),
+					'resolver' => [ $this, 'resolve_course_title' ],
+				],
+				'completion_date' => [
+					'key'      => 'source.completion_date',
+					'label'    => __( 'Completion Date', 'pressprimer-certificate' ),
+					'sample'   => __( 'June 12, 2026', 'pressprimer-certificate' ),
+					'resolver' => [ $this, 'resolve_source_completed_date' ],
+				],
+				'instructor'      => [
+					'key'      => 'source.instructor',
+					'label'    => __( 'Instructor', 'pressprimer-certificate' ),
+					'sample'   => __( 'Prof. Marisol Vega', 'pressprimer-certificate' ),
+					'resolver' => [ $this, 'resolve_course_instructor' ],
+				],
+			],
+		];
+	}
+
+	/**
+	 * The shared course resolve_merge_data() map
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return array<string,string>
+	 */
+	protected function resolve_course_merge_data( array $context ): array {
+		return [
+			'source.course_title'    => $this->resolve_course_title( $context ),
+			'source.completion_date' => $this->resolve_source_completed_date( $context ),
+			'source.instructor'      => $this->resolve_course_instructor( $context ),
+		];
+	}
+
+	/**
+	 * Build the shared issuance context from a course post
+	 *
+	 * The source_post_id feeds {{source.meta.*}}; the instructor is the
+	 * course author's display name unless the LMS exposes a richer
+	 * instructor concept (FR-004).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Post|object $course       Course post.
+	 * @param string         $completed_at Completion datetime, UTC.
+	 * @return array
+	 */
+	protected function build_course_context( $course, string $completed_at ): array {
+		$instructor = '';
+
+		if ( ! empty( $course->post_author ) ) {
+			$author     = get_userdata( (int) $course->post_author );
+			$instructor = $author ? (string) $author->display_name : '';
+		}
+
+		return [
+			'source_post_id'   => (int) $course->ID,
+			'lms_course_title' => (string) $course->post_title,
+			// UTC per the ppcert datetime standard - each listener
+			// converts its LMS's own value before it lands here.
+			'src_completed_at' => $completed_at,
+			'lms_instructor'   => $instructor,
+		];
+	}
+
+	/**
+	 * Resolve the course title.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return string
+	 */
+	public function resolve_course_title( array $context ) {
+		return isset( $context['lms_course_title'] ) ? (string) $context['lms_course_title'] : '';
+	}
+
+	/**
+	 * Resolve the completion date in the site date format.
+	 *
+	 * Shared across every adapter registering source.completion_date or
+	 * source.pass_date (shared source-context contract).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return string
+	 */
+	public function resolve_source_completed_date( array $context ) {
+		if ( empty( $context['src_completed_at'] ) ) {
+			return '';
+		}
+
+		// src_completed_at is UTC (shared source-context contract).
+		return (string) get_date_from_gmt( (string) $context['src_completed_at'], get_option( 'date_format' ) );
+	}
+
+	/**
+	 * Resolve the instructor name.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return string
+	 */
+	public function resolve_course_instructor( array $context ) {
+		return isset( $context['lms_instructor'] ) ? (string) $context['lms_instructor'] : '';
+	}
+
+	/**
+	 * Resolve the triggering quiz's title (shared contract).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return string
+	 */
+	public function resolve_source_quiz_title( array $context ) {
+		return isset( $context['src_quiz_title'] ) ? (string) $context['src_quiz_title'] : '';
+	}
+
+	/**
+	 * Resolve the display-ready score (shared contract).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return string
+	 */
+	public function resolve_source_score( array $context ) {
+		return isset( $context['src_score_display'] ) ? (string) $context['src_score_display'] : '';
+	}
+
+	/**
+	 * Resolve the display-ready grade/result (shared contract).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return string
+	 */
+	public function resolve_source_grade( array $context ) {
+		return isset( $context['src_grade_display'] ) ? (string) $context['src_grade_display'] : '';
+	}
+
+	/**
+	 * Format a numeric percent for display (86.5% / 92%)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $value Numeric percent.
+	 * @return string Empty when non-numeric.
+	 */
+	protected function format_percent_display( $value ): string {
+		if ( ! is_numeric( $value ) ) {
+			return '';
+		}
+
+		return rtrim( rtrim( number_format( (float) $value, 2, '.', '' ), '0' ), '.' ) . '%';
 	}
 
 	/**
@@ -233,12 +556,35 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 
 		foreach ( $this->get_merge_fields() as $group => $group_fields ) {
 			foreach ( (array) $group_fields as $field_key => $definition ) {
+				if ( ! is_array( $definition ) ) {
+					$fields[ $group ][ $field_key ] = $definition;
+					continue;
+				}
+
 				// Tag with the contributing trigger type so the designer
 				// palette can scope source fields to the template's
-				// trigger (Feature 002 registry scoping).
-				if ( is_array( $definition ) && ! isset( $definition['trigger_type'] ) ) {
-					$definition['trigger_type'] = $this->get_id();
+				// trigger (Feature 002 registry scoping). A key another
+				// adapter already registered (source.course_title across
+				// course adapters) keeps its earlier tags - the UNION
+				// keeps the field in scope for every contributor.
+				$tags = isset( $definition['trigger_types'] ) && is_array( $definition['trigger_types'] )
+					? $definition['trigger_types']
+					: [];
+
+				if ( isset( $definition['trigger_type'] ) && is_string( $definition['trigger_type'] ) ) {
+					$tags[] = $definition['trigger_type'];
+					unset( $definition['trigger_type'] );
 				}
+
+				if ( isset( $fields[ $group ][ $field_key ]['trigger_types'] ) && is_array( $fields[ $group ][ $field_key ]['trigger_types'] ) ) {
+					$tags = array_merge( $fields[ $group ][ $field_key ]['trigger_types'], $tags );
+				} elseif ( isset( $fields[ $group ][ $field_key ]['trigger_type'] ) && is_string( $fields[ $group ][ $field_key ]['trigger_type'] ) ) {
+					$tags[] = $fields[ $group ][ $field_key ]['trigger_type'];
+				}
+
+				$tags[] = $this->get_id();
+
+				$definition['trigger_types'] = array_values( array_unique( array_filter( $tags ) ) );
 
 				$fields[ $group ][ $field_key ] = $definition;
 			}

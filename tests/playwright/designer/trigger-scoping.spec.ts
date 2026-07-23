@@ -32,9 +32,13 @@ async function stageDoubleTrigger(
 	await page.getByRole( 'tab', { name: 'Award' } ).click();
 	await page.waitForSelector( '[data-ppcert-triggers]' );
 	await page.click( '[data-ppcert-trigger-add]' );
-	await page.click( '[data-ppcert-trigger-type]' );
+	await page.click( '[data-ppcert-trigger-integration]' );
 	await page
 		.locator( '.ant-select-item-option', { hasText: 'Double LMS' } )
+		.click();
+	await page.click( '[data-ppcert-trigger-type]' );
+	await page
+		.locator( '.ant-select-item-option', { hasText: 'Course completed' } )
 		.click();
 	await page.click( '[data-ppcert-trigger-source]' );
 	await page.keyboard.type( 'botany' );
@@ -182,9 +186,15 @@ test.describe( 'single trigger per template (1.0 scope)', () => {
 		await page.getByRole( 'tab', { name: 'Award' } ).click();
 		await page.waitForSelector( '[data-ppcert-triggers]' );
 		await page.click( '[data-ppcert-trigger-add]' );
-		await page.click( '[data-ppcert-trigger-type]' );
+		await page.click( '[data-ppcert-trigger-integration]' );
 		await page
 			.locator( '.ant-select-item-option', { hasText: 'Double LMS' } )
+			.click();
+		await page.click( '[data-ppcert-trigger-type]' );
+		await page
+			.locator( '.ant-select-item-option', {
+				hasText: 'Course completed',
+			} )
 			.click();
 
 		// The schema's help renders as a tooltip on the condition label.

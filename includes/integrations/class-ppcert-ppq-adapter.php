@@ -77,6 +77,28 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 	}
 
 	/**
+	 * Integration name for the two-step trigger picker
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_integration_label(): string {
+		return __( 'PressPrimer Quiz', 'pressprimer-certificate' );
+	}
+
+	/**
+	 * Short trigger label (integration already chosen)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_short_label(): string {
+		return __( 'Quiz passed', 'pressprimer-certificate' );
+	}
+
+	/**
 	 * Availability: cheap constant/class checks (FR-002)
 	 *
 	 * PRESSPRIMER_QUIZ_VERSION is defined unconditionally in
@@ -187,25 +209,25 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 					'key'      => 'source.quiz_title',
 					'label'    => __( 'Quiz Title', 'pressprimer-certificate' ),
 					'sample'   => __( 'Advanced Botany Quiz', 'pressprimer-certificate' ),
-					'resolver' => [ $this, 'resolve_quiz_title' ],
+					'resolver' => [ $this, 'resolve_source_quiz_title' ],
 				],
 				'score'      => [
 					'key'      => 'source.score',
 					'label'    => __( 'Quiz Score', 'pressprimer-certificate' ),
 					'sample'   => '92%',
-					'resolver' => [ $this, 'resolve_score' ],
+					'resolver' => [ $this, 'resolve_source_score' ],
 				],
 				'grade'      => [
 					'key'      => 'source.grade',
 					'label'    => __( 'Quiz Result', 'pressprimer-certificate' ),
 					'sample'   => __( 'Passed', 'pressprimer-certificate' ),
-					'resolver' => [ $this, 'resolve_grade' ],
+					'resolver' => [ $this, 'resolve_source_grade' ],
 				],
 				'pass_date'  => [
 					'key'      => 'source.pass_date',
 					'label'    => __( 'Pass Date', 'pressprimer-certificate' ),
 					'sample'   => __( 'June 12, 2026', 'pressprimer-certificate' ),
-					'resolver' => [ $this, 'resolve_pass_date' ],
+					'resolver' => [ $this, 'resolve_source_completed_date' ],
 				],
 			],
 		];
@@ -221,10 +243,10 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 	 */
 	public function resolve_merge_data( array $context ): array {
 		return [
-			'source.quiz_title' => $this->resolve_quiz_title( $context ),
-			'source.score'      => $this->resolve_score( $context ),
-			'source.grade'      => $this->resolve_grade( $context ),
-			'source.pass_date'  => $this->resolve_pass_date( $context ),
+			'source.quiz_title' => $this->resolve_source_quiz_title( $context ),
+			'source.score'      => $this->resolve_source_score( $context ),
+			'source.grade'      => $this->resolve_source_grade( $context ),
+			'source.pass_date'  => $this->resolve_source_completed_date( $context ),
 		];
 	}
 
@@ -255,16 +277,21 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 
 		$score = isset( $attempt->score_percent ) ? (float) $attempt->score_percent : 0.0;
 
+		// PPQ stores finished_at in WordPress LOCAL time
+		// (current_time('mysql') in PressPrimer_Quiz_Attempt::submit());
+		// the shared contract wants UTC, so convert here.
+		$finished_local = isset( $attempt->finished_at ) ? (string) $attempt->finished_at : '';
+
+		// Shared source-context contract (abstract adapter): display
+		// strings precomputed, shared resolvers stay passthroughs.
 		$context = [
 			// Quizzes are not posts: no source_post_id, so source.meta.*
 			// resolves empty (class docblock).
 			'source_post_id'    => 0,
-			'ppq_quiz_id'       => (int) $quiz->id,
-			'ppq_quiz_title'    => (string) $quiz->title,
-			'ppq_score_percent' => $score,
-			// PPQ stores finished_at in WordPress LOCAL time
-			// (current_time('mysql') in PressPrimer_Quiz_Attempt::submit()).
-			'ppq_finished_at'   => isset( $attempt->finished_at ) ? (string) $attempt->finished_at : '',
+			'src_quiz_title'    => (string) $quiz->title,
+			'src_score_display' => $this->format_percent_display( $score ),
+			'src_grade_display' => __( 'Passed', 'pressprimer-certificate' ),
+			'src_completed_at'  => '' !== $finished_local ? (string) get_gmt_from_date( $finished_local ) : '',
 		];
 
 		foreach ( $triggers as $trigger ) {
@@ -289,78 +316,5 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 				]
 			);
 		}
-	}
-
-	/*
-	 * ------------------------------------------------------------------
-	 * Field resolvers (scalar returns per the registry contract).
-	 * ------------------------------------------------------------------
-	 */
-
-	/**
-	 * Resolve the quiz title.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $context Issuance context.
-	 * @return string
-	 */
-	public function resolve_quiz_title( array $context ) {
-		return isset( $context['ppq_quiz_title'] ) ? (string) $context['ppq_quiz_title'] : '';
-	}
-
-	/**
-	 * Resolve the score as a display percentage (86.5% / 92%).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $context Issuance context.
-	 * @return string
-	 */
-	public function resolve_score( array $context ) {
-		if ( ! isset( $context['ppq_score_percent'] ) || ! is_numeric( $context['ppq_score_percent'] ) ) {
-			return '';
-		}
-
-		$formatted = rtrim( rtrim( number_format( (float) $context['ppq_score_percent'], 2, '.', '' ), '0' ), '.' );
-
-		return $formatted . '%';
-	}
-
-	/**
-	 * Resolve the result label
-	 *
-	 * The trigger only fires on passing attempts, so within an issuance
-	 * this is always the localized "Passed".
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $context Issuance context.
-	 * @return string
-	 */
-	public function resolve_grade( array $context ) {
-		return isset( $context['ppq_quiz_id'] )
-			? __( 'Passed', 'pressprimer-certificate' )
-			: '';
-	}
-
-	/**
-	 * Resolve the pass date in the site date format.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $context Issuance context.
-	 * @return string
-	 */
-	public function resolve_pass_date( array $context ) {
-		if ( empty( $context['ppq_finished_at'] ) ) {
-			return '';
-		}
-
-		// PPQ's finished_at is WordPress LOCAL time, so mysql2date (which
-		// assumes local storage) is the correct formatter HERE. The
-		// CLAUDE.md mysql2date ban applies to ppcert tables, which store
-		// UTC - this value never touches a ppcert table unformatted.
-		return mysql2date( get_option( 'date_format' ), (string) $context['ppq_finished_at'] );
 	}
 }

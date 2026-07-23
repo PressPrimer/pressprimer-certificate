@@ -185,17 +185,34 @@ function mimicRebuild( layout ) {
 	return clean;
 }
 
-// Double-adapter fixtures (mirrors the PHPUnit test double).
+// Double-adapter fixtures (mirrors the PHPUnit test double), plus a
+// hierarchical sibling exercising the cascade picker.
 const DOUBLE_SOURCES = [
 	{ id: '101', title: 'Sample Course' },
 	{ id: '102', title: 'Advanced Botany' },
 ];
 
+const HIER_COURSES = [
+	{ id: '11', title: 'Botany 101' },
+	{ id: '12', title: 'Watercolor Basics' },
+];
+
+const HIER_LESSONS = {
+	11: [
+		{ id: '201', title: 'Roots and Stems' },
+		{ id: '202', title: 'Leaves' },
+	],
+	12: [ { id: '301', title: 'Brushes' } ],
+};
+
 const DOUBLE_TYPE = {
 	id: 'double_lms',
-	label: 'Double LMS',
+	label: 'Course completed (Double LMS)',
+	integration: 'Double LMS',
+	short_label: 'Course completed',
 	source_label: 'Course',
 	has_sources: true,
+	source_levels: [],
 	source_post_types: [ 'page' ],
 	conditions_schema: {
 		min_score: {
@@ -217,7 +234,41 @@ const DOUBLE_TYPE = {
 	},
 };
 
+const HIER_TYPE = {
+	id: 'double_lms_lesson',
+	label: 'Lesson completed (Double LMS)',
+	integration: 'Double LMS',
+	short_label: 'Lesson completed',
+	source_label: 'Lesson',
+	has_sources: true,
+	source_levels: [ { key: 'course', label: 'Course' } ],
+	source_post_types: [ 'page' ],
+	conditions_schema: {},
+};
+
+const HARNESS_TYPES = [ DOUBLE_TYPE, HIER_TYPE ];
+
 const TRIGGERS_KEY = 'ppcert_harness_triggers';
+
+/**
+ * Cascade parents map from a mocked request path.
+ *
+ * @param {URL} url Parsed request URL.
+ * @return {Object} Level key => id.
+ */
+function parentsFromUrl( url ) {
+	const parents = {};
+
+	url.searchParams.forEach( ( value, key ) => {
+		const match = key.match( /^parents\[(.+)\]$/ );
+
+		if ( match ) {
+			parents[ match[ 1 ] ] = value;
+		}
+	} );
+
+	return parents;
+}
 
 /**
  * Enrich a stored trigger the way the REST controller does.
@@ -226,13 +277,19 @@ const TRIGGERS_KEY = 'ppcert_harness_triggers';
  * @return {Object} Enriched row.
  */
 function enrichTrigger( trigger ) {
-	const source = DOUBLE_SOURCES.find(
+	const type =
+		HARNESS_TYPES.find( ( t ) => t.id === trigger.trigger_type ) ||
+		DOUBLE_TYPE;
+	const pool = DOUBLE_SOURCES.concat(
+		...Object.keys( HIER_LESSONS ).map( ( key ) => HIER_LESSONS[ key ] )
+	);
+	const source = pool.find(
 		( s ) => s.id === String( trigger.source_ref || '' )
 	);
 
 	return {
 		...trigger,
-		type_label: DOUBLE_TYPE.label,
+		type_label: type.label,
 		type_available: true,
 		source_label: source ? source.title : '',
 		source_found: ! trigger.source_ref || !! source,
@@ -281,14 +338,32 @@ apiFetch.use( ( options, next ) => {
 			const search = (
 				url.searchParams.get( 'search' ) || ''
 			).toLowerCase();
-			return Promise.resolve(
-				DOUBLE_SOURCES.filter( ( s ) =>
+			const level = url.searchParams.get( 'level' );
+			const parents = parentsFromUrl( url );
+			const bySearch = ( list ) =>
+				list.filter( ( s ) =>
 					s.title.toLowerCase().includes( search )
-				)
-			);
+				);
+
+			// Cascade level options (hierarchical type only).
+			if ( level ) {
+				return Promise.resolve(
+					'course' === level ? bySearch( HIER_COURSES ) : []
+				);
+			}
+
+			// Scoped sources for the hierarchical type.
+			if ( type === HIER_TYPE.id ) {
+				const lessons = parents.course
+					? HIER_LESSONS[ parents.course ] || []
+					: [];
+				return Promise.resolve( bySearch( lessons ) );
+			}
+
+			return Promise.resolve( bySearch( DOUBLE_SOURCES ) );
 		}
 
-		return Promise.resolve( [ DOUBLE_TYPE ] );
+		return Promise.resolve( HARNESS_TYPES );
 	}
 
 	if ( path.startsWith( '/ppcert/v1/templates/7/triggers' ) ) {

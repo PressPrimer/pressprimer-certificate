@@ -75,17 +75,62 @@ export function getTriggerTypes() {
 }
 
 /**
- * Search a trigger type's sources.
+ * Query-string fragment for a cascade parents map.
  *
- * @param {string} type   Trigger type id.
- * @param {string} search Search term.
+ * @param {Object} parents Level key => selected id.
+ * @return {string} Fragment ('' when empty).
+ */
+function parentsQuery( parents ) {
+	return Object.keys( parents || {} )
+		.map(
+			( key ) =>
+				`&parents[${ encodeURIComponent( key ) }]=${ encodeURIComponent(
+					parents[ key ]
+				) }`
+		)
+		.join( '' );
+}
+
+/**
+ * Search a trigger type's sources, scoped by cascade parents when the
+ * type is hierarchical.
+ *
+ * @param {string} type    Trigger type id.
+ * @param {string} search  Search term.
+ * @param {Object} parents Level key => selected id.
  * @return {Promise<Array>} [ { id, title } ].
  */
-export function getTriggerSources( type, search = '' ) {
+export function getTriggerSources( type, search = '', parents = {} ) {
 	return apiFetch( {
 		path: `/ppcert/v1/trigger-types?type=${ encodeURIComponent(
 			type
-		) }&search=${ encodeURIComponent( search ) }`,
+		) }&search=${ encodeURIComponent( search ) }${ parentsQuery(
+			parents
+		) }`,
+	} );
+}
+
+/**
+ * Options for one cascade level of a hierarchical source picker.
+ *
+ * @param {string} type    Trigger type id.
+ * @param {string} level   Level key.
+ * @param {Object} parents Earlier level selections.
+ * @param {string} search  Search term.
+ * @return {Promise<Array>} [ { id, title } ].
+ */
+export function getTriggerLevelOptions(
+	type,
+	level,
+	parents = {},
+	search = ''
+) {
+	return apiFetch( {
+		path: `/ppcert/v1/trigger-types?type=${ encodeURIComponent(
+			type
+		) }&level=${ encodeURIComponent( level ) }&search=${ encodeURIComponent(
+			search
+		) }${ parentsQuery( parents ) }`,
 	} );
 }
 

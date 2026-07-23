@@ -283,9 +283,9 @@ class Test_Hook_Contract extends TestCase {
 
 		$entry = $types['double_lms'];
 		$this->assertSame(
-			[ 'id', 'label', 'source_label', 'source_picker', 'conditions_schema', 'source_post_types' ],
+			[ 'id', 'label', 'integration', 'short_label', 'source_label', 'source_picker', 'source_levels', 'level_picker', 'scoped_picker', 'conditions_schema', 'source_post_types' ],
 			array_keys( $entry ),
-			'Trigger type entry keys per HOOKS.md (source_post_types added for the post-meta picker, Prompt 3.4; source_label added for the Award card and palette group noun, Award tab review pass)'
+			'Trigger type entry keys per HOOKS.md (source_post_types: post-meta picker, Prompt 3.4; source_label: Award card noun; integration/short_label: two-step trigger picker; source_levels/level_picker/scoped_picker: hierarchical source cascade - Award tab reviews 2026-07-22/23)'
 		);
 	}
 
