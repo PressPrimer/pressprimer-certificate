@@ -263,7 +263,7 @@ class Test_LearnDash_Adapter extends TestCase { // phpcs:ignore Generic.Files.On
 		$this->assertSame( [ 'sfwd-courses' ], $types['lms_learndash']['source_post_types'] );
 
 		// No conditions in 1.0 (FR-004).
-		$this->assertSame( [], $types['lms_learndash']['conditions_schema'] );
+		$this->assertSame( [ 'reissue' ], array_keys( $types['lms_learndash']['conditions_schema'] ), 'Only the universal reissue toggle' );
 
 		$fields = PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' );
 		$this->assertArrayHasKey( 'source.course_title', $fields );

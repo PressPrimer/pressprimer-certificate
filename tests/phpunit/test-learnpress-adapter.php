@@ -175,7 +175,7 @@ class Test_LearnPress_Adapter extends TestCase {
 		$this->assertSame( 'Course completed (LearnPress)', $types['lms_learnpress']['label'] );
 		$this->assertSame( 'LearnPress', $types['lms_learnpress']['integration'] );
 		$this->assertSame( [ 'lp_course' ], $types['lms_learnpress']['source_post_types'] );
-		$this->assertSame( [], $types['lms_learnpress']['conditions_schema'] );
+		$this->assertSame( [ 'reissue' ], array_keys( $types['lms_learnpress']['conditions_schema'] ), 'Only the universal reissue toggle' );
 
 		$this->assertSame( 'Quiz passed (LearnPress)', $types['lms_learnpress_quiz']['label'] );
 		$this->assertSame( [ 'lp_quiz' ], $types['lms_learnpress_quiz']['source_post_types'] );

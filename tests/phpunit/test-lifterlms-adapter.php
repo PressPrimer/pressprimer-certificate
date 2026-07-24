@@ -248,7 +248,7 @@ class Test_LifterLMS_Adapter extends TestCase { // phpcs:ignore Generic.Files.On
 		$this->assertSame( 'Course completed (LifterLMS)', $types['lms_lifterlms']['label'] );
 		$this->assertSame( 'Course', $types['lms_lifterlms']['source_label'] );
 		$this->assertSame( [ 'course' ], $types['lms_lifterlms']['source_post_types'] );
-		$this->assertSame( [], $types['lms_lifterlms']['conditions_schema'] );
+		$this->assertSame( [ 'reissue' ], array_keys( $types['lms_lifterlms']['conditions_schema'] ), 'Only the universal reissue toggle' );
 
 		$fields = PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' );
 		$this->assertArrayHasKey( 'source.course_title', $fields );

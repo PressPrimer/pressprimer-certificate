@@ -121,7 +121,7 @@ class Test_Adapter_Interface extends TestCase {
 		$types = PressPrimer_Certificate_Trigger_Registry::get_types();
 
 		$this->assertSame( [ 'valid_type' ], array_keys( $types ) );
-		$this->assertSame( [], $types['valid_type']['conditions_schema'] );
+		$this->assertSame( [ 'reissue' ], array_keys( $types['valid_type']['conditions_schema'] ), 'Only the universal reissue toggle' );
 		$this->assertNull( $types['valid_type']['source_picker'] );
 		$this->assertNull( PressPrimer_Certificate_Trigger_Registry::get_type( 'missing_type' ) );
 	}
@@ -148,14 +148,37 @@ class Test_Adapter_Interface extends TestCase {
 		$clean = PressPrimer_Certificate_Trigger_Registry::sanitize_conditions( 'double_lms', $raw );
 
 		$this->assertSame(
-			[ 'min_score', 'notify', 'mode', 'note' ],
+			[ 'min_score', 'notify', 'mode', 'note', 'reissue' ],
 			array_keys( $clean ),
-			'Output must contain exactly the schema keys - unknown keys stripped'
+			'Output must contain exactly the schema keys (plus the universal reissue toggle) - unknown keys stripped'
 		);
 		$this->assertSame( 85.5, $clean['min_score'] );
 		$this->assertTrue( $clean['notify'] );
 		$this->assertSame( 'full', $clean['mode'], 'Out-of-options select falls back to default' );
 		$this->assertSame( 'Internal note', $clean['note'] );
+	}
+
+	/**
+	 * Every registered type carries the universal reissue toggle - even
+	 * types that declare no conditions of their own - defaulting off and
+	 * coercing like any toggle.
+	 *
+	 * @return void
+	 */
+	public function test_universal_reissue_condition() {
+		$adapter = new PPCert_Test_Double_Adapter();
+		$adapter->register();
+
+		$type = PressPrimer_Certificate_Trigger_Registry::get_type( 'double_lms' );
+		$this->assertArrayHasKey( 'reissue', $type['conditions_schema'], 'The registry appends reissue to every schema' );
+		$this->assertSame( 'toggle', $type['conditions_schema']['reissue']['type'] );
+		$this->assertFalse( $type['conditions_schema']['reissue']['default'], 'Suppression stays the default' );
+
+		$on  = PressPrimer_Certificate_Trigger_Registry::sanitize_conditions( 'double_lms', [ 'reissue' => '1' ] );
+		$off = PressPrimer_Certificate_Trigger_Registry::sanitize_conditions( 'double_lms', [] );
+
+		$this->assertTrue( $on['reissue'] );
+		$this->assertFalse( $off['reissue'] );
 	}
 
 	/**

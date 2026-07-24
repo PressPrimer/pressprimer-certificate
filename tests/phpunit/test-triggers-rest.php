@@ -110,8 +110,9 @@ class Test_Triggers_REST extends TestCase {
 
 		$schema = $types[0]['conditions_schema'];
 		$this->assertSame(
-			[ 'min_score', 'notify', 'mode', 'note' ],
-			array_keys( $schema )
+			[ 'min_score', 'notify', 'mode', 'note', 'reissue' ],
+			array_keys( $schema ),
+			'Own schema keys plus the universal reissue toggle'
 		);
 		$this->assertSame( 0.0, $schema['min_score']['min'] );
 		$this->assertSame( 100.0, $schema['min_score']['max'] );
@@ -183,15 +184,17 @@ class Test_Triggers_REST extends TestCase {
 		$rows       = $this->wpdb->rows( 'wp_ppcert_triggers' );
 		$conditions = json_decode( $rows[0]['conditions_json'], true );
 
-		// Exactly the schema's keys, coerced and clamped.
+		// Exactly the schema's keys (plus the universal reissue
+		// toggle), coerced and clamped.
 		$this->assertSame(
-			[ 'min_score', 'notify', 'mode', 'note' ],
+			[ 'min_score', 'notify', 'mode', 'note', 'reissue' ],
 			array_keys( $conditions )
 		);
 		$this->assertSame( 100.0, (float) $conditions['min_score'] );
 		$this->assertTrue( $conditions['notify'] );
 		$this->assertSame( 'full', $conditions['mode'] );
 		$this->assertSame( 'keep me', $conditions['note'] );
+		$this->assertFalse( $conditions['reissue'], 'Reissue defaults off when not sent' );
 	}
 
 	/**

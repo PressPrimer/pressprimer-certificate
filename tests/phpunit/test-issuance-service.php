@@ -274,6 +274,65 @@ class Test_Issuance_Service extends TestCase {
 	}
 
 	/**
+	 * The trigger's reissue condition opts out of duplicate suppression:
+	 * every qualifying completion issues a fresh certificate (compliance
+	 * and recertification sites), while triggers without it keep the
+	 * suppression default.
+	 *
+	 * @return void
+	 */
+	public function test_trigger_reissue_condition_bypasses_suppression() {
+		// The firing trigger: reissue on.
+		$this->wpdb->seed_row(
+			PressPrimer_Certificate_Trigger::table(),
+			[
+				'uuid'            => 'trg-reissue-0001',
+				'template_id'     => $this->template_id,
+				'trigger_type'    => 'ppq_quiz',
+				'source_ref'      => '89',
+				'conditions_json' => '{"reissue":true}',
+				'is_active'       => 1,
+			]
+		);
+
+		$first  = PressPrimer_Certificate_Issuance_Service::issue( $this->args() );
+		$second = PressPrimer_Certificate_Issuance_Service::issue( $this->args() );
+
+		$this->assertNotSame( $first, $second, 'Reissue triggers create a fresh certificate per completion' );
+		$this->assertCount( 2, $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() ) );
+
+		$credentials = array_column( $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() ), 'credential_id' );
+		$this->assertNotSame( $credentials[0], $credentials[1], 'Each reissue carries its own credential ID' );
+
+		// No suppression event was recorded - both completions issued.
+		$types = array_column( $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() ), 'event_type' );
+		$this->assertSame( [ 'issued', 'issued' ], $types );
+
+		// A different source_ref has no matching trigger: default
+		// suppression still applies to it.
+		$other      = PressPrimer_Certificate_Issuance_Service::issue( $this->args( [ 'source_ref' => '90' ] ) );
+		$suppressed = PressPrimer_Certificate_Issuance_Service::issue( $this->args( [ 'source_ref' => '90' ] ) );
+		$this->assertSame( $other, $suppressed );
+
+		// An inactive reissue trigger no longer bypasses.
+		$this->wpdb->seed_row(
+			PressPrimer_Certificate_Trigger::table(),
+			[
+				'uuid'            => 'trg-reissue-0002',
+				'template_id'     => $this->template_id,
+				'trigger_type'    => 'ppq_quiz',
+				'source_ref'      => '91',
+				'conditions_json' => '{"reissue":true}',
+				'is_active'       => 0,
+			]
+		);
+
+		$inactive_first  = PressPrimer_Certificate_Issuance_Service::issue( $this->args( [ 'source_ref' => '91' ] ) );
+		$inactive_second = PressPrimer_Certificate_Issuance_Service::issue( $this->args( [ 'source_ref' => '91' ] ) );
+		$this->assertSame( $inactive_first, $inactive_second, 'Inactive triggers fall back to suppression' );
+	}
+
+	/**
 	 * A WP_Error from ppcert_issue_validation aborts with no rows and no
 	 * downstream hooks.
 	 *

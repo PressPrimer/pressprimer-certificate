@@ -131,7 +131,14 @@ class PressPrimer_Certificate_Issuance_Service {
 			]
 		);
 
-		// Step 2: duplicate suppression (bypassed by manual force).
+		// Step 2: duplicate suppression - bypassed by the manual force
+		// flag or by the firing trigger's reissue condition (compliance
+		// and recertification sites issue a fresh credential on every
+		// qualifying completion, 2026-07-24).
+		if ( ! $force && self::trigger_allows_reissue( $template_id, $source_type, $source_ref ) ) {
+			$force = true;
+		}
+
 		if ( ! $force ) {
 			$existing = PressPrimer_Certificate_Certificate::find_duplicate(
 				$recipient_id,
@@ -336,5 +343,42 @@ class PressPrimer_Certificate_Issuance_Service {
 		}
 
 		return [ 'resolver_failed' => self::$last_resolution_failures ];
+	}
+
+	/**
+	 * Whether the firing trigger opts out of duplicate suppression
+	 *
+	 * Resolved here (not threaded through the adapters) so the policy
+	 * lives in one place and every adapter, bundled or addon, inherits
+	 * it. The template's triggers are matched on type and source ref;
+	 * a stored NULL ref and an empty-string ref compare equal.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int         $template_id Template id.
+	 * @param string      $source_type Trigger type ('manual' never reissues here).
+	 * @param string|null $source_ref  Source reference from the firing adapter.
+	 * @return bool True when the matching active trigger has reissue on.
+	 */
+	private static function trigger_allows_reissue( $template_id, $source_type, $source_ref ) {
+		if ( 'manual' === $source_type ) {
+			return false;
+		}
+
+		foreach ( PressPrimer_Certificate_Trigger::get_for_template( (int) $template_id ) as $trigger ) {
+			if ( (string) $trigger->trigger_type !== (string) $source_type ) {
+				continue;
+			}
+
+			$trigger_ref = isset( $trigger->source_ref ) ? (string) $trigger->source_ref : '';
+
+			if ( $trigger_ref !== (string) $source_ref ) {
+				continue;
+			}
+
+			return ! empty( $trigger->is_active ) && ! empty( $trigger->conditions['reissue'] );
+		}
+
+		return false;
 	}
 }

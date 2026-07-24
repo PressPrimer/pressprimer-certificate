@@ -283,7 +283,7 @@ class Test_TutorLMS_Adapter extends TestCase { // phpcs:ignore Generic.Files.One
 		$this->assertSame( 'Course completed (Tutor LMS)', $types['lms_tutorlms']['label'] );
 		$this->assertSame( 'Tutor LMS', $types['lms_tutorlms']['integration'] );
 		$this->assertSame( [ 'courses' ], $types['lms_tutorlms']['source_post_types'] );
-		$this->assertSame( [], $types['lms_tutorlms']['conditions_schema'] );
+		$this->assertSame( [ 'reissue' ], array_keys( $types['lms_tutorlms']['conditions_schema'] ), 'Only the universal reissue toggle' );
 
 		$this->assertSame( 'Quiz passed (Tutor LMS)', $types['lms_tutorlms_quiz']['label'] );
 		$this->assertSame( [ 'tutor_quiz' ], $types['lms_tutorlms_quiz']['source_post_types'] );

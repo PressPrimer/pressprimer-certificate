@@ -97,6 +97,21 @@ class PressPrimer_Certificate_Trigger_Registry {
 					? array_values( array_filter( array_map( 'sanitize_key', $entry['source_post_types'] ) ) )
 					: [],
 			];
+
+			// Every trigger type carries the universal reissue toggle
+			// (2026-07-24): by default a recipient earns a given
+			// certificate once per trigger and repeat completions are
+			// suppressed; compliance and recertification sites turn
+			// this on per trigger so every qualifying completion issues
+			// a fresh certificate. Appended here (not per adapter) so
+			// addon-registered types inherit it too; 'reissue' is a
+			// reserved conditions key.
+			$types[ $id ]['conditions_schema']['reissue'] = [
+				'type'    => 'toggle',
+				'label'   => __( 'Issue again on repeat completion', 'pressprimer-certificate' ),
+				'help'    => __( 'By default a recipient can earn this certificate only once from this trigger, and completing again does nothing. Turn this on for compliance or recertification courses so every completion issues a new certificate with its own credential ID.', 'pressprimer-certificate' ),
+				'default' => false,
+			];
 		}
 
 		return $types;
