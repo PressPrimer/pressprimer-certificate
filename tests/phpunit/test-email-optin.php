@@ -71,7 +71,12 @@ class Test_Email_Optin extends TestCase {
 		);
 
 		// The filter cleanly disables every surface.
-		add_filter( 'ppcert_email_intake_url', '__return_empty_string' );
+		add_filter(
+			'ppcert_email_intake_url',
+			static function () {
+				return '';
+			}
+		);
 		$this->assertFalse( PressPrimer_Certificate_Email_Optin_Service::is_enabled() );
 		$this->assertFalse( PressPrimer_Certificate_Email_Optin_Service::is_eligible( 9, 'wizard' ) );
 	}
