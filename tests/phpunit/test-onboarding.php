@@ -158,8 +158,9 @@ class Test_Onboarding extends TestCase {
 		// The PPCERTCRED token slots the credential in client-side.
 		$this->assertStringContainsString( 'ppcert/v1/certificates/PPCERTCRED/pdf', $data['pdfUrlTemplate'] );
 
-		// The email ask resolves server-side; the shipped default is
-		// disabled (no intake URL), so the wizard slot stays hidden.
+		// The email ask resolves server-side; this user holds the
+		// wizard capabilities but not manage_options, so the ask stays
+		// hidden (the opt-in is admins-only).
 		$this->assertFalse( $data['emailOptin']['eligible'] );
 
 		// The relaunch link is nonce'd and points at the dashboard.

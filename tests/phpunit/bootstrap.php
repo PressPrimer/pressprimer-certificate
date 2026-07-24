@@ -1239,6 +1239,17 @@ if ( ! function_exists( 'wp_create_nonce' ) ) {
 	}
 }
 
+if ( ! function_exists( '__return_empty_string' ) ) {
+	/**
+	 * Stub: Core's empty-string filter helper.
+	 *
+	 * @return string
+	 */
+	function __return_empty_string() {
+		return '';
+	}
+}
+
 if ( ! function_exists( 'user_can' ) ) {
 	/**
 	 * Stub: Per-user capability check.

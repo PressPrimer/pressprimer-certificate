@@ -54,13 +54,24 @@ class Test_Email_Optin extends TestCase {
 	}
 
 	/**
-	 * The shipped default is disabled: no intake URL, no surfaces.
+	 * The shipped default targets the certificate-free webhook; the
+	 * filter cleanly disables every surface.
 	 *
 	 * @return void
 	 */
-	public function test_disabled_by_default() {
+	public function test_default_intake_and_filter_disable() {
 		ppcert_tests_reset_hooks();
 
+		// The shipped default points at the certificate-free FluentCRM
+		// webhook on pressprimer.com.
+		$this->assertTrue( PressPrimer_Certificate_Email_Optin_Service::is_enabled() );
+		$this->assertStringContainsString(
+			'pressprimer.com',
+			PressPrimer_Certificate_Email_Optin_Service::get_intake_url()
+		);
+
+		// The filter cleanly disables every surface.
+		add_filter( 'ppcert_email_intake_url', '__return_empty_string' );
 		$this->assertFalse( PressPrimer_Certificate_Email_Optin_Service::is_enabled() );
 		$this->assertFalse( PressPrimer_Certificate_Email_Optin_Service::is_eligible( 9, 'wizard' ) );
 	}

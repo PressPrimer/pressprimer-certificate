@@ -63,14 +63,12 @@ class PressPrimer_Certificate_Email_Optin_Service {
 	 * A FluentCRM incoming webhook subscribing to the shared
 	 * PressPrimer list with the certificate-free tag (list, tag, and
 	 * status are configured on the webhook itself, matching the
-	 * Assignment plugin's assignment-free webhook). Empty until the
-	 * webhook exists - an empty value cleanly disables every opt-in
-	 * surface.
+	 * Assignment plugin's assignment-free webhook).
 	 *
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const DEFAULT_INTAKE_URL = '';
+	const DEFAULT_INTAKE_URL = 'https://pressprimer.com/?fluentcrm=1&route=contact&hash=819ed174-c993-48d2-8e16-168639c277a4';
 
 	/**
 	 * Valid source surfaces
