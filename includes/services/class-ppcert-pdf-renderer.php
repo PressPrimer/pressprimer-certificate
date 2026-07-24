@@ -211,6 +211,21 @@ class PressPrimer_Certificate_PDF_Renderer {
 		$pdf->SetCreator( 'PressPrimer Certificate' );
 		$pdf->SetTitle( '' !== $recipient ? $title . ' - ' . $recipient : $title );
 
+		// Editing is denied in PDF viewers (2026-07-24): the empty user
+		// password keeps the file readable everywhere, while a discarded
+		// random owner password locks Acrobat's edit tools so a
+		// recipient can't casually retype the name or date. Printing
+		// and text copying stay allowed (accessibility, and pasting the
+		// credential ID). This is deterrence, not proof - the
+		// authoritative record is always the verification page. AES-256
+		// where openssl exists; TCPDF's pure-PHP RC4 otherwise.
+		$pdf->setProtection(
+			[ 'modify', 'annot-forms', 'fill-forms', 'assemble' ],
+			'',
+			wp_generate_password( 32, false, false ),
+			extension_loaded( 'openssl' ) ? 3 : 1
+		);
+
 		// Exact-size page: no margins, headers, footers, or auto page breaks.
 		$pdf->setPrintHeader( false );
 		$pdf->setPrintFooter( false );

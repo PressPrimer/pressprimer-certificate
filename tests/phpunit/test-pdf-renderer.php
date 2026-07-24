@@ -172,6 +172,13 @@ class Test_PDF_Renderer extends TestCase {
 		$this->assertStringStartsWith( '%PDF-', $bytes );
 		$this->assertGreaterThan( 1000, strlen( $bytes ) );
 
+		// Edit protection (2026-07-24): the encryption dictionary must
+		// be present - an empty user password keeps the file readable
+		// everywhere while the discarded owner password locks viewer
+		// edit tools. (The cleartext XMP metadata title legitimately
+		// still names the recipient; content streams are encrypted.)
+		$this->assertStringContainsString( '/Encrypt', $bytes );
+
 		// ppcert_pdf_generated: ( string $file_path, int $certificate_id, string $context ).
 		$this->assertCount( 1, $fired );
 		$this->assertCount( 3, $fired[0] );
