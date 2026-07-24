@@ -67,6 +67,19 @@ class PressPrimer_Certificate_Admin_Dashboard {
 			);
 		}
 
+		// wp-scripts emits a SECOND CSS file per entry - dashboard.css -
+		// for styles imported by components outside the entry's own
+		// style.css (the shared EmailOptinAsk.css). Without it those
+		// components render unstyled.
+		if ( file_exists( PPCERT_PLUGIN_DIR . 'build/dashboard.css' ) ) {
+			wp_enqueue_style(
+				'ppcert-dashboard-components',
+				PPCERT_PLUGIN_URL . 'build/dashboard.css',
+				[],
+				$asset['version']
+			);
+		}
+
 		wp_localize_script( 'ppcert-dashboard', 'ppcert_dashboard_data', $this->boot_data() );
 	}
 
@@ -146,6 +159,13 @@ class PressPrimer_Certificate_Admin_Dashboard {
 				'manage_templates'   => current_user_can( PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES ),
 				'issue_certificates' => current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ),
 				'manage_settings'    => current_user_can( PressPrimer_Certificate_Capabilities::CAP_MANAGE_SETTINGS ),
+			],
+			// The email-course card: admins only, dismissed and
+			// answered states resolve server-side.
+			'emailOptin'    => [
+				'eligible'   => class_exists( 'PressPrimer_Certificate_Email_Optin_Service' )
+					&& PressPrimer_Certificate_Email_Optin_Service::is_eligible( get_current_user_id(), 'dashboard-card' ),
+				'privacyUrl' => 'https://pressprimer.com/privacy/',
 			],
 		];
 	}

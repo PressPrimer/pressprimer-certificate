@@ -16,6 +16,7 @@ import ActivityChart from './ActivityChart';
 import QuickActions from './QuickActions';
 import RecentCertificates from './RecentCertificates';
 import TopTemplates from './TopTemplates';
+import EmailCourseCard from './EmailCourseCard';
 
 /**
  * Dashboard component.
@@ -117,6 +118,9 @@ const Dashboard = ( { bootData = {} } ) => {
 								templatesUrl={
 									( bootData.urls || {} ).templates || ''
 								}
+							/>
+							<EmailCourseCard
+								optin={ bootData.emailOptin || {} }
 							/>
 						</div>
 					</div>

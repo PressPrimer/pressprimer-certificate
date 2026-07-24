@@ -176,6 +176,11 @@ class PressPrimer_Certificate_Plugin {
 			$user_profile = new PressPrimer_Certificate_Admin_User_Profile();
 			$user_profile->init();
 		}
+
+		// The guided setup tour (Phase 5B item 2).
+		if ( class_exists( 'PressPrimer_Certificate_Onboarding' ) ) {
+			PressPrimer_Certificate_Onboarding::get_instance();
+		}
 	}
 
 	/**
@@ -342,6 +347,7 @@ class PressPrimer_Certificate_Plugin {
 			'PressPrimer_Certificate_REST_Verification_Controller',
 			'PressPrimer_Certificate_REST_Settings_Controller',
 			'PressPrimer_Certificate_REST_Dashboard_Controller',
+			'PressPrimer_Certificate_REST_Email_Optin_Controller',
 		];
 
 		foreach ( $controllers as $controller_class ) {

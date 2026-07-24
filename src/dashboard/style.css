@@ -246,6 +246,38 @@
 }
 
 /* ==========================================================================
+   Email course card
+   ========================================================================== */
+
+.ppcert-dashboard-email-card {
+	position: relative;
+}
+
+.ppcert-dashboard-email-card__dismiss {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	color: #8c8c8c;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	font-size: 12px;
+	transition: all 0.2s ease;
+	padding: 0;
+}
+
+.ppcert-dashboard-email-card__dismiss:hover {
+	background: #f0f0f0;
+	color: #1d2327;
+}
+
+/* ==========================================================================
    Top templates
    ========================================================================== */
 

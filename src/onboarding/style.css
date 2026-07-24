@@ -1,0 +1,733 @@
+/**
+ * Onboarding Tour Styles
+ *
+ * Follows the same pattern as PressPrimer Quiz onboarding styles,
+ * using the ppcert- prefix instead of ppq-.
+ *
+ * @package PressPrimer_Certificate
+ * @since 1.0.0
+ */
+
+/* ==========================================================================
+   Overlay (for modals)
+   ========================================================================== */
+
+.ppcert-onboarding-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.75);
+	animation: ppcert-fade-in 0.3s ease-out;
+}
+
+/* ==========================================================================
+   Modal (Welcome & Completion)
+   ========================================================================== */
+
+.ppcert-onboarding-modal {
+	background: #fff;
+	border-radius: 16px;
+	padding: 48px;
+	max-width: 520px;
+	width: calc(100% - 32px);
+	max-height: calc(100vh - 48px);
+	overflow-y: auto;
+	text-align: center;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	animation: ppcert-scale-in 0.3s ease-out;
+}
+
+.ppcert-onboarding-modal--complete {
+	max-width: 580px;
+}
+
+/* Welcome modal is wider to fit the template grid. */
+.ppcert-onboarding-modal--welcome {
+	max-width: 660px;
+	padding: 40px 48px;
+}
+
+/* Flat, brand-teal icon badge (no gradients). */
+.ppcert-onboarding-modal__icon {
+	width: 80px;
+	height: 80px;
+	margin: 0 auto 24px;
+	background: #f0fdfa;
+	border-radius: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 40px;
+	color: #14b8a6;
+}
+
+.ppcert-onboarding-modal__icon--success {
+	background: #f6ffed;
+	color: #52c41a;
+}
+
+/* Celebration mascot (page-creation stop) */
+.ppcert-onboarding-modal__mascot {
+	display: block;
+	height: 130px;
+	width: auto;
+	margin: 0 auto 20px;
+}
+
+/* Logo for welcome modal */
+.ppcert-onboarding-modal__logo {
+	margin: 0 auto 32px;
+	text-align: center;
+}
+
+.ppcert-onboarding-modal__logo-img {
+	max-height: 75px;
+	width: auto;
+}
+
+.ppcert-onboarding-modal__title {
+	font-size: 28px;
+	font-weight: 700;
+	color: #1d2327;
+	margin: 0 0 16px 0;
+}
+
+.ppcert-onboarding-modal__content {
+	font-size: 16px;
+	color: #646970;
+	margin: 0 0 32px 0;
+	line-height: 1.6;
+}
+
+.ppcert-onboarding-modal__actions {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+}
+
+.ppcert-onboarding-modal__start-btn,
+.ppcert-onboarding-modal__complete-btn {
+	min-width: 200px;
+	height: 44px;
+	font-size: 16px;
+	font-weight: 500;
+}
+
+/* (Primary buttons are themed in the shared Brand Buttons section
+   below - modal and tooltip rules live together so specificity
+   ordering holds file-wide.) */
+
+.ppcert-onboarding-modal__skip-btn {
+	color: #646970;
+}
+
+.ppcert-onboarding-modal__skip-btn:hover {
+	color: #1d2327;
+}
+
+.ppcert-onboarding-modal--welcome .ppcert-onboarding-modal__skip-btn {
+	color: #14b8a6;
+}
+
+.ppcert-onboarding-modal--welcome .ppcert-onboarding-modal__skip-btn:hover {
+	color: #0d9488;
+}
+
+.ppcert-onboarding-modal__checkbox {
+	margin-top: 8px;
+	color: #8c8c8c;
+	font-size: 13px;
+}
+
+/* Modal footer nav: Back | progress dots | primary action */
+.ppcert-onboarding-modal__nav {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+	padding-top: 16px;
+	border-top: 1px solid #f0f0f0;
+}
+
+.ppcert-onboarding-modal__nav-left,
+.ppcert-onboarding-modal__nav-right {
+	flex: 1 0 0;
+	display: flex;
+	align-items: center;
+}
+
+.ppcert-onboarding-modal__nav-left {
+	justify-content: flex-start;
+}
+
+.ppcert-onboarding-modal__nav-center {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.ppcert-onboarding-modal__nav-right {
+	justify-content: flex-end;
+}
+
+/* The email ask on the tour's finish stop */
+.ppcert-onboarding-email-ask {
+	margin: 0 0 20px;
+	padding: 20px;
+	background: #fafafa;
+	border-radius: 12px;
+}
+
+/* The modal centers its text; the form row centers to match. */
+.ppcert-onboarding-email-ask .ppcert-email-ask__field-row {
+	justify-content: center;
+}
+
+/* ==========================================================================
+   Spotlight
+   ========================================================================== */
+
+/* Guided-build targets scroll beneath the fixed admin bar without this. */
+.ppcert-designer__gallery,
+.ppcert-designer__page,
+.ppcert-designer__toolbar,
+#ppcert-issue-root {
+	scroll-margin-top: 60px;
+}
+
+.ppcert-spotlight__overlay {
+	pointer-events: none;
+}
+
+.ppcert-spotlight__highlight {
+	border: 3px solid #14b8a6;
+	box-shadow:
+		0 0 0 4px rgba(20, 184, 166, 0.2),
+		0 0 20px rgba(20, 184, 166, 0.3);
+	transition: all 0.3s ease;
+}
+
+.ppcert-spotlight__highlight--pulse {
+	animation: ppcert-spotlight-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ppcert-spotlight-pulse {
+
+	0%,
+	100% {
+		box-shadow:
+			0 0 0 4px rgba(20, 184, 166, 0.2),
+			0 0 20px rgba(20, 184, 166, 0.3);
+	}
+
+	50% {
+		box-shadow:
+			0 0 0 8px rgba(20, 184, 166, 0.1),
+			0 0 30px rgba(20, 184, 166, 0.4);
+	}
+}
+
+/* ==========================================================================
+   Tooltip
+   ========================================================================== */
+
+.ppcert-tooltip {
+	position: fixed;
+	background: #fff;
+	border: 1px solid #e4e4e7;
+	border-top: 3px solid #14b8a6;
+	border-radius: 12px;
+	padding: 18px 20px 16px;
+	min-width: 300px;
+	max-width: 380px;
+	box-shadow:
+		0 12px 32px rgba(0, 0, 0, 0.18),
+		0 4px 12px rgba(0, 0, 0, 0.08);
+	animation: ppcert-tooltip-in 0.2s ease-out;
+	transition: opacity 0.2s ease, top 0.2s ease, left 0.2s ease;
+}
+
+@keyframes ppcert-tooltip-in {
+
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Arrow */
+.ppcert-tooltip__arrow {
+	position: absolute;
+	width: 12px;
+	height: 12px;
+	background: #fff;
+	transform: rotate(45deg);
+}
+
+.ppcert-tooltip__arrow--top {
+	bottom: -6px;
+	left: 50%;
+	margin-left: -6px;
+	border-right: 1px solid #e4e4e7;
+	border-bottom: 1px solid #e4e4e7;
+}
+
+.ppcert-tooltip__arrow--bottom {
+	top: -7px;
+	left: 50%;
+	margin-left: -6px;
+	background: #14b8a6;
+}
+
+.ppcert-tooltip__arrow--left {
+	right: -6px;
+	top: 50%;
+	margin-top: -6px;
+	border-top: 1px solid #e4e4e7;
+	border-right: 1px solid #e4e4e7;
+}
+
+.ppcert-tooltip__arrow--right {
+	left: -6px;
+	top: 50%;
+	margin-top: -6px;
+	border-bottom: 1px solid #e4e4e7;
+	border-left: 1px solid #e4e4e7;
+}
+
+/* Close button */
+.ppcert-tooltip__close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	color: #8c8c8c;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	font-size: 12px;
+	transition: all 0.2s ease;
+	padding: 0;
+}
+
+.ppcert-tooltip__close:hover {
+	background: #f0f0f0;
+	color: #1d2327;
+}
+
+/* Brand header */
+.ppcert-tooltip__brand {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: #14b8a6;
+	margin: 0 0 8px;
+	padding-right: 28px;
+}
+
+/* Content */
+.ppcert-tooltip__content {
+	margin-bottom: 16px;
+}
+
+.ppcert-tooltip__title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0 0 8px 0;
+	padding-right: 20px;
+}
+
+.ppcert-tooltip__body {
+	font-size: 14px;
+	color: #50575e;
+	line-height: 1.6;
+}
+
+.ppcert-tooltip__body p {
+	margin: 0 0 8px 0;
+}
+
+.ppcert-tooltip__body p:last-child {
+	margin-bottom: 0;
+}
+
+/* Navigation */
+.ppcert-tooltip__navigation {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 14px;
+	border-top: 1px solid #f0f0f0;
+	gap: 8px;
+}
+
+.ppcert-tooltip__nav-left,
+.ppcert-tooltip__nav-center,
+.ppcert-tooltip__nav-right {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.ppcert-tooltip__nav-left {
+	flex: 0 0 auto;
+}
+
+.ppcert-tooltip__nav-center {
+	flex: 1;
+	justify-content: center;
+}
+
+.ppcert-tooltip__nav-right {
+	flex: 0 0 auto;
+}
+
+/* Progress dots — shared by the tooltip and the modal stops */
+.ppcert-progress-dots {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.ppcert-progress-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 4px;
+	background: #e0e0e0;
+	transition: all 0.2s ease;
+}
+
+.ppcert-progress-dot--done {
+	background: #99e2d8;
+}
+
+.ppcert-progress-dot--active {
+	width: 18px;
+	background: #14b8a6;
+}
+
+/* Disabled-Next tooltip needs a hoverable wrapper (disabled buttons
+   swallow mouse events). */
+.ppcert-tooltip__next-wrap {
+	display: inline-block;
+}
+
+/* Override Ant Design button styles in tooltip */
+.ppcert-tooltip .ant-btn-text {
+	color: #646970;
+}
+
+.ppcert-tooltip .ant-btn-text:hover {
+	color: #1d2327;
+	background: #f5f5f5;
+}
+
+/* ==========================================================================
+   Brand Buttons (modal + tooltip, bases before hovers for specificity
+   ordering)
+   ========================================================================== */
+
+.ppcert-onboarding-modal .ant-btn-primary {
+	background-color: #14b8a6 !important;
+	border-color: #14b8a6 !important;
+}
+
+.ppcert-tooltip .ant-btn-primary {
+	background: #14b8a6;
+	color: #fff;
+	border-color: #14b8a6;
+}
+
+.ppcert-onboarding-modal .ant-btn-primary:hover {
+	background-color: #0d9488 !important;
+	border-color: #0d9488 !important;
+}
+
+.ppcert-tooltip .ant-btn-primary:hover {
+	background: #0d9488;
+	color: #fff;
+	border-color: #0d9488;
+}
+
+/* The teal override above would otherwise swallow Ant's disabled
+   look — a disabled Next must LOOK disabled. */
+.ppcert-tooltip .ant-btn-primary:disabled,
+.ppcert-tooltip .ant-btn-primary:disabled:hover {
+	background: #f5f5f5;
+	color: rgba(0, 0, 0, 0.25);
+	border-color: #d9d9d9;
+	cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Floating Tooltip (when spotlight target not found)
+   ========================================================================== */
+
+.ppcert-onboarding-floating {
+	position: fixed;
+	bottom: 24px;
+	right: 24px;
+	z-index: 100000;
+	animation: ppcert-slide-up 0.3s ease-out;
+}
+
+@keyframes ppcert-slide-up {
+
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.ppcert-onboarding-floating__content {
+	background: #fff;
+	border: 1px solid #e4e4e7;
+	border-top: 3px solid #14b8a6;
+	border-radius: 12px;
+	padding: 20px;
+	width: 320px;
+	max-width: calc(100vw - 48px);
+	box-shadow:
+		0 12px 32px rgba(0, 0, 0, 0.18),
+		0 4px 12px rgba(0, 0, 0, 0.08);
+	position: relative;
+}
+
+.ppcert-onboarding-floating__close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	color: #8c8c8c;
+	cursor: pointer;
+	font-size: 20px;
+	line-height: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+	padding: 0;
+}
+
+.ppcert-onboarding-floating__close:hover {
+	background: #f0f0f0;
+	color: #1d2327;
+}
+
+.ppcert-onboarding-floating__title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0 0 8px 0;
+	padding-right: 24px;
+}
+
+.ppcert-onboarding-floating__text {
+	font-size: 14px;
+	color: #50575e;
+	line-height: 1.6;
+	margin: 0 0 16px 0;
+}
+
+.ppcert-onboarding-floating__nav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 16px;
+	border-top: 1px solid #f0f0f0;
+}
+
+.ppcert-onboarding-floating__btn {
+	padding: 6px 16px;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.ppcert-onboarding-floating__btn--back {
+	background: #fff;
+	border: 1px solid #d9d9d9;
+	color: #50575e;
+}
+
+.ppcert-onboarding-floating__btn--back:hover {
+	border-color: #14b8a6;
+	color: #14b8a6;
+}
+
+.ppcert-onboarding-floating__btn--next {
+	background: #14b8a6;
+	border: 1px solid #14b8a6;
+	color: #fff;
+}
+
+.ppcert-onboarding-floating__btn--next:hover {
+	background: #0d9488;
+	border-color: #0d9488;
+}
+
+.ppcert-onboarding-floating__step {
+	font-size: 12px;
+	color: #8c8c8c;
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes ppcert-fade-in {
+
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes ppcert-scale-in {
+
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media screen and (max-width: 640px) {
+
+	.ppcert-onboarding-modal {
+		margin: 16px;
+		padding: 32px 24px;
+	}
+
+	.ppcert-onboarding-modal__title {
+		font-size: 22px;
+	}
+
+	.ppcert-onboarding-templates__grid {
+		grid-template-columns: 1fr;
+	}
+
+	.ppcert-tooltip {
+		min-width: 240px;
+		max-width: calc(100vw - 40px);
+		padding: 16px;
+	}
+
+	.ppcert-tooltip__title {
+		font-size: 15px;
+	}
+
+	.ppcert-tooltip__body {
+		font-size: 13px;
+	}
+
+	.ppcert-onboarding-floating {
+		bottom: 16px;
+		right: 16px;
+		left: 16px;
+	}
+
+	.ppcert-onboarding-floating__content {
+		width: 100%;
+	}
+}
+
+/* ==========================================================================
+   Reduced Motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+	.ppcert-onboarding-overlay,
+	.ppcert-onboarding-modal,
+	.ppcert-tooltip,
+	.ppcert-onboarding-floating {
+		animation: none;
+	}
+
+	.ppcert-spotlight__highlight--pulse {
+		animation: none;
+	}
+
+	.ppcert-tooltip {
+		transition: none;
+	}
+}
+
+/* ==========================================================================
+   Certificate Moment (step 6)
+   ========================================================================== */
+
+.ppcert-onboarding-credential {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0 0 20px;
+	padding: 14px 18px;
+	background: #f6ffed;
+	border: 1px solid #b7eb8f;
+	border-radius: 8px;
+}
+
+.ppcert-onboarding-credential__label {
+	font-size: 12px;
+	color: #52c41a;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.ppcert-onboarding-credential__value {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 20px;
+	font-weight: 700;
+	color: #1d2327;
+	letter-spacing: 0.06em;
+}
+
+.ppcert-onboarding-modal__links {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	margin: 0 0 24px;
+	flex-wrap: wrap;
+}

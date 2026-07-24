@@ -12,6 +12,7 @@ import {
 	SendOutlined,
 	UnorderedListOutlined,
 	SettingOutlined,
+	PlayCircleOutlined,
 } from '@ant-design/icons';
 
 /**
@@ -58,6 +59,10 @@ const QuickActions = ( { urls = {}, caps = {} } ) => {
 		},
 	].filter( ( action ) => action.visible && action.url );
 
+	// The setup tour bundle loads alongside the dashboard and exposes
+	// its relaunch global; without it there is nothing to replay.
+	const canReplayTour = typeof window.ppcertLaunchOnboarding === 'function';
+
 	return (
 		<div className="ppcert-dashboard-card">
 			<h3 className="ppcert-dashboard-card-title">
@@ -76,6 +81,20 @@ const QuickActions = ( { urls = {}, caps = {} } ) => {
 						{ action.label }
 					</Button>
 				) ) }
+				{ canReplayTour && (
+					<Button
+						type="default"
+						icon={ <PlayCircleOutlined /> }
+						onClick={ () => window.ppcertLaunchOnboarding() }
+						block
+						className="ppcert-quick-action-button"
+					>
+						{ __(
+							'Watch Onboarding Tour',
+							'pressprimer-certificate'
+						) }
+					</Button>
+				) }
 			</div>
 		</div>
 	);

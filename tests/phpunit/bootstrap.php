@@ -1186,6 +1186,132 @@ if ( ! function_exists( 'rest_url' ) ) {
 	}
 }
 
+if ( ! function_exists( 'admin_url' ) ) {
+	/**
+	 * Stub: Admin URL builder.
+	 *
+	 * @param string $path Path relative to wp-admin.
+	 * @return string
+	 */
+	function admin_url( $path = '' ) {
+		return 'https://test.example/wp-admin/' . ltrim( $path, '/' );
+	}
+}
+
+if ( ! function_exists( 'update_user_meta' ) ) {
+	/**
+	 * Stub: Write user meta into the test registry.
+	 *
+	 * @param int    $user_id User id.
+	 * @param string $key     Meta key.
+	 * @param mixed  $value   Meta value.
+	 * @return bool
+	 */
+	function update_user_meta( $user_id, $key, $value ) {
+		$GLOBALS['ppcert_test_user_meta'][ (int) $user_id ][ $key ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_user_meta' ) ) {
+	/**
+	 * Stub: Delete user meta from the test registry.
+	 *
+	 * @param int    $user_id User id.
+	 * @param string $key     Meta key.
+	 * @return bool
+	 */
+	function delete_user_meta( $user_id, $key ) {
+		unset( $GLOBALS['ppcert_test_user_meta'][ (int) $user_id ][ $key ] );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_create_nonce' ) ) {
+	/**
+	 * Stub: Deterministic nonce.
+	 *
+	 * @param string $action Nonce action.
+	 * @return string
+	 */
+	function wp_create_nonce( $action = -1 ) {
+		return 'nonce-' . $action;
+	}
+}
+
+if ( ! function_exists( 'user_can' ) ) {
+	/**
+	 * Stub: Per-user capability check.
+	 *
+	 * Mirrors the current_user_can() stub - tests grant capabilities
+	 * via $GLOBALS['ppcert_test_user_caps'] (user id is ignored).
+	 *
+	 * @param int    $user_id    User id.
+	 * @param string $capability Capability name.
+	 * @return bool
+	 */
+	function user_can( $user_id, $capability ) {
+		return current_user_can( $capability );
+	}
+}
+
+if ( ! function_exists( 'is_user_logged_in' ) ) {
+	/**
+	 * Stub: Logged-in check from the current-user global.
+	 *
+	 * @return bool
+	 */
+	function is_user_logged_in() {
+		return get_current_user_id() > 0;
+	}
+}
+
+if ( ! function_exists( 'esc_url_raw' ) ) {
+	/**
+	 * Stub: Raw URL sanitizer (pass-through for tests).
+	 *
+	 * @param string $url URL.
+	 * @return string
+	 */
+	function esc_url_raw( $url ) {
+		return (string) $url;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_post' ) ) {
+	/**
+	 * Stub: Record outbound POSTs; no network I/O ever happens.
+	 *
+	 * Tests read $GLOBALS['ppcert_test_remote_posts'].
+	 *
+	 * @param string $url  Target URL.
+	 * @param array  $args Request args.
+	 * @return array Fake response.
+	 */
+	function wp_remote_post( $url, $args = [] ) {
+		$GLOBALS['ppcert_test_remote_posts'][] = [
+			'url'  => $url,
+			'args' => $args,
+		];
+
+		return [ 'response' => [ 'code' => 200 ] ];
+	}
+}
+
+if ( ! function_exists( 'wp_nonce_url' ) ) {
+	/**
+	 * Stub: Append a nonce query arg.
+	 *
+	 * @param string $actionurl Base URL.
+	 * @param string $action    Nonce action.
+	 * @return string
+	 */
+	function wp_nonce_url( $actionurl, $action = -1 ) {
+		$separator = false === strpos( $actionurl, '?' ) ? '?' : '&';
+		return $actionurl . $separator . '_wpnonce=' . wp_create_nonce( $action );
+	}
+}
+
 if ( ! function_exists( 'add_query_arg' ) ) {
 	/**
 	 * Stub: Append one query arg; the two-arg form uses a fixed

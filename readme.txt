@@ -30,7 +30,19 @@ Certificates, templates, and issuance records are independent of any one LMS. Sw
 
 = Privacy =
 
-This plugin makes no external service calls. PDF and QR code generation happen locally on your server. All plugin data stays in your WordPress database and is preserved on uninstall unless you explicitly opt in to data removal.
+PDF and QR code generation happen locally on your server. All plugin data stays in your WordPress database and is preserved on uninstall unless you explicitly opt in to data removal. No certificate or recipient data is ever transmitted to external servers. The single exception to "nothing leaves your site" is the optional email-course opt-in described under External Services — it sends only an email address that an administrator explicitly typed in and submitted.
+
+== External Services ==
+
+This plugin offers an optional free email course for administrators. When — and only when — a user types their email address into the opt-in form and clicks the subscribe button, the plugin connects to pressprimer.com to register the subscription.
+
+* **When:** Only on an explicit opt-in submission. No request is ever made automatically — no telemetry, no activation pings, no environment data.
+* **What data:** The typed email address and a tag naming which screen the form was on. Nothing else.
+* **Unsubscribing:** Every email includes an unsubscribe link, honored immediately.
+* **Terms of Service:** https://pressprimer.com/terms/
+* **Privacy Policy:** https://pressprimer.com/privacy/
+
+Dismissing the offer is remembered permanently and is stored only on your own site.
 
 == Installation ==
 

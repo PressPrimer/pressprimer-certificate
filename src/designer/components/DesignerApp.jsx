@@ -124,11 +124,22 @@ export default function DesignerApp( { boot } ) {
 
 				return template;
 			} )
-			.then( () => {
+			.then( ( template ) => {
 				message.success(
 					'published' === extra.status
 						? __( 'Template published.', 'pressprimer-certificate' )
 						: __( 'Template saved.', 'pressprimer-certificate' )
+				);
+
+				// Bridge for other bundles (the setup tour's publish
+				// stop advances on a published save).
+				window.dispatchEvent(
+					new CustomEvent( 'ppcert:template-saved', {
+						detail: {
+							id: template.id,
+							status: template.status,
+						},
+					} )
 				);
 			} )
 			.catch( ( error ) => {
@@ -337,6 +348,17 @@ export default function DesignerApp( { boot } ) {
 				'Template created - happy designing!',
 				'pressprimer-certificate'
 			)
+		);
+
+		// Bridge for other bundles (the setup tour's pick-design stop
+		// advances when the draft exists).
+		window.dispatchEvent(
+			new CustomEvent( 'ppcert:template-created', {
+				detail: {
+					id: template.id,
+					status: template.status || 'draft',
+				},
+			} )
 		);
 	};
 

@@ -13,6 +13,12 @@ module.exports = {
 		designer: path.resolve( process.cwd(), 'src', 'designer', 'index.js' ),
 		settings: path.resolve( process.cwd(), 'src', 'settings', 'index.js' ),
 		issue: path.resolve( process.cwd(), 'src', 'issue', 'index.js' ),
+		onboarding: path.resolve(
+			process.cwd(),
+			'src',
+			'onboarding',
+			'index.js'
+		),
 		// Blocks are keyed 'blocks/<name>/index' so they emit into build/blocks/<name>/.
 		'blocks/verify/index': path.resolve(
 			process.cwd(),

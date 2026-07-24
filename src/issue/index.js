@@ -86,6 +86,16 @@ function IssueApp() {
 					)
 				);
 
+				// Bridge for other bundles (the setup tour's issue stop
+				// advances on a successful issue).
+				window.dispatchEvent(
+					new CustomEvent( 'ppcert:certificate-issued', {
+						detail: {
+							credential_id: certificate.credential_id,
+						},
+					} )
+				);
+
 				// The PHP list table renders server-side: reload to show
 				// the new row (preserving any active filters).
 				window.setTimeout( () => window.location.reload(), 800 );

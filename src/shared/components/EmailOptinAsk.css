@@ -1,0 +1,90 @@
+/**
+ * EmailOptinAsk styles
+ *
+ * Shared by the tour finish stop, the dashboard card, and the 5.3
+ * surfaces. Alignment is inherited from the host (centered in the
+ * tour modal, left in the dashboard card).
+ *
+ * @package PressPrimer_Certificate
+ * @since 1.0.0
+ */
+
+.ppcert-email-ask__headline {
+	font-size: 17px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0 0 8px;
+}
+
+.ppcert-email-ask__body {
+	font-size: 13px;
+	line-height: 1.6;
+	color: #50575e;
+	max-width: 44em;
+	margin: 0 auto 16px;
+	text-wrap: pretty;
+}
+
+.ppcert-email-ask__field-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+}
+
+.ppcert-email-ask__field-row .ant-input {
+	flex: 0 1 300px;
+}
+
+.ppcert-email-ask__field-row .ant-btn-primary {
+	flex: 0 0 auto;
+	background: #14b8a6;
+	border-color: #14b8a6;
+}
+
+.ppcert-email-ask__field-row .ant-btn-primary:hover {
+	background: #0d9488 !important;
+	border-color: #0d9488 !important;
+}
+
+.ppcert-email-ask__error {
+	font-size: 12px;
+	color: #ff4d4f;
+	margin: 0 0 10px;
+}
+
+.ppcert-email-ask__disclosure {
+	font-size: 12px;
+	line-height: 1.5;
+	color: #8c8c8c;
+	margin: 0;
+}
+
+.ppcert-email-ask__disclosure a {
+	color: #14b8a6;
+	text-decoration: none;
+}
+
+.ppcert-email-ask__disclosure a:hover {
+	text-decoration: underline;
+}
+
+/* Post-opt-in confirmation */
+.ppcert-email-ask--done {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+}
+
+.ppcert-email-ask__done-icon {
+	color: #52c41a;
+	font-size: 20px;
+}
+
+.ppcert-email-ask__done-text {
+	font-size: 14px;
+	line-height: 1.5;
+	color: #50575e;
+	margin: 0;
+}
