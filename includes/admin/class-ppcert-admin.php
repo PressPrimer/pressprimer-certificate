@@ -22,10 +22,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * active (CONVENTIONS.md Terminology exception, 2026-07-21). Page titles
  * and in-page copy keep the PPCert/PressPrimer terminology.
  *
- * The Templates page routes between the WP_List_Table (list view) and
- * the React designer mount (?action=new opens the gallery; ?action=edit
- * with a template loads it), per the ecosystem list + React-detail
- * pattern.
+ * The top-level slug is the Dashboard (sibling pattern: the Dashboard
+ * submenu replaces the main link); the Templates page lives on its own
+ * ppcert-templates slug and routes between the WP_List_Table (list
+ * view) and the React designer mount (?action=new opens the gallery;
+ * ?action=edit with a template loads it), per the ecosystem list +
+ * React-detail pattern.
  *
  * @since 1.0.0
  */
@@ -40,11 +42,29 @@ class PressPrimer_Certificate_Admin {
 	private $templates_hook = '';
 
 	/**
+	 * The Dashboard page hook suffix (asset targeting)
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	private $dashboard_hook = '';
+
+	/**
+	 * The dashboard screen (renders + enqueues on the top-level slug)
+	 *
+	 * @since 1.0.0
+	 * @var PressPrimer_Certificate_Admin_Dashboard
+	 */
+	private $dashboard;
+
+	/**
 	 * Initialize
 	 *
 	 * @since 1.0.0
 	 */
 	public function init() {
+		$this->dashboard = new PressPrimer_Certificate_Admin_Dashboard();
+
 		add_action( 'admin_menu', [ $this, 'register_menus' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_init', [ $this, 'handle_trash_action' ] );
@@ -66,7 +86,7 @@ class PressPrimer_Certificate_Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
 		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
 
-		if ( 'pressprimer-certificate' !== $page || 'duplicate' !== $action ) {
+		if ( 'ppcert-templates' !== $page || 'duplicate' !== $action ) {
 			return;
 		}
 
@@ -85,7 +105,7 @@ class PressPrimer_Certificate_Admin {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page'              => 'pressprimer-certificate',
+					'page'              => 'ppcert-templates',
 					'ppcert_duplicated' => $duplicated,
 				],
 				admin_url( 'admin.php' )
@@ -108,7 +128,7 @@ class PressPrimer_Certificate_Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
 		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
 
-		if ( 'pressprimer-certificate' !== $page || 'trash' !== $action ) {
+		if ( 'ppcert-templates' !== $page || 'trash' !== $action ) {
 			return;
 		}
 
@@ -127,7 +147,7 @@ class PressPrimer_Certificate_Admin {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page'           => 'pressprimer-certificate',
+					'page'           => 'ppcert-templates',
 					'ppcert_trashed' => $trashed,
 				],
 				admin_url( 'admin.php' )
@@ -154,14 +174,27 @@ class PressPrimer_Certificate_Admin {
 		 */
 		$menu_label = apply_filters( 'ppcert_plugin_name', __( 'Certificates', 'pressprimer-certificate' ) );
 
+		// The top-level slug renders the Dashboard; viewing certificates
+		// is the broadest gate (Templates/Settings submenus keep their
+		// own stricter capabilities).
 		add_menu_page(
 			$menu_label,
 			$menu_label,
-			PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES,
+			PressPrimer_Certificate_Capabilities::CAP_VIEW_CERTIFICATES,
 			'pressprimer-certificate',
-			[ $this, 'render_templates_page' ],
+			[ $this->dashboard, 'render_page' ],
 			$this->get_menu_icon(),
 			32 // Beneath PressPrimer Quiz (30) and Assignments (31).
+		);
+
+		// First submenu replaces the top-level link (sibling pattern).
+		$this->dashboard_hook = add_submenu_page(
+			'pressprimer-certificate',
+			__( 'Dashboard', 'pressprimer-certificate' ),
+			__( 'Dashboard', 'pressprimer-certificate' ),
+			PressPrimer_Certificate_Capabilities::CAP_VIEW_CERTIFICATES,
+			'pressprimer-certificate',
+			[ $this->dashboard, 'render_page' ]
 		);
 
 		$this->templates_hook = add_submenu_page(
@@ -169,7 +202,7 @@ class PressPrimer_Certificate_Admin {
 			__( 'Certificate Templates', 'pressprimer-certificate' ),
 			__( 'Templates', 'pressprimer-certificate' ),
 			PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES,
-			'pressprimer-certificate',
+			'ppcert-templates',
 			[ $this, 'render_templates_page' ]
 		);
 
@@ -201,7 +234,7 @@ class PressPrimer_Certificate_Admin {
 
 		$add_new_url = add_query_arg(
 			[
-				'page'   => 'pressprimer-certificate',
+				'page'   => 'ppcert-templates',
 				'action' => 'new',
 			],
 			admin_url( 'admin.php' )
@@ -238,7 +271,7 @@ class PressPrimer_Certificate_Admin {
 		echo '<hr class="wp-header-end" />';
 
 		echo '<form method="get">';
-		echo '<input type="hidden" name="page" value="pressprimer-certificate" />';
+		echo '<input type="hidden" name="page" value="ppcert-templates" />';
 		$list_table->search_box( __( 'Search templates', 'pressprimer-certificate' ), 'ppcert-templates' );
 		$list_table->display();
 		echo '</form>';
@@ -254,7 +287,9 @@ class PressPrimer_Certificate_Admin {
 	 * @param string $hook_suffix Current admin page hook.
 	 */
 	public function enqueue_assets( $hook_suffix ) {
-		if ( $hook_suffix !== $this->templates_hook ) {
+		$is_dashboard = '' !== $this->dashboard_hook && $hook_suffix === $this->dashboard_hook;
+
+		if ( ! $is_dashboard && $hook_suffix !== $this->templates_hook ) {
 			return;
 		}
 
@@ -267,6 +302,11 @@ class PressPrimer_Certificate_Admin {
 			[],
 			PPCERT_VERSION
 		);
+
+		if ( $is_dashboard ) {
+			$this->dashboard->enqueue();
+			return;
+		}
 
 		if ( '' === $this->current_designer_action() ) {
 			return;
@@ -342,7 +382,7 @@ class PressPrimer_Certificate_Admin {
 			'ppcert_designer_data',
 			[
 				'template_id'   => $template_id,
-				'list_url'      => add_query_arg( 'page', 'pressprimer-certificate', admin_url( 'admin.php' ) ),
+				'list_url'      => add_query_arg( 'page', 'ppcert-templates', admin_url( 'admin.php' ) ),
 				'fonts'         => $fonts,
 				'element_types' => PressPrimer_Certificate_Element_Types::get_types(),
 				// Appearance brand colors feed the ColorField presets.

@@ -24,7 +24,14 @@ message.config( { top: 50, duration: 5, maxCount: 3 } );
  * @return {JSX.Element} App.
  */
 function IssueApp() {
-	const [ open, setOpen ] = useState( false );
+	// The dashboard's "Issue a Certificate" quick action deep-links here
+	// with ?ppcert_issue=1 to open the modal immediately.
+	const [ open, setOpen ] = useState(
+		() =>
+			new URLSearchParams( window.location.search ).get(
+				'ppcert_issue'
+			) === '1'
+	);
 	const [ templateId, setTemplateId ] = useState( null );
 	const [ recipient, setRecipient ] = useState( null );
 	const [ earnedDate, setEarnedDate ] = useState( () => dayjs() );

@@ -207,7 +207,7 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 	public function column_title( $item ) {
 		$edit_url = add_query_arg(
 			[
-				'page'        => 'pressprimer-certificate',
+				'page'        => 'ppcert-templates',
 				'action'      => 'edit',
 				'template_id' => (int) $item->id,
 			],
@@ -221,7 +221,7 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 		$duplicate_url = wp_nonce_url(
 			add_query_arg(
 				[
-					'page'        => 'pressprimer-certificate',
+					'page'        => 'ppcert-templates',
 					'action'      => 'duplicate',
 					'template_id' => (int) $item->id,
 				],
@@ -233,7 +233,7 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 		$trash_url = wp_nonce_url(
 			add_query_arg(
 				[
-					'page'        => 'pressprimer-certificate',
+					'page'        => 'ppcert-templates',
 					'action'      => 'trash',
 					'template_id' => (int) $item->id,
 				],

@@ -341,6 +341,7 @@ class PressPrimer_Certificate_Plugin {
 			'PressPrimer_Certificate_REST_Triggers_Controller',
 			'PressPrimer_Certificate_REST_Verification_Controller',
 			'PressPrimer_Certificate_REST_Settings_Controller',
+			'PressPrimer_Certificate_REST_Dashboard_Controller',
 		];
 
 		foreach ( $controllers as $controller_class ) {

@@ -486,6 +486,121 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * Count every certificate ever issued
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int
+	 */
+	public static function count_all() {
+		global $wpdb;
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', self::table() )
+		);
+	}
+
+	/**
+	 * Count certificates issued on or after a UTC cutoff
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $cutoff UTC MySQL datetime.
+	 * @return int
+	 */
+	public static function count_issued_since( $cutoff ) {
+		global $wpdb;
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM %i WHERE issued_at >= %s',
+				self::table(),
+				$cutoff
+			)
+		);
+	}
+
+	/**
+	 * Count events of one type recorded on or after a UTC cutoff
+	 *
+	 * Feeds the dashboard's verification counter from wp_ppcert_events.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $event_type Event type slug (e.g. 'verified').
+	 * @param string $cutoff     UTC MySQL datetime.
+	 * @return int
+	 */
+	public static function count_events_since( $event_type, $cutoff ) {
+		global $wpdb;
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM %i WHERE event_type = %s AND created_at >= %s',
+				self::events_table(),
+				sanitize_key( $event_type ),
+				$cutoff
+			)
+		);
+	}
+
+	/**
+	 * Daily issuance counts on or after a UTC cutoff
+	 *
+	 * Grouped by the UTC calendar day of issued_at; days with no
+	 * certificates are absent (the dashboard controller zero-fills).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $cutoff UTC MySQL datetime.
+	 * @return array Map of 'Y-m-d' => count.
+	 */
+	public static function get_daily_issue_counts( $cutoff ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT DATE( issued_at ) AS day, COUNT(*) AS total FROM %i WHERE issued_at >= %s GROUP BY DATE( issued_at ) ORDER BY day ASC',
+				self::table(),
+				$cutoff
+			)
+		);
+
+		$counts = [];
+
+		foreach ( (array) $rows as $row ) {
+			$counts[ (string) $row->day ] = (int) $row->total;
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * Templates ranked by certificates issued
+	 *
+	 * All-time counts; a NULL title marks a deleted template (the
+	 * dashboard labels it). Ties break on template id so the order is
+	 * deterministic.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $limit Max rows.
+	 * @return object[] Rows with template_id, title, total.
+	 */
+	public static function get_top_templates( $limit ) {
+		global $wpdb;
+
+		return (array) $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT c.template_id, t.title, COUNT(*) AS total FROM %i c LEFT JOIN %i t ON t.id = c.template_id GROUP BY c.template_id, t.title ORDER BY total DESC, c.template_id ASC LIMIT %d',
+				self::table(),
+				PressPrimer_Certificate_Template::table(),
+				absint( $limit )
+			)
+		);
+	}
+
+	/**
 	 * Hydrate a raw row: decode the JSON snapshot columns
 	 *
 	 * Adds `layout_snapshot` and `merge_data` array properties (null when

@@ -781,6 +781,108 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Dashboard: count events of one type since a cutoff.
+		if ( false !== strpos( $query, 'WHERE event_type = %s AND created_at >= %s' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return isset( $row['event_type'] )
+						&& (string) $row['event_type'] === (string) $args[1]
+						&& isset( $row['created_at'] ) && (string) $row['created_at'] >= (string) $args[2];
+				}
+			);
+
+			return [ [ 'count' => count( $matches ) ] ];
+		}
+
+		// Dashboard: daily issuance counts since a cutoff.
+		if ( false !== strpos( $query, 'SELECT DATE( issued_at ) AS day' ) ) {
+			$counts = [];
+
+			foreach ( $rows as $row ) {
+				if ( ! isset( $row['issued_at'] ) || (string) $row['issued_at'] < (string) $args[1] ) {
+					continue;
+				}
+
+				$day = substr( (string) $row['issued_at'], 0, 10 );
+
+				$counts[ $day ] = ( isset( $counts[ $day ] ) ? $counts[ $day ] : 0 ) + 1;
+			}
+
+			ksort( $counts );
+
+			$result = [];
+
+			foreach ( $counts as $day => $total ) {
+				$result[] = [
+					'day'   => $day,
+					'total' => $total,
+				];
+			}
+
+			return $result;
+		}
+
+		// Dashboard: templates ranked by certificates issued.
+		if ( false !== strpos( $query, 'GROUP BY c.template_id, t.title' ) ) {
+			$templates = $this->rows( (string) $args[1] );
+			$totals    = [];
+
+			foreach ( $rows as $row ) {
+				$template_id = (int) $row['template_id'];
+
+				$totals[ $template_id ] = ( isset( $totals[ $template_id ] ) ? $totals[ $template_id ] : 0 ) + 1;
+			}
+
+			$result = [];
+
+			foreach ( $totals as $template_id => $total ) {
+				$title = null;
+
+				foreach ( $templates as $template ) {
+					if ( (int) $template['id'] === $template_id ) {
+						$title = isset( $template['title'] ) ? $template['title'] : null;
+						break;
+					}
+				}
+
+				$result[] = [
+					'template_id' => $template_id,
+					'title'       => $title,
+					'total'       => $total,
+				];
+			}
+
+			usort(
+				$result,
+				static function ( $a, $b ) {
+					$by_total = $b['total'] <=> $a['total'];
+
+					return 0 !== $by_total ? $by_total : ( $a['template_id'] <=> $b['template_id'] );
+				}
+			);
+
+			return array_slice( $result, 0, (int) $args[2] );
+		}
+
+		// Dashboard: certificates issued since a cutoff.
+		if ( false !== strpos( $query, 'SELECT COUNT(*) FROM %i WHERE issued_at >= %s' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return isset( $row['issued_at'] ) && (string) $row['issued_at'] >= (string) $args[1];
+				}
+			);
+
+			return [ [ 'count' => count( $matches ) ] ];
+		}
+
+		// Dashboard: total certificates (exact match - the bare COUNT
+		// must never swallow more specific COUNT shapes).
+		if ( 'SELECT COUNT(*) FROM %i' === $query ) {
+			return [ [ 'count' => count( $rows ) ] ];
+		}
+
 		// Merge-fields picker: distinct user meta keys.
 		if ( false !== strpos( $query, 'SELECT DISTINCT meta_key FROM %i' ) ) {
 			$needle = $this->like_to_substring( (string) $args[1] );

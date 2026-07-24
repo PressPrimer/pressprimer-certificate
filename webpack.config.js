@@ -4,6 +4,12 @@ const path = require( 'path' );
 module.exports = {
 	...defaultConfig,
 	entry: {
+		dashboard: path.resolve(
+			process.cwd(),
+			'src',
+			'dashboard',
+			'index.js'
+		),
 		designer: path.resolve( process.cwd(), 'src', 'designer', 'index.js' ),
 		settings: path.resolve( process.cwd(), 'src', 'settings', 'index.js' ),
 		issue: path.resolve( process.cwd(), 'src', 'issue', 'index.js' ),
