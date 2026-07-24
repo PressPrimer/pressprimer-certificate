@@ -167,13 +167,19 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 		$filtered['status'] = $status;
 
 		// Privacy-minimal verified event (no IP, no user agent; actor
-		// only when a logged-in user performed the lookup).
-		$actor = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
-		PressPrimer_Certificate_Certificate::record_event(
-			(int) $certificate->id,
-			'verified',
-			$actor > 0 ? $actor : null
-		);
+		// only when a logged-in user performed the lookup). Site admins
+		// never record: browsers preload the verify links that admin
+		// screens list, writing phantom verifications while an admin
+		// merely browses (observed 2026-07-24). Teacher and public
+		// checks always count.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$actor = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
+			PressPrimer_Certificate_Certificate::record_event(
+				(int) $certificate->id,
+				'verified',
+				$actor > 0 ? $actor : null
+			);
+		}
 
 		return $filtered;
 	}

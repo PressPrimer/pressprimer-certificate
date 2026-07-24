@@ -63,7 +63,10 @@ class Test_Verification_REST extends TestCase {
 
 		$GLOBALS['ppcert_test_current_user'] = 0;
 		$GLOBALS['ppcert_test_users']        = [];
-		$GLOBALS['ppcert_test_bloginfo']     = [ 'name' => 'Sunrise Training Academy' ];
+		// Public visitors hold no capabilities - the realistic baseline
+		// for this public, unauthenticated endpoint.
+		$GLOBALS['ppcert_test_user_caps'] = [];
+		$GLOBALS['ppcert_test_bloginfo']  = [ 'name' => 'Sunrise Training Academy' ];
 		$_SERVER['REMOTE_ADDR']              = '203.0.113.10';
 
 		$this->credential = PressPrimer_Certificate_Credential_ID_Service::generate();
@@ -259,7 +262,7 @@ class Test_Verification_REST extends TestCase {
 		$this->assertNull( $events[0]['actor_id'], 'Anonymous lookups store a null actor' );
 		$this->assertNull( $events[0]['meta_json'], 'No meta - and never an IP' );
 
-		// Logged-in verifier records the actor.
+		// Logged-in verifier (e.g. a teacher) records the actor.
 		$GLOBALS['ppcert_test_current_user'] = 5;
 		$this->call( $this->credential );
 		$events = $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() );
@@ -268,6 +271,34 @@ class Test_Verification_REST extends TestCase {
 		// Not-found and malformed lookups write nothing.
 		$this->call( 'ZZZZZZZZZZZZ' );
 		$this->assertCount( 2, $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() ) );
+	}
+
+	/**
+	 * Site admins never record verified events - browsers preload the
+	 * verify links admin screens list, writing phantom verifications
+	 * while an admin merely browses. The verification result itself is
+	 * unaffected.
+	 *
+	 * @return void
+	 */
+	public function test_admin_lookups_record_no_event() {
+		$GLOBALS['ppcert_test_current_user'] = 1;
+		$GLOBALS['ppcert_test_user_caps']    = [ 'manage_options' ];
+
+		$result = $this->call( $this->credential )->get_data();
+
+		$this->assertTrue( $result['valid'] );
+		$this->assertCount( 0, $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() ) );
+
+		// A teacher-level user (no manage_options) still records.
+		$GLOBALS['ppcert_test_current_user'] = 5;
+		$GLOBALS['ppcert_test_user_caps']    = [ 'ppcert_view_certificates' ];
+
+		$this->call( $this->credential );
+
+		$events = $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() );
+		$this->assertCount( 1, $events );
+		$this->assertSame( 5, (int) $events[0]['actor_id'] );
 	}
 
 	/**
