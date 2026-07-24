@@ -41,6 +41,7 @@ import {
 	InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useDesignerStore } from '../hooks/useDesignerStore';
+import { ADMIN_DATE_FORMAT } from '../../shared/date-formats';
 import {
 	getTriggerTypes,
 	getTriggerSources,
@@ -362,6 +363,7 @@ function ValiditySection( { settings, onChange } ) {
 									: null
 							}
 							data-ppcert-validity-date
+							format={ ADMIN_DATE_FORMAT }
 							allowClear={ false }
 							getPopupContainer={ ( node ) => node.parentElement }
 							disabledDate={ ( current ) =>

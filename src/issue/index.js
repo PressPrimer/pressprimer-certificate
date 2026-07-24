@@ -13,6 +13,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { DatePicker, Modal, Select, message } from 'antd';
 import dayjs from 'dayjs';
+import { ADMIN_DATE_FORMAT } from '../shared/date-formats';
 
 // Ecosystem convention: toasts clear the WP admin bar.
 message.config( { top: 50, duration: 5, maxCount: 3 } );
@@ -238,6 +239,7 @@ function IssueApp() {
 						id="ppcert-issue-earned"
 						value={ earnedDate }
 						data-ppcert-issue-earned
+						format={ ADMIN_DATE_FORMAT }
 						allowClear={ false }
 						getPopupContainer={ ( node ) => node.parentElement }
 						disabledDate={ ( current ) =>
@@ -262,6 +264,7 @@ function IssueApp() {
 						id="ppcert-issue-expires"
 						value={ expiresDate }
 						data-ppcert-issue-expires
+						format={ ADMIN_DATE_FORMAT }
 						allowClear
 						placeholder={ __(
 							"Template's validity, or never",
