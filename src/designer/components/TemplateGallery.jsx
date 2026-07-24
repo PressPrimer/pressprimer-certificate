@@ -150,6 +150,10 @@ export default function TemplateGallery( { starters, onCreate } ) {
 				</Text>
 				<Segmented
 					value={ pageSize }
+					aria-label={ __(
+						'Certificate size',
+						'pressprimer-certificate'
+					) }
 					options={ [
 						{
 							label: __( 'Letter', 'pressprimer-certificate' ),

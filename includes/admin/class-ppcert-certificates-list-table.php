@@ -134,7 +134,9 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 
 		echo '<div class="alignleft actions">';
 
-		echo '<select name="template_id">';
+		echo '<label class="screen-reader-text" for="ppcert-filter-template">'
+			. esc_html__( 'Filter by template', 'pressprimer-certificate' ) . '</label>';
+		echo '<select name="template_id" id="ppcert-filter-template">';
 		echo '<option value="">' . esc_html__( 'All templates', 'pressprimer-certificate' ) . '</option>';
 
 		foreach ( PressPrimer_Certificate_Template::get_all() as $template ) {
@@ -154,7 +156,9 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 			'expired' => __( 'Expired', 'pressprimer-certificate' ),
 		];
 
-		echo '<select name="status">';
+		echo '<label class="screen-reader-text" for="ppcert-filter-cert-status">'
+			. esc_html__( 'Filter by status', 'pressprimer-certificate' ) . '</label>';
+		echo '<select name="status" id="ppcert-filter-cert-status">';
 		echo '<option value="">' . esc_html__( 'All statuses', 'pressprimer-certificate' ) . '</option>';
 
 		foreach ( $statuses as $value => $label ) {
@@ -168,7 +172,9 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 
 		echo '</select>';
 
-		echo '<select name="source_type">';
+		echo '<label class="screen-reader-text" for="ppcert-filter-source">'
+			. esc_html__( 'Filter by source', 'pressprimer-certificate' ) . '</label>';
+		echo '<select name="source_type" id="ppcert-filter-source">';
 		echo '<option value="">' . esc_html__( 'All sources', 'pressprimer-certificate' ) . '</option>';
 
 		foreach ( $this->source_options( $current_source ) as $value => $label ) {

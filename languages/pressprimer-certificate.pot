@@ -1,0 +1,2469 @@
+# Copyright (C) 2026 PressPrimer
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: PressPrimer Certificate 1.0.0-dev\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-certificate\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-07-24T14:22:12+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: pressprimer-certificate\n"
+
+#. Plugin Name of the plugin
+#: pressprimer-certificate.php
+#: includes/admin/class-ppcert-admin-dashboard.php:98
+#: includes/admin/class-ppcert-onboarding.php:337
+#: includes/blocks/class-ppcert-blocks.php:59
+#: src/onboarding/components/Tooltip.jsx:176
+msgid "PressPrimer Certificate"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: pressprimer-certificate.php
+msgid "https://pressprimer.com/certificate"
+msgstr ""
+
+#. Description of the plugin
+#: pressprimer-certificate.php
+msgid "Design, issue, and verify certificates on your own site. Drag-and-drop designer, credential IDs, QR verification, and LMS-agnostic issuance."
+msgstr ""
+
+#. Author of the plugin
+#: pressprimer-certificate.php
+msgid "PressPrimer"
+msgstr ""
+
+#. Author URI of the plugin
+#: pressprimer-certificate.php
+msgid "https://pressprimer.com"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:54
+#: includes/admin/class-ppcert-admin-certificates.php:55
+#: includes/admin/class-ppcert-admin-certificates.php:72
+#: includes/admin/class-ppcert-admin.php:175
+#: includes/utilities/class-ppcert-privacy.php:152
+#: src/settings/components/StatusTab.jsx:530
+msgid "Certificates"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:84
+msgid "Search certificates"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:180
+msgid "You are not allowed to download certificates."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:186
+#: includes/api/class-ppcert-rest-certificates-controller.php:196
+#: includes/api/class-ppcert-rest-certificates-controller.php:321
+#: includes/models/class-ppcert-certificate.php:292
+msgid "Certificate not found."
+msgstr ""
+
+#. translators: %s: plugin name
+#: includes/admin/class-ppcert-admin-dashboard.php:129
+#, php-format
+msgid "Welcome to %s! Here's an overview of your certificates."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-settings.php:55
+#: includes/admin/class-ppcert-admin-settings.php:56
+msgid "Settings"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-settings.php:158
+#: src/settings/components/SettingsPage.jsx:52
+msgid "General"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-settings.php:162
+#: src/settings/components/SettingsPage.jsx:59
+msgid "Appearance"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-settings.php:166
+#: includes/services/class-ppcert-merge-field-registry.php:402
+#: src/settings/components/SettingsPage.jsx:66
+msgid "Email"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-settings.php:170
+#: includes/admin/class-ppcert-admin-user-profile.php:122
+#: includes/admin/class-ppcert-certificates-list-table.php:67
+#: includes/admin/class-ppcert-templates-list-table.php:83
+#: includes/utilities/class-ppcert-privacy.php:121
+#: src/dashboard/components/RecentCertificates.jsx:132
+#: src/settings/components/SettingsPage.jsx:73
+#: src/settings/components/StatusTab.jsx:682
+msgid "Status"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-settings.php:174
+#: src/settings/components/SettingsPage.jsx:80
+msgid "Advanced"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-settings.php:452
+msgid "You are not allowed to repair tables."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-settings.php:462
+msgid "Database tables repaired."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:112
+#: includes/admin/class-ppcert-certificates-list-table.php:68
+#: includes/admin/class-ppcert-certificates-list-table.php:152
+#: includes/admin/class-ppcert-certificates-list-table.php:275
+#: includes/frontend/class-ppcert-verification-page.php:97
+#: includes/frontend/class-ppcert-verification-page.php:186
+#: includes/frontend/class-ppcert-view-page.php:210
+#: includes/utilities/class-ppcert-privacy.php:125
+#: src/dashboard/components/RecentCertificates.jsx:62
+msgid "Issued"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:113
+#: includes/admin/class-ppcert-certificates-list-table.php:153
+#: includes/admin/class-ppcert-certificates-list-table.php:276
+#: src/dashboard/components/RecentCertificates.jsx:70
+msgid "Revoked"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:114
+#: includes/admin/class-ppcert-certificates-list-table.php:154
+#: includes/admin/class-ppcert-certificates-list-table.php:277
+#: src/dashboard/components/RecentCertificates.jsx:66
+msgid "Expired"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:117
+#: includes/utilities/class-ppcert-privacy.php:59
+#: includes/utilities/class-ppcert-privacy.php:76
+msgid "PressPrimer Certificates"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:120
+#: includes/admin/class-ppcert-certificates-list-table.php:63
+#: includes/frontend/class-ppcert-verification-page.php:138
+#: includes/frontend/class-ppcert-view-page.php:209
+#: includes/services/class-ppcert-merge-field-registry.php:416
+#: includes/utilities/class-ppcert-privacy.php:109
+#: src/dashboard/components/RecentCertificates.jsx:112
+msgid "Credential ID"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:121
+#: includes/frontend/class-ppcert-verification-page.php:95
+#: includes/frontend/class-ppcert-verification-page.php:184
+#: includes/frontend/class-ppcert-view-page.php:208
+#: includes/frontend/class-ppcert-view-page.php:296
+#: includes/services/class-ppcert-merge-field-registry.php:140
+#: includes/services/class-ppcert-pdf-renderer.php:208
+#: includes/utilities/class-ppcert-privacy.php:113
+#: src/dashboard/components/RecentCertificates.jsx:104
+msgid "Certificate"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:123
+#: src/dashboard/components/RecentCertificates.jsx:144
+msgid "Earned"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:124
+msgid "Links"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:133
+#: includes/frontend/class-ppcert-verification-page.php:143
+#: blocks/verify/index.js:81
+msgid "Verify"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:140
+#: includes/admin/class-ppcert-certificates-list-table.php:237
+#: includes/frontend/class-ppcert-view-page.php:231
+msgid "Download PDF"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:145
+#: includes/admin/class-ppcert-certificates-list-table.php:262
+#: includes/api/class-ppcert-rest-certificates-controller.php:441
+#: src/dashboard/components/RecentCertificates.jsx:109
+#: src/dashboard/components/TopTemplates.jsx:74
+msgid "(deleted template)"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:163
+msgid "&laquo; Previous"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-user-profile.php:164
+msgid "Next &raquo;"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:94
+msgid "You are not allowed to duplicate certificate templates."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:136
+msgid "You are not allowed to trash certificate templates."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:193
+#: includes/admin/class-ppcert-admin.php:194
+msgid "Dashboard"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:202
+#: includes/admin/class-ppcert-admin.php:269
+msgid "Certificate Templates"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:203
+#: src/designer/components/DesignerApp.jsx:422
+#: src/settings/components/StatusTab.jsx:517
+msgid "Templates"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:252
+msgid "Template moved to the trash."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:253
+msgid "The template could not be trashed."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:264
+msgid "Template duplicated. The copy is a draft with no trigger - open it to attach one."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:265
+msgid "The template could not be duplicated."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:270
+msgid "Add New"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin.php:275
+msgid "Search templates"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:64
+#: includes/frontend/class-ppcert-verification-page.php:94
+#: includes/frontend/class-ppcert-verification-page.php:183
+#: includes/frontend/class-ppcert-view-page.php:207
+#: includes/services/class-ppcert-merge-field-registry.php:139
+#: src/dashboard/components/RecentCertificates.jsx:91
+#: src/issue/index.js:193
+msgid "Recipient"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:65
+#: src/issue/index.js:169
+msgid "Template"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:66
+#: includes/integrations/abstract-ppcert-lms-adapter.php:177
+#: includes/services/class-ppcert-merge-field-registry.php:142
+#: includes/utilities/class-ppcert-privacy.php:117
+#: src/designer/components/ElementPalette.jsx:248
+#: src/designer/components/TriggerPanel.jsx:504
+#: src/designer/components/TriggerPanel.jsx:731
+msgid "Source"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:138
+msgid "All templates"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:158
+#: includes/admin/class-ppcert-templates-list-table.php:173
+msgid "All statuses"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:172
+msgid "All sources"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:185
+#: includes/admin/class-ppcert-templates-list-table.php:194
+msgid "Filter"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:200
+#: includes/admin/class-ppcert-certificates-list-table.php:266
+msgid "Manual"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:236
+msgid "View"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:257
+#: includes/api/class-ppcert-rest-certificates-controller.php:437
+msgid "(deleted user)"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:304
+msgid "No certificates issued yet. Add an award trigger to a published template, or issue one manually."
+msgstr ""
+
+#: includes/admin/class-ppcert-onboarding.php:453
+#: includes/admin/class-ppcert-onboarding.php:507
+msgid "Permission denied."
+msgstr ""
+
+#: includes/admin/class-ppcert-onboarding.php:491
+msgid "Invalid action type."
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:82
+msgid "Title"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:84
+#: src/designer/components/TriggerPanel.jsx:410
+msgid "Trigger"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:85
+#: src/designer/components/properties/PageSection.jsx:90
+msgid "Page"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:86
+msgid "Last Updated"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:164
+#: includes/admin/class-ppcert-templates-list-table.php:268
+msgid "Draft"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:165
+#: includes/admin/class-ppcert-templates-list-table.php:269
+msgid "Published"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:171
+msgid "Filter by status"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:183
+msgid "Filter by trigger integration"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:185
+msgid "All integrations"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:219
+msgid "(untitled)"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:246
+#: src/designer/components/TriggerPanel.jsx:866
+msgid "Edit"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:247
+msgid "Duplicate"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:248
+msgid "Trash"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:270
+msgid "Archived"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:310
+msgid "No trigger"
+msgstr ""
+
+#. translators: %s: trigger label
+#: includes/admin/class-ppcert-templates-list-table.php:327
+#, php-format
+msgid "%s (inactive)"
+msgstr ""
+
+#: includes/admin/class-ppcert-templates-list-table.php:344
+msgid "No certificate templates found. Click \"Add New\" to start from a template, or adjust the filters above."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-certificates-controller.php:232
+msgid "The earned date must be a valid date."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-certificates-controller.php:242
+msgid "The earned date cannot be in the future."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-certificates-controller.php:263
+msgid "This recipient already has a certificate from this template."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-certificates-controller.php:329
+#: includes/frontend/class-ppcert-verification-page.php:88
+#: includes/frontend/class-ppcert-verification-page.php:169
+#: includes/frontend/class-ppcert-view-page.php:192
+msgid "This certificate has been revoked."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-email-optin-controller.php:102
+msgid "The email opt-in is not available on this site."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-email-optin-controller.php:114
+msgid "Unknown opt-in surface."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-email-optin-controller.php:166
+msgid "Please enter a valid email address."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-merge-fields-controller.php:320
+msgid "That post is not a source for any registered trigger type."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:155
+msgid "Unknown starter template."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:182
+msgid "Untitled Certificate"
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:227
+#: includes/api/class-ppcert-rest-templates-controller.php:256
+#: includes/api/class-ppcert-rest-templates-controller.php:366
+#: includes/api/class-ppcert-rest-triggers-controller.php:251
+#: includes/api/class-ppcert-rest-triggers-controller.php:276
+#: includes/models/class-ppcert-template.php:150
+#: includes/models/class-ppcert-template.php:253
+#: includes/models/class-ppcert-template.php:320
+#: includes/services/class-ppcert-issuance-service.php:101
+msgid "Template not found."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:268
+msgid "This template was changed elsewhere since you opened it."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:284
+msgid "The layout document must be an object."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:311
+msgid "Status must be draft, published, or archived."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:439
+msgid "The uploads directory is not writable."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:451
+#: includes/services/class-ppcert-preview-service.php:153
+msgid "The preview directory could not be created."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:477
+msgid "The preview file could not be stored."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-triggers-controller.php:200
+msgid "Unknown trigger type."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-triggers-controller.php:286
+msgid "The triggers payload must be an array."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-triggers-controller.php:321
+msgid "Certificates support a single award trigger in this version. Duplicate the template to award it another way."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-verification-controller.php:101
+msgid "Too many verification requests. Please wait a minute and try again."
+msgstr ""
+
+#: includes/blocks/class-ppcert-blocks.php:110
+#: blocks/verify/index.js:48
+#: blocks/verify/index.js:91
+msgid "Certificate Verification"
+msgstr ""
+
+#: includes/blocks/class-ppcert-blocks.php:111
+#: blocks/verify/index.js:92
+msgid "A credential ID lookup form visitors use to verify certificates."
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:86
+#: includes/frontend/class-ppcert-verification-page.php:167
+msgid "Valid certificate"
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:87
+#: includes/frontend/class-ppcert-verification-page.php:168
+msgid "Expired certificate"
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:89
+#: includes/frontend/class-ppcert-verification-page.php:170
+msgid "No certificate found for that credential ID."
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:90
+msgid "That credential ID does not look right - please check for typos."
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:91
+msgid "Checking…"
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:92
+#: includes/frontend/class-ppcert-verification-page.php:122
+msgid "Too many checks - please wait a minute and try again."
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:93
+msgid "Verification is temporarily unavailable. Please try again."
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:96
+#: includes/frontend/class-ppcert-verification-page.php:185
+msgid "Issuer"
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:98
+#: includes/frontend/class-ppcert-verification-page.php:187
+#: includes/frontend/class-ppcert-view-page.php:211
+#: includes/utilities/class-ppcert-privacy.php:132
+msgid "Expires"
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:231
+msgid "Verify Certificate"
+msgstr ""
+
+#: includes/frontend/class-ppcert-verification-page.php:268
+msgid "The PressPrimer Certificates verification page has been deleted. Certificate QR codes and links will not resolve until you assign a new page in the plugin settings."
+msgstr ""
+
+#: includes/frontend/class-ppcert-view-page.php:196
+msgid "This certificate has expired."
+msgstr ""
+
+#: includes/frontend/class-ppcert-view-page.php:236
+msgid "Verify this certificate"
+msgstr ""
+
+#. translators: %s: recipient name
+#: includes/frontend/class-ppcert-view-page.php:259
+#, php-format
+msgid "Certificate preview for %s"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:421
+msgid "Course Title"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:422
+msgid "Introduction to Botany"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:427
+#: includes/integrations/class-ppcert-ppa-adapter.php:229
+msgid "Completion Date"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:428
+#: includes/integrations/abstract-ppcert-lms-adapter.php:522
+#: includes/integrations/class-ppcert-ppa-adapter.php:230
+#: includes/integrations/class-ppcert-ppq-adapter.php:229
+#: includes/services/class-ppcert-merge-field-registry.php:410
+msgid "June 12, 2026"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:433
+msgid "Instructor"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:434
+msgid "Prof. Marisol Vega"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:503
+#: includes/integrations/class-ppcert-ppq-adapter.php:210
+msgid "Quiz Title"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:504
+#: includes/integrations/class-ppcert-ppq-adapter.php:211
+msgid "Advanced Botany Quiz"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:509
+#: includes/integrations/class-ppcert-ppq-adapter.php:216
+msgid "Quiz Score"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:515
+#: includes/integrations/class-ppcert-ppq-adapter.php:222
+msgid "Quiz Result"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:516
+#: includes/integrations/abstract-ppcert-lms-adapter.php:578
+#: includes/integrations/class-ppcert-ppq-adapter.php:223
+#: includes/integrations/class-ppcert-ppq-adapter.php:293
+msgid "Passed"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:521
+#: includes/integrations/class-ppcert-ppq-adapter.php:228
+msgid "Pass Date"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-adapter.php:65
+msgid "Course completed (LearnDash)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-adapter.php:76
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:110
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:98
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:98
+#: includes/integrations/class-ppcert-learnpress-adapter.php:75
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:108
+#: includes/integrations/class-ppcert-lifterlms-adapter.php:75
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:108
+#: includes/integrations/class-ppcert-tutorlms-adapter.php:75
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:116
+msgid "Course"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-adapter.php:87
+msgid "LearnDash"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-adapter.php:98
+#: includes/integrations/class-ppcert-learnpress-adapter.php:97
+#: includes/integrations/class-ppcert-lifterlms-adapter.php:97
+#: includes/integrations/class-ppcert-tutorlms-adapter.php:97
+msgid "Course completed"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:61
+msgid "Lesson completed (LearnDash)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:72
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:102
+msgid "Lesson"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:83
+msgid "Lesson completed"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:198
+msgid "Lesson Title"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:199
+msgid "Leaf Structure and Function"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:61
+msgid "Quiz passed (LearnDash)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:72
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:72
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:72
+#: includes/integrations/class-ppcert-ppq-adapter.php:76
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:80
+msgid "Quiz"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:83
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:83
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:83
+#: includes/integrations/class-ppcert-ppq-adapter.php:98
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:91
+msgid "Quiz passed"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:208
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:213
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:220
+#: includes/integrations/class-ppcert-ppq-adapter.php:189
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:236
+msgid "Minimum score (%)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:209
+msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own passing percentage."
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:62
+msgid "Topic completed (LearnDash)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:73
+msgid "Topic"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:84
+msgid "Topic completed"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:211
+msgid "Topic Title"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:212
+msgid "Stomata Up Close"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learnpress-adapter.php:64
+msgid "Course completed (LearnPress)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learnpress-adapter.php:86
+msgid "LearnPress"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:61
+msgid "Quiz passed (LearnPress)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:214
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:237
+msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own passing grade."
+msgstr ""
+
+#: includes/integrations/class-ppcert-lifterlms-adapter.php:64
+msgid "Course completed (LifterLMS)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-lifterlms-adapter.php:86
+msgid "LifterLMS"
+msgstr ""
+
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:61
+msgid "Quiz passed (LifterLMS)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:221
+msgid "Leave blank to award on any passing grade. Enter a percentage to require more than the quiz's own minimum grade."
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:68
+msgid "Assignment passed (PressPrimer Assignment)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:79
+msgid "Assignment"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:90
+msgid "PressPrimer Assignment"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:101
+msgid "Assignment passed"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:196
+msgid "Minimum grade (%)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:197
+msgid "Leave blank to award on any passing grade. Enter a percentage to require more than the assignment's own passing score."
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:217
+msgid "Assignment Title"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:218
+msgid "Field Research Essay"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:223
+msgid "Assignment Grade"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppq-adapter.php:65
+msgid "Quiz passed (PressPrimer Quiz)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppq-adapter.php:87
+msgid "PressPrimer Quiz"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppq-adapter.php:190
+msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own pass mark."
+msgstr ""
+
+#: includes/integrations/class-ppcert-tutorlms-adapter.php:64
+msgid "Course completed (Tutor LMS)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-tutorlms-adapter.php:86
+msgid "Tutor LMS"
+msgstr ""
+
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:69
+msgid "Quiz passed (Tutor LMS)"
+msgstr ""
+
+#: includes/models/class-ppcert-certificate.php:318
+msgid "Certificate revocation failed."
+msgstr ""
+
+#. translators: %s: source template title
+#: includes/models/class-ppcert-template.php:157
+#, php-format
+msgid "%s (Copy)"
+msgstr ""
+
+#: includes/models/class-ppcert-template.php:190
+msgid "A layout document is required."
+msgstr ""
+
+#: includes/models/class-ppcert-template.php:221
+#: src/designer/components/TemplateGallery.jsx:126
+msgid "The template could not be created."
+msgstr ""
+
+#: includes/models/class-ppcert-template.php:296
+#: src/designer/components/DesignerApp.jsx:178
+msgid "The template could not be saved."
+msgstr ""
+
+#: includes/models/class-ppcert-template.php:338
+msgid "The template could not be moved to the trash."
+msgstr ""
+
+#: includes/services/class-ppcert-element-types.php:63
+#: src/designer/components/properties/TextSection.jsx:108
+msgid "Text"
+msgstr ""
+
+#: includes/services/class-ppcert-element-types.php:70
+msgid "Your text"
+msgstr ""
+
+#: includes/services/class-ppcert-element-types.php:82
+msgid "Merge Field"
+msgstr ""
+
+#: includes/services/class-ppcert-element-types.php:104
+msgid "Image / Logo"
+msgstr ""
+
+#: includes/services/class-ppcert-element-types.php:118
+#: src/designer/components/properties/MediaSection.jsx:67
+#: src/designer/elements/ImageElement.jsx:36
+msgid "Signature"
+msgstr ""
+
+#: includes/services/class-ppcert-element-types.php:132
+msgid "Line / Shape"
+msgstr ""
+
+#: includes/services/class-ppcert-element-types.php:148
+#: src/designer/components/properties/QrSection.jsx:36
+msgid "QR Code"
+msgstr ""
+
+#: includes/services/class-ppcert-element-types.php:161
+#: src/designer/components/properties/PageSection.jsx:139
+msgid "Background"
+msgstr ""
+
+#: includes/services/class-ppcert-email-service.php:215
+msgid "Your certificate: {subject}"
+msgstr ""
+
+#: includes/services/class-ppcert-email-service.php:216
+msgid ""
+"Hi {recipient_name},\n"
+"\n"
+"Congratulations! Your certificate for {subject} is now available.\n"
+"\n"
+"Credential ID: {credential_id}\n"
+"Verify it any time: {verification_url}\n"
+"\n"
+"{issuer_name}"
+msgstr ""
+
+#: includes/services/class-ppcert-issuance-service.php:108
+msgid "Certificates can only be issued from published templates."
+msgstr ""
+
+#: includes/services/class-ppcert-issuance-service.php:115
+msgid "Recipient user not found."
+msgstr ""
+
+#: includes/services/class-ppcert-issuance-service.php:183
+msgid "Certificate issuance failed before completion; no certificate was created."
+msgstr ""
+
+#: includes/services/class-ppcert-issuance-service.php:294
+msgid "Certificate could not be written to the database."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:165
+msgid "layout_schema_version: missing or unsupported schema version."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:177
+msgid "must be a4 or letter."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:181
+msgid "must be landscape or portrait."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:242
+#: includes/services/class-ppcert-layout-validator.php:566
+#: includes/services/class-ppcert-layout-validator.php:736
+msgid "must be a hex color."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:266
+msgid "must be an array."
+msgstr ""
+
+#. translators: %d: maximum number of elements
+#: includes/services/class-ppcert-layout-validator.php:275
+#, php-format
+msgid "documents are limited to %d elements."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:289
+msgid "must be an object."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:309
+msgid "duplicate element id."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:338
+msgid "must match el_ followed by 8 lowercase alphanumerics."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:345
+msgid "unknown element type."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:430
+msgid "merge tokens are not allowed in text elements; use a merge field element."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:440
+msgid "must be a {{group.field}} merge token."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:455
+msgid "must be a number."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:464
+msgid "must be left, center, or right."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:495
+msgid "must be an existing image attachment."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:501
+msgid "must be contain, cover, or stretch."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:526
+msgid "must be line, rect, or ellipse."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:761
+msgid "must be a hex color or empty."
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:141
+msgid "Site"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:374
+msgid "Recipient Name"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:375
+#: includes/services/class-ppcert-merge-field-registry.php:396
+msgid "Jordan Rivera"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:381
+msgid "First Name"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:382
+msgid "Jordan"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:388
+msgid "Last Name"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:389
+msgid "Rivera"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:395
+msgid "Full Name"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:409
+msgid "Issue Date"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:423
+msgid "Issuer Name"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:424
+#: includes/services/class-ppcert-merge-field-registry.php:438
+msgid "Sunrise Training Academy"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:430
+msgid "Expiry Date"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:431
+msgid "June 12, 2028"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:437
+msgid "Site Name"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:444
+msgid "Site Tagline"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:445
+msgid "Learn. Grow. Achieve."
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:451
+#: src/settings/components/StatusTab.jsx:361
+msgid "Site URL"
+msgstr ""
+
+#: includes/services/class-ppcert-pdf-renderer.php:101
+msgid "Could not create a temporary file for rendering."
+msgstr ""
+
+#: includes/services/class-ppcert-pdf-renderer.php:135
+msgid "PDF rendering failed."
+msgstr ""
+
+#: includes/services/class-ppcert-pdf-renderer.php:184
+msgid "The layout document is not validator-clean; refusing to render."
+msgstr ""
+
+#: includes/services/class-ppcert-pdf-renderer.php:903
+msgid "PNG rasterization failed (GD)."
+msgstr ""
+
+#: includes/services/class-ppcert-pdf-renderer.php:934
+#: includes/services/class-ppcert-pdf-renderer.php:1010
+msgid "Could not create a temporary file for rasterization."
+msgstr ""
+
+#: includes/services/class-ppcert-preview-service.php:103
+msgid "Invalid credential ID."
+msgstr ""
+
+#: includes/services/class-ppcert-preview-service.php:114
+msgid "The certificate has no layout snapshot."
+msgstr ""
+
+#: includes/services/class-ppcert-preview-service.php:169
+msgid "The preview image could not be written."
+msgstr ""
+
+#: includes/services/class-ppcert-qr-service.php:75
+msgid "Cannot generate a QR code for an empty URL."
+msgstr ""
+
+#: includes/services/class-ppcert-qr-service.php:103
+msgid "QR code generation failed for the given URL."
+msgstr ""
+
+#: includes/services/class-ppcert-qr-service.php:162
+msgid "QR image creation failed (GD)."
+msgstr ""
+
+#: includes/services/class-ppcert-qr-service.php:206
+msgid "QR PNG encoding failed."
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:164
+msgid "Certificate Credits"
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:168
+msgid "Credit type"
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:174
+msgid "Amount"
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:178
+#: src/dashboard/components/ActivityChart.jsx:63
+#: src/dashboard/components/ActivityChart.jsx:188
+msgid "Awarded"
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:262
+msgid "Erased certificates are permanently removed and can no longer be verified."
+msgstr ""
+
+#. translators: 1: required WordPress version, 2: required PHP version
+#: pressprimer-certificate.php:57
+#, php-format
+msgid "PressPrimer Certificate requires WordPress %1$s or higher and PHP %2$s or higher. The plugin is inactive until the server meets these requirements."
+msgstr ""
+
+#: blocks/verify/index.js:52
+msgid "Visitors enter a credential ID here to verify a certificate. The form renders on the published page."
+msgstr ""
+
+#: src/dashboard/components/ActivityChart.jsx:125
+msgid "Last 30 days"
+msgstr ""
+
+#: src/dashboard/components/ActivityChart.jsx:126
+msgid "Last 90 days"
+msgstr ""
+
+#: src/dashboard/components/ActivityChart.jsx:129
+msgid "Last 6 months"
+msgstr ""
+
+#: src/dashboard/components/ActivityChart.jsx:131
+msgid "Last year"
+msgstr ""
+
+#: src/dashboard/components/ActivityChart.jsx:132
+msgid "Last 2 years"
+msgstr ""
+
+#: src/dashboard/components/ActivityChart.jsx:139
+#: src/dashboard/components/StatsCards.jsx:35
+msgid "Certificates Awarded"
+msgstr ""
+
+#: src/dashboard/components/ActivityChart.jsx:202
+msgid "No certificates awarded in this period yet."
+msgstr ""
+
+#: src/dashboard/components/Dashboard.jsx:48
+msgid "Failed to load dashboard data."
+msgstr ""
+
+#: src/dashboard/components/Dashboard.jsx:60
+msgid "Welcome to PressPrimer Certificate! Here's an overview of your certificates."
+msgstr ""
+
+#: src/dashboard/components/Dashboard.jsx:84
+msgid "Error"
+msgstr ""
+
+#: src/dashboard/components/EmailCourseCard.jsx:55
+msgid "Dismiss"
+msgstr ""
+
+#: src/dashboard/components/QuickActions.jsx:30
+msgid "Create a Template"
+msgstr ""
+
+#: src/dashboard/components/QuickActions.jsx:38
+msgid "Issue a Certificate"
+msgstr ""
+
+#: src/dashboard/components/QuickActions.jsx:46
+msgid "View Certificates"
+msgstr ""
+
+#: src/dashboard/components/QuickActions.jsx:54
+msgid "Open Settings"
+msgstr ""
+
+#: src/dashboard/components/QuickActions.jsx:69
+msgid "Quick Actions"
+msgstr ""
+
+#: src/dashboard/components/QuickActions.jsx:92
+msgid "Watch Onboarding Tour"
+msgstr ""
+
+#: src/dashboard/components/RecentCertificates.jsx:41
+msgid "Just now"
+msgstr ""
+
+#: src/dashboard/components/RecentCertificates.jsx:44
+#: src/dashboard/components/RecentCertificates.jsx:49
+#: src/dashboard/components/RecentCertificates.jsx:54
+msgid "ago"
+msgstr ""
+
+#: src/dashboard/components/RecentCertificates.jsx:98
+msgid "Unknown"
+msgstr ""
+
+#: src/dashboard/components/RecentCertificates.jsx:155
+msgid "Recent Certificates"
+msgstr ""
+
+#: src/dashboard/components/RecentCertificates.jsx:163
+msgid "View all"
+msgstr ""
+
+#: src/dashboard/components/RecentCertificates.jsx:181
+#: src/dashboard/components/TopTemplates.jsx:61
+msgid "No certificates issued yet."
+msgstr ""
+
+#. translators: %d: number of days
+#: src/dashboard/components/StatsCards.jsx:43
+#, js-format
+msgid "Awarded (%d days)"
+msgstr ""
+
+#. translators: %d: number of days
+#: src/dashboard/components/StatsCards.jsx:53
+#, js-format
+msgid "Verifications (%d days)"
+msgstr ""
+
+#: src/dashboard/components/StatsCards.jsx:61
+msgid "Published Templates"
+msgstr ""
+
+#. translators: %d: number of certificates
+#: src/dashboard/components/TopTemplates.jsx:116
+#, js-format
+msgid "%d certificate"
+msgid_plural "%d certificates"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/dashboard/components/TopTemplates.jsx:136
+msgid "Top Templates"
+msgstr ""
+
+#: src/designer/components/Canvas.jsx:445
+msgid "Bring forward"
+msgstr ""
+
+#: src/designer/components/Canvas.jsx:449
+msgid "Send backward"
+msgstr ""
+
+#: src/designer/components/Canvas.jsx:454
+msgid "Bring to front"
+msgstr ""
+
+#: src/designer/components/Canvas.jsx:456
+msgid "Send to back"
+msgstr ""
+
+#: src/designer/components/Canvas.jsx:461
+msgid "Delete"
+msgstr ""
+
+#: src/designer/components/Canvas.jsx:478
+msgid "Certificate canvas"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:60
+msgid "Fit width"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:130
+msgid "Template published."
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:131
+msgid "Template saved."
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:148
+msgid "Changed elsewhere"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:152
+msgid "This template was changed in another window since you opened it. Saving again will overwrite those changes."
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:165
+msgid "Save anyway"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:212
+msgid "The preview could not be rendered."
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:323
+msgid "The template could not be loaded."
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:347
+msgid "Template created - happy designing!"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:378
+msgid "Cannot open the designer"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:385
+msgid "Back to Templates"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:410
+msgid "You have unsaved changes. Leave without saving?"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:429
+msgid "Rename template"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:469
+#: src/designer/components/DesignerApp.jsx:470
+msgid "Undo"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:477
+#: src/designer/components/DesignerApp.jsx:478
+msgid "Redo"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:486
+#: src/designer/components/DesignerApp.jsx:490
+msgid "Toggle rulers"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:500
+msgid "Merge field display"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:507
+msgid "Samples"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:514
+msgid "Tokens"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:527
+msgid "Zoom"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:536
+msgid "Preview PDF"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:544
+msgid "Switch to draft"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:555
+msgid "Publish"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:568
+msgid "Save"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:599
+msgid "Design"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:607
+msgid "Award"
+msgstr ""
+
+#: src/designer/components/ElementPalette.jsx:209
+msgid "Source meta…"
+msgstr ""
+
+#: src/designer/components/ElementPalette.jsx:254
+msgid "Add a trigger in the Award tab to unlock fields from your quiz or course plugin."
+msgstr ""
+
+#: src/designer/components/ElementPalette.jsx:267
+msgid "Custom meta"
+msgstr ""
+
+#: src/designer/components/ElementPalette.jsx:281
+msgid "Custom user meta…"
+msgstr ""
+
+#: src/designer/components/ElementPalette.jsx:288
+msgid "Available once this template has an award trigger with a source."
+msgstr ""
+
+#: src/designer/components/ElementPalette.jsx:304
+msgid "Elements"
+msgstr ""
+
+#: src/designer/components/ElementPalette.jsx:334
+msgid "This certificate has reached the 100-element limit."
+msgstr ""
+
+#: src/designer/components/MetaPickerModal.jsx:83
+msgid "Source meta field"
+msgstr ""
+
+#: src/designer/components/MetaPickerModal.jsx:84
+msgid "User meta field"
+msgstr ""
+
+#: src/designer/components/MetaPickerModal.jsx:89
+msgid "Search meta keys…"
+msgstr ""
+
+#: src/designer/components/MetaPickerModal.jsx:112
+msgid "No matching meta keys."
+msgstr ""
+
+#: src/designer/components/MetaPickerModal.jsx:144
+msgid "Showing the first 50 matching keys. Type to narrow the list."
+msgstr ""
+
+#: src/designer/components/MetaPickerModal.jsx:153
+msgid "Use a key not listed"
+msgstr ""
+
+#: src/designer/components/MetaPickerModal.jsx:160
+msgid "Insert"
+msgstr ""
+
+#: src/designer/components/properties/ColorField.jsx:15
+msgid "Certificate palette"
+msgstr ""
+
+#: src/designer/components/properties/ColorField.jsx:49
+msgid "Brand colors"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:44
+msgid "Choose signature image"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:45
+#: src/designer/components/properties/MediaSection.jsx:59
+#: src/designer/components/properties/PageSection.jsx:60
+#: src/settings/components/AppearanceTab.jsx:188
+msgid "Choose image"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:58
+#: src/designer/components/properties/PageSection.jsx:59
+msgid "Replace"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:68
+#: src/designer/components/properties/PageSection.jsx:153
+#: src/designer/elements/ImageElement.jsx:31
+msgid "Image"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:77
+msgid "Media"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:82
+#: src/designer/components/properties/PageSection.jsx:158
+msgid "The WordPress media library is unavailable here."
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:100
+msgid "Fit"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:110
+msgid "Contain"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:114
+msgid "Cover"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:118
+msgid "Stretch"
+msgstr ""
+
+#: src/designer/components/properties/MediaSection.jsx:124
+msgid "Opacity"
+msgstr ""
+
+#: src/designer/components/properties/PageSection.jsx:22
+#: src/designer/components/TemplateGallery.jsx:155
+#: src/settings/components/AppearanceTab.jsx:373
+msgid "Letter"
+msgstr ""
+
+#: src/designer/components/properties/PageSection.jsx:46
+msgid "Choose background image"
+msgstr ""
+
+#: src/designer/components/properties/PageSection.jsx:79
+msgid "Design scaled to fit the new page. Undo restores it."
+msgstr ""
+
+#: src/designer/components/properties/PageSection.jsx:93
+#: src/designer/components/properties/TextSection.jsx:142
+msgid "Size"
+msgstr ""
+
+#: src/designer/components/properties/PageSection.jsx:109
+msgid "Layout"
+msgstr ""
+
+#: src/designer/components/properties/PageSection.jsx:120
+msgid "Landscape"
+msgstr ""
+
+#: src/designer/components/properties/PageSection.jsx:124
+msgid "Portrait"
+msgstr ""
+
+#. translators: 1: width, 2: height
+#: src/designer/components/properties/PageSection.jsx:133
+#, js-format
+msgid "%1$s × %2$s pt"
+msgstr ""
+
+#: src/designer/components/properties/PositionSection.jsx:41
+msgid "X"
+msgstr ""
+
+#: src/designer/components/properties/PositionSection.jsx:42
+msgid "Y"
+msgstr ""
+
+#: src/designer/components/properties/PositionSection.jsx:43
+msgid "Width"
+msgstr ""
+
+#: src/designer/components/properties/PositionSection.jsx:44
+msgid "Height"
+msgstr ""
+
+#: src/designer/components/properties/PositionSection.jsx:50
+msgid "Position & Size (pt)"
+msgstr ""
+
+#: src/designer/components/properties/QrSection.jsx:39
+msgid "Dark"
+msgstr ""
+
+#: src/designer/components/properties/QrSection.jsx:46
+msgid "Light"
+msgstr ""
+
+#: src/designer/components/properties/QrSection.jsx:57
+msgid "The QR code always links to the certificate verification page."
+msgstr ""
+
+#: src/designer/components/properties/ShapeSection.jsx:35
+msgid "Shape"
+msgstr ""
+
+#: src/designer/components/properties/ShapeSection.jsx:38
+msgid "Type"
+msgstr ""
+
+#: src/designer/components/properties/ShapeSection.jsx:48
+msgid "Line"
+msgstr ""
+
+#: src/designer/components/properties/ShapeSection.jsx:52
+msgid "Rectangle"
+msgstr ""
+
+#: src/designer/components/properties/ShapeSection.jsx:56
+msgid "Ellipse"
+msgstr ""
+
+#: src/designer/components/properties/ShapeSection.jsx:62
+msgid "Stroke"
+msgstr ""
+
+#: src/designer/components/properties/ShapeSection.jsx:82
+msgid "Fill"
+msgstr ""
+
+#: src/designer/components/properties/ShapeSection.jsx:92
+msgid "Radius"
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:127
+msgid "Font"
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:157
+msgid "Line height"
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:172
+msgid "Style"
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:182
+msgid "This font does not bundle a bold variant."
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:198
+msgid "This font does not bundle an italic variant."
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:207
+msgid "Align"
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:230
+msgid "Color"
+msgstr ""
+
+#: src/designer/components/PropertiesPanel.jsx:43
+msgid "Load a template to start designing."
+msgstr ""
+
+#. translators: %d: number of selected elements
+#: src/designer/components/PropertiesPanel.jsx:61
+#, js-format
+msgid "%d element selected."
+msgid_plural "%d elements selected."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/designer/components/TemplateGallery.jsx:138
+msgid "Start from a template"
+msgstr ""
+
+#: src/designer/components/TemplateGallery.jsx:141
+msgid "Pick a starting point - everything is editable on the canvas."
+msgstr ""
+
+#: src/designer/components/TemplateGallery.jsx:149
+msgid "Certificate size:"
+msgstr ""
+
+#: src/designer/components/TemplateGallery.jsx:159
+#: src/settings/components/AppearanceTab.jsx:380
+msgid "A4"
+msgstr ""
+
+#: src/designer/components/TemplateGallery.jsx:214
+msgid "Start blank"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:355
+msgid "Update trigger"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:356
+#: src/designer/components/TriggerPanel.jsx:378
+#: src/designer/components/TriggerPanel.jsx:669
+msgid "Add trigger"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:377
+msgid "Edit trigger"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:384
+msgid "Integration"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:392
+msgid "Choose a plugin…"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:420
+msgid "Choose a trigger…"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:465
+#: src/designer/components/TriggerPanel.jsx:516
+msgid "Search…"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:575
+#: src/designer/components/TriggerPanel.jsx:831
+#: src/settings/components/StatusTab.jsx:580
+msgid "Active"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:627
+msgid "Certificates can always be issued manually from the Certificates screen, with or without triggers."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:640
+msgid "No automatic award sources detected."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:648
+msgid "Install or activate an LMS plugin - or PressPrimer Quiz - to unlock automatic awarding when learners complete courses, quizzes, or assignments."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:680
+msgid "Award this certificate when…"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:687
+msgid "Only one trigger can be added per certificate. To use another trigger, clone the certificate."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:703
+msgid "No trigger yet."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:718
+msgid "The source for this trigger no longer exists."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:748
+msgid "Trigger deactivated"
+msgstr ""
+
+#. translators: %s: plugin name
+#: src/designer/components/TriggerPanel.jsx:764
+#, js-format
+msgid "%s must be active to use this trigger."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:770
+msgid "The plugin providing this trigger is not active."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:800
+msgid "Any source"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:814
+msgid "Conditions"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:897
+msgid "Trigger changes save with the Save button."
+msgstr ""
+
+#: src/designer/elements/ImageElement.jsx:34
+msgid "Missing image"
+msgstr ""
+
+#. translators: %s: credential ID
+#: src/issue/index.js:81
+#, js-format
+msgid "Certificate issued: %s"
+msgstr ""
+
+#: src/issue/index.js:108
+msgid "Already issued"
+msgstr ""
+
+#. translators: %s: existing credential ID
+#: src/issue/index.js:114
+#, js-format
+msgid "This recipient already has a certificate from this template (%s). Issue another one anyway?"
+msgstr ""
+
+#: src/issue/index.js:120
+msgid "Issue anyway"
+msgstr ""
+
+#: src/issue/index.js:121
+msgid "Cancel"
+msgstr ""
+
+#: src/issue/index.js:129
+msgid "The certificate could not be issued."
+msgstr ""
+
+#: src/issue/index.js:145
+#: src/issue/index.js:151
+msgid "Issue Certificate"
+msgstr ""
+
+#: src/issue/index.js:152
+msgid "Issue"
+msgstr ""
+
+#: src/issue/index.js:175
+msgid "Choose a published template…"
+msgstr ""
+
+#: src/issue/index.js:200
+msgid "Search users…"
+msgstr ""
+
+#: src/issue/index.js:221
+msgid "Earned date"
+msgstr ""
+
+#: src/onboarding/components/CertificateModal.jsx:122
+msgid "Your credential ID"
+msgstr ""
+
+#: src/onboarding/components/CertificateModal.jsx:140
+msgid "Download the PDF"
+msgstr ""
+
+#: src/onboarding/components/CertificateModal.jsx:157
+#: src/onboarding/components/CompletionModal.jsx:104
+#: src/onboarding/components/Onboarding.jsx:344
+#: src/onboarding/components/Tooltip.jsx:219
+msgid "Back"
+msgstr ""
+
+#: src/onboarding/components/CertificateModal.jsx:173
+#: src/onboarding/components/Onboarding.jsx:357
+#: src/onboarding/components/Tooltip.jsx:256
+msgid "Next"
+msgstr ""
+
+#: src/onboarding/components/CompletionModal.jsx:121
+msgid "Close Tour"
+msgstr ""
+
+#: src/onboarding/components/Onboarding.jsx:324
+#: src/onboarding/components/Tooltip.jsx:193
+msgid "Close"
+msgstr ""
+
+#: src/onboarding/components/Onboarding.jsx:356
+#: src/onboarding/components/Tooltip.jsx:252
+msgid "Finish"
+msgstr ""
+
+#: src/onboarding/components/Onboarding.jsx:373
+msgid "Pick a design (or start blank) to continue."
+msgstr ""
+
+#: src/onboarding/components/Onboarding.jsx:381
+msgid "Click Publish to continue."
+msgstr ""
+
+#. translators: 1: current step number, 2: total step count
+#: src/onboarding/components/ProgressDots.jsx:27
+#, js-format
+msgid "Step %1$d of %2$d"
+msgstr ""
+
+#: src/onboarding/components/Tooltip.jsx:234
+msgid "Skip"
+msgstr ""
+
+#: src/onboarding/components/WelcomeModal.jsx:108
+msgid "Let's Go!"
+msgstr ""
+
+#: src/onboarding/components/WelcomeModal.jsx:116
+msgid "Skip Tour"
+msgstr ""
+
+#: src/onboarding/components/WelcomeModal.jsx:126
+msgid "Don't show this again"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:97
+msgid "Let's award your first certificate"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:101
+msgid "In about five minutes you'll design a real certificate, publish it, and issue one to yourself, all in your actual admin screens. Everything can be changed later."
+msgstr ""
+
+#: src/onboarding/tourSteps.js:115
+msgid "Pick a design"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:116
+msgid "Choose your certificate size, then click a design you like, or start blank. The tour continues as soon as your template is created."
+msgstr ""
+
+#: src/onboarding/tourSteps.js:132
+msgid "This canvas is the PDF"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:133
+msgid "What you see here is exactly what recipients download. Click any element to edit it in the panel on the right, drag it to move it, and add new elements from the panel on the left. Fields in {{curly braces}} fill in automatically when a certificate is issued."
+msgstr ""
+
+#: src/onboarding/tourSteps.js:150
+msgid "Name it and publish"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:152
+msgid "Click the pencil icon in the toolbar to name your template, and press Return to apply the name. Then click <strong>Publish</strong>. Only published templates can award certificates."
+msgstr ""
+
+#: src/onboarding/tourSteps.js:170
+msgid "Issue one to yourself"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:172
+msgid "Click <strong>Issue Certificate</strong>, choose the template you just published, and pick yourself as the recipient. This creates a real, verifiable credential."
+msgstr ""
+
+#: src/onboarding/tourSteps.js:189
+msgid "That’s a real credential"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:190
+msgid "Your certificate has a unique credential ID, a downloadable PDF, and a public verification page where anyone can confirm it is genuine. The QR code printed on the certificate links straight to that verification page."
+msgstr ""
+
+#: src/onboarding/tourSteps.js:204
+msgid "You're all set!"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:205
+msgid "You designed, published, and issued a real certificate. To award certificates automatically, connect your template to a quiz, course, or assignment in the designer's Award tab. You can also set your brand colors, logo, and signature under Settings → Appearance. Replay this tour anytime from the dashboard."
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:36
+msgid "Data Retention"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:39
+msgid "Anonymous verification and view events are pruned daily once they pass this age. Issuance and download events are lifecycle records and are always kept."
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:47
+msgid "Keep verification events for (days)"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:74
+msgid "Danger Zone"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:77
+msgid "These settings can result in permanent data loss. Use with caution."
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:85
+msgid "Remove Data on Uninstall"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:100
+msgid "Remove all plugin data when uninstalling"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:108
+msgid "Warning"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:112
+msgid "If enabled, uninstalling this plugin will permanently delete:"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:124
+msgid "All certificate templates"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:130
+msgid "All issued certificates and their snapshots"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:136
+msgid "All verification history and events"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:142
+msgid "All cached preview images and generated files"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:148
+msgid "All plugin settings"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:156
+msgid "Issued certificates can no longer be verified after removal. This action cannot be undone!"
+msgstr ""
+
+#: src/settings/components/AdvancedTab.jsx:170
+msgid "By default, data is preserved when you uninstall the plugin to prevent accidental data loss. Only enable this if you are certain you want to completely remove all data."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:118
+msgid "Default"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:128
+msgid "Clear"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:187
+msgid "Change image"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:197
+msgid "Remove"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:257
+msgid "Certificate of Completion"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:266
+msgid "This certificate is proudly presented to"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:285
+msgid "for successfully completing"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:303
+msgid "Authorized Signature"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:312
+msgid "Live preview of your defaults - a simplified sample, not a real template."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:344
+msgid "Design Defaults"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:347
+msgid "New blank certificates start from these defaults. Certificates created from a starter template keep their design but take on your brand colors. The preview below shows every choice as you make it."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:357
+msgid "Certificate size"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:361
+msgid "The default page size for new certificates. Every starter template ships natively in both sizes."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:399
+msgid "Default font"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:403
+msgid "Used for new text and merge-field elements."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:416
+msgid "Plugin default (Source Sans 3)"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:444
+msgid "Default signature"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:448
+msgid "Pre-fills new Signature elements in the designer."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:463
+msgid "Default logo"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:467
+msgid "Pre-fills new Image / Logo elements in the designer."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:479
+msgid "Primary color"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:483
+msgid "The main shape color: borders, frames, and rules."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:497
+msgid "Accent color"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:501
+msgid "Secondary shapes and decorative details."
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:515
+msgid "Text color"
+msgstr ""
+
+#: src/settings/components/AppearanceTab.jsx:519
+msgid "Headings, names, and body text. Unset keeps each design’s own ink."
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:60
+msgid "Copied!"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:62
+msgid "Failed to copy"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:72
+msgid "Click to copy"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:99
+msgid "Issuance Email"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:102
+msgid "Sent to the recipient when a certificate is issued, with the certificate PDF attached and a verification link in the body."
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:110
+msgid "Send issuance email"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:129
+msgid "From name"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:146
+msgid "From address"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:167
+msgid "Subject"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:187
+msgid "Body"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:208
+msgid "Available Tokens:"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:211
+msgid "(click to copy)"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:216
+msgid "The recipient's name as it appears on the certificate"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:223
+msgid "The certificate title (template name)"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:230
+msgid "The formatted credential ID, e.g. 7Q4M-K9P2-XT3A"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:237
+msgid "Link to verify the certificate on the public verification page"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:244
+msgid "The issuing site or organization name"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:251
+msgid "The site title from Settings → General"
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:35
+msgid "Verification"
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:38
+msgid "The public page where visitors verify certificates. QR codes on rendered certificates and links in issuance emails point here."
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:49
+msgid "The configured verification page no longer exists."
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:53
+msgid "Certificate QR codes and links will not resolve until you assign a new page. The page needs the Certificate Verification block or the [ppcert_verify] shortcode."
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:62
+msgid "Verification page"
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:73
+msgid "Choose a page…"
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:90
+msgid "The page should contain the Certificate Verification block (or the [ppcert_verify] shortcode)."
+msgstr ""
+
+#: src/settings/components/SettingsPage.jsx:180
+msgid "Settings saved."
+msgstr ""
+
+#: src/settings/components/SettingsPage.jsx:186
+#: src/settings/components/SettingsPage.jsx:195
+msgid "The settings could not be saved."
+msgstr ""
+
+#: src/settings/components/SettingsPage.jsx:217
+msgid "Certificate Settings"
+msgstr ""
+
+#: src/settings/components/SettingsPage.jsx:223
+msgid "Configure certificate defaults, appearance, email notifications, and data handling."
+msgstr ""
+
+#: src/settings/components/SettingsPage.jsx:269
+msgid "Saving…"
+msgstr ""
+
+#: src/settings/components/SettingsPage.jsx:286
+msgid "Save Settings"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:107
+msgid "The tables could not be repaired."
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:115
+msgid "An error occurred. Please try again."
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:132
+#: src/settings/components/StatusTab.jsx:699
+msgid "OK"
+msgstr ""
+
+#. translators: %s: minimum required version number
+#: src/settings/components/StatusTab.jsx:138
+#, js-format
+msgid "Requires %s+"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:150
+msgid "Available"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:154
+msgid "Not Available"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:253
+#: src/settings/components/StatusTab.jsx:269
+msgid "System status copied to clipboard."
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:276
+msgid "Failed to copy. Please try again."
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:289
+msgid "Copy all diagnostic information to share with support."
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:298
+msgid "Copy System Status"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:308
+msgid "Plugin"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:315
+#: src/settings/components/StatusTab.jsx:374
+msgid "Version"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:324
+msgid "DB Version"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:331
+msgid "Not set"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:354
+msgid "WordPress"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:388
+msgid "Multisite"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:396
+msgid "Yes"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:403
+msgid "No"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:413
+msgid "Memory Limit"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:422
+msgid "Theme"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:435
+msgid "Server"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:442
+msgid "PHP Version"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:456
+msgid "Post Max Size"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:465
+msgid "Upload Max Filesize"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:476
+msgid "Time Limit"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:484
+msgid "seconds"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:492
+msgid "MySQL Version"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:510
+msgid "Statistics"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:543
+msgid "Events"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:563
+msgid "Integrations"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:589
+msgid "Not Detected"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:605
+msgid "PDF Rendering"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:608
+msgid "Server capabilities for rendering certificate PDFs and preview images. GD is the baseline; Imagick with a PDF delegate produces the highest-fidelity previews."
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:618
+msgid "Image Processing (GD)"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:627
+msgid "Imagick"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:633
+msgid "Imagick PDF Delegate"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:642
+msgid "Bundled Fonts"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:655
+msgid "Database Tables"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:660
+msgid "Missing Tables Detected"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:664
+msgid "Some database tables are missing. Click the repair button below to recreate them."
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:679
+msgid "Table"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:684
+msgid "Rows"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:709
+msgid "Missing"
+msgstr ""
+
+#: src/settings/components/StatusTab.jsx:735
+msgid "Repair Database Tables"
+msgstr ""
+
+#. translators: %d: number of active plugins
+#: src/settings/components/StatusTab.jsx:753
+#, js-format
+msgid "Active Plugins (%d)"
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:64
+msgid "Something went wrong."
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:78
+msgid "You're in! Your first email is on its way."
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:90
+msgid "Get more out of your certificates"
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:97
+msgid "Sign up below and we'll send you a free 5-part email course on building a great certificate program, followed by occasional tips and product updates. Unsubscribe anytime."
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:106
+msgid "you@example.com"
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:113
+msgid "Email address"
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:123
+msgid "Sign me up!"
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:130
+msgid "We only collect your email address."
+msgstr ""
+
+#: src/shared/components/EmailOptinAsk.jsx:140
+msgid "Privacy policy"
+msgstr ""

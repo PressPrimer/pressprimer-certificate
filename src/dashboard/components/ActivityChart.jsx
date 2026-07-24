@@ -150,6 +150,8 @@ const ActivityChart = ( { parentLoading } ) => {
 			</div>
 
 			<Spin spinning={ loading || parentLoading }>
+				{ /* Keyboard and screen-reader access to the series comes
+				     from recharts' built-in accessibility layer. */ }
 				<div className="ppcert-activity-chart-container">
 					{ hasData ? (
 						<ResponsiveContainer width="100%" height={ 225 }>

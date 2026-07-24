@@ -394,3 +394,22 @@ a.ppcert-top-template-title:hover {
 		min-width: 600px;
 	}
 }
+
+/* ==========================================================================
+   Reduced Motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+	.ppcert-stats-card {
+		transition: none;
+	}
+
+	.ppcert-stats-card:hover {
+		transform: none;
+	}
+
+	.ppcert-dashboard-email-card__dismiss {
+		transition: none;
+	}
+}
