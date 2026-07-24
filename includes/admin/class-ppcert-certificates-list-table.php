@@ -66,6 +66,7 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 			'source'        => __( 'Source', 'pressprimer-certificate' ),
 			'status'        => __( 'Status', 'pressprimer-certificate' ),
 			'issued_at'     => __( 'Issued', 'pressprimer-certificate' ),
+			'expires_at'    => __( 'Expires', 'pressprimer-certificate' ),
 		];
 	}
 
@@ -243,6 +244,56 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 			'download' => '<a href="' . esc_url( $download_url ) . '">' . esc_html__( 'Download PDF', 'pressprimer-certificate' ) . '</a>',
 		];
 
+		// Lifecycle actions (issue capability): Revoke confirms through
+		// the house modal (ppcert-admin.js intercepts the flagged link
+		// and collects the optional reason); Reinstate undoes a
+		// mistaken revocation directly (it restores validity - no
+		// confirm).
+		if ( current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			if ( 'revoked' === (string) $item->status ) {
+				$reinstate_url = wp_nonce_url(
+					add_query_arg(
+						[
+							'page'           => 'ppcert-certificates',
+							'action'         => 'ppcert-reinstate',
+							'certificate_id' => (int) $item->id,
+						],
+						admin_url( 'admin.php' )
+					),
+					'ppcert_reinstate_certificate_' . (int) $item->id
+				);
+
+				$actions['reinstate'] = '<a href="' . esc_url( $reinstate_url ) . '">' . esc_html__( 'Reinstate', 'pressprimer-certificate' ) . '</a>';
+			} else {
+				$revoke_url = wp_nonce_url(
+					add_query_arg(
+						[
+							'page'           => 'ppcert-certificates',
+							'action'         => 'ppcert-revoke',
+							'certificate_id' => (int) $item->id,
+						],
+						admin_url( 'admin.php' )
+					),
+					'ppcert_revoke_certificate_' . (int) $item->id
+				);
+
+				$actions['revoke'] = '<a href="' . esc_url( $revoke_url ) . '" class="submitdelete ppcert-confirm-link"'
+					. ' data-ppcert-title="' . esc_attr__( 'Revoke certificate', 'pressprimer-certificate' ) . '"'
+					. ' data-ppcert-message="' . esc_attr(
+						sprintf(
+							/* translators: %s: credential ID. */
+							__( '%s will verify as revoked and its PDF download will be disabled. You can reinstate it later if this is a mistake.', 'pressprimer-certificate' ),
+							$display
+						)
+					) . '"'
+					. ' data-ppcert-confirm="' . esc_attr__( 'Revoke', 'pressprimer-certificate' ) . '"'
+					. ' data-ppcert-cancel="' . esc_attr__( 'Cancel', 'pressprimer-certificate' ) . '"'
+					. ' data-ppcert-input-label="' . esc_attr__( 'Reason (optional, shown to staff only):', 'pressprimer-certificate' ) . '"'
+					. ' data-ppcert-input-name="revoke_reason"'
+					. '>' . esc_html__( 'Revoke', 'pressprimer-certificate' ) . '</a>';
+			}
+		}
+
 		return '<strong>' . esc_html( $display ) . '</strong>' . $this->row_actions( $actions );
 	}
 
@@ -284,8 +335,24 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 				];
 
 				$status = PressPrimer_Certificate_Certificate::effective_status( $item );
+				$output = esc_html( isset( $labels[ $status ] ) ? $labels[ $status ] : $status );
 
-				return esc_html( isset( $labels[ $status ] ) ? $labels[ $status ] : $status );
+				// The revocation reason surfaces to staff beneath the
+				// status (collected by the Revoke confirmation modal).
+				if ( 'revoked' === $status && ! empty( $item->revoke_reason ) ) {
+					$output .= '<br /><span class="description">' . esc_html( (string) $item->revoke_reason ) . '</span>';
+				}
+
+				return $output;
+
+			case 'expires_at':
+				if ( empty( $item->expires_at ) ) {
+					return '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">'
+						. esc_html__( 'Never expires', 'pressprimer-certificate' ) . '</span>';
+				}
+
+				// UTC in, localized out (CLAUDE.md Datetime Standard).
+				return esc_html( get_date_from_gmt( (string) $item->expires_at, get_option( 'date_format' ) ) );
 
 			case 'issued_at':
 				// UTC in, localized out (CLAUDE.md Datetime Standard).

@@ -121,6 +121,13 @@ class PressPrimer_Certificate_Migrator {
 				'callback' => [ __CLASS__, 'migrate_to_1_0_0' ],
 				'targets'  => $initial_targets,
 			],
+			// 1.0.1: template settings (validity periods) - the
+			// settings_json column on wp_ppcert_templates.
+			[
+				'version'  => '1.0.1',
+				'callback' => [ __CLASS__, 'migrate_to_1_0_1' ],
+				'targets'  => [ 'ppcert_templates' => [ 'settings_json' ] ],
+			],
 		];
 	}
 
@@ -132,6 +139,20 @@ class PressPrimer_Certificate_Migrator {
 	 * @since 1.0.0
 	 */
 	public static function migrate_to_1_0_0() {
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		dbDelta( PressPrimer_Certificate_Schema::get_schema() );
+	}
+
+	/**
+	 * Migration step 1.0.1: add settings_json to templates
+	 *
+	 * Runs dbDelta over the full schema, which adds the new column;
+	 * idempotent for clean installs that already carry it.
+	 *
+	 * @since 1.0.0
+	 */
+	public static function migrate_to_1_0_1() {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		dbDelta( PressPrimer_Certificate_Schema::get_schema() );

@@ -41,6 +41,97 @@ class PressPrimer_Certificate_Admin_Certificates {
 		add_action( 'admin_menu', [ $this, 'register_menu' ], 20 );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_post_ppcert_download_certificate', [ $this, 'handle_download' ] );
+		add_action( 'admin_init', [ $this, 'handle_revoke_action' ] );
+		add_action( 'admin_init', [ $this, 'handle_reinstate_action' ] );
+	}
+
+	/**
+	 * Handle the confirmed Revoke action
+	 *
+	 * Nonce-verified, capability-gated status flip with an optional
+	 * reason, submitted by the on-page confirmation banner, then a
+	 * redirect back to the list with a notice flag.
+	 *
+	 * @since 1.0.0
+	 */
+	public function handle_revoke_action() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+
+		if ( 'ppcert-certificates' !== $page || 'ppcert-revoke' !== $action ) {
+			return;
+		}
+
+		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			wp_die( esc_html__( 'You are not allowed to revoke certificates.', 'pressprimer-certificate' ) );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified by check_admin_referer immediately below.
+		$certificate_id = isset( $_GET['certificate_id'] ) ? absint( wp_unslash( $_GET['certificate_id'] ) ) : 0;
+
+		check_admin_referer( 'ppcert_revoke_certificate_' . $certificate_id );
+
+		$reason = isset( $_GET['revoke_reason'] )
+			? sanitize_text_field( wp_unslash( $_GET['revoke_reason'] ) )
+			: '';
+
+		$result  = PressPrimer_Certificate_Certificate::revoke( $certificate_id, $reason );
+		$revoked = ! is_wp_error( $result ) ? 1 : 0;
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page'           => 'ppcert-certificates',
+					'ppcert_revoked' => $revoked,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Handle the Reinstate action
+	 *
+	 * Nonce-verified, capability-gated undo for a mistaken revocation,
+	 * then a redirect back to the list with a notice flag.
+	 *
+	 * @since 1.0.0
+	 */
+	public function handle_reinstate_action() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+
+		if ( 'ppcert-certificates' !== $page || 'ppcert-reinstate' !== $action ) {
+			return;
+		}
+
+		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			wp_die( esc_html__( 'You are not allowed to reinstate certificates.', 'pressprimer-certificate' ) );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified by check_admin_referer immediately below.
+		$certificate_id = isset( $_GET['certificate_id'] ) ? absint( wp_unslash( $_GET['certificate_id'] ) ) : 0;
+
+		check_admin_referer( 'ppcert_reinstate_certificate_' . $certificate_id );
+
+		$result     = PressPrimer_Certificate_Certificate::reinstate( $certificate_id );
+		$reinstated = ! is_wp_error( $result ) ? 1 : 0;
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page'              => 'ppcert-certificates',
+					'ppcert_reinstated' => $reinstated,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	/**
@@ -71,13 +162,40 @@ class PressPrimer_Certificate_Admin_Certificates {
 		echo '<div class="wrap">';
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'Certificates', 'pressprimer-certificate' ) . '</h1> ';
 
-		// The Issue button + modal mount as React (Ant Design) beside
-		// the title; issuance capability gates the mount server-side.
+		// The core page-title-action button (house pattern for buttons
+		// beside list-table titles); the React app binds its click to
+		// open the Issue modal, whose portal mounts in the span.
+		// Issuance capability gates both server-side.
 		if ( current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			echo '<a href="#" class="page-title-action" id="ppcert-issue-open">' . esc_html__( 'Issue Certificate', 'pressprimer-certificate' ) . '</a>';
 			echo '<span id="ppcert-issue-root"></span>';
 		}
 
 		echo '<hr class="wp-header-end" />';
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag set by the nonce-verified revoke handler.
+		if ( isset( $_GET['ppcert_revoked'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag.
+			$revoked = absint( wp_unslash( $_GET['ppcert_revoked'] ) );
+
+			echo '<div class="notice notice-' . ( $revoked ? 'success' : 'error' ) . ' is-dismissible"><p>';
+			echo $revoked
+				? esc_html__( 'Certificate revoked. It now verifies as invalid and its PDF download is disabled. Use Reinstate to undo.', 'pressprimer-certificate' )
+				: esc_html__( 'The certificate could not be revoked.', 'pressprimer-certificate' );
+			echo '</p></div>';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag set by the nonce-verified reinstate handler.
+		if ( isset( $_GET['ppcert_reinstated'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag.
+			$reinstated = absint( wp_unslash( $_GET['ppcert_reinstated'] ) );
+
+			echo '<div class="notice notice-' . ( $reinstated ? 'success' : 'error' ) . ' is-dismissible"><p>';
+			echo $reinstated
+				? esc_html__( 'Certificate reinstated. It verifies as valid again.', 'pressprimer-certificate' )
+				: esc_html__( 'The certificate could not be reinstated.', 'pressprimer-certificate' );
+			echo '</p></div>';
+		}
 
 		echo '<form method="get">';
 		echo '<input type="hidden" name="page" value="ppcert-certificates" />';
@@ -107,6 +225,16 @@ class PressPrimer_Certificate_Admin_Certificates {
 			PPCERT_PLUGIN_URL . 'assets/css/ppcert-admin.css',
 			[],
 			PPCERT_VERSION
+		);
+
+		// The house confirmation modal for link-driven list actions
+		// (the Revoke flow) - the Quiz admin.js pattern.
+		wp_enqueue_script(
+			'ppcert-admin',
+			PPCERT_PLUGIN_URL . 'assets/js/ppcert-admin.js',
+			[ 'jquery' ],
+			PPCERT_VERSION,
+			true
 		);
 
 		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {

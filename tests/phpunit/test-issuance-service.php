@@ -333,6 +333,88 @@ class Test_Issuance_Service extends TestCase {
 	}
 
 	/**
+	 * Certificate validity: the template's validity_months counts
+	 * forward from issued_at (including backdates); a manual
+	 * expires_at override wins; absent both, certificates never
+	 * expire.
+	 *
+	 * @return void
+	 */
+	public function test_validity_period_sets_expires_at() {
+		// Default: never expires.
+		PressPrimer_Certificate_Issuance_Service::issue( $this->args() );
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$this->assertNull( $rows[0]['expires_at'] );
+
+		// Template validity: 12 months from the (backdated) earned date.
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			$this->template_id,
+			[ 'settings_json' => '{"validity_mode":"period","validity_amount":12,"validity_unit":"months"}' ]
+		);
+
+		PressPrimer_Certificate_Issuance_Service::issue(
+			$this->args(
+				[
+					'source_ref' => '90',
+					'issued_at'  => '2026-03-15 12:00:00',
+				]
+			)
+		);
+
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$this->assertSame( '2027-03-15 12:00:00', $rows[1]['expires_at'] );
+
+		// The expiry date merge value snapshots from the computed value.
+		$merge = json_decode( $rows[1]['merge_data_json'], true );
+		if ( isset( $merge['certificate.expiry_date'] ) ) {
+			$this->assertNotSame( '', $merge['certificate.expiry_date'] );
+		}
+
+		// Manual override beats the template setting.
+		PressPrimer_Certificate_Issuance_Service::issue(
+			$this->args(
+				[
+					'source_ref' => '91',
+					'expires_at' => '2030-06-30 23:59:59',
+				]
+			)
+		);
+
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$this->assertSame( '2030-06-30 23:59:59', $rows[2]['expires_at'] );
+
+		// A malformed override is ignored in favor of the template
+		// policy - never trusted into the row.
+		PressPrimer_Certificate_Issuance_Service::issue(
+			$this->args(
+				[
+					'source_ref' => '92',
+					'expires_at' => 'not-a-datetime',
+					'issued_at'  => '2026-01-01 00:00:00',
+				]
+			)
+		);
+
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$this->assertSame( '2027-01-01 00:00:00', $rows[3]['expires_at'] );
+
+		// Fixed-date validity: every certificate expires at that day's
+		// end (cohort model), regardless of when it was earned.
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			$this->template_id,
+			[ 'settings_json' => '{"validity_mode":"date","validity_date":"2027-12-31"}' ]
+		);
+
+		PressPrimer_Certificate_Issuance_Service::issue( $this->args( [ 'source_ref' => '93' ] ) );
+
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$last = end( $rows );
+		$this->assertSame( '2027-12-31 23:59:59', $last['expires_at'] );
+	}
+
+	/**
 	 * A WP_Error from ppcert_issue_validation aborts with no rows and no
 	 * downstream hooks.
 	 *

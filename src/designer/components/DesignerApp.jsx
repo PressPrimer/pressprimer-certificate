@@ -97,6 +97,7 @@ export default function DesignerApp( { boot } ) {
 		saveTemplate( state.template.id, {
 			layout: state.layout,
 			title: state.template.title,
+			settings: state.template.settings || {},
 			expected_updated_at: state.template.updated_at,
 			...extra,
 		} )

@@ -21,6 +21,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import {
 	Alert,
 	Button,
+	DatePicker,
 	Empty,
 	Input,
 	InputNumber,
@@ -31,6 +32,7 @@ import {
 	Tooltip,
 	Typography,
 } from 'antd';
+import dayjs from 'dayjs';
 import {
 	PlusOutlined,
 	EditOutlined,
@@ -190,6 +192,196 @@ function conditionSummary( trigger, type ) {
 			return `${ field.label }: ${ value }`;
 		} )
 		.filter( Boolean );
+}
+
+/**
+ * Certificate validity - never, a period, or a fixed date.
+ *
+ * The settings shape mirrors the server sanitizer: {} for never,
+ * { validity_mode: 'period', validity_amount, validity_unit } for a
+ * rolling period from the earned date, or { validity_mode: 'date',
+ * validity_date: 'YYYY-MM-DD' } for a fixed calendar date. Choosing
+ * "Never expires" clears the setting entirely.
+ *
+ * @param {Object}   props          Props.
+ * @param {Object}   props.settings Current template settings.
+ * @param {Function} props.onChange Receives the full settings object.
+ * @return {JSX.Element} Section.
+ */
+function ValiditySection( { settings, onChange } ) {
+	const mode = settings.validity_mode || 'never';
+	const unit = settings.validity_unit || 'months';
+
+	const unitBounds = { days: 3650, months: 120, years: 50 };
+
+	const setPeriod = ( amount, nextUnit ) =>
+		onChange( {
+			validity_mode: 'period',
+			validity_amount: amount,
+			validity_unit: nextUnit,
+		} );
+
+	return (
+		<div className="ppcert-designer__validity">
+			<span className="ppcert-designer__panel-heading">
+				{ __( 'Certificate validity', 'pressprimer-certificate' ) }
+			</span>
+			<div className="ppcert-designer__prop-row">
+				<span className="ppcert-designer__trigger-label">
+					{ __( 'Expires', 'pressprimer-certificate' ) }
+					<Tooltip
+						title={ __(
+							'Whether certificates from this template stop being valid: never, after a period counted from the earned date, or on a fixed date. Manual issuance can override this per certificate.',
+							'pressprimer-certificate'
+						) }
+					>
+						<InfoCircleOutlined className="ppcert-designer__trigger-help" />
+					</Tooltip>
+				</span>
+				<span className="ppcert-designer__prop-control">
+					<Select
+						size="small"
+						value={ mode }
+						data-ppcert-validity-mode
+						popupMatchSelectWidth={ false }
+						getPopupContainer={ ( node ) => node.parentElement }
+						onChange={ ( next ) => {
+							if ( 'period' === next ) {
+								setPeriod( 1, 'years' );
+							} else if ( 'date' === next ) {
+								onChange( {
+									validity_mode: 'date',
+									validity_date: dayjs()
+										.add( 1, 'year' )
+										.format( 'YYYY-MM-DD' ),
+								} );
+							} else {
+								onChange( {} );
+							}
+						} }
+						options={ [
+							{
+								value: 'never',
+								label: __( 'Never', 'pressprimer-certificate' ),
+							},
+							{
+								value: 'period',
+								label: __(
+									'After a period',
+									'pressprimer-certificate'
+								),
+							},
+							{
+								value: 'date',
+								label: __(
+									'On a date',
+									'pressprimer-certificate'
+								),
+							},
+						] }
+						className="ppcert-designer__prop-wide"
+					/>
+				</span>
+			</div>
+
+			{ 'period' === mode && (
+				<div className="ppcert-designer__prop-row">
+					<span className="ppcert-designer__trigger-label">
+						{ __( 'Valid for', 'pressprimer-certificate' ) }
+					</span>
+					<span className="ppcert-designer__prop-control ppcert-designer__validity-period">
+						<InputNumber
+							size="small"
+							min={ 1 }
+							max={ unitBounds[ unit ] }
+							value={ settings.validity_amount || 1 }
+							data-ppcert-validity-amount
+							onChange={ ( next ) =>
+								setPeriod(
+									'number' === typeof next && next >= 1
+										? next
+										: 1,
+									unit
+								)
+							}
+						/>
+						<Select
+							size="small"
+							value={ unit }
+							data-ppcert-validity-unit
+							popupMatchSelectWidth={ false }
+							getPopupContainer={ ( node ) => node.parentElement }
+							onChange={ ( next ) =>
+								setPeriod(
+									Math.min(
+										settings.validity_amount || 1,
+										unitBounds[ next ]
+									),
+									next
+								)
+							}
+							options={ [
+								{
+									value: 'days',
+									label: __(
+										'days',
+										'pressprimer-certificate'
+									),
+								},
+								{
+									value: 'months',
+									label: __(
+										'months',
+										'pressprimer-certificate'
+									),
+								},
+								{
+									value: 'years',
+									label: __(
+										'years',
+										'pressprimer-certificate'
+									),
+								},
+							] }
+						/>
+					</span>
+				</div>
+			) }
+
+			{ 'date' === mode && (
+				<div className="ppcert-designer__prop-row">
+					<span className="ppcert-designer__trigger-label">
+						{ __( 'Expiry date', 'pressprimer-certificate' ) }
+					</span>
+					<span className="ppcert-designer__prop-control">
+						<DatePicker
+							size="small"
+							value={
+								settings.validity_date
+									? dayjs( settings.validity_date )
+									: null
+							}
+							data-ppcert-validity-date
+							allowClear={ false }
+							getPopupContainer={ ( node ) => node.parentElement }
+							disabledDate={ ( current ) =>
+								current && current < dayjs().startOf( 'day' )
+							}
+							onChange={ ( value ) => {
+								if ( value ) {
+									onChange( {
+										validity_mode: 'date',
+										validity_date:
+											value.format( 'YYYY-MM-DD' ),
+									} );
+								}
+							} }
+						/>
+					</span>
+				</div>
+			) }
+		</div>
+	);
 }
 
 /**
@@ -889,6 +1081,13 @@ export default function TriggerPanel() {
 			) }
 
 			{ manualNote }
+
+			<ValiditySection
+				settings={ state.template?.settings || {} }
+				onChange={ ( settings ) =>
+					dispatch( { type: 'EDIT_SETTINGS', settings } )
+				}
+			/>
 
 			{ state.triggersDirty && (
 				<Alert

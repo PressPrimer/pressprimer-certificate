@@ -123,6 +123,7 @@ class PressPrimer_Certificate_Schema {
 			orientation ENUM('landscape','portrait') NOT NULL DEFAULT 'landscape',
 			layout_schema_version SMALLINT UNSIGNED NOT NULL DEFAULT 1,
 			layout_json LONGTEXT NOT NULL,
+			settings_json LONGTEXT DEFAULT NULL,
 			is_starter TINYINT(1) NOT NULL DEFAULT 0,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

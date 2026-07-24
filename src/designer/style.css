@@ -50,6 +50,18 @@
 	margin-bottom: 8px;
 }
 
+/* Certificate validity section beneath the trigger list (Award tab) */
+.ppcert-designer__validity {
+	margin: 16px 0 12px;
+	padding-top: 12px;
+	border-top: 1px solid #e5e7eb;
+}
+
+.ppcert-designer__validity-period {
+	display: inline-flex;
+	gap: 6px;
+}
+
 .ppcert-designer__palette-item {
 	display: flex;
 	align-items: center;

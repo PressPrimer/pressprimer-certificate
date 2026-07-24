@@ -175,7 +175,7 @@ export const TOUR_STEPS = [
 			),
 			{ strong: <strong /> }
 		),
-		selector: '#ppcert-issue-root',
+		selector: '#ppcert-issue-open',
 		fallbackSelector: '.wrap',
 		position: 'bottom',
 		matches: isOnCertificates,

@@ -47,8 +47,10 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow:
 **Issuance & Automation**
 
 * Automatic triggers: PressPrimer Quiz pass thresholds, PressPrimer Assignment grades, and course, lesson, topic, or quiz completion in LearnDash, LifterLMS, Tutor LMS, and LearnPress
-* Manually issue certificates with recipient search and a backdatable earned date
+* Manually issue certificates with recipient search, a backdatable earned date, and an optional expiry date
+* Validity periods: set how many months certificates from a template stay valid, or let them last forever
 * Per-trigger control over repeat completions: suppress duplicates (the default) or issue a fresh certificate every time, for compliance and recertification courses
+* Revoke certificates (with an optional reason) and reinstate them if revoked by mistake
 
 **Credentials & Verification**
 

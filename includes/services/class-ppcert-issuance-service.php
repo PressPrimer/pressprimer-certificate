@@ -75,6 +75,10 @@ class PressPrimer_Certificate_Issuance_Service {
 	 *                                "Issue anyway" - 003 Edge Cases). Default false.
 	 *     @type string $issued_at    UTC MySQL datetime override for manual
 	 *                                backdating (Phase 5B item 6). Default now.
+	 *     @type string $expires_at   UTC MySQL datetime override for manual
+	 *                                issuance. Default: the template's
+	 *                                validity_months setting counted from
+	 *                                issued_at, or never.
 	 * }
 	 * @return int|WP_Error Certificate row id (existing id when suppressed),
 	 *                      or WP_Error on abort.
@@ -182,8 +186,34 @@ class PressPrimer_Certificate_Issuance_Service {
 			? (string) $args['issued_at']
 			: current_time( 'mysql', true );
 
+		// Certificate validity: a manual expires_at override wins;
+		// otherwise the template's validity policy applies - a period
+		// counted forward from issued_at (so a backdated earned date
+		// shortens the remaining validity, as recertification
+		// expects), or a fixed calendar date expiring at that day's
+		// end, site time. Absent all, certificates never expire.
+		$expires_at = null;
+
+		if ( isset( $args['expires_at'] )
+			&& preg_match( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', (string) $args['expires_at'] ) ) {
+			$expires_at = (string) $args['expires_at'];
+		} elseif ( isset( $template->settings['validity_mode'] ) ) {
+			if ( 'period' === $template->settings['validity_mode'] && ! empty( $template->settings['validity_amount'] ) ) {
+				$unit = in_array( $template->settings['validity_unit'], [ 'days', 'months', 'years' ], true )
+					? $template->settings['validity_unit']
+					: 'months';
+
+				$expires_at = gmdate(
+					'Y-m-d H:i:s',
+					strtotime( $issued_at . ' UTC +' . absint( $template->settings['validity_amount'] ) . ' ' . $unit )
+				);
+			} elseif ( 'date' === $template->settings['validity_mode'] && ! empty( $template->settings['validity_date'] ) ) {
+				$expires_at = get_gmt_from_date( (string) $template->settings['validity_date'] . ' 23:59:59' );
+			}
+		}
+
 		try {
-			$certificate_id = self::resolve_and_insert( $template, $context, $issued_at );
+			$certificate_id = self::resolve_and_insert( $template, $context, $issued_at, $expires_at );
 		} catch ( \Throwable $e ) {
 			return new WP_Error(
 				'ppcert_issue_failed',
@@ -228,12 +258,13 @@ class PressPrimer_Certificate_Issuance_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param object $template  Template row (with raw layout_json).
-	 * @param array  $context   Issuance context.
-	 * @param string $issued_at UTC issuance datetime.
+	 * @param object      $template   Template row (with raw layout_json).
+	 * @param array       $context    Issuance context.
+	 * @param string      $issued_at  UTC issuance datetime.
+	 * @param string|null $expires_at UTC expiry datetime, or null for never.
 	 * @return int|WP_Error New certificate row id.
 	 */
-	private static function resolve_and_insert( $template, $context, $issued_at ) {
+	private static function resolve_and_insert( $template, $context, $issued_at, $expires_at = null ) {
 		global $wpdb;
 
 		$tokens = [];
@@ -252,6 +283,7 @@ class PressPrimer_Certificate_Issuance_Service {
 				[
 					'credential_id' => $credential_id,
 					'issued_at'     => $issued_at,
+					'expires_at'    => $expires_at,
 				]
 			);
 
@@ -281,7 +313,7 @@ class PressPrimer_Certificate_Issuance_Service {
 					'layout_snapshot_json'  => (string) $template->layout_json,
 					'merge_data_json'       => wp_json_encode( $merge_data ),
 					'issued_at'             => $issued_at,
-					'expires_at'            => null,
+					'expires_at'            => $expires_at,
 					'created_at'            => $issued_at,
 					'updated_at'            => $issued_at,
 				],

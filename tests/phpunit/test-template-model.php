@@ -404,6 +404,105 @@ class Test_Template_List_And_Duplicate extends TestCase {
 	}
 
 	/**
+	 * Template settings: field-by-field sanitization (validity_months
+	 * bounds, unknown keys stripped) and the update/hydrate round trip.
+	 *
+	 * @return void
+	 */
+	public function test_settings_sanitize_and_round_trip() {
+		// Period mode: coerced amount, whitelisted unit, unknown keys
+		// stripped.
+		$this->assertSame(
+			[
+				'validity_mode'   => 'period',
+				'validity_amount' => 12,
+				'validity_unit'   => 'months',
+			],
+			PressPrimer_Certificate_Template::sanitize_settings(
+				[
+					'validity_mode'   => 'period',
+					'validity_amount' => '12',
+					'validity_unit'   => 'months',
+					'evil'            => 'payload',
+				]
+			)
+		);
+
+		// Per-unit bounds: 3650 days ok, 121 months rejected, 51 years
+		// rejected, zero rejected, unknown unit rejected.
+		$period = static function ( $amount, $unit ) {
+			return PressPrimer_Certificate_Template::sanitize_settings(
+				[
+					'validity_mode'   => 'period',
+					'validity_amount' => $amount,
+					'validity_unit'   => $unit,
+				]
+			);
+		};
+
+		$this->assertSame( 3650, $period( 3650, 'days' )['validity_amount'] );
+		$this->assertSame( [], $period( 121, 'months' ) );
+		$this->assertSame( [], $period( 51, 'years' ) );
+		$this->assertSame( [], $period( 0, 'months' ) );
+		$this->assertSame( [], $period( 12, 'fortnights' ) );
+
+		// Date mode: Y-m-d only.
+		$this->assertSame(
+			[
+				'validity_mode' => 'date',
+				'validity_date' => '2027-12-31',
+			],
+			PressPrimer_Certificate_Template::sanitize_settings(
+				[
+					'validity_mode' => 'date',
+					'validity_date' => '2027-12-31',
+				]
+			)
+		);
+		$this->assertSame(
+			[],
+			PressPrimer_Certificate_Template::sanitize_settings(
+				[
+					'validity_mode' => 'date',
+					'validity_date' => 'next tuesday',
+				]
+			)
+		);
+
+		// Unknown modes and non-arrays clear to never-expires.
+		$this->assertSame( [], PressPrimer_Certificate_Template::sanitize_settings( [ 'validity_mode' => 'sometimes' ] ) );
+		$this->assertSame( [], PressPrimer_Certificate_Template::sanitize_settings( 'not-an-array' ) );
+
+		// Round trip through update() and hydration.
+		$id = $this->wpdb->seed_row(
+			PressPrimer_Certificate_Template::table(),
+			[
+				'uuid'        => 'tpl-settings-0001',
+				'title'       => 'Validity Test',
+				'status'      => 'draft',
+				'layout_json' => '{"layout_schema_version":1}',
+				'deleted_at'  => null,
+			]
+		);
+
+		PressPrimer_Certificate_Template::update(
+			$id,
+			[
+				'settings' => [
+					'validity_mode'   => 'period',
+					'validity_amount' => 2,
+					'validity_unit'   => 'years',
+				],
+			]
+		);
+		$this->assertSame( 'period', PressPrimer_Certificate_Template::get( $id )->settings['validity_mode'] );
+
+		// Clearing writes NULL, hydrating back to an empty array.
+		PressPrimer_Certificate_Template::update( $id, [ 'settings' => [] ] );
+		$this->assertSame( [], PressPrimer_Certificate_Template::get( $id )->settings );
+	}
+
+	/**
 	 * Duplication copies the design as a fresh draft and never copies
 	 * triggers (the reuse path is attaching a DIFFERENT trigger).
 	 *

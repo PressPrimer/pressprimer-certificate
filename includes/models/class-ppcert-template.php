@@ -279,6 +279,12 @@ class PressPrimer_Certificate_Template {
 			$format[]       = '%s';
 		}
 
+		if ( isset( $args['settings'] ) && is_array( $args['settings'] ) ) {
+			$settings              = self::sanitize_settings( $args['settings'] );
+			$data['settings_json'] = empty( $settings ) ? null : wp_json_encode( $settings );
+			$format[]              = '%s';
+		}
+
 		$data['updated_at'] = current_time( 'mysql', true );
 		$format[]           = '%s';
 
@@ -429,7 +435,8 @@ class PressPrimer_Certificate_Template {
 	 * @return object Hydrated row.
 	 */
 	private static function hydrate( $row ) {
-		$row->layout = null;
+		$row->layout   = null;
+		$row->settings = [];
 
 		if ( ! empty( $row->layout_json ) ) {
 			$decoded = json_decode( $row->layout_json, true );
@@ -439,6 +446,69 @@ class PressPrimer_Certificate_Template {
 			}
 		}
 
+		// json_decode is not sanitization - stored settings were
+		// sanitized field by field in sanitize_settings() on save.
+		if ( ! empty( $row->settings_json ) ) {
+			$decoded = json_decode( $row->settings_json, true );
+
+			if ( is_array( $decoded ) ) {
+				$row->settings = $decoded;
+			}
+		}
+
 		return $row;
+	}
+
+	/**
+	 * Sanitize template settings field by field
+	 *
+	 * Certificate validity is the one setting in 1.0. Three modes:
+	 * absent (never expires, the default), 'period' (an amount of
+	 * days, months, or years counted from the earned date), or 'date'
+	 * (a fixed calendar date, e.g. a cohort's season end). Unknown
+	 * keys and out-of-bounds values are stripped.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $settings Raw settings (decoded array).
+	 * @return array Sanitized settings.
+	 */
+	public static function sanitize_settings( $settings ) {
+		$settings = is_array( $settings ) ? $settings : [];
+		$clean    = [];
+
+		$mode = isset( $settings['validity_mode'] ) ? sanitize_key( (string) $settings['validity_mode'] ) : '';
+
+		if ( 'period' === $mode ) {
+			$unit   = isset( $settings['validity_unit'] ) ? sanitize_key( (string) $settings['validity_unit'] ) : '';
+			$amount = isset( $settings['validity_amount'] ) && is_numeric( $settings['validity_amount'] )
+				? absint( $settings['validity_amount'] )
+				: 0;
+
+			$bounds = [
+				'days'   => 3650,
+				'months' => 120,
+				'years'  => 50,
+			];
+
+			if ( isset( $bounds[ $unit ] ) && $amount >= 1 && $amount <= $bounds[ $unit ] ) {
+				$clean = [
+					'validity_mode'   => 'period',
+					'validity_amount' => $amount,
+					'validity_unit'   => $unit,
+				];
+			}
+		} elseif ( 'date' === $mode ) {
+			$date = isset( $settings['validity_date'] ) ? sanitize_text_field( (string) $settings['validity_date'] ) : '';
+
+			if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+				$clean = [
+					'validity_mode' => 'date',
+					'validity_date' => $date,
+				];
+			}
+		}
+
+		return $clean;
 	}
 }

@@ -161,4 +161,61 @@ class Test_Certificate_Model extends TestCase {
 		// Unknown id errors.
 		$this->assertInstanceOf( WP_Error::class, PressPrimer_Certificate_Certificate::revoke( 999 ) );
 	}
+
+	/**
+	 * Reinstate undoes a revocation: status returns to issued, the
+	 * revocation record clears, and the hook fires. Non-revoked rows
+	 * no-op; unknown ids error.
+	 *
+	 * @return void
+	 */
+	public function test_reinstate_transition() {
+		$id = $this->seed_certificate();
+
+		PressPrimer_Certificate_Certificate::revoke( $id, 'Clerical error' );
+
+		$calls = [];
+
+		add_action(
+			'ppcert_certificate_reinstated',
+			static function ( ...$args ) use ( &$calls ) {
+				$calls[] = $args;
+			},
+			10,
+			5
+		);
+
+		$this->assertTrue( PressPrimer_Certificate_Certificate::reinstate( $id ) );
+
+		$row = PressPrimer_Certificate_Certificate::get( $id );
+		$this->assertSame( 'issued', $row->status );
+		$this->assertEmpty( $row->revoked_at );
+		$this->assertEmpty( $row->revoke_reason );
+		$this->assertSame( 'issued', PressPrimer_Certificate_Certificate::effective_status( $row ) );
+
+		// Hook contract: ( int $certificate_id ).
+		$this->assertSame( [ [ $id ] ], $calls );
+
+		// Non-revoked rows no-op without re-firing.
+		$this->assertTrue( PressPrimer_Certificate_Certificate::reinstate( $id ) );
+		$this->assertCount( 1, $calls );
+
+		// A reinstated certificate past its expiry reports expired -
+		// reinstatement never extends validity.
+		$expired = $this->seed_certificate(
+			[
+				'credential_id' => 'RE1NEXP00001',
+				'expires_at'    => '2020-01-01 00:00:00',
+			]
+		);
+		PressPrimer_Certificate_Certificate::revoke( $expired );
+		PressPrimer_Certificate_Certificate::reinstate( $expired );
+		$this->assertSame(
+			'expired',
+			PressPrimer_Certificate_Certificate::effective_status( PressPrimer_Certificate_Certificate::get( $expired ) )
+		);
+
+		// Unknown id errors.
+		$this->assertInstanceOf( WP_Error::class, PressPrimer_Certificate_Certificate::reinstate( 999 ) );
+	}
 }

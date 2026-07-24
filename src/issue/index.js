@@ -8,11 +8,10 @@
  * Edge Cases: admins may legitimately reissue).
  */
 
-import { render, useState } from '@wordpress/element';
+import { render, useEffect, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import { Button, DatePicker, Modal, Select, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { DatePicker, Modal, Select, message } from 'antd';
 import dayjs from 'dayjs';
 
 // Ecosystem convention: toasts clear the WP admin bar.
@@ -35,6 +34,7 @@ function IssueApp() {
 	const [ templateId, setTemplateId ] = useState( null );
 	const [ recipient, setRecipient ] = useState( null );
 	const [ earnedDate, setEarnedDate ] = useState( () => dayjs() );
+	const [ expiresDate, setExpiresDate ] = useState( null );
 	const [ users, setUsers ] = useState( [] );
 	const [ submitting, setSubmitting ] = useState( false );
 
@@ -44,6 +44,7 @@ function IssueApp() {
 		setTemplateId( null );
 		setRecipient( null );
 		setEarnedDate( dayjs() );
+		setExpiresDate( null );
 		setUsers( [] );
 	};
 
@@ -67,6 +68,9 @@ function IssueApp() {
 				recipient_id: recipient,
 				earned_date: earnedDate
 					? earnedDate.format( 'YYYY-MM-DD' )
+					: undefined,
+				expires_date: expiresDate
+					? expiresDate.format( 'YYYY-MM-DD' )
 					: undefined,
 				force,
 			},
@@ -134,17 +138,27 @@ function IssueApp() {
 			} );
 	};
 
+	// The trigger is the PHP-rendered page-title-action anchor beside
+	// the H1 (house pattern for buttons on list-table screens); this
+	// app renders only the modal.
+	useEffect( () => {
+		const opener = document.getElementById( 'ppcert-issue-open' );
+
+		if ( ! opener ) {
+			return;
+		}
+
+		const onClick = ( e ) => {
+			e.preventDefault();
+			setOpen( true );
+		};
+
+		opener.addEventListener( 'click', onClick );
+		return () => opener.removeEventListener( 'click', onClick );
+	}, [] );
+
 	return (
 		<>
-			<Button
-				type="primary"
-				icon={ <PlusOutlined /> }
-				data-ppcert-issue-open
-				onClick={ () => setOpen( true ) }
-			>
-				{ __( 'Issue Certificate', 'pressprimer-certificate' ) }
-			</Button>
-
 			<Modal
 				open={ open }
 				maskClosable={ false }
@@ -232,6 +246,33 @@ function IssueApp() {
 						onChange={ ( value ) =>
 							setEarnedDate( value || dayjs() )
 						}
+						className="ppcert-issue__control"
+					/>
+
+					<label
+						className="ppcert-issue__label"
+						htmlFor="ppcert-issue-expires"
+					>
+						{ __(
+							'Expires (optional)',
+							'pressprimer-certificate'
+						) }
+					</label>
+					<DatePicker
+						id="ppcert-issue-expires"
+						value={ expiresDate }
+						data-ppcert-issue-expires
+						allowClear
+						placeholder={ __(
+							"Template's validity, or never",
+							'pressprimer-certificate'
+						) }
+						getPopupContainer={ ( node ) => node.parentElement }
+						disabledDate={ ( current ) =>
+							current &&
+							current <= ( earnedDate || dayjs() ).endOf( 'day' )
+						}
+						onChange={ setExpiresDate }
 						className="ppcert-issue__control"
 					/>
 				</div>

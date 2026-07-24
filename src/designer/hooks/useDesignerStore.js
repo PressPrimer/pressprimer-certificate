@@ -79,6 +79,15 @@ export function designerReducer( state, action ) {
 				dirty: true,
 			};
 
+		case 'EDIT_SETTINGS':
+			// Template settings (validity) persist with the next save;
+			// like renames, they are not undoable canvas operations.
+			return {
+				...state,
+				template: { ...state.template, settings: action.settings },
+				dirty: true,
+			};
+
 		case 'SET_TRIGGERS':
 			// Server truth (load or post-save adoption): not dirty.
 			return {

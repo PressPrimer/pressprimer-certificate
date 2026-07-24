@@ -249,6 +249,37 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 			}
 		}
 
+		// Optional expiry (validity feature): a Y-m-d site-local date,
+		// stored as that day's end converted to UTC. Must land after
+		// the earned date. Absent, the template's validity policy (or
+		// never) applies in the issuance service.
+		$expires_date        = sanitize_text_field( (string) $request->get_param( 'expires_date' ) );
+		$expires_at_override = null;
+
+		if ( '' !== $expires_date ) {
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $expires_date ) ) {
+				return new WP_Error(
+					'ppcert_invalid_expires_date',
+					__( 'The expiry date must be a valid date.', 'pressprimer-certificate' ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			$earned_for_compare = '' !== $earned_date
+				? $earned_date
+				: get_date_from_gmt( current_time( 'mysql', true ), 'Y-m-d' );
+
+			if ( $expires_date <= $earned_for_compare ) {
+				return new WP_Error(
+					'ppcert_invalid_expires_date',
+					__( 'The expiry date must be after the earned date.', 'pressprimer-certificate' ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			$expires_at_override = get_gmt_from_date( $expires_date . ' 23:59:59' );
+		}
+
 		if ( ! $force ) {
 			$existing = PressPrimer_Certificate_Certificate::find_duplicate(
 				$recipient_id,
@@ -281,6 +312,10 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 
 		if ( null !== $issued_at_override ) {
 			$issue_args['issued_at'] = $issued_at_override;
+		}
+
+		if ( null !== $expires_at_override ) {
+			$issue_args['expires_at'] = $expires_at_override;
 		}
 
 		$result = PressPrimer_Certificate_Issuance_Service::issue( $issue_args );

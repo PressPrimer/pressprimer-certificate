@@ -146,6 +146,27 @@ class Test_Merge_Field_Registry extends TestCase {
 	}
 
 	/**
+	 * The expiry date resolves from the issuance context when validity
+	 * applies, and stays empty for never-expiring certificates.
+	 *
+	 * @return void
+	 */
+	public function test_expiry_date_resolves_from_context() {
+		$this->assertSame(
+			'',
+			PressPrimer_Certificate_Merge_Field_Registry::resolve_expiry_date( [] ),
+			'No expiry means an empty merge value'
+		);
+
+		$resolved = PressPrimer_Certificate_Merge_Field_Registry::resolve_expiry_date(
+			[ 'expires_at' => '2027-03-15 12:00:00' ]
+		);
+
+		$this->assertNotSame( '', $resolved );
+		$this->assertStringContainsString( '2027', $resolved );
+	}
+
+	/**
 	 * Core certificate and site fields resolve from the context.
 	 *
 	 * @return void

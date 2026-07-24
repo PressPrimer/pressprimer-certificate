@@ -595,7 +595,14 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 	 * @return string
 	 */
 	public static function resolve_expiry_date( array $context ) {
-		return '';
+		$expires_at = isset( $context['expires_at'] ) ? (string) $context['expires_at'] : '';
+
+		if ( '' === $expires_at ) {
+			return '';
+		}
+
+		// UTC in, localized out (CLAUDE.md Datetime Standard).
+		return (string) get_date_from_gmt( $expires_at, get_option( 'date_format' ) );
 	}
 
 	/**

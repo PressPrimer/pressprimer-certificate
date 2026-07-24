@@ -270,10 +270,10 @@ class PressPrimer_Certificate_Certificate {
 	/**
 	 * Revoke a certificate
 	 *
-	 * The issued-to-revoked transition code exists in 1.0 with no UI
-	 * (Educator 2.0 adds it); this is the single code path so the hook
-	 * contract is stable from day one. No event row in 1.0 - the
-	 * 'revoked' event type is reserved for later versions (DATABASE.md).
+	 * The single issued-to-revoked code path (the Certificates screen's
+	 * Revoke action and any addon share it) so the hook contract is
+	 * stable. No event row in 1.0 - the 'revoked' event type is
+	 * reserved for later versions (DATABASE.md).
 	 *
 	 * @since 1.0.0
 	 *
@@ -321,6 +321,67 @@ class PressPrimer_Certificate_Certificate {
 
 		/** This action is documented in docs/architecture/HOOKS.md */
 		do_action( 'ppcert_certificate_revoked', absint( $id ), $reason );
+
+		return true;
+	}
+
+	/**
+	 * Reinstate a revoked certificate
+	 *
+	 * The undo for a mistaken revocation: status returns to issued and
+	 * the revocation record clears. Expiry is untouched - a reinstated
+	 * certificate whose expires_at has passed reports expired, exactly
+	 * as if it had never been revoked.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $id Certificate row id.
+	 * @return true|WP_Error True on success.
+	 */
+	public static function reinstate( $id ) {
+		global $wpdb;
+
+		$certificate = self::get( $id );
+
+		if ( ! $certificate ) {
+			return new WP_Error(
+				'ppcert_invalid_certificate',
+				__( 'Certificate not found.', 'pressprimer-certificate' )
+			);
+		}
+
+		if ( 'revoked' !== $certificate->status ) {
+			return true;
+		}
+
+		$updated = $wpdb->update(
+			self::table(),
+			[
+				'status'        => 'issued',
+				'revoked_at'    => null,
+				'revoke_reason' => null,
+				'updated_at'    => current_time( 'mysql', true ),
+			],
+			[ 'id' => absint( $id ) ],
+			[ '%s', '%s', '%s', '%s' ],
+			[ '%d' ]
+		);
+
+		if ( false === $updated ) {
+			return new WP_Error(
+				'ppcert_reinstate_failed',
+				__( 'Certificate reinstatement failed.', 'pressprimer-certificate' )
+			);
+		}
+
+		/**
+		 * Fires when a revoked certificate is reinstated.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $certificate_id Certificate row id.
+		 */
+		do_action( 'ppcert_certificate_reinstated', absint( $id ) );
 
 		return true;
 	}

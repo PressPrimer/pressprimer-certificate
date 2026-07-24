@@ -147,3 +147,144 @@ a.ant-btn-default:visited {
 	width: 100%;
 	margin-bottom: 10px;
 }
+
+/* ==========================================================================
+   Confirmation modal (house pattern, ported from the Quiz admin modal)
+   ========================================================================== */
+
+.ppcert-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100100;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+.ppcert-modal-overlay--visible {
+	opacity: 1;
+}
+
+.ppcert-modal {
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+	max-width: 420px;
+	width: 90%;
+	max-height: 90vh;
+	overflow: hidden;
+	transform: scale(0.9);
+	transition: transform 0.2s ease;
+}
+
+.ppcert-modal-overlay--visible .ppcert-modal {
+	transform: scale(1);
+}
+
+.ppcert-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 20px;
+	border-bottom: 1px solid #dcdcde;
+	background: #f6f7f7;
+}
+
+.ppcert-modal-title {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.ppcert-modal-close {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: #646970;
+	padding: 4px;
+	line-height: 1;
+	border-radius: 4px;
+	transition: all 0.15s ease;
+}
+
+.ppcert-modal-close:hover {
+	background: #dcdcde;
+	color: #1d2327;
+}
+
+.ppcert-modal-close .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+.ppcert-modal-body {
+	padding: 24px 20px;
+	text-align: center;
+}
+
+.ppcert-modal-icon {
+	margin-bottom: 16px;
+}
+
+.ppcert-modal-icon .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+}
+
+.ppcert-modal-icon--warning .dashicons {
+	color: #dba617;
+}
+
+.ppcert-modal-message {
+	font-size: 14px;
+	line-height: 1.6;
+	color: #3c434a;
+	white-space: pre-wrap;
+}
+
+.ppcert-modal-input-label {
+	display: block;
+	margin: 16px 0 4px;
+	font-size: 13px;
+	color: #3c434a;
+	text-align: left;
+}
+
+.ppcert-modal-input {
+	width: 100%;
+}
+
+.ppcert-modal-footer {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	padding: 16px 20px;
+	background: #f6f7f7;
+	border-top: 1px solid #dcdcde;
+}
+
+.ppcert-modal-footer .button {
+	min-width: 90px;
+	justify-content: center;
+}
+
+.ppcert-modal-footer .ppcert-modal-cancel {
+	background: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.ppcert-modal-overlay,
+	.ppcert-modal {
+		transition: none;
+	}
+}

@@ -316,6 +316,20 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			$args['status'] = $status;
 		}
 
+		$settings = $request->get_param( 'settings' );
+		if ( null !== $settings ) {
+			if ( ! is_array( $settings ) ) {
+				return new WP_Error(
+					'ppcert_invalid_settings',
+					__( 'Template settings must be an object.', 'pressprimer-certificate' ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			// Sanitized field by field in the model (validity_months).
+			$args['settings'] = $settings;
+		}
+
 		$updated = PressPrimer_Certificate_Template::update( (int) $row->id, $args );
 
 		if ( is_wp_error( $updated ) ) {
@@ -512,8 +526,9 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 	 * @return array
 	 */
 	private static function full( $row ) {
-		$data           = self::summary( $row );
-		$data['layout'] = $row->layout;
+		$data             = self::summary( $row );
+		$data['layout']   = $row->layout;
+		$data['settings'] = isset( $row->settings ) && is_array( $row->settings ) ? $row->settings : [];
 
 		return $data;
 	}

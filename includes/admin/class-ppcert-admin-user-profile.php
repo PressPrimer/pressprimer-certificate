@@ -121,6 +121,7 @@ class PressPrimer_Certificate_Admin_User_Profile {
 		$output .= '<th scope="col">' . esc_html__( 'Certificate', 'pressprimer-certificate' ) . '</th>';
 		$output .= '<th scope="col">' . esc_html__( 'Status', 'pressprimer-certificate' ) . '</th>';
 		$output .= '<th scope="col">' . esc_html__( 'Earned', 'pressprimer-certificate' ) . '</th>';
+		$output .= '<th scope="col">' . esc_html__( 'Expires', 'pressprimer-certificate' ) . '</th>';
 		$output .= '<th scope="col">' . esc_html__( 'Links', 'pressprimer-certificate' ) . '</th>';
 		$output .= '</tr></thead><tbody>';
 
@@ -146,6 +147,13 @@ class PressPrimer_Certificate_Admin_User_Profile {
 			$output .= '<td>' . esc_html( isset( $status_labels[ $status ] ) ? $status_labels[ $status ] : $status ) . '</td>';
 			// UTC in, localized out (CLAUDE.md Datetime Standard).
 			$output .= '<td>' . esc_html( get_date_from_gmt( (string) $certificate->issued_at, get_option( 'date_format' ) ) ) . '</td>';
+
+			$output .= '<td>' . (
+				empty( $certificate->expires_at )
+					? '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">' . esc_html__( 'Never expires', 'pressprimer-certificate' ) . '</span>'
+					: esc_html( get_date_from_gmt( (string) $certificate->expires_at, get_option( 'date_format' ) ) )
+			) . '</td>';
+
 			$output .= '<td>' . implode( ' | ', $links ) . '</td>';
 			$output .= '</tr>';
 		}
