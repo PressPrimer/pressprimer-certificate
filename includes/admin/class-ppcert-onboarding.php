@@ -337,12 +337,12 @@ class PressPrimer_Certificate_Onboarding {
 		$plugin_name = apply_filters( 'ppcert_plugin_name', __( 'PressPrimer Certificate', 'pressprimer-certificate' ) );
 
 		return [
-			'state'             => $this->get_onboarding_state(),
-			'nonce'             => wp_create_nonce( 'ppcert_onboarding' ),
-			'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
-			'relaunchUrl'       => self::get_relaunch_url(),
-			'pluginUrl'         => PPCERT_PLUGIN_URL,
-			'urls'              => [
+			'state'          => $this->get_onboarding_state(),
+			'nonce'          => wp_create_nonce( 'ppcert_onboarding' ),
+			'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+			'relaunchUrl'    => self::get_relaunch_url(),
+			'pluginUrl'      => PPCERT_PLUGIN_URL,
+			'urls'           => [
 				'dashboard'    => admin_url( 'admin.php?page=pressprimer-certificate' ),
 				'templates'    => admin_url( 'admin.php?page=ppcert-templates' ),
 				'gallery'      => admin_url( 'admin.php?page=ppcert-templates&action=new' ),
