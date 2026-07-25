@@ -520,13 +520,14 @@ class PressPrimer_Certificate_PDF_Renderer {
 		}
 
 		$font_key = isset( $variants[ $variant ]['tcpdf_font'] ) ? (string) $variants[ $variant ]['tcpdf_font'] : '';
-		$ttf_rel  = isset( $variants[ $variant ]['ttf'] ) ? (string) $variants[ $variant ]['ttf'] : '';
 		$ascent   = isset( $variants[ $variant ]['metrics']['ascent'] ) ? (int) $variants[ $variant ]['metrics']['ascent'] : 1000;
 
 		return [
 			'key'    => $font_key,
 			'file'   => PPCERT_PLUGIN_DIR . 'fonts/tcpdf/' . $font_key . '.php',
-			'ttf'    => '' !== $ttf_rel ? PPCERT_PLUGIN_DIR . 'fonts/' . $ttf_rel : '',
+			// Bundled TTF when present, else the inflate-on-demand
+			// cache (the release ZIP ships fonts only in .z form).
+			'ttf'    => PressPrimer_Certificate_Font_Cache_Service::ttf_path( $variants[ $variant ] ),
 			'ascent' => $ascent,
 		];
 	}

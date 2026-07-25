@@ -85,6 +85,17 @@ postcss.config.js
 # Build scripts (dev-time only; converted font output ships, the converter does not)
 /scripts
 
+# Source TTF families (dev/harness only). Each converted TCPDF .z file
+# is the zlib-compressed original TTF; production inflates them into
+# uploads/ppcert-fonts on demand (Font_Cache_Service). License files
+# and the manifest still ship.
+fonts/*/*.ttf
+
+# TCPDF's bundled font collection (24 MB, unused - every SetFont call
+# passes an explicit file; K_PATH_FONTS points at fonts/tcpdf/, which
+# carries the core helvetica/times/courier metrics TCPDF needs).
+vendor/tecnickcom/tcpdf/fonts
+
 # Testing
 /tests
 phpunit.xml

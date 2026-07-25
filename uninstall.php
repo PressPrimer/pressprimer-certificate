@@ -100,6 +100,36 @@ function ppcert_remove_site_data() {
 	ppcert_remove_post_meta();
 	ppcert_remove_capabilities();
 	ppcert_clear_transients();
+	ppcert_remove_font_cache();
+}
+
+/**
+ * Remove the current site's inflated-font cache directory.
+ *
+ * uploads/ppcert-fonts holds TTFs inflated from the bundled .z files
+ * (Font_Cache_Service); regenerable artifacts, removed with the data.
+ *
+ * @since 1.0.0
+ */
+function ppcert_remove_font_cache() {
+	$uploads = wp_upload_dir();
+
+	if ( ! empty( $uploads['error'] ) ) {
+		return;
+	}
+
+	$dir = trailingslashit( $uploads['basedir'] ) . 'ppcert-fonts';
+
+	if ( ! is_dir( $dir ) ) {
+		return;
+	}
+
+	foreach ( (array) glob( $dir . '/*' ) as $file ) {
+		wp_delete_file( $file );
+	}
+
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing the emptied plugin cache directory.
+	rmdir( $dir );
 }
 
 /**

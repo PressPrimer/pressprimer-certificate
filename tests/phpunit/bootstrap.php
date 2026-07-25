@@ -28,6 +28,13 @@ if ( ! defined( 'PPCERT_VERSION' ) ) {
 	define( 'PPCERT_VERSION', '1.0.0-test' );
 }
 
+// TCPDF font lookup roots in the plugin's converted-fonts directory,
+// exactly as the production bootstrap defines it (the release ZIP strips
+// TCPDF's bundled font collection; core metrics ship in fonts/tcpdf/).
+if ( ! defined( 'K_PATH_FONTS' ) ) {
+	define( 'K_PATH_FONTS', PPCERT_PLUGIN_DIR . 'fonts/tcpdf/' );
+}
+
 // Load Composer autoloader (PHPUnit, etc.).
 require_once PPCERT_PLUGIN_DIR . 'vendor/autoload.php';
 

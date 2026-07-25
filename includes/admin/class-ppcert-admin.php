@@ -448,7 +448,15 @@ class PressPrimer_Certificate_Admin {
 					// provide their own absolute URL.
 					$url = esc_url( $def['url'] );
 				} elseif ( ! empty( $def['ttf'] ) ) {
-					$url = esc_url( PPCERT_PLUGIN_URL . 'fonts/' . ltrim( (string) $def['ttf'], '/' ) );
+					// Bundled TTF when present, else the inflated
+					// uploads cache (trimmed release ZIP).
+					$resolved = PressPrimer_Certificate_Font_Cache_Service::ttf_url( $def );
+
+					if ( '' === $resolved ) {
+						continue;
+					}
+
+					$url = esc_url( $resolved );
 				} else {
 					continue;
 				}

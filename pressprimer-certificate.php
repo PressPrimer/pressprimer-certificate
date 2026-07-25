@@ -70,6 +70,15 @@ if ( ! ppcert_requirements_met() ) {
 	return;
 }
 
+// TCPDF font lookup roots in the plugin's own converted-fonts directory.
+// The release ZIP strips TCPDF's 24 MB bundled font collection (unused -
+// every SetFont call passes an explicit file); the core-font metrics
+// TCPDF needs internally ship in fonts/tcpdf/ instead. Must be defined
+// before tcpdf_autoconfig.php runs (first TCPDF class load).
+if ( ! defined( 'K_PATH_FONTS' ) ) {
+	define( 'K_PATH_FONTS', PPCERT_PLUGIN_DIR . 'fonts/tcpdf/' );
+}
+
 // Composer autoloader (for vendor dependencies such as TCPDF and the QR library)
 if ( file_exists( PPCERT_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
 	require_once PPCERT_PLUGIN_DIR . 'vendor/autoload.php';
