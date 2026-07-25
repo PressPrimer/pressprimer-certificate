@@ -93,8 +93,44 @@ class PressPrimer_Certificate_Admin_User_Profile {
 			( $page - 1 ) * self::PER_PAGE
 		);
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- build_section escapes every value it prints.
-		echo $this->build_section( $certificates, $page, $total_pages );
+		echo wp_kses( $this->build_section( $certificates, $page, $total_pages ), self::allowed_section_tags() );
+	}
+
+	/**
+	 * The explicit allowed-tags array for the section markup
+	 *
+	 * Every element build_section() emits, and nothing else. The style
+	 * attributes carry only max-width/margin (safecss-permitted).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	private static function allowed_section_tags() {
+		return [
+			'h2'    => [ 'id' => true ],
+			'table' => [
+				'class' => true,
+				'style' => true,
+			],
+			'thead' => [],
+			'tbody' => [],
+			'tr'    => [],
+			'th'    => [ 'scope' => true ],
+			'td'    => [],
+			'a'     => [
+				'href'  => true,
+				'class' => true,
+			],
+			'span'  => [
+				'class'       => true,
+				'aria-hidden' => true,
+			],
+			'div'   => [
+				'class' => true,
+				'style' => true,
+			],
+		];
 	}
 
 	/**

@@ -1749,6 +1749,19 @@ if ( ! function_exists( 'wp_kses_post' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_kses' ) ) {
+	/**
+	 * Stub: Pass-through allowlist sanitizer (assertions target markup).
+	 *
+	 * @param string $content      Content.
+	 * @param array  $allowed_html Allowed tags (unused in the stub).
+	 * @return string
+	 */
+	function wp_kses( $content, $allowed_html = [] ) {
+		return (string) $content;
+	}
+}
+
 if ( ! function_exists( 'paginate_links' ) ) {
 	/**
 	 * Stub: Simple numbered page links honoring base/current/total.

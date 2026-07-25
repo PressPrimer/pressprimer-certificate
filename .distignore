@@ -42,6 +42,8 @@ vendor/*/docs
 vendor/*/*/docs
 vendor/*/examples
 vendor/*/*/examples
+vendor/*/tools
+vendor/*/*/tools
 vendor/*/tests
 vendor/*/*/tests
 vendor/*/.github
@@ -69,10 +71,13 @@ vendor/*/*/*.php-dist
 
 # Build Tools / Config
 webpack.config.js
+webpack.harness.config.js
 babel.config.js
 postcss.config.js
 .babelrc
 .browserslistrc
+.eslintignore
+.stylelintignore
 
 # Source Files (built versions are in /build)
 /src
