@@ -41,12 +41,17 @@ class PressPrimer_Certificate_Email_Service {
 	 *
 	 * @param int   $certificate_id Certificate row id.
 	 * @param array $context        Issuance context.
+	 * @param bool  $force_enabled  Bypass the automatic-email setting
+	 *                              (explicit staff resend). Default false.
 	 * @return bool Whether an email was sent.
 	 */
-	public static function send_issued( $certificate_id, $context ) {
+	public static function send_issued( $certificate_id, $context, $force_enabled = false ) {
 		$settings = self::settings();
 
-		$enabled = ! empty( $settings['email_issued_enabled'] );
+		// An explicit staff resend bypasses the automatic-email
+		// setting (the click IS the consent); the filter below can
+		// still veto in code.
+		$enabled = $force_enabled || ! empty( $settings['email_issued_enabled'] );
 
 		/** This filter is documented in docs/architecture/HOOKS.md */
 		$enabled = apply_filters( 'ppcert_email_enabled', $enabled, 'issued', $context );
@@ -109,6 +114,22 @@ class PressPrimer_Certificate_Email_Service {
 		}
 
 		return (bool) $sent;
+	}
+
+	/**
+	 * Resend the delivery email for an existing certificate
+	 *
+	 * The Certificates screen's Resend action: rebuilds the email from
+	 * the stored row and current settings, bypassing the
+	 * automatic-email toggle because the staff click is explicit.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $certificate_id Certificate row id.
+	 * @return bool Whether an email was sent.
+	 */
+	public static function resend( $certificate_id ) {
+		return self::send_issued( absint( $certificate_id ), [ 'resend' => true ], true );
 	}
 
 	/**

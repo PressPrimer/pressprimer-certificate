@@ -387,6 +387,57 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * Permanently delete a certificate and its event history
+	 *
+	 * Removal for test data and mistakes: the credential stops
+	 * verifying entirely, as if never issued. Invalidating an EARNED
+	 * credential while keeping its record is revoke()'s job - the
+	 * Certificates screen says so in the delete confirmation.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $id Certificate row id.
+	 * @return true|WP_Error True on success.
+	 */
+	public static function delete( $id ) {
+		global $wpdb;
+
+		$certificate = self::get( $id );
+
+		if ( ! $certificate ) {
+			return new WP_Error(
+				'ppcert_invalid_certificate',
+				__( 'Certificate not found.', 'pressprimer-certificate' )
+			);
+		}
+
+		$credential_id = (string) $certificate->credential_id;
+
+		$wpdb->delete( self::events_table(), [ 'certificate_id' => absint( $id ) ], [ '%d' ] );
+
+		$deleted = $wpdb->delete( self::table(), [ 'id' => absint( $id ) ], [ '%d' ] );
+
+		if ( false === $deleted || 0 === $deleted ) {
+			return new WP_Error(
+				'ppcert_delete_failed',
+				__( 'Certificate deletion failed.', 'pressprimer-certificate' )
+			);
+		}
+
+		/**
+		 * Fires after a certificate is permanently deleted.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int    $certificate_id Certificate row id.
+		 * @param string $credential_id  Its credential ID (stored form).
+		 */
+		do_action( 'ppcert_certificate_deleted', absint( $id ), $credential_id );
+
+		return true;
+	}
+
+	/**
 	 * Record a lifecycle event
 	 *
 	 * Privacy rules per DATABASE.md: no raw IPs or user agents in meta;

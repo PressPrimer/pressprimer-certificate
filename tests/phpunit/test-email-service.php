@@ -148,6 +148,28 @@ class Test_Email_Service extends TestCase {
 	}
 
 	/**
+	 * resend() bypasses a disabled automatic-email setting (the staff
+	 * click is explicit consent) while the code-level filter still
+	 * vetoes.
+	 *
+	 * @return void
+	 */
+	public function test_resend_bypasses_setting_but_not_filter() {
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'email_issued_enabled' => 0 ];
+
+		$this->assertFalse( PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [] ), 'Automatic send stays off' );
+		$this->assertTrue( PressPrimer_Certificate_Email_Service::resend( $this->certificate_id ) );
+
+		$this->assertCount( 1, $GLOBALS['ppcert_test_mail'] );
+		$this->assertSame( 'dana@example.test', $GLOBALS['ppcert_test_mail'][0]['to'] );
+
+		// The filter veto still wins over a resend.
+		add_filter( 'ppcert_email_enabled', '__return_false_ppcert_test' );
+		$this->assertFalse( PressPrimer_Certificate_Email_Service::resend( $this->certificate_id ) );
+		$this->assertCount( 1, $GLOBALS['ppcert_test_mail'] );
+	}
+
+	/**
 	 * A broken snapshot degrades to link-only: the email still sends with
 	 * the verification URL in the body (no size threshold exists - the
 	 * PDF attaches whenever rendering succeeds).

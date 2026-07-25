@@ -291,7 +291,50 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 					. ' data-ppcert-input-label="' . esc_attr__( 'Reason (optional, shown to staff only):', 'pressprimer-certificate' ) . '"'
 					. ' data-ppcert-input-name="revoke_reason"'
 					. '>' . esc_html__( 'Revoke', 'pressprimer-certificate' ) . '</a>';
+
+				// Resend the delivery email (not offered for revoked
+				// certificates - their downloads are disabled).
+				$resend_url = wp_nonce_url(
+					add_query_arg(
+						[
+							'page'           => 'ppcert-certificates',
+							'action'         => 'ppcert-resend-email',
+							'certificate_id' => (int) $item->id,
+						],
+						admin_url( 'admin.php' )
+					),
+					'ppcert_resend_email_' . (int) $item->id
+				);
+
+				$actions['resend'] = '<a href="' . esc_url( $resend_url ) . '">' . esc_html__( 'Resend email', 'pressprimer-certificate' ) . '</a>';
 			}
+
+			// Permanent deletion (test data and mistakes) - always
+			// available, confirmed through the house modal.
+			$delete_url = wp_nonce_url(
+				add_query_arg(
+					[
+						'page'           => 'ppcert-certificates',
+						'action'         => 'ppcert-delete',
+						'certificate_id' => (int) $item->id,
+					],
+					admin_url( 'admin.php' )
+				),
+				'ppcert_delete_certificate_' . (int) $item->id
+			);
+
+			$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" class="submitdelete ppcert-confirm-link"'
+				. ' data-ppcert-title="' . esc_attr__( 'Delete certificate', 'pressprimer-certificate' ) . '"'
+				. ' data-ppcert-message="' . esc_attr(
+					sprintf(
+						/* translators: %s: credential ID. */
+						__( '%s and its history will be permanently deleted, and the credential will no longer verify at all. This cannot be undone. To invalidate an earned credential while keeping its record, use Revoke instead.', 'pressprimer-certificate' ),
+						$display
+					)
+				) . '"'
+				. ' data-ppcert-confirm="' . esc_attr__( 'Delete permanently', 'pressprimer-certificate' ) . '"'
+				. ' data-ppcert-cancel="' . esc_attr__( 'Cancel', 'pressprimer-certificate' ) . '"'
+				. '>' . esc_html__( 'Delete', 'pressprimer-certificate' ) . '</a>';
 		}
 
 		return '<strong>' . esc_html( $display ) . '</strong>' . $this->row_actions( $actions );

@@ -3,7 +3,8 @@
  * Certificate model tests
  *
  * Status evaluation with read-time expiry (Feature 003 FR-005),
- * normalized credential lookup, and the revoke transition.
+ * normalized credential lookup, and the revoke, reinstate, and
+ * delete transitions.
  *
  * @package PressPrimer_Certificate
  * @subpackage Tests
@@ -217,5 +218,55 @@ class Test_Certificate_Model extends TestCase {
 
 		// Unknown id errors.
 		$this->assertInstanceOf( WP_Error::class, PressPrimer_Certificate_Certificate::reinstate( 999 ) );
+	}
+
+	/**
+	 * Delete permanently removes the row and its event history, fires
+	 * the hook with the credential ID, and leaves other certificates'
+	 * events untouched. Unknown ids error.
+	 *
+	 * @return void
+	 */
+	public function test_delete_removes_row_and_events() {
+		$id    = $this->seed_certificate();
+		$other = $this->seed_certificate( [ 'credential_id' => 'KEEPME000001' ] );
+
+		PressPrimer_Certificate_Certificate::record_event( $id, 'verified' );
+		PressPrimer_Certificate_Certificate::record_event( $id, 'downloaded', 1 );
+		PressPrimer_Certificate_Certificate::record_event( $other, 'verified' );
+
+		$calls = [];
+
+		add_action(
+			'ppcert_certificate_deleted',
+			static function ( ...$args ) use ( &$calls ) {
+				$calls[] = $args;
+			},
+			10,
+			5
+		);
+
+		$this->assertTrue( PressPrimer_Certificate_Certificate::delete( $id ) );
+
+		// The row and its history are gone; the credential no longer
+		// verifies in any form.
+		$this->assertNull( PressPrimer_Certificate_Certificate::get( $id ) );
+		$this->assertNull( PressPrimer_Certificate_Certificate::get_by_credential_id( '7Q4MK9P2XT3A' ) );
+
+		$remaining_events = $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() );
+		$this->assertCount( 1, $remaining_events, 'Only the other certificate\'s event survives' );
+
+		$survivor = reset( $remaining_events );
+		$this->assertSame( $other, (int) $survivor['certificate_id'] );
+
+		// The other certificate itself is untouched.
+		$this->assertNotNull( PressPrimer_Certificate_Certificate::get( $other ) );
+
+		// Hook contract: ( int $certificate_id, string $credential_id ).
+		$this->assertSame( [ [ $id, '7Q4MK9P2XT3A' ] ], $calls );
+
+		// Unknown id errors without firing the hook.
+		$this->assertInstanceOf( WP_Error::class, PressPrimer_Certificate_Certificate::delete( 999 ) );
+		$this->assertCount( 1, $calls );
 	}
 }

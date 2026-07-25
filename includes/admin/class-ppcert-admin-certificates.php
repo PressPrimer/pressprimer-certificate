@@ -43,6 +43,8 @@ class PressPrimer_Certificate_Admin_Certificates {
 		add_action( 'admin_post_ppcert_download_certificate', [ $this, 'handle_download' ] );
 		add_action( 'admin_init', [ $this, 'handle_revoke_action' ] );
 		add_action( 'admin_init', [ $this, 'handle_reinstate_action' ] );
+		add_action( 'admin_init', [ $this, 'handle_delete_action' ] );
+		add_action( 'admin_init', [ $this, 'handle_resend_action' ] );
 	}
 
 	/**
@@ -135,6 +137,91 @@ class PressPrimer_Certificate_Admin_Certificates {
 	}
 
 	/**
+	 * Handle the confirmed Delete action
+	 *
+	 * Nonce-verified, capability-gated permanent deletion (test data
+	 * and mistakes), then a redirect back to the list with a notice
+	 * flag. The list table's confirmation modal points earned-credential
+	 * cases at Revoke instead.
+	 *
+	 * @since 1.0.0
+	 */
+	public function handle_delete_action() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+
+		if ( 'ppcert-certificates' !== $page || 'ppcert-delete' !== $action ) {
+			return;
+		}
+
+		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			wp_die( esc_html__( 'You are not allowed to delete certificates.', 'pressprimer-certificate' ) );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified by check_admin_referer immediately below.
+		$certificate_id = isset( $_GET['certificate_id'] ) ? absint( wp_unslash( $_GET['certificate_id'] ) ) : 0;
+
+		check_admin_referer( 'ppcert_delete_certificate_' . $certificate_id );
+
+		$result  = PressPrimer_Certificate_Certificate::delete( $certificate_id );
+		$deleted = ! is_wp_error( $result ) ? 1 : 0;
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page'           => 'ppcert-certificates',
+					'ppcert_deleted' => $deleted,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Handle the Resend email action
+	 *
+	 * Nonce-verified, capability-gated resend of the delivery email,
+	 * then a redirect back to the list with a notice flag.
+	 *
+	 * @since 1.0.0
+	 */
+	public function handle_resend_action() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Routing check only; the nonce verifies below before any action.
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+
+		if ( 'ppcert-certificates' !== $page || 'ppcert-resend-email' !== $action ) {
+			return;
+		}
+
+		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			wp_die( esc_html__( 'You are not allowed to resend certificate emails.', 'pressprimer-certificate' ) );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified by check_admin_referer immediately below.
+		$certificate_id = isset( $_GET['certificate_id'] ) ? absint( wp_unslash( $_GET['certificate_id'] ) ) : 0;
+
+		check_admin_referer( 'ppcert_resend_email_' . $certificate_id );
+
+		$sent = PressPrimer_Certificate_Email_Service::resend( $certificate_id ) ? 1 : 0;
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page'          => 'ppcert-certificates',
+					'ppcert_resent' => $sent,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Register the Certificates submenu
 	 *
 	 * @since 1.0.0
@@ -194,6 +281,30 @@ class PressPrimer_Certificate_Admin_Certificates {
 			echo $reinstated
 				? esc_html__( 'Certificate reinstated. It verifies as valid again.', 'pressprimer-certificate' )
 				: esc_html__( 'The certificate could not be reinstated.', 'pressprimer-certificate' );
+			echo '</p></div>';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag set by the nonce-verified delete handler.
+		if ( isset( $_GET['ppcert_deleted'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag.
+			$deleted = absint( wp_unslash( $_GET['ppcert_deleted'] ) );
+
+			echo '<div class="notice notice-' . ( $deleted ? 'success' : 'error' ) . ' is-dismissible"><p>';
+			echo $deleted
+				? esc_html__( 'Certificate permanently deleted. Its credential ID no longer verifies.', 'pressprimer-certificate' )
+				: esc_html__( 'The certificate could not be deleted.', 'pressprimer-certificate' );
+			echo '</p></div>';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag set by the nonce-verified resend handler.
+		if ( isset( $_GET['ppcert_resent'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag.
+			$resent = absint( wp_unslash( $_GET['ppcert_resent'] ) );
+
+			echo '<div class="notice notice-' . ( $resent ? 'success' : 'error' ) . ' is-dismissible"><p>';
+			echo $resent
+				? esc_html__( 'Certificate email sent to the recipient.', 'pressprimer-certificate' )
+				: esc_html__( 'The certificate email could not be sent. Check that the recipient has a valid email address.', 'pressprimer-certificate' );
 			echo '</p></div>';
 		}
 
