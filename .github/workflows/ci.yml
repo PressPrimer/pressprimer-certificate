@@ -88,9 +88,23 @@ jobs:
 
       # Release blocker (re-blocked at Prompt 5.4, 2026-07-24): a parity
       # failure fails the build. Thresholds: PIXELMATCH_THRESHOLD 0.15,
-      # 1% pixel ratio, 1 pt box drift (tests/playwright/helpers/compare.ts).
+      # 1.25% pixel ratio (raised from 1% for Linux FreeType AA, Ryan
+      # 2026-07-25), 1 pt box drift (tests/playwright/helpers/compare.ts).
       - name: Run parity suite (GD path)
         run: npx playwright test --project=parity-pdf
+
+      # Parity failures reference diff images written to temp dirs; ship
+      # them (plus Playwright's error contexts) so failures are
+      # inspectable without rerunning locally.
+      - name: Upload parity diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-diffs
+          if-no-files-found: ignore
+          path: |
+            test-results/
+            /tmp/ppcert-cparity-*/
 
   php-compatibility:
     name: PHP 7.4+ Compatibility
