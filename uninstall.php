@@ -106,8 +106,9 @@ function ppcert_remove_site_data() {
 /**
  * Remove the current site's inflated-font cache directory.
  *
- * uploads/ppcert-fonts holds TTFs inflated from the bundled .z files
- * (Font_Cache_Service); regenerable artifacts, removed with the data.
+ * The uploads/ppcert-fonts directory holds TTFs inflated from the
+ * bundled .z files (Font_Cache_Service); regenerable artifacts,
+ * removed with the data.
  *
  * @since 1.0.0
  */

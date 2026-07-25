@@ -76,6 +76,7 @@ if ( ! ppcert_requirements_met() ) {
 // TCPDF needs internally ship in fonts/tcpdf/ instead. Must be defined
 // before tcpdf_autoconfig.php runs (first TCPDF class load).
 if ( ! defined( 'K_PATH_FONTS' ) ) {
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- TCPDF's own configuration constant; it must carry this exact name and be defined before tcpdf_autoconfig.php loads.
 	define( 'K_PATH_FONTS', PPCERT_PLUGIN_DIR . 'fonts/tcpdf/' );
 }
 
