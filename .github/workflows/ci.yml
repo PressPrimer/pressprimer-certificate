@@ -86,15 +86,10 @@ jobs:
       - name: Run designer suite
         run: npx playwright test --project=designer-canvas
 
-      # ADVISORY while the starter designs are still iterating (Ryan,
-      # 2026-07-23): Linux FreeType vs macOS CoreText anti-aliasing
-      # reshuffles which templates clear the 1% pixel budget after each
-      # redesign, and re-tuning per tweak is wasted effort. The
-      # thresholds are UNCHANGED - this step reports but does not fail
-      # the build. Prompt 5.4 (Full Test Pass) removes continue-on-error
-      # and restores the release-blocker gate against the final designs.
-      - name: Run parity suite (GD path - advisory until 5.4)
-        continue-on-error: true
+      # Release blocker (re-blocked at Prompt 5.4, 2026-07-24): a parity
+      # failure fails the build. Thresholds: PIXELMATCH_THRESHOLD 0.15,
+      # 1% pixel ratio, 1 pt box drift (tests/playwright/helpers/compare.ts).
+      - name: Run parity suite (GD path)
         run: npx playwright test --project=parity-pdf
 
   php-compatibility:
