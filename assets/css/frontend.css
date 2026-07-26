@@ -1,140 +1,584 @@
 /**
- * PressPrimer Certificate - front-end styles (verification page and
- * certificate view page). Deliberately light: both pages render
- * through the site's theme (Feature 006 US-3).
+ * PressPrimer Certificate - front-end styles: verification page,
+ * certificate view page, and the My Certificates list.
+ *
+ * Token architecture mirrors the PressPrimer house front-end style
+ * (Assignment submission.css / Quiz 3.0 shell): the WP-admin palette
+ * (#0073aa primary), the shared spacing/radius/shadow scales, the
+ * card + pill + button recipes, and the print/reduced-motion/
+ * high-contrast/RTL blocks every sibling sheet ships.
  */
+
+:root {
+
+	/* Palette - aligned with PressPrimer Quiz 3.0 shell + Assignment. */
+	--ppcert-primary: #0073aa;
+	--ppcert-primary-hover: #005a87;
+	--ppcert-primary-light: #e5f3fa;
+	--ppcert-success: #00a32a;
+	--ppcert-success-light: #d8f4e0;
+	--ppcert-success-strong: #0a6b21;
+	--ppcert-warning: #dba617;
+	--ppcert-warning-light: #fef8e7;
+	--ppcert-warning-strong: #8a6d3b;
+	--ppcert-error: #d63638;
+	--ppcert-error-light: #fce4e4;
+	--ppcert-error-strong: #a8201f;
+	--ppcert-text: #1d2327;
+	--ppcert-text-secondary: #50575e;
+	--ppcert-text-light: #787c82;
+	--ppcert-border: #c3c4c7;
+	--ppcert-border-light: #dcdcde;
+	--ppcert-background: #fff;
+	--ppcert-background-gray: #f6f7f7;
+
+	/* Shared scales (identical across the sibling plugins). */
+	--ppcert-space-xs: 0.25rem;
+	--ppcert-space-sm: 0.5rem;
+	--ppcert-space-md: 1rem;
+	--ppcert-space-lg: 1.5rem;
+	--ppcert-space-xl: 2rem;
+	--ppcert-space-2xl: 3rem;
+	--ppcert-radius-sm: 0.375rem;
+	--ppcert-radius-md: 0.5rem;
+	--ppcert-radius-lg: 0.75rem;
+	--ppcert-radius-full: 9999px;
+	--ppcert-shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
+	--ppcert-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+	--ppcert-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+	--ppcert-transition: all 0.2s ease-in-out;
+	--ppcert-max-width: 800px;
+	--ppcert-font-sans: -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif;
+}
+
+/* ------------------------------------------------------------------ *
+ * Shared recipes
+ * ------------------------------------------------------------------ */
+
+.ppcert-verify,
+.ppcert-view,
+.ppcert-my-certificates {
+	margin: var(--ppcert-space-xl) auto;
+	max-width: var(--ppcert-max-width);
+	font-family: var(--ppcert-font-sans);
+	color: var(--ppcert-text);
+}
+
+/* Buttons: filled primary + bordered secondary (house recipe). */
+.ppcert-button-primary,
+.ppcert-view__download {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ppcert-space-sm);
+	padding: var(--ppcert-space-sm) var(--ppcert-space-lg);
+	background: var(--ppcert-primary);
+	border: 2px solid var(--ppcert-primary);
+	border-radius: var(--ppcert-radius-md);
+	color: #fff;
+	font-weight: 600;
+	text-decoration: none;
+	transition: var(--ppcert-transition);
+}
+
+/* Buttons keep their colors against theme link/visited/focus styles -
+ * never the theme's blue on a visited Download button. */
+.ppcert-button-primary:visited,
+.ppcert-button-primary:focus,
+.ppcert-button-primary:active,
+.ppcert-view__download:visited,
+.ppcert-view__download:focus,
+.ppcert-view__download:active {
+	color: #fff;
+}
+
+.ppcert-button-primary:focus-visible,
+.ppcert-view__download:focus-visible {
+	outline: 2px solid var(--ppcert-primary);
+	outline-offset: 2px;
+}
+
+.ppcert-button-primary:hover,
+.ppcert-view__download:hover {
+	background: var(--ppcert-primary-hover);
+	border-color: var(--ppcert-primary-hover);
+	color: #fff;
+	transform: translateY(-1px);
+	box-shadow: var(--ppcert-shadow-md);
+}
+
+.ppcert-button-secondary,
+.ppcert-view__verify {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ppcert-space-sm);
+	padding: var(--ppcert-space-sm) var(--ppcert-space-lg);
+	background: var(--ppcert-background);
+	border: 2px solid var(--ppcert-border);
+	border-radius: var(--ppcert-radius-md);
+	color: var(--ppcert-text);
+	font-weight: 600;
+	text-decoration: none;
+	transition: var(--ppcert-transition);
+}
+
+.ppcert-button-secondary:hover,
+.ppcert-view__verify:hover {
+	border-color: var(--ppcert-primary);
+	color: var(--ppcert-primary);
+	transform: translateY(-1px);
+	box-shadow: var(--ppcert-shadow-sm);
+}
+
+.ppcert-button-secondary:visited,
+.ppcert-view__verify:visited {
+	color: var(--ppcert-text);
+}
+
+.ppcert-button-secondary:focus,
+.ppcert-button-secondary:active,
+.ppcert-view__verify:focus,
+.ppcert-view__verify:active {
+	color: var(--ppcert-primary);
+}
+
+.ppcert-button-secondary:focus-visible,
+.ppcert-view__verify:focus-visible {
+	outline: 2px solid var(--ppcert-primary);
+	outline-offset: 2px;
+}
+
+/* Status pills: light background + saturated foreground (house recipe). */
+.ppcert-pill {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--ppcert-space-xs) var(--ppcert-space-md);
+	border-radius: var(--ppcert-radius-full);
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.ppcert-pill--valid {
+	background: var(--ppcert-success-light);
+	color: var(--ppcert-success-strong);
+}
+
+.ppcert-pill--expired {
+	background: var(--ppcert-warning-light);
+	color: var(--ppcert-warning-strong);
+}
+
+.ppcert-pill--revoked {
+	background: var(--ppcert-error-light);
+	color: var(--ppcert-error-strong);
+}
+
+/* ------------------------------------------------------------------ *
+ * Verification page
+ * ------------------------------------------------------------------ */
 
 .ppcert-verify__form {
 	display: flex;
+	gap: var(--ppcert-space-sm);
 	flex-wrap: wrap;
-	gap: 0.5em;
 	align-items: center;
-	margin-bottom: 1em;
+	margin-bottom: var(--ppcert-space-lg);
 }
 
 .ppcert-verify__input {
+	flex: 1;
+	min-width: 16ch;
+	padding: var(--ppcert-space-sm) var(--ppcert-space-md);
+	border: 2px solid var(--ppcert-border);
+	border-radius: var(--ppcert-radius-md);
 	font-family: monospace;
+	font-size: 1rem;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	min-width: 16ch;
+	transition: var(--ppcert-transition);
+}
+
+.ppcert-verify__input:focus {
+	border-color: var(--ppcert-primary);
+	outline: 2px solid var(--ppcert-primary-light);
+}
+
+.ppcert-verify__result:not(:empty) {
+	background: var(--ppcert-background);
+	border: 2px solid var(--ppcert-border);
+	border-radius: var(--ppcert-radius-lg);
+	box-shadow: var(--ppcert-shadow-md);
+	padding: var(--ppcert-space-xl);
 }
 
 .ppcert-verify__status {
-	font-weight: 600;
-	padding: 0.5em 0.75em;
-	border-left: 4px solid #64748b;
-	background: rgba(100, 116, 139, 0.08);
+	margin: 0 0 var(--ppcert-space-md);
+	font-size: 1.25rem;
+	font-weight: 700;
 }
 
 .ppcert-verify__status--valid {
-	border-left-color: #15803d;
-	background: rgba(21, 128, 61, 0.08);
+	color: var(--ppcert-success-strong);
 }
 
 .ppcert-verify__status--expired {
-	border-left-color: #b45309;
-	background: rgba(180, 83, 9, 0.08);
+	color: var(--ppcert-warning-strong);
 }
 
-.ppcert-verify__status--revoked {
-	border-left-color: #b91c1c;
-	background: rgba(185, 28, 28, 0.08);
+.ppcert-verify__status--revoked,
+.ppcert-verify__status--not_found {
+	color: var(--ppcert-error-strong);
 }
 
 .ppcert-verify__details {
 	display: grid;
 	grid-template-columns: max-content 1fr;
-	gap: 0.25em 1em;
-	margin: 0.75em 0 0;
+	gap: var(--ppcert-space-xs) var(--ppcert-space-lg);
+	margin: 0;
 }
 
 .ppcert-verify__details dt {
+	font-size: 0.75rem;
 	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--ppcert-text-light);
+	align-self: baseline;
 }
 
 .ppcert-verify__details dd {
 	margin: 0;
+	font-weight: 600;
 }
 
-/* Certificate view page (/certificate/{credential_id}/) */
+/* ------------------------------------------------------------------ *
+ * Certificate view page (/certificate/{credential_id}/)
+ * ------------------------------------------------------------------ */
 
 .ppcert-view__banner {
+	padding: var(--ppcert-space-md) var(--ppcert-space-lg);
+	border: 2px solid;
+	border-radius: var(--ppcert-radius-lg);
+	margin-bottom: var(--ppcert-space-lg);
 	font-weight: 600;
-	padding: 0.5em 0.75em;
-	margin-bottom: 1em;
-	border-left: 4px solid #64748b;
-	background: rgba(100, 116, 139, 0.08);
 }
 
 .ppcert-view__banner--expired {
-	border-left-color: #b45309;
-	background: rgba(180, 83, 9, 0.08);
+	background: var(--ppcert-warning-light);
+	border-color: var(--ppcert-warning);
+	color: var(--ppcert-warning-strong);
 }
 
 .ppcert-view__banner--revoked {
-	border-left-color: #b91c1c;
-	background: rgba(185, 28, 28, 0.08);
+	background: var(--ppcert-error-light);
+	border-color: var(--ppcert-error);
+	color: var(--ppcert-error-strong);
 }
 
 .ppcert-view__preview {
-	margin: 0 0 1em;
+	margin-bottom: var(--ppcert-space-lg);
 }
 
 .ppcert-view__preview img {
 	display: block;
 	max-width: 100%;
 	height: auto;
-	border: 1px solid rgba(100, 116, 139, 0.3);
-	box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+	border: 1px solid var(--ppcert-border-light);
+	border-radius: var(--ppcert-radius-md);
+	box-shadow: var(--ppcert-shadow-lg);
 }
 
+/* Text-card fallback when no preview renders. */
 .ppcert-view__card {
-	padding: 2em 1.5em;
-	margin-bottom: 1em;
+	background: linear-gradient(135deg, var(--ppcert-primary-light) 0%, var(--ppcert-background) 60%);
+	border: 2px solid var(--ppcert-border);
+	border-radius: var(--ppcert-radius-lg);
+	padding: var(--ppcert-space-2xl);
 	text-align: center;
-	border: 1px solid rgba(100, 116, 139, 0.3);
-	background: rgba(100, 116, 139, 0.04);
+	margin-bottom: var(--ppcert-space-lg);
 }
 
 .ppcert-view__card-recipient {
-	font-size: 1.4em;
+	font-size: 1.75rem;
 	font-weight: 700;
-	margin: 0 0 0.25em;
+	letter-spacing: -0.025em;
 }
 
 .ppcert-view__card-subject {
-	font-size: 1.1em;
-	margin: 0 0 0.25em;
+	font-size: 1.125rem;
+	color: var(--ppcert-text-secondary);
+	margin-top: var(--ppcert-space-xs);
 }
 
 .ppcert-view__card-date {
-	margin: 0;
-	opacity: 0.75;
+	margin-top: var(--ppcert-space-md);
+	color: var(--ppcert-text-light);
 }
 
 .ppcert-view__details {
 	display: grid;
 	grid-template-columns: max-content 1fr;
-	gap: 0.25em 1em;
-	margin: 0.75em 0 0;
+	gap: var(--ppcert-space-sm) var(--ppcert-space-lg);
+	background: var(--ppcert-background-gray);
+	border: 1px solid var(--ppcert-border-light);
+	border-radius: var(--ppcert-radius-lg);
+	padding: var(--ppcert-space-lg);
+	margin: 0 0 var(--ppcert-space-lg);
 }
 
 .ppcert-view__details dt {
+	font-size: 0.75rem;
 	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--ppcert-text-light);
+	align-self: baseline;
 }
 
 .ppcert-view__details dd {
 	margin: 0;
+	font-weight: 600;
 }
 
 .ppcert-view__actions {
 	display: flex;
+	gap: var(--ppcert-space-md);
 	flex-wrap: wrap;
-	gap: 1em;
 	align-items: center;
-	margin-top: 1em;
 }
+
+/* ------------------------------------------------------------------ *
+ * My Certificates list ([ppcert_my_certificates] + block)
+ * ------------------------------------------------------------------ */
+
+.ppcert-my-certificates__empty,
+.ppcert-my-certificates__login {
+	background: var(--ppcert-background-gray);
+	border: 1px solid var(--ppcert-border-light);
+	border-radius: var(--ppcert-radius-lg);
+	padding: var(--ppcert-space-xl);
+	text-align: center;
+	color: var(--ppcert-text-secondary);
+}
+
+.ppcert-my-certificates__controls {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--ppcert-space-md) var(--ppcert-space-xl);
+	flex-wrap: wrap;
+	margin-bottom: var(--ppcert-space-md);
+}
+
+.ppcert-my-certificates__control-group {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ppcert-space-xs);
+	flex-wrap: wrap;
+}
+
+.ppcert-my-certificates__control-label {
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--ppcert-text-light);
+	margin-right: var(--ppcert-space-xs);
+}
+
+.ppcert-my-certificates__chip {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--ppcert-space-xs) var(--ppcert-space-md);
+	border: 1px solid var(--ppcert-border);
+	border-radius: var(--ppcert-radius-full);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	color: var(--ppcert-text-secondary);
+	background: var(--ppcert-background);
+	text-decoration: none;
+	transition: var(--ppcert-transition);
+}
+
+.ppcert-my-certificates__chip:hover {
+	border-color: var(--ppcert-primary);
+	color: var(--ppcert-primary);
+}
+
+.ppcert-my-certificates__chip:visited {
+	color: var(--ppcert-text-secondary);
+}
+
+.ppcert-my-certificates__chip:focus-visible {
+	outline: 2px solid var(--ppcert-primary);
+	outline-offset: 2px;
+}
+
+.ppcert-my-certificates__chip.is-active,
+.ppcert-my-certificates__chip.is-active:visited {
+	background: var(--ppcert-primary);
+	border-color: var(--ppcert-primary);
+	color: #fff;
+}
+
+.ppcert-my-certificates__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: var(--ppcert-space-md);
+}
+
+.ppcert-my-certificates__item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--ppcert-space-lg);
+	flex-wrap: wrap;
+	background: var(--ppcert-background);
+	border: 2px solid var(--ppcert-border-light);
+	border-radius: var(--ppcert-radius-lg);
+	padding: var(--ppcert-space-md) var(--ppcert-space-lg);
+	transition: var(--ppcert-transition);
+}
+
+.ppcert-my-certificates__item:hover {
+	border-color: var(--ppcert-primary-light);
+	box-shadow: var(--ppcert-shadow-md);
+}
+
+.ppcert-my-certificates__title {
+	font-size: 1.0625rem;
+	font-weight: 700;
+	margin: 0 0 var(--ppcert-space-xs);
+}
+
+.ppcert-my-certificates__meta {
+	display: flex;
+	gap: var(--ppcert-space-md);
+	flex-wrap: wrap;
+	font-size: 0.875rem;
+	color: var(--ppcert-text-secondary);
+}
+
+.ppcert-my-certificates__meta strong {
+	color: var(--ppcert-text);
+}
+
+.ppcert-my-certificates__links {
+	display: flex;
+	gap: var(--ppcert-space-sm);
+	flex-wrap: wrap;
+}
+
+.ppcert-my-certificates__pagination {
+	margin-top: var(--ppcert-space-lg);
+	display: flex;
+	gap: var(--ppcert-space-sm);
+	justify-content: center;
+	flex-wrap: wrap;
+}
+
+.ppcert-my-certificates__pagination .page-numbers {
+	padding: var(--ppcert-space-xs) var(--ppcert-space-md);
+	border: 1px solid var(--ppcert-border);
+	border-radius: var(--ppcert-radius-sm);
+	text-decoration: none;
+	color: var(--ppcert-text);
+}
+
+.ppcert-my-certificates__pagination .page-numbers.current {
+	background: var(--ppcert-primary);
+	border-color: var(--ppcert-primary);
+	color: #fff;
+}
+
+/* ------------------------------------------------------------------ *
+ * Utility
+ * ------------------------------------------------------------------ */
 
 .ppcert-hidden {
 	display: none;
+}
+
+/* ------------------------------------------------------------------ *
+ * Responsive
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 768px) {
+
+	.ppcert-view__details,
+	.ppcert-verify__details {
+		grid-template-columns: 1fr;
+		gap: var(--ppcert-space-xs);
+	}
+
+	.ppcert-view__details dt,
+	.ppcert-verify__details dt {
+		margin-top: var(--ppcert-space-sm);
+	}
+
+	.ppcert-my-certificates__item {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+}
+
+@media (max-width: 480px) {
+
+	.ppcert-view__actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.ppcert-view__download,
+	.ppcert-view__verify,
+	.ppcert-button-primary,
+	.ppcert-button-secondary {
+		justify-content: center;
+	}
+}
+
+/* ------------------------------------------------------------------ *
+ * Print, motion, contrast, RTL (house parity blocks)
+ * ------------------------------------------------------------------ */
+
+@media print {
+
+	.ppcert-view__actions,
+	.ppcert-verify__form,
+	.ppcert-my-certificates__controls,
+	.ppcert-my-certificates__links,
+	.ppcert-my-certificates__pagination {
+		display: none;
+	}
+
+	.ppcert-view__preview img {
+		box-shadow: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.ppcert-verify *,
+	.ppcert-view *,
+	.ppcert-my-certificates * {
+		transition: none !important;
+		transform: none !important;
+	}
+}
+
+@media (prefers-contrast: more) {
+
+	.ppcert-view__details,
+	.ppcert-my-certificates__item,
+	.ppcert-verify__result:not(:empty) {
+		border-color: var(--ppcert-text);
+	}
+}
+
+[dir="rtl"] .ppcert-view__details,
+[dir="rtl"] .ppcert-verify__details {
+	direction: rtl;
 }

@@ -150,7 +150,7 @@ export const TOUR_STEPS = [
 		title: __( 'Name it and publish', 'pressprimer-certificate' ),
 		content: createInterpolateElement(
 			__(
-				'Click the pencil icon in the toolbar to name your template, and press Return to apply the name. Then click <strong>Publish</strong>. Only published templates can award certificates.',
+				'Click the template name in the toolbar to rename it, then click the checkmark or press Return to apply the name. Then click <strong>Publish</strong> in the top right of the toolbar. Only published templates can award certificates.',
 				'pressprimer-certificate'
 			),
 			{ strong: <strong /> }

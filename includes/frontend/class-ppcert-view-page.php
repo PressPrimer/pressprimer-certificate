@@ -231,9 +231,11 @@ class PressPrimer_Certificate_View_Page {
 				. esc_html__( 'Download PDF', 'pressprimer-certificate' ) . '</a> ';
 		}
 
+		// New tab: verification is the side trip, the certificate stays put.
 		$output .= '<a class="ppcert-view__verify" href="'
-			. esc_url( ppcert_verification_url( $credential ) ) . '">'
-			. esc_html__( 'Verify this certificate', 'pressprimer-certificate' ) . '</a>';
+			. esc_url( ppcert_verification_url( $credential ) ) . '" target="_blank" rel="noopener">'
+			. esc_html__( 'Verify this certificate', 'pressprimer-certificate' )
+			. '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'pressprimer-certificate' ) . '</span></a>';
 
 		$output .= '</p>';
 		$output .= '</div>';
@@ -357,6 +359,26 @@ class PressPrimer_Certificate_View_Page {
 	 */
 	private static function download_url( $credential_id ) {
 		return rest_url( 'ppcert/v1/certificates/' . rawurlencode( $credential_id ) . '/pdf' );
+	}
+
+	/**
+	 * Public share URL for a credential's view page
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $credential_id Credential ID (any accepted form).
+	 * @return string URL, or '' for an invalid credential.
+	 */
+	public static function view_url( $credential_id ) {
+		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( (string) $credential_id );
+
+		if ( '' === $normalized ) {
+			return '';
+		}
+
+		$display = PressPrimer_Certificate_Credential_ID_Service::format_display( $normalized );
+
+		return home_url( '/certificate/' . rawurlencode( $display ) . '/' );
 	}
 
 	/**

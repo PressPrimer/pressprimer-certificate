@@ -163,11 +163,9 @@ test.describe( 'designer polish', () => {
 		await page.reload();
 		await page.waitForSelector( '[data-ppcert-canvas-scale]' );
 
-		// Ant Typography editable: pencil icon starts editing.
-		await page
-			.locator( '.ppcert-designer__title .ant-typography-edit' )
-			.click();
-		const input = page.locator( '.ppcert-designer__title textarea' );
+		// Clicking the name starts editing; Enter commits.
+		await page.locator( '.ppcert-designer__title' ).click();
+		const input = page.locator( '.ppcert-designer__title-input input' );
 		await input.fill( 'Spring Cohort Certificate' );
 		await input.press( 'Enter' );
 
@@ -184,6 +182,47 @@ test.describe( 'designer polish', () => {
 		await page.waitForSelector( '[data-ppcert-canvas-scale]' );
 		await expect( page.locator( '.ppcert-designer__title' ) ).toContainText(
 			'Spring Cohort Certificate'
+		);
+	} );
+
+	test( 'rename commits with the mouse: blur and the check button', async ( {
+		page,
+	} ) => {
+		await page.goto( APP_URL );
+		await page.evaluate( () =>
+			window.localStorage.removeItem( 'ppcert_harness_template' )
+		);
+		await page.reload();
+		await page.waitForSelector( '[data-ppcert-canvas-scale]' );
+
+		// Blur commit: type a name, then click elsewhere on the page.
+		await page.locator( '.ppcert-designer__title' ).click();
+		const input = page.locator( '.ppcert-designer__title-input input' );
+		await input.fill( 'Blur Committed Name' );
+		await page.locator( '.ppcert-designer__page' ).click();
+
+		await expect( page.locator( '.ppcert-designer__title' ) ).toContainText(
+			'Blur Committed Name'
+		);
+
+		// Check-button commit: the enter affordance is clickable.
+		await page.locator( '.ppcert-designer__title' ).click();
+		await input.fill( 'Check Committed Name' );
+		await page
+			.locator( '.ppcert-designer__title-input [aria-label="Save name"]' )
+			.click();
+
+		await expect( page.locator( '.ppcert-designer__title' ) ).toContainText(
+			'Check Committed Name'
+		);
+
+		// Escape cancels without renaming.
+		await page.locator( '.ppcert-designer__title' ).click();
+		await input.fill( 'Never Applied' );
+		await input.press( 'Escape' );
+
+		await expect( page.locator( '.ppcert-designer__title' ) ).toContainText(
+			'Check Committed Name'
 		);
 	} );
 

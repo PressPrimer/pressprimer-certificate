@@ -119,8 +119,10 @@ class PressPrimer_Certificate_Admin_User_Profile {
 			'th'    => [ 'scope' => true ],
 			'td'    => [],
 			'a'     => [
-				'href'  => true,
-				'class' => true,
+				'href'   => true,
+				'class'  => true,
+				'target' => true,
+				'rel'    => true,
 			],
 			'span'  => [
 				'class'       => true,
@@ -166,8 +168,9 @@ class PressPrimer_Certificate_Admin_User_Profile {
 			$status     = PressPrimer_Certificate_Certificate::effective_status( $certificate );
 
 			$links = [
-				'<a href="' . esc_url( ppcert_verification_url( $credential ) ) . '">'
-					. esc_html__( 'Verify', 'pressprimer-certificate' ) . '</a>',
+				'<a href="' . esc_url( ppcert_verification_url( $credential ) ) . '" target="_blank" rel="noopener">'
+					. esc_html__( 'Verify', 'pressprimer-certificate' )
+					. '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'pressprimer-certificate' ) . '</span></a>',
 			];
 
 			// Revoked certificates are not served by the download route.

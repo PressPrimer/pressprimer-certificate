@@ -74,6 +74,7 @@ class PressPrimer_Certificate_Blocks {
 		}
 
 		$this->register_verify_block();
+		$this->register_my_certificates_block();
 	}
 
 	/**
@@ -134,6 +135,66 @@ class PressPrimer_Certificate_Blocks {
 	public function render_verify_block() {
 		return '<div class="wp-block-pressprimer-certificate-verify">'
 			. PressPrimer_Certificate_Verification_Page::render_shortcode()
+			. '</div>';
+	}
+
+	/**
+	 * Register the My Certificates block
+	 *
+	 * The [ppcert_my_certificates] equivalent - the logged-in visitor's
+	 * certificate list. No attributes in 1.0, matching the shortcode
+	 * (parity rule).
+	 *
+	 * @since 1.0.0
+	 */
+	private function register_my_certificates_block() {
+		$asset_file = PPCERT_PLUGIN_DIR . 'build/blocks/my-certificates/index.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		wp_register_script(
+			'ppcert-my-certificates-block-editor',
+			PPCERT_PLUGIN_URL . 'build/blocks/my-certificates/index.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		register_block_type(
+			'pressprimer-certificate/my-certificates',
+			[
+				'api_version'     => 3,
+				'title'           => __( 'My Certificates', 'pressprimer-certificate' ),
+				'description'     => __( "Lists the logged-in visitor's earned certificates with verification and download links.", 'pressprimer-certificate' ),
+				'category'        => 'pressprimer-certificate',
+				'icon'            => 'awards',
+				'supports'        => [
+					'html'  => false,
+					'align' => true,
+				],
+				'editor_script'   => 'ppcert-my-certificates-block-editor',
+				'render_callback' => [ $this, 'render_my_certificates_block' ],
+			]
+		);
+	}
+
+	/**
+	 * Render the My Certificates block
+	 *
+	 * One renderer for both surfaces: the block wraps the shortcode
+	 * handler's output (which enqueues the front-end assets itself).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Rendered block HTML.
+	 */
+	public function render_my_certificates_block() {
+		return '<div class="wp-block-pressprimer-certificate-my-certificates">'
+			. PressPrimer_Certificate_My_Certificates::render_shortcode()
 			. '</div>';
 	}
 }

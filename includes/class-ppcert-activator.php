@@ -42,12 +42,58 @@ class PressPrimer_Certificate_Activator {
 	public static function activate( $network_wide = false ) {
 		// Handle network-wide activation in multisite
 		if ( is_multisite() && $network_wide ) {
+			// Never set the setup-redirect flag for network-wide
+			// activation (wp.org compliance: no redirect in that case).
 			self::activate_for_network();
 			return;
 		}
 
+		// Fresh-install detection must happen before activation writes
+		// the version option below.
+		$is_fresh_install = false === get_option( 'ppcert_version' );
+
 		// Single site activation
 		self::activate_single_site();
+
+		self::maybe_set_setup_redirect_flag( $is_fresh_install );
+	}
+
+	/**
+	 * Set the one-time dashboard/setup-tour redirect flag
+	 *
+	 * Records the activating user in a short-lived transient; the
+	 * guarded admin_init handler in PressPrimer_Certificate_Admin
+	 * consumes it on the next page load - once, ever. Set only for a
+	 * fresh install activated by a real logged-in user in a normal web
+	 * request; updates, reinstalls, WP-CLI, cron, and AJAX activations
+	 * never trigger a redirect. Mirrors the PressPrimer Assignment 2.2
+	 * activation flow.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param bool $is_fresh_install Whether the version option was
+	 *                               absent before this activation ran.
+	 */
+	private static function maybe_set_setup_redirect_flag( $is_fresh_install ) {
+		if ( ! $is_fresh_install ) {
+			return;
+		}
+
+		if ( wp_doing_ajax() || wp_doing_cron() ) {
+			return;
+		}
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			return;
+		}
+
+		$user_id = get_current_user_id();
+
+		if ( ! $user_id ) {
+			return;
+		}
+
+		set_transient( 'ppcert_setup_redirect', $user_id, 5 * MINUTE_IN_SECONDS );
 	}
 
 	/**

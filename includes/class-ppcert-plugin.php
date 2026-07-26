@@ -200,6 +200,7 @@ class PressPrimer_Certificate_Plugin {
 
 		// The public verification page: shortcode, assets, admin notice.
 		PressPrimer_Certificate_Verification_Page::init();
+		PressPrimer_Certificate_My_Certificates::init();
 
 		// The public certificate view page: /certificate/{credential_id}/.
 		PressPrimer_Certificate_View_Page::init();

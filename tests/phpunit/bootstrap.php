@@ -875,6 +875,52 @@ if ( ! function_exists( 'set_transient' ) ) {
 	}
 }
 
+if ( ! function_exists( 'delete_transient' ) ) {
+	/**
+	 * Stub: Transient delete.
+	 *
+	 * @param string $key Transient key.
+	 * @return bool
+	 */
+	function delete_transient( $key ) {
+		unset( $GLOBALS['ppcert_test_transients'][ $key ] );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_doing_ajax' ) ) {
+	/**
+	 * Stub: Never an AJAX request in tests.
+	 *
+	 * @return bool
+	 */
+	function wp_doing_ajax() {
+		return ! empty( $GLOBALS['ppcert_test_doing_ajax'] );
+	}
+}
+
+if ( ! function_exists( 'wp_doing_cron' ) ) {
+	/**
+	 * Stub: Never a cron request in tests.
+	 *
+	 * @return bool
+	 */
+	function wp_doing_cron() {
+		return ! empty( $GLOBALS['ppcert_test_doing_cron'] );
+	}
+}
+
+if ( ! function_exists( 'is_network_admin' ) ) {
+	/**
+	 * Stub: Never the network admin in tests.
+	 *
+	 * @return bool
+	 */
+	function is_network_admin() {
+		return ! empty( $GLOBALS['ppcert_test_network_admin'] );
+	}
+}
+
 if ( ! function_exists( '__return_true' ) ) {
 	/**
 	 * Stub: Return true.
@@ -1094,6 +1140,19 @@ if ( ! function_exists( 'esc_html__' ) ) {
 	 */
 	function esc_html__( $text, $domain = 'default' ) { // phpcs:ignore WordPress.WP.I18n
 		return esc_html( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_attr__' ) ) {
+	/**
+	 * Stub: Translate + attribute-escape.
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Domain (unused).
+	 * @return string
+	 */
+	function esc_attr__( $text, $domain = 'default' ) { // phpcs:ignore WordPress.WP.I18n
+		return esc_attr( $text );
 	}
 }
 
@@ -1336,6 +1395,27 @@ if ( ! function_exists( 'add_query_arg' ) ) {
 
 		$separator = false === strpos( $url, '?' ) ? '?' : '&';
 		return $url . $separator . $key . '=' . $value;
+	}
+}
+
+if ( ! function_exists( 'remove_query_arg' ) ) {
+	/**
+	 * Stub: Strip query args from a URL (current request when omitted).
+	 *
+	 * @param string|array $keys Arg name(s).
+	 * @param string|null  $url  Base URL (current request when omitted).
+	 * @return string
+	 */
+	function remove_query_arg( $keys, $url = null ) {
+		if ( null === $url ) {
+			$url = 'https://test.example/wp-admin/user-edit.php?user_id=7';
+		}
+
+		foreach ( (array) $keys as $key ) {
+			$url = preg_replace( '/([?&])' . preg_quote( $key, '/' ) . '=[^&]*(&|$)/', '$1', $url );
+		}
+
+		return rtrim( (string) preg_replace( '/[?&]$/', '', (string) $url ), '?&' );
 	}
 }
 

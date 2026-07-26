@@ -58,6 +58,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow:
 * Public verification page (shortcode and block) that anyone can use, no account needed
 * Optional QR code on every certificate linking to its verification page
 * A shareable certificate view page with PDF download
+* My Certificates list (shortcode and block) so logged-in learners can see, verify, and download everything they have earned
 * PDFs are protected against editing: Acrobat and other viewers refuse to modify the text, while printing and copying stay available
 * Token placeholders for recipient, certificate, and site data
 

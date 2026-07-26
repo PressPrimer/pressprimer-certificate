@@ -31,6 +31,16 @@
 
 .ppcert-designer__title {
 	font-size: 15px;
+	padding: 0 6px;
+}
+
+.ppcert-designer__title .anticon-edit {
+	color: rgb(0 0 0 / 45%);
+	font-size: 13px;
+}
+
+.ppcert-designer__title-input {
+	width: 260px;
 }
 
 .ppcert-designer__toolbar-spacer {

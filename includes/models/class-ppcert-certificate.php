@@ -545,6 +545,122 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * Filtered, sorted certificate list for one recipient
+	 *
+	 * The My Certificates front-end query. Status filtering evaluates
+	 * expiry read-time in SQL (UTC now, mirroring effective_status());
+	 * both sort orders are separate fully-prepared branches with
+	 * hardcoded directions (SQL Security rules).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int   $recipient_id Recipient user id.
+	 * @param array $args         {
+	 *     @type string $status 'all' | 'valid' | 'expired'. Default 'all'.
+	 *     @type string $sort   'newest' | 'expiring' | 'name'. Default 'newest'.
+	 *     @type int    $limit  Page size. Default 10.
+	 *     @type int    $offset Row offset. Default 0.
+	 * }
+	 * @return object[] Hydrated rows with a template_title property.
+	 */
+	public static function get_list_for_recipient( $recipient_id, array $args = [] ) {
+		global $wpdb;
+
+		$status = isset( $args['status'] ) && in_array( $args['status'], [ 'valid', 'expired' ], true )
+			? (string) $args['status']
+			: 'all';
+		$sort   = isset( $args['sort'] ) && in_array( $args['sort'], [ 'expiring', 'name' ], true )
+			? (string) $args['sort']
+			: 'newest';
+		$limit  = isset( $args['limit'] ) ? absint( $args['limit'] ) : 10;
+		$offset = isset( $args['offset'] ) ? absint( $args['offset'] ) : 0;
+		$now    = gmdate( 'Y-m-d H:i:s' );
+
+		if ( 'name' === $sort ) {
+			// Alphabetical by certificate name; deleted-template rows last.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT c.*, t.title AS template_title FROM %i c LEFT JOIN %i t ON t.id = c.template_id WHERE c.recipient_id = %d AND ( %s = 'all' OR ( %s = 'valid' AND c.status = 'issued' AND ( c.expires_at IS NULL OR c.expires_at > %s ) ) OR ( %s = 'expired' AND c.status = 'issued' AND c.expires_at IS NOT NULL AND c.expires_at <= %s ) ) ORDER BY t.title IS NULL, t.title ASC, c.id DESC LIMIT %d OFFSET %d",
+					self::table(),
+					PressPrimer_Certificate_Template::table(),
+					absint( $recipient_id ),
+					$status,
+					$status,
+					$now,
+					$status,
+					$now,
+					$limit,
+					$offset
+				)
+			);
+		} elseif ( 'expiring' === $sort ) {
+			// Expiring soonest first; never-expiring certificates last.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT c.*, t.title AS template_title FROM %i c LEFT JOIN %i t ON t.id = c.template_id WHERE c.recipient_id = %d AND ( %s = 'all' OR ( %s = 'valid' AND c.status = 'issued' AND ( c.expires_at IS NULL OR c.expires_at > %s ) ) OR ( %s = 'expired' AND c.status = 'issued' AND c.expires_at IS NOT NULL AND c.expires_at <= %s ) ) ORDER BY c.expires_at IS NULL, c.expires_at ASC, c.id DESC LIMIT %d OFFSET %d",
+					self::table(),
+					PressPrimer_Certificate_Template::table(),
+					absint( $recipient_id ),
+					$status,
+					$status,
+					$now,
+					$status,
+					$now,
+					$limit,
+					$offset
+				)
+			);
+		} else {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT c.*, t.title AS template_title FROM %i c LEFT JOIN %i t ON t.id = c.template_id WHERE c.recipient_id = %d AND ( %s = 'all' OR ( %s = 'valid' AND c.status = 'issued' AND ( c.expires_at IS NULL OR c.expires_at > %s ) ) OR ( %s = 'expired' AND c.status = 'issued' AND c.expires_at IS NOT NULL AND c.expires_at <= %s ) ) ORDER BY c.issued_at DESC, c.id DESC LIMIT %d OFFSET %d",
+					self::table(),
+					PressPrimer_Certificate_Template::table(),
+					absint( $recipient_id ),
+					$status,
+					$status,
+					$now,
+					$status,
+					$now,
+					$limit,
+					$offset
+				)
+			);
+		}
+
+		return array_map( [ __CLASS__, 'hydrate' ], (array) $rows );
+	}
+
+	/**
+	 * Count one recipient's certificates under a status filter
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $recipient_id Recipient user id.
+	 * @param string $status       'all' | 'valid' | 'expired'.
+	 * @return int
+	 */
+	public static function count_list_for_recipient( $recipient_id, $status = 'all' ) {
+		global $wpdb;
+
+		$status = in_array( $status, [ 'valid', 'expired' ], true ) ? (string) $status : 'all';
+		$now    = gmdate( 'Y-m-d H:i:s' );
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM %i c WHERE c.recipient_id = %d AND ( %s = 'all' OR ( %s = 'valid' AND c.status = 'issued' AND ( c.expires_at IS NULL OR c.expires_at > %s ) ) OR ( %s = 'expired' AND c.status = 'issued' AND c.expires_at IS NOT NULL AND c.expires_at <= %s ) )",
+				self::table(),
+				absint( $recipient_id ),
+				$status,
+				$status,
+				$now,
+				$status,
+				$now
+			)
+		);
+	}
+
+	/**
 	 * A recipient's certificates, most recently earned first
 	 *
 	 * The user-profile listing (Phase 5B item 9): newest issued_at at

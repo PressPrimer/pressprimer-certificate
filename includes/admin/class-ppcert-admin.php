@@ -69,6 +69,7 @@ class PressPrimer_Certificate_Admin {
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_init', [ $this, 'handle_trash_action' ] );
 		add_action( 'admin_init', [ $this, 'handle_duplicate_action' ] );
+		add_action( 'admin_init', [ $this, 'maybe_redirect_to_setup' ] );
 	}
 
 	/**
@@ -154,6 +155,97 @@ class PressPrimer_Certificate_Admin {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Redirect the activating user to the dashboard - once, ever
+	 *
+	 * Consumes the short-lived flag the activator set; the setup tour
+	 * auto-opens on the dashboard for users whose onboarding state is
+	 * fresh. All guards live in get_setup_redirect_url(); this wrapper
+	 * only performs the redirect. Mirrors PressPrimer Assignment 2.2.
+	 *
+	 * @since 1.0.0
+	 */
+	public function maybe_redirect_to_setup() {
+		$url = $this->get_setup_redirect_url();
+
+		if ( $url ) {
+			wp_safe_redirect( $url );
+			exit;
+		}
+	}
+
+	/**
+	 * Resolve whether this request should redirect to the dashboard
+	 *
+	 * Redirects only when ALL guards pass:
+	 * - normal web request (not AJAX, cron, or WP-CLI)
+	 * - not the network admin
+	 * - the flag exists and records the current user
+	 * - not a bulk activation (activate-multi)
+	 * - the user can manage templates (the tour builds one)
+	 * - no templates exist yet (reinstall guard)
+	 *
+	 * The flag is deleted before any redirect (and on terminal guard
+	 * failures for the matched user), so the redirect can never fire
+	 * twice.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string|null Redirect URL, or null when no redirect happens.
+	 */
+	private function get_setup_redirect_url() {
+		if ( wp_doing_ajax() || wp_doing_cron() ) {
+			return null;
+		}
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			return null;
+		}
+
+		if ( is_network_admin() ) {
+			return null;
+		}
+
+		$flag_user = (int) get_transient( 'ppcert_setup_redirect' );
+
+		if ( ! $flag_user || get_current_user_id() !== $flag_user ) {
+			// No flag, or it belongs to another user - leave it for them
+			// (it expires on its own).
+			return null;
+		}
+
+		// Bulk activation: never redirect, and never retry.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only detection of the bulk-activation context.
+		if ( isset( $_GET['activate-multi'] ) ) {
+			delete_transient( 'ppcert_setup_redirect' );
+			return null;
+		}
+
+		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES ) ) {
+			delete_transient( 'ppcert_setup_redirect' );
+			return null;
+		}
+
+		// Single-shot: the flag is consumed before redirecting.
+		delete_transient( 'ppcert_setup_redirect' );
+
+		// Reinstall guard: an install with existing templates never
+		// redirects.
+		global $wpdb;
+
+		$template_count = (int) $wpdb->get_var(
+			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', $wpdb->prefix . 'ppcert_templates' )
+		);
+
+		if ( $template_count > 0 ) {
+			return null;
+		}
+
+		// The setup tour auto-opens on the dashboard for users whose
+		// onboarding state is fresh - that's where the redirect lands.
+		return admin_url( 'admin.php?page=pressprimer-certificate' );
 	}
 
 	/**

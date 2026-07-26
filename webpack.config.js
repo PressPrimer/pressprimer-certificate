@@ -26,6 +26,12 @@ module.exports = {
 			'verify',
 			'index.js'
 		),
+		'blocks/my-certificates/index': path.resolve(
+			process.cwd(),
+			'blocks',
+			'my-certificates',
+			'index.js'
+		),
 	},
 	output: {
 		path: path.resolve( process.cwd(), 'build' ),

@@ -488,6 +488,133 @@ class PPCert_Fake_WPDB {
 			return array_slice( $matches, (int) $args[9], (int) $args[8] );
 		}
 
+		// Certificate::get_list_for_recipient - the My Certificates
+		// front-end list. Args: (table, template_table, recipient_id,
+		// status, status, now, status, now, limit, offset). Mirrors the
+		// SQL's status semantics and both hardcoded sort branches.
+		if ( false !== strpos( $query, "( %s = 'all' OR ( %s = 'valid'" ) && false !== strpos( $query, 'LEFT JOIN' ) ) {
+			$templates = $this->rows( (string) $args[1] );
+			$status    = (string) $args[3];
+			$now       = (string) $args[5];
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args, $status, $now ) {
+					if ( (int) $row['recipient_id'] !== (int) $args[2] ) {
+						return false;
+					}
+
+					$expires = isset( $row['expires_at'] ) ? (string) $row['expires_at'] : '';
+
+					if ( 'valid' === $status ) {
+						return 'issued' === (string) $row['status'] && ( '' === $expires || $expires > $now );
+					}
+
+					if ( 'expired' === $status ) {
+						return 'issued' === (string) $row['status'] && '' !== $expires && $expires <= $now;
+					}
+
+					return true;
+				}
+			);
+
+			if ( false !== strpos( $query, 'ORDER BY t.title IS NULL, t.title ASC' ) ) {
+				$title_of = static function ( $row ) use ( $templates ) {
+					foreach ( $templates as $template ) {
+						if ( (int) $template['id'] === (int) $row['template_id'] ) {
+							return isset( $template['title'] ) ? (string) $template['title'] : null;
+						}
+					}
+					return null;
+				};
+
+				usort(
+					$matches,
+					static function ( $a, $b ) use ( $title_of ) {
+						$a_title = $title_of( $a );
+						$b_title = $title_of( $b );
+
+						if ( ( null === $a_title ) !== ( null === $b_title ) ) {
+							return null === $a_title ? 1 : -1;
+						}
+
+						$by_title = strcmp( (string) $a_title, (string) $b_title );
+						return 0 !== $by_title ? $by_title : ( (int) $b['id'] <=> (int) $a['id'] );
+					}
+				);
+			} elseif ( false !== strpos( $query, 'ORDER BY c.expires_at IS NULL, c.expires_at ASC' ) ) {
+				usort(
+					$matches,
+					static function ( $a, $b ) {
+						$a_exp = isset( $a['expires_at'] ) ? (string) $a['expires_at'] : '';
+						$b_exp = isset( $b['expires_at'] ) ? (string) $b['expires_at'] : '';
+
+						if ( ( '' === $a_exp ) !== ( '' === $b_exp ) ) {
+							return '' === $a_exp ? 1 : -1;
+						}
+
+						$by_exp = strcmp( $a_exp, $b_exp );
+						return 0 !== $by_exp ? $by_exp : ( (int) $b['id'] <=> (int) $a['id'] );
+					}
+				);
+			} else {
+				usort(
+					$matches,
+					static function ( $a, $b ) {
+						$by_date = strcmp( (string) $b['issued_at'], (string) $a['issued_at'] );
+						return 0 !== $by_date ? $by_date : ( (int) $b['id'] <=> (int) $a['id'] );
+					}
+				);
+			}
+
+			$matches = array_slice( $matches, (int) $args[9], (int) $args[8] );
+
+			return array_map(
+				static function ( $row ) use ( $templates ) {
+					$row['template_title'] = null;
+					foreach ( $templates as $template ) {
+						if ( (int) $template['id'] === (int) $row['template_id'] ) {
+							$row['template_title'] = isset( $template['title'] ) ? $template['title'] : null;
+							break;
+						}
+					}
+					return $row;
+				},
+				$matches
+			);
+		}
+
+		// Certificate::count_list_for_recipient - same status semantics,
+		// count only. Args: (table, recipient_id, status, status, now,
+		// status, now).
+		if ( false !== strpos( $query, "( %s = 'all' OR ( %s = 'valid'" ) && false !== strpos( $query, 'SELECT COUNT(*)' ) ) {
+			$status = (string) $args[2];
+			$now    = (string) $args[4];
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args, $status, $now ) {
+					if ( (int) $row['recipient_id'] !== (int) $args[1] ) {
+						return false;
+					}
+
+					$expires = isset( $row['expires_at'] ) ? (string) $row['expires_at'] : '';
+
+					if ( 'valid' === $status ) {
+						return 'issued' === (string) $row['status'] && ( '' === $expires || $expires > $now );
+					}
+
+					if ( 'expired' === $status ) {
+						return 'issued' === (string) $row['status'] && '' !== $expires && $expires <= $now;
+					}
+
+					return true;
+				}
+			);
+
+			return [ [ 'count' => count( $matches ) ] ];
+		}
+
 		// Certificate::get_recent_for_recipient - newest first for the
 		// user profile.
 		if ( false !== strpos( $query, 'WHERE c.recipient_id = %d ORDER BY c.issued_at DESC, c.id DESC LIMIT %d OFFSET %d' ) ) {

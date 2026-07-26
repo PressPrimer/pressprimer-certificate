@@ -19,6 +19,7 @@ import {
 	Tooltip,
 	Typography,
 	Button,
+	Input,
 	Spin,
 	message,
 	notification,
@@ -27,6 +28,8 @@ import {
 import {
 	ArrowLeftOutlined,
 	BorderOuterOutlined,
+	CheckOutlined,
+	EditOutlined,
 	EyeOutlined,
 	RedoOutlined,
 	SaveOutlined,
@@ -82,10 +85,24 @@ export default function DesignerApp( { boot } ) {
 	const [ samples, setSamples ] = useState( {} );
 	const [ rulers, setRulers ] = useState( true );
 	const [ saving, setSaving ] = useState( false );
+	const [ renaming, setRenaming ] = useState( false );
+	const [ renameValue, setRenameValue ] = useState( '' );
 
 	// Latest save callback for the keyboard shortcut (stable effect).
 	const doSaveRef = useRef( null );
 	const [ previewing, setPreviewing ] = useState( false );
+
+	// Idempotent: Enter, blur, and the check button can all fire for
+	// one edit; only the first changed value dispatches.
+	const commitRename = () => {
+		setRenaming( false );
+
+		const clean = renameValue.trim();
+
+		if ( clean && state.template && clean !== state.template.title ) {
+			dispatch( { type: 'RENAME_TEMPLATE', title: clean } );
+		}
+	};
 
 	const doSave = ( extra = {} ) => {
 		if ( ! state.template || saving ) {
@@ -422,40 +439,80 @@ export default function DesignerApp( { boot } ) {
 					>
 						{ __( 'Templates', 'pressprimer-certificate' ) }
 					</Button>
-					{ /* Placement bottom: the toolbar sits directly under
-					     the WP admin bar, and the editable's built-in
-					     tooltip (always top) disappears behind it. Nothing
-					     may render under the admin bar (CLAUDE.md). */ }
-					<Tooltip
-						title={ __(
-							'Rename template',
-							'pressprimer-certificate'
-						) }
-						placement="bottom"
-					>
-						<Text
-							strong
-							className="ppcert-designer__title"
-							editable={ {
-								tooltip: false,
-								onChange: ( title ) => {
-									const clean = title.trim();
-
-									if (
-										clean &&
-										clean !== state.template.title
-									) {
-										dispatch( {
-											type: 'RENAME_TEMPLATE',
-											title: clean,
-										} );
-									}
-								},
+					{ /* Rename commits on Enter, on blur (click anywhere),
+					     or via the clickable check button (Ryan,
+					     2026-07-26: keyboard-only commit was a dead end
+					     for mouse users). Escape cancels. */ }
+					{ renaming ? (
+						<Input
+							className="ppcert-designer__title-input"
+							size="small"
+							// eslint-disable-next-line jsx-a11y/no-autofocus -- Focus moves in direct response to the user's rename click (click-to-edit), never on page load.
+							autoFocus
+							value={ renameValue }
+							maxLength={ 200 }
+							aria-label={ __(
+								'Template name',
+								'pressprimer-certificate'
+							) }
+							onChange={ ( e ) =>
+								setRenameValue( e.target.value )
+							}
+							onPressEnter={ () => commitRename() }
+							onBlur={ () => commitRename() }
+							onKeyDown={ ( e ) => {
+								if ( 'Escape' === e.key ) {
+									// Reset to the current title first so
+									// a late blur commit is a no-op.
+									setRenameValue( state.template.title );
+									setRenaming( false );
+								}
 							} }
+							suffix={
+								<Button
+									type="text"
+									size="small"
+									icon={ <CheckOutlined /> }
+									aria-label={ __(
+										'Save name',
+										'pressprimer-certificate'
+									) }
+									onMouseDown={ ( e ) => {
+										// Commit here; preventDefault
+										// stops the input's blur from
+										// firing first and unmounting
+										// this button mid-click.
+										e.preventDefault();
+										commitRename();
+									} }
+								/>
+							}
+						/>
+					) : (
+						/* Placement bottom: the toolbar sits directly
+						   under the WP admin bar, and top-placed floating
+						   UI disappears behind it. Nothing may render
+						   under the admin bar (CLAUDE.md). */
+						<Tooltip
+							title={ __(
+								'Rename template',
+								'pressprimer-certificate'
+							) }
+							placement="bottom"
 						>
-							{ state.template.title }
-						</Text>
-					</Tooltip>
+							<Button
+								type="text"
+								className="ppcert-designer__title"
+								onClick={ () => {
+									setRenameValue( state.template.title );
+									setRenaming( true );
+								} }
+							>
+								<Text strong>{ state.template.title }</Text>
+								<EditOutlined aria-hidden="true" />
+							</Button>
+						</Tooltip>
+					) }
 					<Tag
 						color={
 							STATUS_COLORS[ state.template.status ] || 'default'

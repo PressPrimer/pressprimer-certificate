@@ -9,7 +9,6 @@ import { __ } from '@wordpress/i18n';
 import { Button } from 'antd';
 import {
 	PlusOutlined,
-	SendOutlined,
 	UnorderedListOutlined,
 	SettingOutlined,
 	PlayCircleOutlined,
@@ -34,16 +33,14 @@ const QuickActions = ( { urls = {}, caps = {} } ) => {
 			visible: !! caps.manage_templates,
 		},
 		{
-			key: 'issue',
-			label: __( 'Issue a Certificate', 'pressprimer-certificate' ),
-			icon: <SendOutlined />,
-			url: urls.issue,
-			type: 'default',
-			visible: !! caps.issue_certificates,
-		},
-		{
+			// One row covers both tasks - the Certificates screen
+			// carries the Issue button (Ryan, 2026-07-26: saves
+			// vertical space over a separate Issue action).
 			key: 'certificates',
-			label: __( 'View Certificates', 'pressprimer-certificate' ),
+			label: __(
+				'View and Issue Certificates',
+				'pressprimer-certificate'
+			),
 			icon: <UnorderedListOutlined />,
 			url: urls.certificates,
 			type: 'default',
