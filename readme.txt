@@ -1,6 +1,6 @@
-=== PressPrimer Certificate – Certificate Designer, Credential IDs & Public Verification ===
+=== PressPrimer Certificate – Certificate Designer & Course Certification for Your LMS ===
 Contributors: pressprimer
-Tags: certificate, credentials, verification, lms, learndash
+Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
 Tested up to: 7.0
 Stable tag: 1.0.0
@@ -8,7 +8,7 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Design, issue, and verify certificates on your own site. Drag-and-drop designer, credential IDs, QR verification, and LMS-agnostic issuance.
+Design, issue, and verify certificates on your own site. A drag-and-drop designer, automatic awards from popular LMS plugins, and scannable QR proof.
 
 == Description ==
 
@@ -58,7 +58,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow:
 * Public verification page (shortcode and block) that anyone can use, no account needed
 * Optional QR code on every certificate linking to its verification page
 * A shareable certificate view page with PDF download
-* My Certificates list (shortcode and block) so logged-in learners can see, verify, and download everything they have earned
+* My Certificates list (shortcode and block) so logged-in learners can see, verify, and download everything they have earned, with status filters and sorting by date, name, or upcoming expiry
 * PDFs are protected against editing: Acrobat and other viewers refuse to modify the text, while printing and copying stay available
 * Token placeholders for recipient, certificate, and site data
 
@@ -67,6 +67,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow:
 * Dashboard with certificate statistics, an awarded-over-time chart, quick actions, and recent certificates
 * A guided setup tour that walks you from first template to first issued certificate in about five minutes
 * Certificates screen with template, status, and source filters
+* Resend a certificate's email with one click, and permanently delete test certificates
 * Earned certificates listed on each user's profile screen with verify and download links
 * Certificate templates list with trigger, page size, and status columns
 
@@ -192,6 +193,10 @@ Yes. Quiz pass thresholds and Assignment grades are included triggers with their
 
 Every certificate can include a unique credential ID and/or a QR code. Scanning the QR code (or typing the ID into your site's verification page) shows whether the credential is valid, revoked, or expired, along with the recipient name, what it was awarded for, and the issue date. No account is needed to verify.
 
+= How do learners see the certificates they have earned? =
+
+Three ways. Each certificate is emailed as a PDF the moment it is issued. Learners can also visit a My Certificates page you create with the included block or `[ppcert_my_certificates]` shortcode, which lists everything they have earned with verify and download links, status filters, and sorting. And every certificate has its own shareable view page with the certificate image and a PDF download.
+
 = What happens if I edit a template after certificates have been issued? =
 
 Nothing changes for existing certificates. Each certificate snapshots its design and data at issue time, so a certificate always looks exactly as it did the day it was earned. Template edits only affect future issuance.
@@ -212,6 +217,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 4. Issuing a certificate manually with recipient search and earned date
 5. The public verification page confirming a credential
 6. Design defaults: brand colors, logo, signature, and certificate size
+7. The My Certificates page where learners view, verify, and download their certificates
 
 == Changelog ==
 
