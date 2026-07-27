@@ -156,8 +156,8 @@ function ppcert_drop_tables() {
 	);
 
 	foreach ( $table_names as $table_name ) {
-		$full_table_name = $wpdb->prefix . $table_name;
-		$wpdb->query( "DROP TABLE IF EXISTS {$full_table_name}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// %i identifier placeholder (WP 6.2+; the plugin floor is 6.4).
+		$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $wpdb->prefix . $table_name ) );
 	}
 }
 
