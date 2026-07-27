@@ -61,10 +61,7 @@ function Edit() {
 					} }
 				>
 					<strong>
-						{ __(
-							'Certificate name',
-							'pressprimer-certificate'
-						) }
+						{ __( 'Certificate name', 'pressprimer-certificate' ) }
 					</strong>
 					<div style={ { color: '#50575e', fontSize: '13px' } }>
 						{ __(
