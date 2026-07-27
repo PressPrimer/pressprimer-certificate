@@ -91,7 +91,12 @@
 		];
 
 		if ( data.expires_at ) {
-			rows.push( [ i18n.expires, formatDate( data.expires_at ) ] );
+			// Past dates read "Expired", future dates "Expires".
+			const isPast = new Date( data.expires_at ).getTime() < Date.now();
+			rows.push( [
+				isPast ? i18n.expires_past : i18n.expires,
+				formatDate( data.expires_at ),
+			] );
 		}
 
 		const list = document.createElement( 'dl' );

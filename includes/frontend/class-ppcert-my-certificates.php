@@ -250,7 +250,12 @@ class PressPrimer_Certificate_My_Certificates {
 			. '</strong></span>';
 
 		if ( ! empty( $certificate->expires_at ) ) {
-			$output .= '<span>' . esc_html__( 'Expires', 'pressprimer-certificate' ) . ' <strong>'
+			// Past dates read "Expired", future dates "Expires" (UTC).
+			$expires_label = (string) $certificate->expires_at <= gmdate( 'Y-m-d H:i:s' )
+				? __( 'Expired', 'pressprimer-certificate' )
+				: __( 'Expires', 'pressprimer-certificate' );
+
+			$output .= '<span>' . esc_html( $expires_label ) . ' <strong>'
 				. esc_html( get_date_from_gmt( (string) $certificate->expires_at, get_option( 'date_format' ) ) )
 				. '</strong></span>';
 		}

@@ -135,6 +135,20 @@ export default function TextSection( { element } ) {
 						value: slug,
 						label: fonts[ slug ].label || slug,
 					} ) ) }
+					// Menu entries render in their actual face (the
+					// designer inlines every bundled @font-face), like
+					// the Appearance tab's Default font field; the
+					// closed control stays plain for compactness.
+					optionRender={ ( option ) => (
+						<span
+							style={ {
+								fontFamily: `"${ option.value }"`,
+								fontSize: 16,
+							} }
+						>
+							{ option.label }
+						</span>
+					) }
 					className="ppcert-designer__prop-wide"
 				/>
 			</PropRow>

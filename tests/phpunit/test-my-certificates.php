@@ -241,13 +241,16 @@ class Test_My_Certificates extends TestCase {
 		$this->assertStringContainsString( 'aria-current="true"', $html );
 		$this->assertSame( 2, substr_count( $html, 'ppcert-my-certificates__item' ) );
 
-		// Expired filter: only the expired certificate remains.
+		// Expired filter: only the expired certificate remains, and its
+		// past date labels as "Expired" rather than "Expires".
 		$_GET['ppcert_status'] = 'expired';
 		$html                  = PressPrimer_Certificate_My_Certificates::render_shortcode();
 		$this->assertSame( 1, substr_count( $html, 'ppcert-my-certificates__item' ) );
 		$this->assertStringContainsString( 'CTRA-AAAA-0002', $html );
 		$this->assertStringNotContainsString( 'CTRA-AAAA-0001', $html );
 		$this->assertStringContainsString( 'ppcert-pill--expired', $html );
+		$this->assertStringContainsString( 'Expired <strong>', $html );
+		$this->assertStringNotContainsString( 'Expires <strong>', $html );
 
 		// Valid filter: only the unexpired one.
 		$_GET['ppcert_status'] = 'valid';

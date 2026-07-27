@@ -205,6 +205,10 @@ class Test_View_Page extends TestCase {
 		$this->assertStringContainsString( 'This certificate has expired.', $html );
 		$this->assertStringContainsString( 'ppcert-view__preview', $html );
 		$this->assertStringContainsString( 'ppcert/v1/certificates/CRED00000042/pdf', $html );
+
+		// A past expiry labels its detail row "Expired", not "Expires".
+		$this->assertStringContainsString( '<dt>Expired</dt>', $html );
+		$this->assertStringNotContainsString( '<dt>Expires</dt>', $html );
 	}
 
 	/**

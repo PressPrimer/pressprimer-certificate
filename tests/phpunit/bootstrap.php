@@ -1752,6 +1752,10 @@ if ( ! class_exists( 'WP_Post' ) ) {
 	}
 }
 
+if ( ! defined( 'YEAR_IN_SECONDS' ) ) {
+	define( 'YEAR_IN_SECONDS', 31536000 );
+}
+
 if ( ! defined( 'DAY_IN_SECONDS' ) ) {
 	define( 'DAY_IN_SECONDS', 86400 );
 }

@@ -203,12 +203,19 @@ class PressPrimer_Certificate_View_Page {
 			$output .= self::render_preview( $certificate, $recipient );
 		}
 
+		// A date already in the past reads "Expired", not "Expires";
+		// stored values are UTC, compared against UTC now.
+		$expires_at    = isset( $certificate->expires_at ) ? (string) $certificate->expires_at : '';
+		$expires_label = '' !== $expires_at && $expires_at <= gmdate( 'Y-m-d H:i:s' )
+			? __( 'Expired', 'pressprimer-certificate' )
+			: __( 'Expires', 'pressprimer-certificate' );
+
 		$rows = [
 			[ __( 'Recipient', 'pressprimer-certificate' ), $recipient ],
 			[ __( 'Certificate', 'pressprimer-certificate' ), $subject ],
 			[ __( 'Credential ID', 'pressprimer-certificate' ), $display_id ],
 			[ __( 'Issued', 'pressprimer-certificate' ), self::display_date( $certificate->issued_at ) ],
-			[ __( 'Expires', 'pressprimer-certificate' ), self::display_date( isset( $certificate->expires_at ) ? $certificate->expires_at : null ) ],
+			[ $expires_label, self::display_date( '' !== $expires_at ? $expires_at : null ) ],
 		];
 
 		$output .= '<dl class="ppcert-view__details">';

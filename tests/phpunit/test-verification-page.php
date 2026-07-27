@@ -147,7 +147,12 @@ class Test_Verification_Page extends TestCase {
 
 		$expired = PressPrimer_Certificate_Verification_Page::render_result( array_merge( $base, [ 'valid' => false, 'status' => 'expired', 'expires_at' => '2026-01-01T00:00:00Z' ] ) );
 		$this->assertStringContainsString( 'ppcert-verify__status--expired', $expired );
-		$this->assertStringContainsString( 'Expires', $expired );
+
+		// A past date reads "Expired"; a future date reads "Expires".
+		$this->assertStringContainsString( '<dt>Expired</dt>', $expired );
+		$future = PressPrimer_Certificate_Verification_Page::render_result( array_merge( $base, [ 'valid' => true, 'status' => 'valid', 'expires_at' => gmdate( 'Y-m-d\TH:i:s\Z', time() + YEAR_IN_SECONDS ) ] ) );
+		$this->assertStringContainsString( '<dt>Expires</dt>', $future );
+		$this->assertStringNotContainsString( '<dt>Expired</dt>', $future );
 
 		$revoked = PressPrimer_Certificate_Verification_Page::render_result( array_merge( $base, [ 'valid' => false, 'status' => 'revoked' ] ) );
 		$this->assertStringContainsString( 'ppcert-verify__status--revoked', $revoked );

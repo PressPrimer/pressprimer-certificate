@@ -96,6 +96,7 @@ class PressPrimer_Certificate_Verification_Page {
 					'issuer'       => __( 'Issuer', 'pressprimer-certificate' ),
 					'issued'       => __( 'Issued', 'pressprimer-certificate' ),
 					'expires'      => __( 'Expires', 'pressprimer-certificate' ),
+					'expires_past' => __( 'Expired', 'pressprimer-certificate' ),
 				],
 			]
 		);
@@ -179,12 +180,19 @@ class PressPrimer_Certificate_Verification_Page {
 			return $output;
 		}
 
+		// A date already in the past reads "Expired", not "Expires"
+		// (Ryan, 2026-07-26); both values are UTC.
+		$expires_at    = isset( $result['expires_at'] ) ? (string) $result['expires_at'] : '';
+		$expires_label = '' !== $expires_at && strtotime( $expires_at ) < time()
+			? __( 'Expired', 'pressprimer-certificate' )
+			: __( 'Expires', 'pressprimer-certificate' );
+
 		$rows = [
 			[ __( 'Recipient', 'pressprimer-certificate' ), isset( $result['recipient_name'] ) ? (string) $result['recipient_name'] : '' ],
 			[ __( 'Certificate', 'pressprimer-certificate' ), isset( $result['subject'] ) ? (string) $result['subject'] : '' ],
 			[ __( 'Issuer', 'pressprimer-certificate' ), isset( $result['issuer_name'] ) ? (string) $result['issuer_name'] : '' ],
 			[ __( 'Issued', 'pressprimer-certificate' ), self::display_date( isset( $result['issued_at'] ) ? $result['issued_at'] : null ) ],
-			[ __( 'Expires', 'pressprimer-certificate' ), self::display_date( isset( $result['expires_at'] ) ? $result['expires_at'] : null ) ],
+			[ $expires_label, self::display_date( '' !== $expires_at ? $expires_at : null ) ],
 		];
 
 		$output .= '<dl class="ppcert-verify__details">';
