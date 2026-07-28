@@ -1,4 +1,4 @@
-=== PressPrimer Certificate – Certificate Designer & Course Certification for Your LMS ===
+=== PressPrimer Certificate ===
 Contributors: pressprimer
 Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
