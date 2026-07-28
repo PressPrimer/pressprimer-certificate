@@ -16,7 +16,11 @@
  * warning badge.
  */
 
-import { useEffect, useState } from '@wordpress/element';
+import {
+	createInterpolateElement,
+	useEffect,
+	useState,
+} from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import {
 	Alert,
@@ -839,9 +843,29 @@ export default function TriggerPanel() {
 				<Alert
 					type="info"
 					showIcon
-					message={ __(
-						'Install or activate an LMS plugin - or PressPrimer Quiz - to unlock automatic awarding when learners complete courses, quizzes, or assignments.',
-						'pressprimer-certificate'
+					message={ createInterpolateElement(
+						__(
+							'Install and activate an LMS plugin, <quiz>PressPrimer Quiz</quiz>, <assignment>PressPrimer Assignment</assignment>, or another integration to award this certificate based on user activity.',
+							'pressprimer-certificate'
+						),
+						{
+							quiz: (
+								// eslint-disable-next-line jsx-a11y/anchor-has-content -- createInterpolateElement injects the link text.
+								<a
+									href="https://wordpress.org/plugins/pressprimer-quiz/"
+									target="_blank"
+									rel="noopener noreferrer"
+								/>
+							),
+							assignment: (
+								// eslint-disable-next-line jsx-a11y/anchor-has-content -- createInterpolateElement injects the link text.
+								<a
+									href="https://wordpress.org/plugins/pressprimer-assignment/"
+									target="_blank"
+									rel="noopener noreferrer"
+								/>
+							),
+						}
 					) }
 				/>
 				{ manualNote }

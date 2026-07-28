@@ -75,6 +75,11 @@
 	border: 2px solid var(--ppcert-primary);
 	border-radius: var(--ppcert-radius-md);
 	color: #fff;
+
+	/* Never inherit the theme's body size (default themes run 18-20px);
+	 * cap at 16px, shrinking with smaller theme roots. */
+	font-size: min(1rem, 16px);
+	line-height: 1.5;
 	font-weight: 600;
 	text-decoration: none;
 	transition: var(--ppcert-transition);
@@ -116,6 +121,10 @@
 	border: 2px solid var(--ppcert-border);
 	border-radius: var(--ppcert-radius-md);
 	color: var(--ppcert-text);
+
+	/* Same 16px cap as the primary recipe. */
+	font-size: min(1rem, 16px);
+	line-height: 1.5;
 	font-weight: 600;
 	text-decoration: none;
 	transition: var(--ppcert-transition);

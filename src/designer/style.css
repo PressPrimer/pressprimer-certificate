@@ -83,6 +83,14 @@
 	opacity: 0.65;
 }
 
+/* The Merge Field entry sits inside a Popover host div, so antd's
+ * List split rule sees it as a :last-child and strips its separator;
+ * restore the border for wrapped items that are not actually last.
+ * Color matches antd's default colorSplit token. */
+.ppcert-designer__palette-inner .ant-list-items > div:not(:last-child) > .ant-list-item {
+	border-block-end: 1px solid rgb(5 5 5 / 6%);
+}
+
 .ppcert-designer__sidebar {
 	border-left: 1px solid #e5e7eb;
 	padding: 0 12px;
