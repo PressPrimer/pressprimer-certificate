@@ -267,7 +267,7 @@ function IssueApp() {
 						format={ ADMIN_DATE_FORMAT }
 						allowClear
 						placeholder={ __(
-							"Template's validity, or never",
+							"Certificate's validity, or never",
 							'pressprimer-certificate'
 						) }
 						getPopupContainer={ ( node ) => node.parentElement }
