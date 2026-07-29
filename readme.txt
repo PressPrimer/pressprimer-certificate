@@ -214,10 +214,8 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 1. Dashboard with award statistics, quick actions, and recent certificates
 2. The certificate designer: a true-size canvas, element palette, and properties panel
 3. Starter template gallery with Letter and A4 variants
-4. Issuing a certificate manually with recipient search and earned date
-5. The public verification page confirming a credential
-6. Design defaults: brand colors, logo, signature, and certificate size
-7. The My Certificates page where learners view, verify, and download their certificates
+4. Design defaults: brand colors, logo, signature, and certificate size
+5. The My Certificates page where learners view, verify, and download their certificates
 
 == Changelog ==
 
