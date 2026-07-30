@@ -16,7 +16,8 @@
     "test:parity": "npm run build:harness && playwright test --project=parity-pdf",
     "build:harness": "wp-scripts build --config webpack.harness.config.js",
     "test:designer": "npm run build:harness && playwright test --project=designer-canvas",
-    "parity:update-golden": "node tests/playwright/tools/update-golden.mjs"
+    "parity:update-golden": "node tests/playwright/tools/update-golden.mjs",
+    "pot": "wp i18n make-pot . languages/pressprimer-certificate.pot --domain=pressprimer-certificate --exclude=vendor,node_modules,dist,tests,build,fonts,scripts,docs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
