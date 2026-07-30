@@ -500,7 +500,12 @@ export default function Canvas( { layout, zoom, rulers = true } ) {
 					style={ {
 						width,
 						height,
-						background: layout.background?.color || '#ffffff',
+						// Longhands only: the `background` SHORTHAND
+						// resets background-image, and React's style
+						// diffing re-sets just the changed key - a
+						// color edit was wiping the image live
+						// (Ryan, 2026-07-30).
+						backgroundColor: layout.background?.color || '#ffffff',
 						backgroundImage: backgroundUrl
 							? `url("${ backgroundUrl }")`
 							: undefined,

@@ -45,6 +45,27 @@ class PressPrimer_Certificate_Trigger {
 	}
 
 	/**
+	 * Trigger types actually in use by any template
+	 *
+	 * Drives the Templates list's integration filter: only integrations
+	 * with at least one trigger row appear, so the dropdown never lists
+	 * plugins the site does not use (Ryan, 2026-07-30).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string[] Distinct trigger_type ids.
+	 */
+	public static function get_used_types() {
+		global $wpdb;
+
+		$types = $wpdb->get_col(
+			$wpdb->prepare( 'SELECT DISTINCT trigger_type FROM %i', self::table() )
+		);
+
+		return array_map( 'strval', (array) $types );
+	}
+
+	/**
 	 * Get one trigger by row id
 	 *
 	 * @since 1.0.0

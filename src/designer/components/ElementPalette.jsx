@@ -305,6 +305,10 @@ export default function ElementPalette() {
 			</Text>
 			<List
 				size="small"
+				// Separators are drawn by our own CSS on the uniform
+				// wrapper divs below: antd's split borders key off
+				// :last-child, which the Popover host div breaks.
+				split={ false }
 				dataSource={ types }
 				renderItem={ ( type ) => {
 					// The 100-element cap (FR-002): adders disable with an
@@ -328,6 +332,9 @@ export default function ElementPalette() {
 						</List.Item>
 					);
 
+					// Every branch wraps the item in a plain div so the
+					// row structure is identical (separator CSS relies
+					// on it) and refs forward for Tooltip/Popover.
 					if ( capped ) {
 						return (
 							<Tooltip
@@ -337,13 +344,13 @@ export default function ElementPalette() {
 								) }
 								placement="right"
 							>
-								{ item }
+								<div>{ item }</div>
 							</Tooltip>
 						);
 					}
 
 					if ( 'merge_field' !== type.key ) {
-						return item;
+						return <div>{ item }</div>;
 					}
 
 					// A plain div hosts the trigger: antd List.Item does

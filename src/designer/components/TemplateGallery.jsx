@@ -35,7 +35,7 @@ function StarterThumb( { layout } ) {
 			style={ {
 				width: pageW * scale,
 				height: pageH * scale,
-				background: layout?.background?.color || '#ffffff',
+				backgroundColor: layout?.background?.color || '#ffffff',
 			} }
 		>
 			{ ( layout?.elements || [] ).map( ( element ) => {

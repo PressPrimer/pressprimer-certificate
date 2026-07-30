@@ -185,6 +185,72 @@ test.describe( 'designer polish', () => {
 		);
 	} );
 
+	test( 'background image survives color edits (shorthand regression)', async ( {
+		page,
+	} ) => {
+		await page.goto( APP_URL );
+		await page.evaluate( () =>
+			window.localStorage.removeItem( 'ppcert_harness_template' )
+		);
+		await page.reload();
+		await page.waitForSelector( '[data-ppcert-canvas-scale]' );
+
+		// Seed a background image the way the media picker would.
+		await page.evaluate( () => {
+			const h = ( window as any ).__ppcertHarness;
+			const url =
+				'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+			h.seedAttachment( 4242, url );
+			const layout = h.getState().layout;
+			h.dispatch( {
+				type: 'APPLY_LAYOUT',
+				layout: {
+					...layout,
+					background: { ...layout.background, attachment_id: 4242 },
+				},
+			} );
+		} );
+
+		const pageEl = page.locator( '.ppcert-designer__page' );
+		await expect( pageEl ).toHaveCSS( 'background-image', /url\(/ );
+
+		// Changing ONLY the color must not wipe the painted image -
+		// the old `background` shorthand did exactly that under
+		// React's style diffing.
+		await page.evaluate( () => {
+			const h = ( window as any ).__ppcertHarness;
+			const layout = h.getState().layout;
+			h.dispatch( {
+				type: 'APPLY_LAYOUT',
+				layout: {
+					...layout,
+					background: { ...layout.background, color: '#ff0000' },
+				},
+			} );
+		} );
+
+		await expect( pageEl ).toHaveCSS(
+			'background-color',
+			'rgb(255, 0, 0)'
+		);
+		await expect( pageEl ).toHaveCSS( 'background-image', /url\(/ );
+
+		// Clearing the color keeps the image too.
+		await page.evaluate( () => {
+			const h = ( window as any ).__ppcertHarness;
+			const layout = h.getState().layout;
+			h.dispatch( {
+				type: 'APPLY_LAYOUT',
+				layout: {
+					...layout,
+					background: { ...layout.background, color: '' },
+				},
+			} );
+		} );
+
+		await expect( pageEl ).toHaveCSS( 'background-image', /url\(/ );
+	} );
+
 	test( 'rename commits with the mouse: blur and the check button', async ( {
 		page,
 	} ) => {

@@ -21,6 +21,7 @@ import {
 } from '../../../../src/designer/hooks/useDesignerStore';
 import DesignerApp from '../../../../src/designer/components/DesignerApp';
 import { seedMetaKeys } from '../../../../src/designer/mergeFields';
+import { seedAttachmentUrl } from '../../../../src/designer/hooks/useAttachment';
 import { getBoot } from '../../../../src/designer/boot';
 
 const STORAGE_KEY = 'ppcert_harness_template';
@@ -451,6 +452,7 @@ function Bridge() {
 		ready: true,
 		getState: () => state,
 		dispatch,
+		seedAttachment: seedAttachmentUrl,
 	};
 
 	return null;

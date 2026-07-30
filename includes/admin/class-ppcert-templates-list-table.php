@@ -179,17 +179,31 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 
 		echo '</select>';
 
-		echo '<label class="screen-reader-text" for="ppcert-filter-integration">'
-			. esc_html__( 'Filter by trigger integration', 'pressprimer-certificate' ) . '</label>';
-		echo '<select name="integration" id="ppcert-filter-integration">';
-		echo '<option value="">' . esc_html__( 'All integrations', 'pressprimer-certificate' ) . '</option>';
+		// Only integrations with at least one trigger row: the full
+		// adapter map would list every plugin the suite supports,
+		// installed or not, and grows with each release. Deactivated
+		// integrations whose triggers still exist stay listed.
+		$used_types   = PressPrimer_Certificate_Trigger::get_used_types();
+		$integrations = array_filter(
+			PressPrimer_Certificate_Plugin::get_integration_map(),
+			static function ( $type_ids ) use ( $used_types ) {
+				return [] !== array_intersect( (array) $type_ids, $used_types );
+			}
+		);
 
-		foreach ( array_keys( PressPrimer_Certificate_Plugin::get_integration_map() ) as $label ) {
-			echo '<option value="' . esc_attr( $label ) . '"' . selected( $integration, $label, false ) . '>'
-				. esc_html( $label ) . '</option>';
+		if ( [] !== $integrations ) {
+			echo '<label class="screen-reader-text" for="ppcert-filter-integration">'
+				. esc_html__( 'Filter by trigger integration', 'pressprimer-certificate' ) . '</label>';
+			echo '<select name="integration" id="ppcert-filter-integration">';
+			echo '<option value="">' . esc_html__( 'All integrations', 'pressprimer-certificate' ) . '</option>';
+
+			foreach ( array_keys( $integrations ) as $label ) {
+				echo '<option value="' . esc_attr( $label ) . '"' . selected( $integration, $label, false ) . '>'
+					. esc_html( $label ) . '</option>';
+			}
+
+			echo '</select>';
 		}
-
-		echo '</select>';
 
 		submit_button( __( 'Filter', 'pressprimer-certificate' ), '', 'filter_action', false );
 
