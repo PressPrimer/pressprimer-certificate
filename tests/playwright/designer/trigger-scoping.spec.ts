@@ -164,6 +164,36 @@ test.describe( 'single trigger per template (1.0 scope)', () => {
 		).toBeEnabled();
 	} );
 
+	test( 'an inserted source field renders its SAMPLE on the canvas', async ( {
+		page,
+	} ) => {
+		await boot( page );
+		await stageDoubleTrigger( page );
+
+		// Insert Course Title from the scoped merge menu (Ryan's
+		// 2026-07-30 report: the canvas stayed on the raw token because
+		// the registry cache handed the samples effect a stale scope).
+		await openMergeMenu( page );
+		await page
+			.locator( '[data-ppcert-merge-field="source.course_title"]' )
+			.click();
+
+		const inserted = page
+			.locator( '[data-ppcert-el]' )
+			.filter( { hasText: /Advanced Botany|source\.course_title/ } )
+			.first();
+
+		// Samples mode is the default: the sample renders, not the token.
+		await expect( inserted ).toContainText( 'Advanced Botany' );
+		await expect( inserted ).not.toContainText( 'source.course_title' );
+
+		// Tokens mode flips to the raw token and back.
+		await page.getByText( 'Tokens', { exact: true } ).click();
+		await expect( inserted ).toContainText( 'source.course_title' );
+		await page.getByText( 'Samples', { exact: true } ).click();
+		await expect( inserted ).toContainText( 'Advanced Botany' );
+	} );
+
 	test( 'the trigger card names the source and summarizes conditions', async ( {
 		page,
 	} ) => {

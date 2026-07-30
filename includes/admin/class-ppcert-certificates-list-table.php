@@ -240,7 +240,8 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 		);
 
 		$actions = [
-			'view'     => '<a href="' . esc_url( ppcert_verification_url( (string) $item->credential_id ) ) . '">' . esc_html__( 'View', 'pressprimer-certificate' ) . '</a>',
+			'view'     => '<a href="' . esc_url( ppcert_verification_url( (string) $item->credential_id ) ) . '" target="_blank" rel="noopener">' . esc_html__( 'View', 'pressprimer-certificate' )
+				. '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'pressprimer-certificate' ) . '</span></a>',
 			'download' => '<a href="' . esc_url( $download_url ) . '">' . esc_html__( 'Download PDF', 'pressprimer-certificate' ) . '</a>',
 		];
 

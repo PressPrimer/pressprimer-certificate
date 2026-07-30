@@ -248,7 +248,7 @@ export default function DesignerApp( { boot } ) {
 	useEffect( () => {
 		loadMergeFields(
 			'' === triggerScope ? [] : triggerScope.split( ',' )
-		).then( () => setSamples( getSampleMap() ) );
+		).then( ( data ) => setSamples( getSampleMap( data ) ) );
 	}, [ triggerScope ] );
 
 	// Undo/redo + save shortcuts (FR-008/FR-007): Cmd/Ctrl+Z,

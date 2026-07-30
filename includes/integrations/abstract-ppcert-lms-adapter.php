@@ -512,7 +512,9 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 				],
 				'grade'        => [
 					'key'      => 'source.grade',
-					'label'    => __( 'Quiz Result', 'pressprimer-certificate' ),
+					// Neutral label - shared polymorphic key, see the
+					// PPQ adapter's note on source.grade.
+					'label'    => __( 'Result', 'pressprimer-certificate' ),
 					'sample'   => __( 'Passed', 'pressprimer-certificate' ),
 					'resolver' => [ $this, 'resolve_source_grade' ],
 				],

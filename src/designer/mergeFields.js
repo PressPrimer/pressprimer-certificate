@@ -39,30 +39,43 @@ function scopeKey( triggerTypes ) {
  * @return {Promise<Object>} { groups, fields }.
  */
 export function loadMergeFields( triggerTypes = null ) {
-	const key = scopeKey( triggerTypes );
-
-	if ( seeded || ( registry && registryScope === key ) ) {
+	if ( seeded ) {
 		return Promise.resolve( registry );
 	}
 
-	if ( ! registryPromise || registryScope !== key ) {
-		registryScope = key;
-		registryPromise = apiFetch( {
-			path:
-				'/ppcert/v1/merge-fields' +
-				( null === key
-					? ''
-					: `?trigger_types=${ encodeURIComponent( key ) }` ),
-		} )
-			.then( ( data ) => {
-				registry = data;
-				return registry;
-			} )
-			.catch( () => {
-				registryPromise = null;
-				return { groups: {}, fields: [] };
-			} );
+	const key = scopeKey( triggerTypes );
+
+	// One promise per scope, shared by concurrent callers. The old
+	// guard returned Promise.resolve( registry ) - the PREVIOUS
+	// scope's data - to any same-scope caller arriving while the
+	// fetch was in flight, so the canvas could snapshot stale samples
+	// forever while the palette showed fresh ones (Ryan, 2026-07-30).
+	if ( registryPromise && registryScope === key ) {
+		return registryPromise;
 	}
+
+	registryScope = key;
+	registryPromise = apiFetch( {
+		path:
+			'/ppcert/v1/merge-fields' +
+			( null === key
+				? ''
+				: `?trigger_types=${ encodeURIComponent( key ) }` ),
+	} )
+		.then( ( data ) => {
+			// A newer scope request may have superseded this one; only
+			// the current scope's response becomes the shared registry.
+			if ( registryScope === key ) {
+				registry = data;
+			}
+			return data;
+		} )
+		.catch( () => {
+			if ( registryScope === key ) {
+				registryPromise = null;
+			}
+			return { groups: {}, fields: [] };
+		} );
 
 	return registryPromise;
 }
@@ -91,12 +104,17 @@ export function seedMergeFields( data ) {
 /**
  * Sample map: token key => sample string.
  *
+ * @param {Object|null} data Registry to read; defaults to the shared
+ *                           module registry. Callers holding a resolved
+ *                           loadMergeFields() result should pass it so
+ *                           the map always matches their scope.
  * @return {Object} Map (empty before load).
  */
-export function getSampleMap() {
+export function getSampleMap( data = null ) {
+	const source = data || registry;
 	const map = {};
 
-	( registry ? registry.fields : [] ).forEach( ( field ) => {
+	( source ? source.fields : [] ).forEach( ( field ) => {
 		map[ field.key ] = field.sample;
 	} );
 

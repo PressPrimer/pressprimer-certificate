@@ -220,8 +220,10 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 				],
 				'grade'            => [
 					'key'      => 'source.grade',
-					'label'    => __( 'Assignment Grade', 'pressprimer-certificate' ),
-					'sample'   => '92%',
+					// Neutral label - shared polymorphic key, see the
+					// PPQ adapter's note on source.grade.
+					'label'    => __( 'Result', 'pressprimer-certificate' ),
+					'sample'   => __( 'Passed', 'pressprimer-certificate' ),
 					'resolver' => [ $this, 'resolve_source_grade' ],
 				],
 				'completion_date'  => [

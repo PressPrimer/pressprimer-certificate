@@ -219,7 +219,12 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 				],
 				'grade'      => [
 					'key'      => 'source.grade',
-					'label'    => __( 'Quiz Result', 'pressprimer-certificate' ),
+					// Neutral label: source.grade is a SHARED polymorphic
+					// key (quiz adapters + Assignment); the registry's
+					// union is last-writer-wins on the definition, so
+					// every registrant must use the same label or the
+					// palette shows another integration's wording.
+					'label'    => __( 'Result', 'pressprimer-certificate' ),
 					'sample'   => __( 'Passed', 'pressprimer-certificate' ),
 					'resolver' => [ $this, 'resolve_source_grade' ],
 				],
