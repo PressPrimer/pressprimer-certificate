@@ -22,6 +22,13 @@ if ( PHP_SAPI !== 'cli' ) {
 
 $ppcert_root = dirname( __DIR__ );
 
+// The generated font definitions carry an ABSPATH guard (Plugin Check
+// direct-access rule); define it here so this CLI script can still
+// include them when reading metrics.
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', $ppcert_root . '/' );
+}
+
 require $ppcert_root . '/vendor/autoload.php';
 
 /**
@@ -113,6 +120,34 @@ if ( ! is_dir( $ppcert_out_dir ) && ! mkdir( $ppcert_out_dir, 0755, true ) ) {
  * @param string $path Generated .php font file.
  * @return array Metrics subset for the manifest.
  */
+/**
+ * Prepend the direct-access guard to a generated font definition.
+ *
+ * Plugin Check flags every PHP file without direct-access protection;
+ * TCPDF's converter does not emit one. Idempotent - files already
+ * carrying the guard are left untouched.
+ *
+ * @param string $path Font definition .php path.
+ */
+function ppcert_guard_font_file( $path ) {
+	$contents = file_get_contents( $path );
+
+	if ( false === $contents || false !== strpos( $contents, "defined( 'ABSPATH' )" ) ) {
+		return;
+	}
+
+	$guarded = preg_replace(
+		'/^<\?php\s*\n/',
+		"<?php\nif ( ! defined( 'ABSPATH' ) ) { exit; } // Direct access protection.\n",
+		$contents,
+		1
+	);
+
+	if ( is_string( $guarded ) && $guarded !== $contents ) {
+		file_put_contents( $path, $guarded );
+	}
+}
+
 function ppcert_read_font_metrics( $path ) {
 	$name = '';
 	$desc = [];
@@ -182,6 +217,13 @@ foreach ( $ppcert_font_config as $slug => $family ) {
 	}
 
 	$manifest['families'][ $slug ] = $entry;
+}
+
+// Guard every definition in the output directory - the freshly
+// converted files AND the TCPDF core metrics copied there for the
+// trimmed release ZIP (Plugin Check direct-access rule).
+foreach ( glob( $ppcert_out_dir . '*.php' ) as $ppcert_font_file ) {
+	ppcert_guard_font_file( $ppcert_font_file );
 }
 
 $manifest_path = $ppcert_fonts_dir . 'manifest.json';

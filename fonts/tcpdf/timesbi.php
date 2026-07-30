@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) { exit; } // Direct access protection.
 // TCPDF FONT FILE DESCRIPTION
 $type='core';
 $name='Times-BoldItalic';
