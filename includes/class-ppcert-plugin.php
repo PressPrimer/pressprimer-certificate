@@ -209,6 +209,7 @@ class PressPrimer_Certificate_Plugin {
 		// filters run in admin and cron contexts, so this registers
 		// unconditionally.
 		PressPrimer_Certificate_Privacy::init();
+		PressPrimer_Certificate_Preview_Service::init();
 	}
 
 	/**

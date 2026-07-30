@@ -44,6 +44,55 @@ class PressPrimer_Certificate_Preview_Service {
 	const DPI = 150;
 
 	/**
+	 * Subscribe preview cleanup to the certificate lifecycle
+	 *
+	 * The cached PNG lives at a static uploads URL derived from the
+	 * credential ID. Revocation must take it offline with the PDF (the
+	 * download route 410s, and the preview may not outlive it), and
+	 * permanent deletion must leave nothing behind. Reinstatement needs
+	 * no handler - the next view-page load regenerates via
+	 * get_or_create().
+	 *
+	 * @since 1.0.0
+	 */
+	public static function init() {
+		add_action( 'ppcert_certificate_revoked', [ __CLASS__, 'delete_for_certificate' ] );
+		add_action( 'ppcert_certificate_deleted', [ __CLASS__, 'delete_for_credential' ], 10, 2 );
+	}
+
+	/**
+	 * Delete the cached preview for a certificate row id (revocation)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $certificate_id Certificate row id.
+	 */
+	public static function delete_for_certificate( $certificate_id ) {
+		$certificate = PressPrimer_Certificate_Certificate::get( absint( $certificate_id ) );
+
+		if ( $certificate ) {
+			self::delete( (string) $certificate->credential_id );
+		}
+	}
+
+	/**
+	 * Delete the cached preview for a credential ID (permanent deletion)
+	 *
+	 * The row is already gone when ppcert_certificate_deleted fires;
+	 * the hook passes the credential ID for exactly this reason.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $certificate_id Deleted row id (unused).
+	 * @param string $credential_id  Credential ID in stored form.
+	 */
+	public static function delete_for_credential( $certificate_id, $credential_id = '' ) {
+		if ( '' !== (string) $credential_id ) {
+			self::delete( (string) $credential_id );
+		}
+	}
+
+	/**
 	 * Absolute filesystem path for a credential's preview PNG
 	 *
 	 * @since 1.0.0

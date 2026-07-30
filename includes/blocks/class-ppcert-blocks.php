@@ -8,9 +8,10 @@
  * render_callback wraps the shortcode renderer so both surfaces share
  * one PHP code path (the Quiz class-ppq-blocks.php pattern).
  *
- * 1.0 registers one block: pressprimer-certificate/verify, the
- * [ppcert_verify] equivalent. (The my-certificates wallet block moved
- * to Educator 2.0 with the wallet - scope decision 2026-07-23.)
+ * 1.0 registers two blocks: pressprimer-certificate/verify
+ * ([ppcert_verify]) and pressprimer-certificate/my-certificates
+ * ([ppcert_my_certificates] - restored to free 1.0 on 2026-07-26;
+ * Educator 2.0's "wallet" means wallet-SIZED printable variants).
  *
  * @package PressPrimer_Certificate
  * @subpackage Blocks

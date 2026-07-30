@@ -100,37 +100,49 @@ function ppcert_remove_site_data() {
 	ppcert_remove_post_meta();
 	ppcert_remove_capabilities();
 	ppcert_clear_transients();
-	ppcert_remove_font_cache();
+	ppcert_remove_uploads_data();
 }
 
 /**
- * Remove the current site's inflated-font cache directory.
+ * Remove the current site's plugin data from the uploads directory.
  *
- * The uploads/ppcert-fonts directory holds TTFs inflated from the
- * bundled .z files (Font_Cache_Service); regenerable artifacts,
- * removed with the data.
+ * Three plugin-managed locations: ppcert-fonts (TTFs inflated from the
+ * bundled .z files), ppcert/previews (view-page PNGs, which render
+ * recipient names - personal data), and ppcert-previews (short-lived
+ * designer preview PDFs). Everything here is either regenerable or
+ * derived, and the readme promises a clean uninstall.
  *
  * @since 1.0.0
  */
-function ppcert_remove_font_cache() {
+function ppcert_remove_uploads_data() {
 	$uploads = wp_upload_dir();
 
 	if ( ! empty( $uploads['error'] ) ) {
 		return;
 	}
 
-	$dir = trailingslashit( $uploads['basedir'] ) . 'ppcert-fonts';
+	$base = trailingslashit( $uploads['basedir'] );
 
-	if ( ! is_dir( $dir ) ) {
-		return;
+	foreach ( array( 'ppcert-fonts', 'ppcert/previews', 'ppcert-previews' ) as $subdir ) {
+		$dir = $base . $subdir;
+
+		if ( ! is_dir( $dir ) ) {
+			continue;
+		}
+
+		foreach ( (array) glob( $dir . '/*' ) as $file ) {
+			wp_delete_file( $file );
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing the emptied plugin cache directory.
+		rmdir( $dir );
 	}
 
-	foreach ( (array) glob( $dir . '/*' ) as $file ) {
-		wp_delete_file( $file );
+	// The now-empty ppcert parent (previews' container), if removable.
+	if ( is_dir( $base . 'ppcert' ) ) {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing the emptied plugin cache directory.
+		@rmdir( $base . 'ppcert' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Fails harmlessly when a site placed other files inside.
 	}
-
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing the emptied plugin cache directory.
-	rmdir( $dir );
 }
 
 /**

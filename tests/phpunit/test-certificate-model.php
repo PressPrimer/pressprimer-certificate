@@ -221,6 +221,41 @@ class Test_Certificate_Model extends TestCase {
 	}
 
 	/**
+	 * Revocation and deletion take the cached preview PNG offline via
+	 * the lifecycle hooks (it lives at a static uploads URL, so it must
+	 * not outlive the 410ing PDF).
+	 *
+	 * @return void
+	 */
+	public function test_revoke_and_delete_remove_cached_preview() {
+		PressPrimer_Certificate_Preview_Service::init();
+
+		$make_preview = function ( $credential ) {
+			$path = PressPrimer_Certificate_Preview_Service::preview_path( $credential );
+			if ( ! is_dir( dirname( $path ) ) ) {
+				mkdir( dirname( $path ), 0777, true );
+			}
+			file_put_contents( $path, 'png-bytes' );
+			return $path;
+		};
+
+		// Revocation removes the preview.
+		$revoke_id    = $this->seed_certificate( [ 'credential_id' => 'PREVAAAA0001' ] );
+		$revoke_png   = $make_preview( 'PREVAAAA0001' );
+		$this->assertFileExists( $revoke_png );
+		PressPrimer_Certificate_Certificate::revoke( $revoke_id, 'Test' );
+		$this->assertFileDoesNotExist( $revoke_png, 'Revocation deletes the cached preview' );
+
+		// Permanent deletion removes it too (row already gone when the
+		// hook fires; the credential ID rides the hook).
+		$delete_id  = $this->seed_certificate( [ 'credential_id' => 'PREVAAAA0002' ] );
+		$delete_png = $make_preview( 'PREVAAAA0002' );
+		$this->assertFileExists( $delete_png );
+		PressPrimer_Certificate_Certificate::delete( $delete_id );
+		$this->assertFileDoesNotExist( $delete_png, 'Deletion deletes the cached preview' );
+	}
+
+	/**
 	 * Delete permanently removes the row and its event history, fires
 	 * the hook with the credential ID, and leaves other certificates'
 	 * events untouched. Unknown ids error.
