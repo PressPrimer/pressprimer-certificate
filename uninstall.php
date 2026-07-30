@@ -140,8 +140,8 @@ function ppcert_remove_uploads_data() {
 
 	// The now-empty ppcert parent (previews' container), if removable.
 	if ( is_dir( $base . 'ppcert' ) ) {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing the emptied plugin cache directory.
-		@rmdir( $base . 'ppcert' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Fails harmlessly when a site placed other files inside.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir,WordPress.PHP.NoSilencedErrors.Discouraged -- Removing the emptied plugin cache directory; @ because foreign files inside fail it harmlessly.
+		@rmdir( $base . 'ppcert' );
 	}
 }
 
