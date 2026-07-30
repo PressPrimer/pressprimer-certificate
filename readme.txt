@@ -17,6 +17,8 @@ Design, issue, and verify certificates on your own site. A drag-and-drop designe
 
 **This is a genuinely free plugin.** Unlimited templates, unlimited certificates, the full designer, a suite of integrations, public verification, and email delivery are all included at no cost. 
 
+https://www.youtube.com/watch?v=3MVuPFKdhzo
+
 = Why PressPrimer Certificate? =
 
 Certificate tools built into LMS plugins are often afterthoughts: rigid and awkward layouts, no way to verify what students have earned, and no easy way to track certificate activity. Standalone certificate services charge monthly fees and hold your credentials on someone else's infrastructure.
