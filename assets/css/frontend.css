@@ -253,7 +253,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var(--ppcert-text-light);
-	align-self: baseline;
+	align-self: center;
 }
 
 .ppcert-verify__details dd {
@@ -342,7 +342,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var(--ppcert-text-light);
-	align-self: baseline;
+	align-self: center;
 }
 
 .ppcert-view__details dd {

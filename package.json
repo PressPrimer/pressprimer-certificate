@@ -17,7 +17,7 @@
     "build:harness": "wp-scripts build --config webpack.harness.config.js",
     "test:designer": "npm run build:harness && playwright test --project=designer-canvas",
     "parity:update-golden": "node tests/playwright/tools/update-golden.mjs",
-    "pot": "wp i18n make-pot . languages/pressprimer-certificate.pot --domain=pressprimer-certificate --exclude=vendor,node_modules,dist,tests,build,fonts,scripts,docs"
+    "pot": "PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1); PHP=\"${PHP:-$(command -v php)}\"; WPCLI=\"/Applications/Local.app/Contents/Resources/extraResources/bin/wp-cli/wp-cli.phar\"; [ -f \"$WPCLI\" ] && WP=\"$PHP $WPCLI\" || WP=\"$(command -v wp)\"; $WP i18n make-pot . languages/pressprimer-certificate.pot --domain=pressprimer-certificate --exclude=vendor,node_modules,dist,tests,build,fonts,scripts,docs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

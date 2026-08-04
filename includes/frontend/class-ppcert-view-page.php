@@ -163,7 +163,46 @@ class PressPrimer_Certificate_View_Page {
 			return $content;
 		}
 
-		return self::render_content( self::$certificate );
+		// Return-time allowlist pass: the_content callbacks are rendered
+		// by WordPress; every value inside is escaped at build time and
+		// this proves it structurally.
+		return wp_kses( self::render_content( self::$certificate ), self::allowed_output_tags() );
+	}
+
+	/**
+	 * The explicit allowed-tags array for the view page's markup
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	private static function allowed_output_tags() {
+		return [
+			'div'    => [
+				'class' => true,
+				'role'  => true,
+			],
+			'p'      => [ 'class' => true ],
+			'dl'     => [ 'class' => true ],
+			'dt'     => [],
+			'dd'     => [],
+			'img'    => [
+				'src'   => true,
+				'alt'   => true,
+				'class' => true,
+			],
+			'a'      => [
+				'href'   => true,
+				'class'  => true,
+				'target' => true,
+				'rel'    => true,
+			],
+			'span'   => [
+				'class'       => true,
+				'aria-hidden' => true,
+			],
+			'strong' => [],
+		];
 	}
 
 	/**

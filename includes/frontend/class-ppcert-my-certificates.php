@@ -124,7 +124,46 @@ class PressPrimer_Certificate_My_Certificates {
 		$output .= self::render_pagination( $page, $total_pages );
 		$output .= '</div>';
 
-		return $output;
+		// Return-time allowlist pass (shortcode/block returns are
+		// rendered by WordPress; every value is escaped at build time
+		// and this proves it structurally).
+		return wp_kses( $output, self::allowed_output_tags() );
+	}
+
+	/**
+	 * The explicit allowed-tags array for the list's returned markup
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	private static function allowed_output_tags() {
+		return [
+			'div'    => [ 'class' => true ],
+			'ul'     => [ 'class' => true ],
+			'li'     => [ 'class' => true ],
+			'h3'     => [ 'class' => true ],
+			'p'      => [ 'class' => true ],
+			'nav'    => [
+				'class'      => true,
+				'aria-label' => true,
+			],
+			'a'      => [
+				'href'         => true,
+				'class'        => true,
+				'target'       => true,
+				'rel'          => true,
+				'aria-current' => true,
+			],
+			'span'   => [
+				'class'        => true,
+				'aria-hidden'  => true,
+				'role'         => true,
+				'aria-label'   => true,
+				'aria-current' => true,
+			],
+			'strong' => [],
+		];
 	}
 
 	/**

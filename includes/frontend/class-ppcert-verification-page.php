@@ -87,7 +87,7 @@ class PressPrimer_Certificate_Verification_Page {
 					'expired'      => __( 'Expired certificate', 'pressprimer-certificate' ),
 					'revoked'      => __( 'This certificate has been revoked.', 'pressprimer-certificate' ),
 					'not_found'    => __( 'No certificate found for that credential ID.', 'pressprimer-certificate' ),
-					'typo'         => __( 'That credential ID does not look right - please check for typos.', 'pressprimer-certificate' ),
+					'typo'         => __( 'That credential ID is invalid. Please check for typos and try again.', 'pressprimer-certificate' ),
 					'checking'     => __( 'Checking…', 'pressprimer-certificate' ),
 					'rate_limited' => __( 'Too many checks - please wait a minute and try again.', 'pressprimer-certificate' ),
 					'error'        => __( 'Verification is temporarily unavailable. Please try again.', 'pressprimer-certificate' ),
@@ -147,7 +147,81 @@ class PressPrimer_Certificate_Verification_Page {
 			. ( isset( $data['server_result'] ) ? $data['server_result'] : '' ) . '</div>';
 		$output .= '</div>';
 
-		return $output;
+		// Return-time allowlist pass: every plugin-built value above is
+		// already escaped in context, but server_result passes through
+		// the ppcert_verification_page_data filter - addons may add
+		// branding markup, never scripts (WordPress.org review, round 1).
+		return wp_kses( $output, self::allowed_output_tags() );
+	}
+
+	/**
+	 * The explicit allowed-tags array for the page's returned markup
+	 *
+	 * Covers the form, the escaped result markup, and reasonable
+	 * branding elements addons may add via the page-data filter.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	private static function allowed_output_tags() {
+		return [
+			'div'    => [
+				'class'     => true,
+				'role'      => true,
+				'aria-live' => true,
+			],
+			'form'   => [
+				'class'  => true,
+				'method' => true,
+				'action' => true,
+			],
+			'label'  => [
+				'class' => true,
+				'for'   => true,
+			],
+			'input'  => [
+				'type'         => true,
+				'id'           => true,
+				'class'        => true,
+				'name'         => true,
+				'value'        => true,
+				'placeholder'  => true,
+				'autocomplete' => true,
+				'spellcheck'   => true,
+				'required'     => true,
+			],
+			'button' => [
+				'type'  => true,
+				'class' => true,
+			],
+			'p'      => [ 'class' => true ],
+			'dl'     => [ 'class' => true ],
+			'dt'     => [],
+			'dd'     => [],
+			'span'   => [
+				'class'       => true,
+				'aria-hidden' => true,
+			],
+			'a'      => [
+				'href'   => true,
+				'class'  => true,
+				'target' => true,
+				'rel'    => true,
+			],
+			'img'    => [
+				'src'    => true,
+				'alt'    => true,
+				'class'  => true,
+				'width'  => true,
+				'height' => true,
+			],
+			'h2'     => [ 'class' => true ],
+			'h3'     => [ 'class' => true ],
+			'strong' => [],
+			'em'     => [],
+			'br'     => [],
+		];
 	}
 
 	/**
