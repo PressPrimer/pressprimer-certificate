@@ -17,6 +17,7 @@ import {
 	readSavedTemplate,
 	writeSavedTemplate,
 	writeIssuedCredential,
+	writeAdvancePending,
 } from '../setupSession';
 import WelcomeModal from './WelcomeModal';
 import CertificateModal from './CertificateModal';
@@ -170,6 +171,11 @@ const Onboarding = () => {
 			}
 
 			if ( isActive && step?.id === 'issue' ) {
+				// The reload's server render can beat the keepalive
+				// persistence; the marker lets the next page load
+				// reconcile onto the certificate stop.
+				writeAdvancePending();
+
 				setAwaitingReload( true );
 
 				// Safety valve: if the reload never comes, show the

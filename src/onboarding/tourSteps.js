@@ -246,6 +246,15 @@ export const getStepUrl = ( stepNumber ) => {
 export const getTotalSteps = () => TOUR_STEPS.length;
 
 /**
+ * Get a step's 1-based number by its id
+ *
+ * @param {string} stepId Step id (e.g. 'issue', 'certificate').
+ * @return {number} 1-based step number, or 0 when not found.
+ */
+export const getStepNumberById = ( stepId ) =>
+	TOUR_STEPS.findIndex( ( step ) => step.id === stepId ) + 1;
+
+/**
  * Check whether the current page hosts the given step
  *
  * Modal steps render anywhere; spotlight steps match their screen via

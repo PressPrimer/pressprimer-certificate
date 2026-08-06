@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-04T12:48:49+00:00\n"
+"POT-Creation-Date: 2026-08-06T13:23:21+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -2132,13 +2132,13 @@ msgstr ""
 
 #: src/onboarding/components/CertificateModal.jsx:157
 #: src/onboarding/components/CompletionModal.jsx:104
-#: src/onboarding/components/Onboarding.jsx:344
+#: src/onboarding/components/Onboarding.jsx:350
 #: src/onboarding/components/Tooltip.jsx:219
 msgid "Back"
 msgstr ""
 
 #: src/onboarding/components/CertificateModal.jsx:173
-#: src/onboarding/components/Onboarding.jsx:357
+#: src/onboarding/components/Onboarding.jsx:363
 #: src/onboarding/components/Tooltip.jsx:256
 msgid "Next"
 msgstr ""
@@ -2147,21 +2147,21 @@ msgstr ""
 msgid "Close Tour"
 msgstr ""
 
-#: src/onboarding/components/Onboarding.jsx:324
+#: src/onboarding/components/Onboarding.jsx:330
 #: src/onboarding/components/Tooltip.jsx:193
 msgid "Close"
 msgstr ""
 
-#: src/onboarding/components/Onboarding.jsx:356
+#: src/onboarding/components/Onboarding.jsx:362
 #: src/onboarding/components/Tooltip.jsx:252
 msgid "Finish"
 msgstr ""
 
-#: src/onboarding/components/Onboarding.jsx:373
+#: src/onboarding/components/Onboarding.jsx:379
 msgid "Pick a design (or start blank) to continue."
 msgstr ""
 
-#: src/onboarding/components/Onboarding.jsx:381
+#: src/onboarding/components/Onboarding.jsx:387
 msgid "Click Publish to continue."
 msgstr ""
 

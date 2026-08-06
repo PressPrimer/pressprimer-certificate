@@ -8,12 +8,17 @@
 import { useState, useCallback } from '@wordpress/element';
 import {
 	getStep,
+	getStepNumberById,
 	getStepUrl,
 	getTotalSteps,
 	isOnCorrectPage,
 	STEP_TYPE,
 } from '../tourSteps';
-import { clearSetupSession } from '../setupSession';
+import {
+	clearSetupSession,
+	consumeAdvancePending,
+	readIssuedCredential,
+} from '../setupSession';
 
 /**
  * Get onboarding data from PHP
@@ -55,6 +60,46 @@ const sendProgress = ( actionType, extra = {} ) => {
 	} );
 };
 
+// The reconciliation heal is sent at most once per page load.
+let healSent = false;
+
+/**
+ * Reconcile the persisted step with the tour session
+ *
+ * The issue stop advances via a keepalive request that races the
+ * Certificates screen's self-reload; on slow servers the reloaded
+ * page's render can read the not-yet-updated step. When the session
+ * shows the advance was already earned (pending marker plus stored
+ * credential) but the server still reports the issue stop, the
+ * session wins: land on the certificate stop and re-send the
+ * persistence.
+ *
+ * @param {number} serverStep Step number persisted server-side.
+ * @return {number} Step number to start from.
+ */
+const reconcileStep = ( serverStep ) => {
+	// Always consume: the marker must only ever affect the one page
+	// load that follows the issue, whatever step that load reports.
+	const advancePending = consumeAdvancePending();
+
+	if (
+		serverStep !== getStepNumberById( 'issue' ) ||
+		! advancePending ||
+		! readIssuedCredential()
+	) {
+		return serverStep;
+	}
+
+	const certificateStep = getStepNumberById( 'certificate' );
+
+	if ( ! healSent ) {
+		healSent = true;
+		sendProgress( 'next', { step: certificateStep } );
+	}
+
+	return certificateStep;
+};
+
 /**
  * useOnboarding hook
  *
@@ -66,8 +111,8 @@ const useOnboarding = () => {
 
 	const [ isLoading, setIsLoading ] = useState( false );
 	const [ isActive, setIsActive ] = useState( initialState.should_show );
-	const [ currentStep, setCurrentStep ] = useState(
-		initialState.current_step || 1
+	const [ currentStep, setCurrentStep ] = useState( () =>
+		reconcileStep( initialState.current_step || 1 )
 	);
 	const totalSteps = getTotalSteps();
 
