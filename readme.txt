@@ -1,4 +1,4 @@
-=== PressPrimer Certificate ===
+=== PressPrimer Certificate – Certificate Designer & Course Certification for Your LMS ===
 Contributors: pressprimer
 Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
@@ -12,8 +12,7 @@ Design, issue, and verify certificates on your own site. A drag-and-drop designe
 
 == Description ==
 
-**PressPrimer Certificate** brings the full certification lifecycle to your WordPress site. A drag-and-drop designer produces the certificate; unique credential IDs, QR codes, and a public verification page make it checkable; and it can all be natively connected to course activity in LearnDash, LifterLMS, Tutor LMS, or LearnPress.
-
+**PressPrimer Certificate** brings the full certification lifecycle to your WordPress site. A drag-and-drop designer produces the certificate. Unique credential IDs, QR codes, and a public verification page make it authoritative. And it can all be connected to course activity in LearnDash, LifterLMS, Tutor LMS, or LearnPress.
 
 **This is a genuinely free plugin.** Unlimited templates, unlimited certificates, the full designer, a suite of integrations, public verification, and email delivery are all included at no cost. 
 
@@ -23,11 +22,11 @@ https://www.youtube.com/watch?v=3MVuPFKdhzo
 
 Certificate tools built into LMS plugins are often afterthoughts: rigid and awkward layouts, no way to verify what students have earned, and no easy way to track certificate activity. Standalone certificate services charge monthly fees and hold your credentials on someone else's infrastructure.
 
-PressPrimer Certificate delivers a complete, self-hosted credential workflow:
+PressPrimer Certificate delivers a complete, self-hosted credential workflow, including:
 
-* **A true-size designer** – The canvas is the PDF. What you arrange on screen is exactly what recipients download, at print quality.
+* **A true-size designer** – The canvas is the PDF. What you build on screen is exactly what recipients download.
 * **Credentials that can be checked** – Every certificate carries a unique, non-guessable credential ID and a QR code linking to a public verification page on your site.
-* **Comprehensive integrations** – Certificates award themselves when a learner passes a quiz, earns a grade, or completes a course. Manual issuance is always available.
+* **Comprehensive integrations** – Certificates award themselves when a learner passes a quiz, earns a grade, or completes a course. Manual certificate generation is also available.
 * **Records that outlive the template** – Issued certificates snapshot their design and data at issue time. Editing a template later never changes a certificate that has already been earned.
 
 = Features Included Free =
@@ -38,7 +37,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow:
 * Six starter designs, each in Letter and A4, plus a blank option
 * Six bundled open-license fonts (SIL OFL) with real bold and italic faces
 * Text, merge field, image, signature, line/shape, QR code, and background elements
-* Merge fields for recipient, certificate, site, quiz, assignment, and course data, including custom user meta and post meta
+* Merge fields for recipient, certificate, site, quiz, assignment, and course data, including custom user and post meta
 * Live PDF preview from the real renderer
 
 **Design Defaults**
@@ -49,10 +48,10 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow:
 **Issuance & Automation**
 
 * Automatic triggers: PressPrimer Quiz pass thresholds, PressPrimer Assignment grades, and course, lesson, topic, or quiz completion in LearnDash, LifterLMS, Tutor LMS, and LearnPress
-* Manually issue certificates with recipient search, a backdatable earned date, and an optional expiry date
+* Manually issue certificates with optional backdating and expiry dates
 * Validity periods: set how long certificates from a template stay valid (days, months, or years), pick an exact expiry date, or let them last forever
-* Per-trigger control over repeat completions: suppress duplicates (the default) or issue a fresh certificate every time, for compliance and recertification courses
-* Revoke certificates (with an optional reason) and reinstate them if revoked by mistake
+* Per-trigger control over repeat completions: suppress duplicates or issue a fresh certificate every time (for compliance and recertification courses)
+* Revoke certificates and reinstate them if revoked by mistake
 
 **Credentials & Verification**
 
@@ -62,21 +61,19 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow:
 * A shareable certificate view page with PDF download
 * My Certificates list (shortcode and block) so logged-in learners can see, verify, and download everything they have earned, with status filters and sorting by date, name, or upcoming expiry
 * PDFs are protected against editing: Acrobat and other viewers refuse to modify the text, while printing and copying stay available
-* Token placeholders for recipient, certificate, and site data
 
 **Admin**
 
 * Dashboard with certificate statistics, an awarded-over-time chart, quick actions, and recent certificates
-* A guided setup tour that walks you from first template to first issued certificate in about five minutes
+* A guided setup tour that walks you from a starter template to your first issued certificate in five minutes
 * Certificates screen with template, status, and source filters
-* Resend a certificate's email with one click, and permanently delete test certificates
-* Earned certificates listed on each user's profile screen with verify and download links
+* Resend a certificate's email with one click
+* Earned certificates listed on each user's profile page with verify and download links
 * Certificate templates list with trigger, page size, and status columns
 
 **Security, Privacy & Accessibility**
 
 * PDF and QR code generation happen locally on your server
-* Capability-based access control and prepared, whitelisted database queries
 * PDF files cannot be modified in Acrobat or other tools to change data like the student name
 * WordPress Privacy API integration (Tools > Export/Erase Personal Data)
 * Clean uninstall with optional complete data removal
@@ -111,8 +108,8 @@ All integrations are bundled in the free version, and the plugin is still fully 
 = Built for Developers =
 
 * Action hooks for issuance, revocation, and verification events
-* Filter-based registries for custom trigger types and merge fields, the same interfaces the bundled integrations use
-* REST API for templates, certificates, triggers, merge fields, and verification
+* Filter-based registries for custom trigger types and merge fields
+* REST API support
 * Custom database tables with automatic schema migration
 
 = Documentation & Support =
@@ -162,8 +159,8 @@ This plugin offers an optional free email course for administrators. When (and o
 * **When:** Only on an explicit opt-in submission. No request is ever made automatically (no telemetry, no activation pings, no environment data).
 * **What data:** The typed email address and a tag naming which screen the form was on. Nothing else.
 * **Unsubscribing:** Every email includes an unsubscribe link, honored immediately.
-* **Terms of Service:** https://pressprimer.com/terms/
-* **Privacy Policy:** https://pressprimer.com/privacy/
+* **Terms of Service:** https://pressprimer.com/terms-conditions/
+* **Privacy Policy:** https://pressprimer.com/privacy-policy/
 
 Dismissing the offer is remembered permanently and is stored only on your own site.
 
@@ -205,7 +202,7 @@ Nothing changes for existing certificates. Each certificate snapshots its design
 
 = Can someone edit a certificate PDF and change the name? =
 
-Not casually. Certificate PDFs are generated with AES-256 protection that denies editing, so Acrobat and similar tools refuse to modify the text (unlike plain LMS certificates, which anyone can retype). Printing and text copying remain available. More importantly, every certificate's QR code and credential ID point to the verification page on your site, where the authoritative name, date, and status live. A tampered or fabricated PDF immediately mismatches what a verifier sees.
+Certificate PDFs are generated with AES-256 protection that denies editing, so Acrobat and similar tools refuse to modify the text (unlike plain LMS certificates, which anyone can retype). Printing and text copying remain available. More importantly, every certificate's QR code and credential ID point to the verification page on your site, where the authoritative name, date, and status live. A tampered or fabricated PDF immediately mismatches what a verifier sees.
 
 = What page sizes do certificates use? =
 
