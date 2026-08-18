@@ -170,8 +170,13 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 * @return true|WP_Error
 	 */
 	private function verify_structure( $layout ) {
-		$valid = isset( $layout['layout_schema_version'] )
-			&& 1 === (int) $layout['layout_schema_version']
+		// Every supported historical version renders (migrate-on-read
+		// contract): v1 snapshots render literally forever, the version
+		// gate in text_content_for_render() reads the stored value.
+		$version = isset( $layout['layout_schema_version'] ) ? (int) $layout['layout_schema_version'] : 0;
+
+		$valid = PressPrimer_Certificate_Layout_Validator::MIN_SUPPORTED_SCHEMA_VERSION <= $version
+			&& $version <= PressPrimer_Certificate_Layout_Validator::SCHEMA_VERSION
 			&& isset( $layout['page']['width'], $layout['page']['height'] )
 			&& is_numeric( $layout['page']['width'] )
 			&& is_numeric( $layout['page']['height'] )
@@ -289,7 +294,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 	private function render_element( $pdf, $element, $merge_data, $layout, $args ) {
 		switch ( $element['type'] ) {
 			case 'text':
-				$this->render_text( $pdf, $element, (string) $element['props']['content'] );
+				$this->render_text( $pdf, $element, self::text_content_for_render( $layout, $element, $merge_data ) );
 				break;
 
 			case 'merge_field':
@@ -744,6 +749,68 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 	/*
 	 * ------------------------------------------------------------------
+	 * Inline merge tokens (schema v2, Feature 1.1-001).
+	 * ------------------------------------------------------------------
+	 */
+
+	/**
+	 * Substitute inline merge tokens in a text run
+	 *
+	 * Scans for the schema doc's token grammar ({{group.field}} and
+	 * {{group.meta.key}}) embedded in text. A grammar-matching token
+	 * resolves to its scalar merge-data value, or to empty string when
+	 * unknown or non-scalar - rendered output never leaks template
+	 * syntax. Brace runs that do not match the grammar are left as
+	 * literal text. Tokens cannot span line breaks (the character class
+	 * excludes them).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string $content    Text content.
+	 * @param array  $merge_data Resolved merge data (token => value).
+	 * @return string
+	 */
+	public static function interpolate_tokens( $content, array $merge_data ) {
+		return (string) preg_replace_callback(
+			'/\{\{([a-z0-9_]+\.[a-z0-9_.\-]+)\}\}/',
+			static function ( $matches ) use ( $merge_data ) {
+				return isset( $merge_data[ $matches[1] ] ) && is_scalar( $merge_data[ $matches[1] ] )
+					? (string) $merge_data[ $matches[1] ]
+					: '';
+			},
+			(string) $content
+		);
+	}
+
+	/**
+	 * The content string a text element renders
+	 *
+	 * Applies the stored-version interpolation gate: only documents
+	 * whose own layout_schema_version is 2+ interpolate inline tokens.
+	 * Version-1 documents - every pre-1.1 template and issued snapshot -
+	 * render their content literally forever, preserving the issued-
+	 * certificate immutability promise (schema doc, Versioning).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array $layout     Layout document (version source of truth).
+	 * @param array $element    Clean text element.
+	 * @param array $merge_data Resolved merge data.
+	 * @return string
+	 */
+	public static function text_content_for_render( array $layout, array $element, array $merge_data ) {
+		$content = isset( $element['props']['content'] ) ? (string) $element['props']['content'] : '';
+		$version = isset( $layout['layout_schema_version'] ) ? (int) $layout['layout_schema_version'] : 0;
+
+		if ( $version < 2 ) {
+			return $content;
+		}
+
+		return self::interpolate_tokens( $content, $merge_data );
+	}
+
+	/*
+	 * ------------------------------------------------------------------
 	 * Shapes.
 	 * ------------------------------------------------------------------
 	 */
@@ -977,7 +1044,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 			switch ( $element['type'] ) {
 				case 'text':
-					$this->gd_text( $canvas, $element, (string) $element['props']['content'], $scale );
+					$this->gd_text( $canvas, $element, self::text_content_for_render( $layout, $element, $merge_data ), $scale );
 					break;
 
 				case 'merge_field':

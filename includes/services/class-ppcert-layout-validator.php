@@ -42,10 +42,21 @@ class PressPrimer_Certificate_Layout_Validator {
 	/**
 	 * The layout schema version this validator implements
 	 *
+	 * Version 2 (plugin 1.1.0): text element content may contain merge
+	 * tokens, interpolated at render time. Structurally identical to v1.
+	 *
 	 * @since 1.0.0
 	 * @var int
 	 */
-	const SCHEMA_VERSION = 1;
+	const SCHEMA_VERSION = 2;
+
+	/**
+	 * The oldest schema version accepted (migrated in memory on validate)
+	 *
+	 * @since 1.1.0
+	 * @var int
+	 */
+	const MIN_SUPPORTED_SCHEMA_VERSION = 1;
 
 	/**
 	 * Hard cap on the number of elements in a document
@@ -95,15 +106,6 @@ class PressPrimer_Certificate_Layout_Validator {
 	 * @var string
 	 */
 	const META_TOKEN_PATTERN = '/^\{\{[a-z0-9_]+\.meta\.[a-z0-9_\-]{1,64}\}\}$/';
-
-	/**
-	 * Loose token pattern used to detect tokens embedded in text content
-	 * (merge tokens are not allowed in text elements)
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	const EMBEDDED_TOKEN_PATTERN = '/\{\{[a-z0-9_]+\.[a-z0-9_.\-]+\}\}/';
 
 	/**
 	 * Default font slug used when an unregistered font_family is supplied
@@ -157,15 +159,20 @@ class PressPrimer_Certificate_Layout_Validator {
 	public static function validate( array $raw ) {
 		self::$errors = [];
 
-		// Schema version: required, must match. Documents without it are
-		// rejected outright (there are no pre-v1 documents in the wild).
-		if ( ! isset( $raw['layout_schema_version'] ) || self::SCHEMA_VERSION !== (int) $raw['layout_schema_version'] ) {
+		// Schema version: required, a supported integer. Documents without
+		// it are rejected outright (there are no pre-v1 documents in the
+		// wild); supported older versions migrate in memory first.
+		$version = isset( $raw['layout_schema_version'] ) ? (int) $raw['layout_schema_version'] : 0;
+
+		if ( $version < self::MIN_SUPPORTED_SCHEMA_VERSION || self::SCHEMA_VERSION < $version ) {
 			return new WP_Error(
 				'ppcert_invalid_layout',
 				__( 'layout_schema_version: missing or unsupported schema version.', 'pressprimer-certificate' ),
 				[ 'path' => 'layout_schema_version' ]
 			);
 		}
+
+		$raw = self::migrate( $raw );
 
 		// Page: size and orientation must be valid or the document cannot
 		// be rebuilt (dimensions are recomputed from them).
@@ -218,6 +225,34 @@ class PressPrimer_Certificate_Layout_Validator {
 			'background'            => $background,
 			'elements'              => $elements,
 		];
+	}
+
+	/**
+	 * Migrate a supported older-version document to the current schema
+	 *
+	 * In-memory only: stored templates and snapshots are never rewritten
+	 * (migrate-on-read); the migrated document persists only through the
+	 * normal save path.
+	 *
+	 * v1 -> v2 is a version-stamp-only migration. v2 changes SEMANTICS
+	 * (text content may carry merge tokens, interpolated at render time)
+	 * but not shape, and stamping is provably safe: the v1 validator
+	 * REJECTED token-bearing text content, so no stored v1 document can
+	 * contain a token that would begin interpolating after migration.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array $raw Decoded layout document at a supported version.
+	 * @return array The document at SCHEMA_VERSION.
+	 */
+	public static function migrate( array $raw ) {
+		$version = isset( $raw['layout_schema_version'] ) ? (int) $raw['layout_schema_version'] : 0;
+
+		if ( 1 === $version ) {
+			$raw['layout_schema_version'] = 2;
+		}
+
+		return $raw;
 	}
 
 	/**
@@ -425,11 +460,10 @@ class PressPrimer_Certificate_Layout_Validator {
 				$content = substr( $content, 0, self::MAX_CONTENT_LENGTH );
 			}
 
-			// Merge tokens are not allowed in text elements (use merge_field).
-			if ( preg_match( self::EMBEDDED_TOKEN_PATTERN, $content ) ) {
-				self::add_error( $path . '.content', __( 'merge tokens are not allowed in text elements; use a merge field element.', 'pressprimer-certificate' ) );
-			}
-
+			// Schema v2: content may contain merge tokens, interpolated at
+			// render time. Grammar is NOT validated at save - bad tokens
+			// are inert (unknown fields render empty, non-matching braces
+			// render literally).
 			$props['content'] = $content;
 		} else {
 			$token = isset( $raw['token'] ) ? (string) $raw['token'] : '';

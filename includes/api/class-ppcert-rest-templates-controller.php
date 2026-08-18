@@ -548,7 +548,7 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 		$dims = 'a4' === $size ? [ 842, 595 ] : [ 792, 612 ];
 
 		return [
-			'layout_schema_version' => 1,
+			'layout_schema_version' => PressPrimer_Certificate_Layout_Validator::SCHEMA_VERSION,
 			'page'                  => [
 				'size'        => $size,
 				'orientation' => 'landscape',

@@ -13,6 +13,7 @@
  */
 
 import { createContext, useContext, useReducer } from '@wordpress/element';
+import { migrateLayout } from '../schema/migrations';
 
 const HISTORY_LIMIT = 50;
 
@@ -53,7 +54,9 @@ export function designerReducer( state, action ) {
 			return {
 				...initialState,
 				template: action.template,
-				layout: action.layout,
+				// Older-version documents migrate on load; the in-memory
+				// document is always current-version and saves persist it.
+				layout: migrateLayout( action.layout ),
 				triggers: action.triggers || [],
 			};
 

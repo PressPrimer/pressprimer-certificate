@@ -79,7 +79,7 @@ class Test_Layout_Validator extends TestCase {
 	 */
 	private function document( array $elements ) {
 		return [
-			'layout_schema_version' => 1,
+			'layout_schema_version' => 2,
 			'page'                  => [
 				'size'        => 'a4',
 				'orientation' => 'landscape',
@@ -239,17 +239,74 @@ class Test_Layout_Validator extends TestCase {
 	}
 
 	/**
-	 * Text content may not contain merge tokens.
+	 * Schema v2: text content may contain merge tokens (interpolated at
+	 * render time; the validator preserves them untouched).
 	 *
 	 * @return void
 	 */
-	public function test_content_with_merge_token_rejected() {
+	public function test_content_with_merge_token_accepted() {
 		$element = $this->text_element( [ 'props' => [ 'content' => 'Awarded to {{recipient.display_name}}' ] ] );
 
 		$result = PressPrimer_Certificate_Layout_Validator::validate( $this->document( [ $element ] ) );
 
+		$this->assertIsArray( $result );
+		$this->assertSame( 'Awarded to {{recipient.display_name}}', $result['elements'][0]['props']['content'] );
+	}
+
+	/**
+	 * A v1 document migrates in memory: validation succeeds and the
+	 * rebuilt output is stamped with the current schema version, all
+	 * else equal.
+	 *
+	 * @return void
+	 */
+	public function test_v1_document_migrated_on_validate() {
+		$v1 = $this->sample();
+
+		$v1['layout_schema_version'] = 1;
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $v1 );
+
+		$this->assertIsArray( $result );
+		$this->assertSame( 2, $result['layout_schema_version'] );
+
+		$expected = $v1;
+
+		$expected['layout_schema_version'] = 2;
+		$this->assertEquals( $expected, $result );
+	}
+
+	/**
+	 * The stamp-only migrate helper touches nothing but the version.
+	 *
+	 * @return void
+	 */
+	public function test_migrate_is_stamp_only() {
+		$v1 = $this->sample();
+
+		$v1['layout_schema_version'] = 1;
+
+		$migrated = PressPrimer_Certificate_Layout_Validator::migrate( $v1 );
+
+		$this->assertSame( 2, $migrated['layout_schema_version'] );
+
+		unset( $v1['layout_schema_version'], $migrated['layout_schema_version'] );
+		$this->assertEquals( $v1, $migrated );
+	}
+
+	/**
+	 * Versions newer than the validator supports are rejected.
+	 *
+	 * @return void
+	 */
+	public function test_future_schema_version_rejected() {
+		$document = $this->document( [] );
+
+		$document['layout_schema_version'] = 3;
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $document );
+
 		$this->assertInstanceOf( WP_Error::class, $result );
-		$this->assertContains( 'elements[0].props.content', $this->error_paths( $result ) );
 	}
 
 	/**

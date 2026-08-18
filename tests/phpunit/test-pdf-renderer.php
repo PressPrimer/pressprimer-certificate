@@ -307,4 +307,98 @@ class Test_PDF_Renderer extends TestCase {
 
 		unlink( $path );
 	}
+
+	// -------------------------------------------------------------------
+	// Inline merge tokens (schema v2, Feature 1.1-001).
+	// -------------------------------------------------------------------
+
+	/**
+	 * Known tokens substitute; unknown grammar-matching tokens render
+	 * empty; non-scalar values render empty.
+	 *
+	 * @return void
+	 */
+	public function test_interpolate_tokens_resolution() {
+		$merge_data = [
+			'recipient.display_name' => 'Dana Whitfield',
+			'source.course_title'    => 'Botany 101',
+			'source.bad_value'       => [ 'not', 'scalar' ],
+		];
+
+		$this->assertSame(
+			'Awarded to Dana Whitfield for Botany 101',
+			PressPrimer_Certificate_PDF_Renderer::interpolate_tokens(
+				'Awarded to {{recipient.display_name}} for {{source.course_title}}',
+				$merge_data
+			)
+		);
+
+		$this->assertSame(
+			'Score: ',
+			PressPrimer_Certificate_PDF_Renderer::interpolate_tokens( 'Score: {{source.unknown_field}}', $merge_data )
+		);
+
+		$this->assertSame(
+			'Value: ',
+			PressPrimer_Certificate_PDF_Renderer::interpolate_tokens( 'Value: {{source.bad_value}}', $merge_data )
+		);
+	}
+
+	/**
+	 * Meta tokens resolve; brace runs outside the grammar stay literal.
+	 *
+	 * @return void
+	 */
+	public function test_interpolate_tokens_meta_and_literals() {
+		$merge_data = [ 'recipient.meta.license-no' => 'LN-4821' ];
+
+		$this->assertSame(
+			'License LN-4821',
+			PressPrimer_Certificate_PDF_Renderer::interpolate_tokens( 'License {{recipient.meta.license-no}}', $merge_data )
+		);
+
+		// No dot, uppercase, spaces, single braces: not tokens - literal.
+		$this->assertSame(
+			'{{hello}} {{Group.Field}} {{a b.c}} {single.brace}',
+			PressPrimer_Certificate_PDF_Renderer::interpolate_tokens( '{{hello}} {{Group.Field}} {{a b.c}} {single.brace}', $merge_data )
+		);
+	}
+
+	/**
+	 * The stored-version gate: identical content renders literally in a
+	 * v1 document and interpolated in a v2 document.
+	 *
+	 * @return void
+	 */
+	public function test_text_content_gate_by_stored_version() {
+		$element = [
+			'props' => [ 'content' => 'Awarded to {{recipient.display_name}}' ],
+		];
+
+		$merge_data = [ 'recipient.display_name' => 'Dana Whitfield' ];
+
+		$this->assertSame(
+			'Awarded to {{recipient.display_name}}',
+			PressPrimer_Certificate_PDF_Renderer::text_content_for_render(
+				[ 'layout_schema_version' => 1 ],
+				$element,
+				$merge_data
+			)
+		);
+
+		$this->assertSame(
+			'Awarded to Dana Whitfield',
+			PressPrimer_Certificate_PDF_Renderer::text_content_for_render(
+				[ 'layout_schema_version' => 2 ],
+				$element,
+				$merge_data
+			)
+		);
+
+		// Missing version: treated as pre-v2, literal (defense in depth).
+		$this->assertSame(
+			'Awarded to {{recipient.display_name}}',
+			PressPrimer_Certificate_PDF_Renderer::text_content_for_render( [], $element, $merge_data )
+		);
+	}
 }

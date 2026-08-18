@@ -1,5 +1,5 @@
 {
-  "layout_schema_version": 1,
+  "layout_schema_version": 2,
   "page": { "size": "a4", "orientation": "landscape", "width": 842, "height": 595 },
   "background": { "color": "#fdfcf8", "attachment_id": 0 },
   "elements": [
