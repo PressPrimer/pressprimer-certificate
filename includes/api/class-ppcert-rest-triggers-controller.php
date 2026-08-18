@@ -298,16 +298,31 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 			$type_id    = sanitize_key( (string) $trigger['trigger_type'] );
 			$registered = null !== PressPrimer_Certificate_Trigger_Registry::get_type( $type_id );
 			$conditions = isset( $trigger['conditions'] ) && is_array( $trigger['conditions'] ) ? $trigger['conditions'] : [];
+			$source_ref = isset( $trigger['source_ref'] ) ? (string) $trigger['source_ref'] : null;
+
+			// Registered types: the schema walk is authoritative.
+			// Unregistered (inert) types: preserve stored shape - the
+			// schema is unknowable until the adapter returns.
+			$clean_conditions = $registered
+				? PressPrimer_Certificate_Trigger_Registry::sanitize_conditions( $type_id, $conditions )
+				: array_map( 'sanitize_text_field', array_filter( $conditions, 'is_scalar' ) );
+
+			// 'Any' triggers of hierarchical types must carry their
+			// parent scope (leaf-only "Any", Feature 1.1-002).
+			$scope_check = PressPrimer_Certificate_Trigger_Registry::validate_trigger_source(
+				$type_id,
+				(string) $source_ref,
+				$clean_conditions
+			);
+
+			if ( is_wp_error( $scope_check ) ) {
+				return $scope_check;
+			}
 
 			$clean[] = [
 				'trigger_type' => $type_id,
-				'source_ref'   => isset( $trigger['source_ref'] ) ? (string) $trigger['source_ref'] : null,
-				// Registered types: the schema walk is authoritative.
-				// Unregistered (inert) types: preserve stored shape - the
-				// schema is unknowable until the adapter returns.
-				'conditions'   => $registered
-					? PressPrimer_Certificate_Trigger_Registry::sanitize_conditions( $type_id, $conditions )
-					: array_map( 'sanitize_text_field', array_filter( $conditions, 'is_scalar' ) ),
+				'source_ref'   => $source_ref,
+				'conditions'   => $clean_conditions,
 				'is_active'    => ! isset( $trigger['is_active'] ) || $trigger['is_active'],
 			];
 		}

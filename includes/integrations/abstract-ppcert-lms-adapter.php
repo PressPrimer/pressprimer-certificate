@@ -271,6 +271,63 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Conditions keys that scope an 'any' trigger to its parent object
+	 *
+	 * Empty = flat type: "Any" matches every source unconditionally
+	 * (the default). Hierarchical types (leaf-only "Any", Feature
+	 * 1.1-002 FR-002) return their parent key(s) - e.g. [ 'course_id' ]
+	 * - and an 'any' trigger of the type MUST carry each key in its
+	 * conditions (registry-enforced at save) and match the fired event
+	 * (trigger_scope_matches() at fire time). Values are carried in
+	 * conditions but are NOT part of get_conditions_schema() - the
+	 * Award tab's cascade selects write them, they never render as
+	 * condition controls.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string[]
+	 */
+	public function get_scope_condition_keys(): array {
+		return [];
+	}
+
+	/**
+	 * Whether a matched trigger's scope covers the fired event
+	 *
+	 * Exact-ref triggers always match (find_active already compared the
+	 * ref). For 'any' triggers, every declared scope key must be present
+	 * on BOTH sides and equal - fail closed: a scoped 'any' trigger
+	 * never fires when the event cannot prove its parent (e.g. an LMS
+	 * payload without a course), and an unscoped hierarchical 'any' row
+	 * (unreachable through the save path) never fires at all.
+	 *
+	 * Listeners call this per matched trigger before issuing, passing
+	 * the fired event's scope (e.g. [ 'course_id' => '301' ]).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param object $trigger     Matched trigger row (hydrated).
+	 * @param array  $fired_scope Fired event's scope values (key => id).
+	 * @return bool
+	 */
+	protected function trigger_scope_matches( $trigger, array $fired_scope ): bool {
+		if ( ! is_object( $trigger ) || PressPrimer_Certificate_Trigger::SOURCE_ANY !== (string) $trigger->source_ref ) {
+			return true;
+		}
+
+		foreach ( $this->get_scope_condition_keys() as $key ) {
+			$required = isset( $trigger->conditions[ $key ] ) ? (string) $trigger->conditions[ $key ] : '';
+			$fired    = isset( $fired_scope[ $key ] ) ? (string) $fired_scope[ $key ] : '';
+
+			if ( '' === $required || '' === $fired || $required !== $fired ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Filter callback: contribute this adapter's trigger type entry
 	 *
 	 * Entry shape per HOOKS.md ppcert_register_trigger_types.
@@ -295,6 +352,7 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 			'scoped_picker'     => [ $this, 'get_sources_for_parents' ],
 			'source_post_types' => $this->get_source_post_types(),
 			'conditions_schema' => $this->get_conditions_schema(),
+			'scope_keys'        => $this->get_scope_condition_keys(),
 		];
 
 		return $types;

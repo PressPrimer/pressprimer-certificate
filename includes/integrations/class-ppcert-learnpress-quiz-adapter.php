@@ -165,6 +165,17 @@ class PressPrimer_Certificate_LearnPress_Quiz_Adapter extends PressPrimer_Certif
 	}
 
 	/**
+	 * An 'any' quiz trigger is scoped to its course (leaf-only "Any")
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string[]
+	 */
+	public function get_scope_condition_keys(): array {
+		return [ 'course_id' ];
+	}
+
+	/**
 	 * Listen for finished quizzes
 	 *
 	 * Hook citation (LearnPress 4.3.4): `learn-press/user/quiz-finished`
@@ -298,7 +309,14 @@ class PressPrimer_Certificate_LearnPress_Quiz_Adapter extends PressPrimer_Certif
 		$course  = get_post( absint( $course_id ) );
 		$context = $this->build_quiz_context( $quiz, $percent, $course, gmdate( 'Y-m-d H:i:s' ) );
 
+		// Scope from the hook's course id argument.
+		$fired_scope = [ 'course_id' => absint( $course_id ) > 0 ? (string) absint( $course_id ) : '' ];
+
 		foreach ( $triggers as $trigger ) {
+			if ( ! $this->trigger_scope_matches( $trigger, $fired_scope ) ) {
+				continue;
+			}
+
 			// Condition: numeric min_score raises the bar above the
 			// quiz's own passing grade; null follows it.
 			$min_score = isset( $trigger->conditions['min_score'] ) ? $trigger->conditions['min_score'] : null;

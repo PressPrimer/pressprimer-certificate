@@ -782,13 +782,15 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
-		// Trigger::find_active.
-		if ( false !== strpos( $query, 'WHERE trigger_type = %s AND source_ref = %s AND is_active = 1' ) ) {
+		// Trigger::find_active (1.1: exact ref OR the reserved 'any'
+		// sentinel, bound as args[3]).
+		if ( false !== strpos( $query, 'WHERE trigger_type = %s AND ( source_ref = %s OR source_ref = %s ) AND is_active = 1' ) ) {
 			return $this->filter_rows(
 				$rows,
 				static function ( $row ) use ( $args ) {
 					return $row['trigger_type'] === $args[1]
-						&& isset( $row['source_ref'] ) && $row['source_ref'] === $args[2]
+						&& isset( $row['source_ref'] )
+						&& ( $row['source_ref'] === $args[2] || $row['source_ref'] === $args[3] )
 						&& 1 === (int) $row['is_active'];
 				}
 			);

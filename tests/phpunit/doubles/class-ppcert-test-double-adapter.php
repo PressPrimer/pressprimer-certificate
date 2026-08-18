@@ -63,6 +63,17 @@ class PPCert_Test_Double_Adapter extends PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Test-only public wrapper for the protected fire-time scope check.
+	 *
+	 * @param object $trigger     Trigger row.
+	 * @param array  $fired_scope Fired event scope.
+	 * @return bool
+	 */
+	public function scope_matches( $trigger, array $fired_scope ): bool {
+		return $this->trigger_scope_matches( $trigger, $fired_scope );
+	}
+
+	/**
 	 * Selectable sources.
 	 *
 	 * @param string $search Search term.

@@ -188,6 +188,17 @@ class PressPrimer_Certificate_TutorLMS_Quiz_Adapter extends PressPrimer_Certific
 	}
 
 	/**
+	 * An 'any' quiz trigger is scoped to its course (leaf-only "Any")
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string[]
+	 */
+	public function get_scope_condition_keys(): array {
+		return [ 'course_id' ];
+	}
+
+	/**
 	 * Listen for ended quiz attempts
 	 *
 	 * Hook citations (Tutor LMS 4.0.0): `tutor_quiz/attempt_ended`
@@ -355,7 +366,15 @@ class PressPrimer_Certificate_TutorLMS_Quiz_Adapter extends PressPrimer_Certific
 
 		$context = $this->build_quiz_context( $quiz, $percent, $course, $completed_at );
 
+		// Scope from the attempt row's course id (authoritative even
+		// when the course post cannot be loaded).
+		$fired_scope = [ 'course_id' => isset( $attempt->course_id ) && absint( $attempt->course_id ) > 0 ? (string) absint( $attempt->course_id ) : '' ];
+
 		foreach ( $triggers as $trigger ) {
+			if ( ! $this->trigger_scope_matches( $trigger, $fired_scope ) ) {
+				continue;
+			}
+
 			// Condition: numeric min_score raises the bar above the
 			// quiz's own passing grade; null follows it.
 			$min_score = isset( $trigger->conditions['min_score'] ) ? $trigger->conditions['min_score'] : null;

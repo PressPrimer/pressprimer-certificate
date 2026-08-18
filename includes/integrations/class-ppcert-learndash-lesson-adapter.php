@@ -150,6 +150,17 @@ class PressPrimer_Certificate_LearnDash_Lesson_Adapter extends PressPrimer_Certi
 	}
 
 	/**
+	 * An 'any' lesson trigger is scoped to its course (leaf-only "Any")
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string[]
+	 */
+	public function get_scope_condition_keys(): array {
+		return [ 'course_id' ];
+	}
+
+	/**
 	 * Listen for completed lessons
 	 *
 	 * Hook citation (LearnDash 4.23.0): `learndash_lesson_completed`
@@ -261,7 +272,13 @@ class PressPrimer_Certificate_LearnDash_Lesson_Adapter extends PressPrimer_Certi
 			'lms_instructor'   => $this->author_display_name( $course ? $course : $lesson ),
 		];
 
+		$fired_scope = [ 'course_id' => $course && ! empty( $course->ID ) ? (string) $course->ID : '' ];
+
 		foreach ( $triggers as $trigger ) {
+			if ( ! $this->trigger_scope_matches( $trigger, $fired_scope ) ) {
+				continue;
+			}
+
 			PressPrimer_Certificate_Issuance_Service::issue(
 				[
 					'template_id'  => (int) $trigger->template_id,

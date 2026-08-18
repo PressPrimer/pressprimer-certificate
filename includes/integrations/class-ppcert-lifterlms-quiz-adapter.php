@@ -173,6 +173,17 @@ class PressPrimer_Certificate_LifterLMS_Quiz_Adapter extends PressPrimer_Certifi
 	}
 
 	/**
+	 * An 'any' quiz trigger is scoped to its course (leaf-only "Any")
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string[]
+	 */
+	public function get_scope_condition_keys(): array {
+		return [ 'course_id' ];
+	}
+
+	/**
 	 * Listen for passed quizzes
 	 *
 	 * Hook citation (LifterLMS 10.0.8): `lifterlms_quiz_passed` fires in
@@ -298,7 +309,15 @@ class PressPrimer_Certificate_LifterLMS_Quiz_Adapter extends PressPrimer_Certifi
 
 		$context = $this->build_quiz_context( $quiz, $percent, $course, gmdate( 'Y-m-d H:i:s' ) );
 
+		// The course resolves from the attempt's lesson parent; when it
+		// cannot be proven, a scoped 'any' trigger never fires.
+		$fired_scope = [ 'course_id' => is_object( $course ) && ! empty( $course->ID ) ? (string) $course->ID : '' ];
+
 		foreach ( $triggers as $trigger ) {
+			if ( ! $this->trigger_scope_matches( $trigger, $fired_scope ) ) {
+				continue;
+			}
+
 			// Condition: numeric min_score raises the bar above the
 			// quiz's own minimum grade; null follows it.
 			$min_score = isset( $trigger->conditions['min_score'] ) ? $trigger->conditions['min_score'] : null;

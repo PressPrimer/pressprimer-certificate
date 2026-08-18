@@ -13,6 +13,8 @@
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/doubles/class-ppcert-test-double-hierarchical-adapter.php';
+
 /**
  * Triggers REST test case
  *
@@ -332,5 +334,84 @@ class Test_Triggers_REST extends TestCase {
 
 		$GLOBALS['ppcert_test_user_caps'] = [ 'ppcert_manage_templates' ];
 		$this->assertTrue( $this->controller->can_manage() );
+	}
+
+	// -------------------------------------------------------------------
+	// Any-source triggers (Feature 1.1-002).
+	// -------------------------------------------------------------------
+
+	/**
+	 * A flat type saves an 'any' trigger with no scope requirement.
+	 *
+	 * @return void
+	 */
+	public function test_put_flat_any_trigger_saves() {
+		$response = $this->put_triggers(
+			[
+				[
+					'trigger_type' => 'double_lms',
+					'source_ref'   => 'any',
+					'conditions'   => [],
+				],
+			]
+		);
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+
+		$rows = $this->wpdb->rows( 'wp_ppcert_triggers' );
+		$this->assertCount( 1, $rows );
+		$this->assertSame( 'any', $rows[0]['source_ref'] );
+	}
+
+	/**
+	 * A hierarchical 'any' trigger without its parent scope is a 400.
+	 *
+	 * @return void
+	 */
+	public function test_put_hierarchical_any_without_scope_rejected() {
+		( new PPCert_Test_Double_Hierarchical_Adapter() )->register();
+
+		$response = $this->put_triggers(
+			[
+				[
+					'trigger_type' => 'double_lms_lesson',
+					'source_ref'   => 'any',
+					'conditions'   => [],
+				],
+			]
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $response );
+		$this->assertSame( 'ppcert_trigger_scope_required', $response->get_error_code() );
+		$this->assertCount( 0, $this->wpdb->rows( 'wp_ppcert_triggers' ) );
+	}
+
+	/**
+	 * A scoped hierarchical 'any' trigger saves with the parent id
+	 * carried in conditions as a sanitized id string.
+	 *
+	 * @return void
+	 */
+	public function test_put_hierarchical_any_with_scope_saves() {
+		( new PPCert_Test_Double_Hierarchical_Adapter() )->register();
+
+		$response = $this->put_triggers(
+			[
+				[
+					'trigger_type' => 'double_lms_lesson',
+					'source_ref'   => 'any',
+					'conditions'   => [ 'course_id' => 301 ],
+				],
+			]
+		);
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+
+		$rows = $this->wpdb->rows( 'wp_ppcert_triggers' );
+		$this->assertCount( 1, $rows );
+		$this->assertSame( 'any', $rows[0]['source_ref'] );
+
+		$conditions = json_decode( (string) $rows[0]['conditions_json'], true );
+		$this->assertSame( '301', $conditions['course_id'] );
 	}
 }

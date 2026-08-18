@@ -155,6 +155,17 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 	}
 
 	/**
+	 * An 'any' quiz trigger is scoped to its course (leaf-only "Any")
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string[]
+	 */
+	public function get_scope_condition_keys(): array {
+		return [ 'course_id' ];
+	}
+
+	/**
 	 * Listen for completed quizzes
 	 *
 	 * Hook citation (LearnDash 4.23.0): `learndash_quiz_completed` fires
@@ -293,7 +304,15 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 
 		$context = $this->build_quiz_context( $quiz, $percent, $course, gmdate( 'Y-m-d H:i:s', $completed_ts ) );
 
+		// Global quizzes may complete without a course - a scoped 'any'
+		// trigger then never fires (fail closed).
+		$fired_scope = [ 'course_id' => $course && ! empty( $course->ID ) ? (string) $course->ID : '' ];
+
 		foreach ( $triggers as $trigger ) {
+			if ( ! $this->trigger_scope_matches( $trigger, $fired_scope ) ) {
+				continue;
+			}
+
 			// Condition: numeric min_score raises the bar above the
 			// quiz's own passing percentage; null follows it.
 			$min_score = isset( $trigger->conditions['min_score'] ) ? $trigger->conditions['min_score'] : null;

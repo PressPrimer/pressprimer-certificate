@@ -14,6 +14,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/doubles/class-ppcert-test-double-adapter.php';
+require_once __DIR__ . '/doubles/class-ppcert-test-double-hierarchical-adapter.php';
 
 /**
  * Adapter interface test case
@@ -259,5 +260,168 @@ class Test_Adapter_Interface extends TestCase {
 		$resolve = $reflection->getMethod( 'resolve_merge_data' );
 		$this->assertSame( 'array', (string) $resolve->getParameters()[0]->getType() );
 		$this->assertSame( 'array', (string) $resolve->getReturnType() );
+	}
+
+	// -------------------------------------------------------------------
+	// Any-source triggers (Feature 1.1-002 contract).
+	// -------------------------------------------------------------------
+
+	/**
+	 * The registry captures scope keys; flat types declare none.
+	 *
+	 * @return void
+	 */
+	public function test_registry_captures_scope_condition_keys() {
+		( new PPCert_Test_Double_Adapter() )->register();
+		( new PPCert_Test_Double_Hierarchical_Adapter() )->register();
+
+		$types = PressPrimer_Certificate_Trigger_Registry::get_types();
+
+		$this->assertSame( [], $types['double_lms']['scope_condition_keys'] );
+		$this->assertSame( [ 'course_id' ], $types['double_lms_lesson']['scope_condition_keys'] );
+	}
+
+	/**
+	 * Scope keys pass through conditions sanitization as id strings,
+	 * outside the conditions_schema walk; junk stores null.
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_conditions_passes_scope_keys() {
+		( new PPCert_Test_Double_Hierarchical_Adapter() )->register();
+
+		$clean = PressPrimer_Certificate_Trigger_Registry::sanitize_conditions(
+			'double_lms_lesson',
+			[
+				'course_id' => '301',
+				'min_score' => 80,
+			]
+		);
+
+		$this->assertSame( '301', $clean['course_id'] );
+		$this->assertSame( 80.0, $clean['min_score'] );
+
+		$junk = PressPrimer_Certificate_Trigger_Registry::sanitize_conditions(
+			'double_lms_lesson',
+			[ 'course_id' => 'not-a-post-id' ]
+		);
+
+		$this->assertNull( $junk['course_id'] );
+
+		$missing = PressPrimer_Certificate_Trigger_Registry::sanitize_conditions( 'double_lms_lesson', [] );
+
+		$this->assertNull( $missing['course_id'] );
+	}
+
+	/**
+	 * validate_trigger_source: specific refs and flat 'any' pass; a
+	 * hierarchical 'any' requires its parent scope.
+	 *
+	 * @return void
+	 */
+	public function test_validate_trigger_source_scope_contract() {
+		( new PPCert_Test_Double_Adapter() )->register();
+		( new PPCert_Test_Double_Hierarchical_Adapter() )->register();
+
+		$registry = 'PressPrimer_Certificate_Trigger_Registry';
+
+		$this->assertTrue( $registry::validate_trigger_source( 'double_lms_lesson', '305', [] ) );
+		$this->assertTrue( $registry::validate_trigger_source( 'double_lms', 'any', [] ) );
+		$this->assertTrue( $registry::validate_trigger_source( 'double_lms_lesson', 'any', [ 'course_id' => '301' ] ) );
+		$this->assertTrue( $registry::validate_trigger_source( 'unregistered_type', 'any', [] ) );
+
+		$error = $registry::validate_trigger_source( 'double_lms_lesson', 'any', [] );
+		$this->assertInstanceOf( WP_Error::class, $error );
+		$this->assertSame( 'ppcert_trigger_scope_required', $error->get_error_code() );
+
+		$null_scope = $registry::validate_trigger_source( 'double_lms_lesson', 'any', [ 'course_id' => null ] );
+		$this->assertInstanceOf( WP_Error::class, $null_scope );
+	}
+
+	/**
+	 * The fire-time scope check: exact refs always pass; 'any' passes
+	 * only when every declared key matches, failing closed on missing
+	 * values from either side.
+	 *
+	 * @return void
+	 */
+	public function test_trigger_scope_matches_matrix() {
+		$flat         = new PPCert_Test_Double_Adapter();
+		$hierarchical = new PPCert_Test_Double_Hierarchical_Adapter();
+
+		$specific = (object) [
+			'source_ref' => '305',
+			'conditions' => null,
+		];
+		$any      = (object) [
+			'source_ref' => 'any',
+			'conditions' => [ 'course_id' => '301' ],
+		];
+		$unscoped = (object) [
+			'source_ref' => 'any',
+			'conditions' => null,
+		];
+
+		// Exact refs never consult scope.
+		$this->assertTrue( $hierarchical->scope_matches( $specific, [] ) );
+
+		// Flat 'any' matches unconditionally (no declared keys).
+		$this->assertTrue( $flat->scope_matches( $unscoped, [] ) );
+
+		// Hierarchical 'any': in-course matches, everything else fails.
+		$this->assertTrue( $hierarchical->scope_matches( $any, [ 'course_id' => '301' ] ) );
+		$this->assertFalse( $hierarchical->scope_matches( $any, [ 'course_id' => '999' ] ) );
+		$this->assertFalse( $hierarchical->scope_matches( $any, [ 'course_id' => '' ] ) );
+		$this->assertFalse( $hierarchical->scope_matches( $any, [] ) );
+
+		// Unscoped hierarchical 'any' (unreachable via save) never fires.
+		$this->assertFalse( $hierarchical->scope_matches( $unscoped, [ 'course_id' => '301' ] ) );
+	}
+
+	/**
+	 * find_active matches the exact ref plus the 'any' sentinel, and
+	 * inactive rows stay excluded.
+	 *
+	 * @return void
+	 */
+	public function test_find_active_includes_any_triggers() {
+		$wpdb = ppcert_tests_reset_wpdb();
+
+		$rows = [
+			[ 'ref' => '305', 'active' => 1 ],
+			[ 'ref' => 'any', 'active' => 1 ],
+			[ 'ref' => '999', 'active' => 1 ],
+			[ 'ref' => 'any', 'active' => 0 ],
+		];
+
+		foreach ( $rows as $index => $row ) {
+			$wpdb->seed_row(
+				'wp_ppcert_triggers',
+				[
+					'uuid'            => 'trg-any-' . $index,
+					'template_id'     => 10 + $index,
+					'trigger_type'    => 'double_lms_lesson',
+					'source_ref'      => $row['ref'],
+					'conditions_json' => null,
+					'is_active'       => $row['active'],
+				]
+			);
+		}
+
+		$matched = PressPrimer_Certificate_Trigger::find_active( 'double_lms_lesson', '305' );
+		$refs    = array_map(
+			static function ( $trigger ) {
+				return (string) $trigger->source_ref;
+			},
+			$matched
+		);
+
+		sort( $refs );
+		$this->assertSame( [ '305', 'any' ], $refs );
+
+		// A ref with no specific row still matches the active 'any'.
+		$only_any = PressPrimer_Certificate_Trigger::find_active( 'double_lms_lesson', '777' );
+		$this->assertCount( 1, $only_any );
+		$this->assertSame( 'any', $only_any[0]->source_ref );
 	}
 }

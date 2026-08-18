@@ -76,25 +76,32 @@ class PressPrimer_Certificate_Trigger_Registry {
 			}
 
 			$types[ $id ] = [
-				'id'                => $id,
-				'label'             => $label,
+				'id'                   => $id,
+				'label'                => $label,
 				// Two-step picker metadata: the integration name leads,
 				// then its triggers by short label.
-				'integration'       => isset( $entry['integration'] ) && is_string( $entry['integration'] ) ? $entry['integration'] : $label,
-				'short_label'       => isset( $entry['short_label'] ) && is_string( $entry['short_label'] ) ? $entry['short_label'] : $label,
+				'integration'          => isset( $entry['integration'] ) && is_string( $entry['integration'] ) ? $entry['integration'] : $label,
+				'short_label'          => isset( $entry['short_label'] ) && is_string( $entry['short_label'] ) ? $entry['short_label'] : $label,
 				// Noun for the type's sources ("Quiz", "Course") - labels
 				// the Award tab source line and the palette source group.
-				'source_label'      => isset( $entry['source_label'] ) && is_string( $entry['source_label'] ) ? $entry['source_label'] : '',
-				'source_picker'     => isset( $entry['source_picker'] ) && is_callable( $entry['source_picker'] ) ? $entry['source_picker'] : null,
-				'source_levels'     => $source_levels,
-				'level_picker'      => isset( $entry['level_picker'] ) && is_callable( $entry['level_picker'] ) ? $entry['level_picker'] : null,
-				'scoped_picker'     => isset( $entry['scoped_picker'] ) && is_callable( $entry['scoped_picker'] ) ? $entry['scoped_picker'] : null,
-				'conditions_schema' => isset( $entry['conditions_schema'] ) && is_array( $entry['conditions_schema'] ) ? $entry['conditions_schema'] : [],
+				'source_label'         => isset( $entry['source_label'] ) && is_string( $entry['source_label'] ) ? $entry['source_label'] : '',
+				'source_picker'        => isset( $entry['source_picker'] ) && is_callable( $entry['source_picker'] ) ? $entry['source_picker'] : null,
+				'source_levels'        => $source_levels,
+				'level_picker'         => isset( $entry['level_picker'] ) && is_callable( $entry['level_picker'] ) ? $entry['level_picker'] : null,
+				'scoped_picker'        => isset( $entry['scoped_picker'] ) && is_callable( $entry['scoped_picker'] ) ? $entry['scoped_picker'] : null,
+				'conditions_schema'    => isset( $entry['conditions_schema'] ) && is_array( $entry['conditions_schema'] ) ? $entry['conditions_schema'] : [],
 				// Optional: post types this trigger's sources live in.
 				// The post-meta picker validates its post_id against the
 				// union of these (Feature 002 TR-002).
-				'source_post_types' => isset( $entry['source_post_types'] ) && is_array( $entry['source_post_types'] )
+				'source_post_types'    => isset( $entry['source_post_types'] ) && is_array( $entry['source_post_types'] )
 					? array_values( array_filter( array_map( 'sanitize_key', $entry['source_post_types'] ) ) )
+					: [],
+				// Parent-scope conditions keys for 'any' triggers
+				// (Feature 1.1-002): required in conditions when the
+				// ref is the SOURCE_ANY sentinel; never rendered as
+				// condition controls.
+				'scope_condition_keys' => isset( $entry['scope_keys'] ) && is_array( $entry['scope_keys'] )
+					? array_values( array_filter( array_map( 'sanitize_key', $entry['scope_keys'] ) ) )
 					: [],
 			];
 
@@ -193,7 +200,59 @@ class PressPrimer_Certificate_Trigger_Registry {
 			}
 		}
 
+		// Parent-scope keys ('any' triggers, Feature 1.1-002): carried in
+		// conditions but never part of conditions_schema - the Award
+		// tab's cascade selects write them. Object ids sanitize to
+		// numeric strings; anything else stores null.
+		foreach ( $type['scope_condition_keys'] as $key ) {
+			$id            = isset( $conditions[ $key ] ) ? absint( $conditions[ $key ] ) : 0;
+			$clean[ $key ] = $id > 0 ? (string) $id : null;
+		}
+
 		return $clean;
+	}
+
+	/**
+	 * Validate a trigger's source ref against its type's scope contract
+	 *
+	 * An 'any' trigger of a hierarchical type must carry every declared
+	 * parent-scope key in its (already sanitized) conditions - leaf-only
+	 * "Any" (Feature 1.1-002 FR-002). Specific refs and flat types pass.
+	 * Unregistered (inert) types pass: their contract is unknowable
+	 * until the adapter returns, and the designer cannot create them.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string $trigger_type Trigger type id.
+	 * @param string $source_ref   Source ref (may be the 'any' sentinel).
+	 * @param array  $conditions   Sanitized conditions.
+	 * @return true|WP_Error
+	 */
+	public static function validate_trigger_source( $trigger_type, $source_ref, array $conditions ) {
+		if ( PressPrimer_Certificate_Trigger::SOURCE_ANY !== (string) $source_ref ) {
+			return true;
+		}
+
+		$type = self::get_type( $trigger_type );
+
+		if ( null === $type ) {
+			return true;
+		}
+
+		foreach ( $type['scope_condition_keys'] as $key ) {
+			if ( empty( $conditions[ $key ] ) ) {
+				return new WP_Error(
+					'ppcert_trigger_scope_required',
+					__( 'An "Any" trigger of this type must be scoped to a parent (for example, a specific course).', 'pressprimer-certificate' ),
+					[
+						'status' => 400,
+						'key'    => $key,
+					]
+				);
+			}
+		}
+
+		return true;
 	}
 
 	/**

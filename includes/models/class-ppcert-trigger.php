@@ -148,11 +148,30 @@ class PressPrimer_Certificate_Trigger {
 	}
 
 	/**
+	 * Reserved source ref matching every source of the trigger's type
+	 *
+	 * "Any" triggers (1.1, Feature 002): one trigger row fires for every
+	 * object of its type. Adapter source ids are numeric strings (post
+	 * ids / custom-table ids), so the sentinel cannot collide with a
+	 * real ref. Hierarchical types additionally scope 'any' through
+	 * parent-scope conditions keys (registry scope_condition_keys),
+	 * verified at fire time by the adapter. Certificates always record
+	 * the REAL fired ref - this value never reaches a certificate row.
+	 *
+	 * @since 1.1.0
+	 * @var string
+	 */
+	const SOURCE_ANY = 'any';
+
+	/**
 	 * Find active triggers for a source event
 	 *
 	 * The hot path: issuance listeners call this on every candidate event.
 	 * The query is served by the trigger_lookup index
-	 * (trigger_type, source_ref, is_active).
+	 * (trigger_type, source_ref, is_active). Matches the exact fired ref
+	 * plus the reserved SOURCE_ANY sentinel (1.1) - a specific trigger
+	 * and an 'any' trigger on different templates both fire from one
+	 * event; on the same template the duplicate engine arbitrates.
 	 *
 	 * @since 1.0.0
 	 *
@@ -165,10 +184,11 @@ class PressPrimer_Certificate_Trigger {
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT * FROM %i WHERE trigger_type = %s AND source_ref = %s AND is_active = 1',
+				'SELECT * FROM %i WHERE trigger_type = %s AND ( source_ref = %s OR source_ref = %s ) AND is_active = 1',
 				self::table(),
 				sanitize_key( $trigger_type ),
-				sanitize_text_field( (string) $source_ref )
+				sanitize_text_field( (string) $source_ref ),
+				self::SOURCE_ANY
 			)
 		);
 

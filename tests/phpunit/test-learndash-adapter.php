@@ -499,6 +499,87 @@ class Test_LearnDash_Adapter extends TestCase { // phpcs:ignore Generic.Files.On
 	}
 
 	/**
+	 * An 'any lesson in this course' trigger fires for every lesson in
+	 * its course, never outside it, and certificates record the REAL
+	 * fired lesson - never the sentinel (Feature 1.1-002).
+	 *
+	 * @return void
+	 */
+	public function test_any_lesson_trigger_scoped_to_course() {
+		$this->seed_sub_course_posts();
+
+		// A second course with its own lesson.
+		$GLOBALS['ppcert_test_posts'][401] = (object) [
+			'ID'          => 401,
+			'post_type'   => 'sfwd-courses',
+			'post_status' => 'publish',
+			'post_title'  => 'Intro to Zoology',
+			'post_author' => 9,
+		];
+		$GLOBALS['ppcert_test_posts'][405] = (object) [
+			'ID'          => 405,
+			'post_type'   => 'sfwd-lessons',
+			'post_status' => 'publish',
+			'post_title'  => 'Vertebrates',
+			'post_author' => 9,
+		];
+
+		$adapter = new PressPrimer_Certificate_LearnDash_Lesson_Adapter();
+		$adapter->register();
+		$this->seed_typed_trigger( 'lms_learndash_lesson', 'any', [ 'course_id' => '301' ] );
+
+		// In-course lesson issues.
+		do_action(
+			'learndash_lesson_completed',
+			[
+				'user'     => (object) [ 'ID' => 7 ],
+				'course'   => $GLOBALS['ppcert_test_posts'][301],
+				'lesson'   => $GLOBALS['ppcert_test_posts'][305],
+				'progress' => [],
+			]
+		);
+
+		// Out-of-course lesson does not.
+		do_action(
+			'learndash_lesson_completed',
+			[
+				'user'     => (object) [ 'ID' => 7 ],
+				'course'   => $GLOBALS['ppcert_test_posts'][401],
+				'lesson'   => $GLOBALS['ppcert_test_posts'][405],
+				'progress' => [],
+			]
+		);
+
+		$rows = $this->wpdb->rows( 'wp_ppcert_certificates' );
+		$this->assertCount( 1, $rows );
+		$this->assertSame( '305', $rows[0]['source_ref'] );
+	}
+
+	/**
+	 * A scoped 'any' trigger fails closed when the payload cannot prove
+	 * its course.
+	 *
+	 * @return void
+	 */
+	public function test_any_lesson_trigger_fails_closed_without_course() {
+		$this->seed_sub_course_posts();
+		$adapter = new PressPrimer_Certificate_LearnDash_Lesson_Adapter();
+		$adapter->register();
+		$this->seed_typed_trigger( 'lms_learndash_lesson', 'any', [ 'course_id' => '301' ] );
+
+		do_action(
+			'learndash_lesson_completed',
+			[
+				'user'     => (object) [ 'ID' => 7 ],
+				'lesson'   => $GLOBALS['ppcert_test_posts'][305],
+				'progress' => [],
+			]
+		);
+
+		$this->assertCount( 0, $this->wpdb->rows( 'wp_ppcert_certificates' ) );
+	}
+
+	/**
 	 * Topic completion issues once with topic + lesson + course data.
 	 *
 	 * @return void
