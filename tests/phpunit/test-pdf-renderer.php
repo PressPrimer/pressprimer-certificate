@@ -309,6 +309,133 @@ class Test_PDF_Renderer extends TestCase {
 	}
 
 	// -------------------------------------------------------------------
+	// Clickable credentials (Feature 1.1-003).
+	// -------------------------------------------------------------------
+
+	/**
+	 * A layout with one QR and one credential-ID field for link tests.
+	 *
+	 * @return array
+	 */
+	private function linkable_layout() {
+		$text_props = [
+			'font_family' => 'playfair-display',
+			'font_size'   => 14,
+			'color'       => '#000000',
+			'align'       => 'left',
+			'line_height' => 1.2,
+			'bold'        => false,
+			'italic'      => false,
+		];
+
+		return [
+			'layout_schema_version' => 2,
+			'page'                  => [
+				'size'        => 'a4',
+				'orientation' => 'landscape',
+				'width'       => 842,
+				'height'      => 595,
+			],
+			'background'            => [
+				'color'         => '#ffffff',
+				'attachment_id' => 0,
+			],
+			'elements'              => [
+				[
+					'id'    => 'el_linkqr01',
+					'type'  => 'qr',
+					'x'     => 750,
+					'y'     => 480,
+					'w'     => 60,
+					'h'     => 60,
+					'z'     => 1,
+					'props' => [
+						'dark_color'  => '#000000',
+						'light_color' => '',
+					],
+				],
+				[
+					'id'    => 'el_linkcred',
+					'type'  => 'merge_field',
+					'x'     => 100,
+					'y'     => 480,
+					'w'     => 300,
+					'h'     => 24,
+					'z'     => 2,
+					'props' => array_merge( $text_props, [ 'token' => '{{certificate.credential_id}}' ] ),
+				],
+				[
+					'id'    => 'el_linktext',
+					'type'  => 'text',
+					'x'     => 100,
+					'y'     => 100,
+					'w'     => 400,
+					'h'     => 30,
+					'z'     => 3,
+					'props' => array_merge( $text_props, [ 'content' => 'Certificate of Completion' ] ),
+				],
+			],
+		];
+	}
+
+	/**
+	 * Issued renders carry link annotations over the QR box and the
+	 * credential field even under the always-on AES-256 protection;
+	 * previews without a credential carry neither.
+	 *
+	 * Annotation Rect values stay plaintext under encryption (only
+	 * string values encrypt), so the two element boxes are asserted
+	 * exactly - in PDF coordinates, y measures from the BOTTOM: the QR
+	 * at y=480 h=60 on a 595pt page becomes Rect y 55..115. A baseline
+	 * link exists in every render (TCPDF's own hidden tcpdf.org credit
+	 * link, present since 1.0), so counts are asserted relative to the
+	 * preview, never absolute.
+	 *
+	 * @return void
+	 */
+	public function test_issued_render_links_qr_and_credential_field() {
+		$merge_data = [ 'certificate.credential_id' => '7Q4M-K9P2-XT3A' ];
+		$renderer   = new PressPrimer_Certificate_PDF_Renderer();
+		$qr_rect    = '/Rect [750.000000 55.000000 810.000000 115.000000]';
+		$cred_rect  = '/Rect [100.000000 91.000000 400.000000 115.000000]';
+
+		$issued = $renderer->render_pdf(
+			$this->linkable_layout(),
+			$merge_data,
+			[
+				'context'       => 'download',
+				'credential_id' => '7Q4MK9P2XT3A',
+			]
+		);
+
+		$this->assertIsString( $issued );
+		$bytes = (string) file_get_contents( $issued );
+		unlink( $issued );
+
+		$preview = $renderer->render_pdf(
+			$this->linkable_layout(),
+			$merge_data,
+			[ 'context' => 'preview' ]
+		);
+
+		$this->assertIsString( $preview );
+		$preview_bytes = (string) file_get_contents( $preview );
+		unlink( $preview );
+
+		// Exactly our two element boxes gained annotations.
+		$this->assertStringContainsString( $qr_rect, $bytes );
+		$this->assertStringContainsString( $cred_rect, $bytes );
+		$this->assertSame(
+			substr_count( $preview_bytes, '/Subtype /Link' ) + 2,
+			substr_count( $bytes, '/Subtype /Link' )
+		);
+
+		// No credential, no links - previews never carry a dead URL.
+		$this->assertStringNotContainsString( $qr_rect, $preview_bytes );
+		$this->assertStringNotContainsString( $cred_rect, $preview_bytes );
+	}
+
+	// -------------------------------------------------------------------
 	// Inline merge tokens (schema v2, Feature 1.1-001).
 	// -------------------------------------------------------------------
 

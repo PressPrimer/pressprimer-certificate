@@ -303,6 +303,13 @@ class PressPrimer_Certificate_PDF_Renderer {
 					? (string) $merge_data[ $token ]
 					: '';
 				$this->render_text( $pdf, $element, $value );
+
+				// The credential ID is clickable evidence (Feature
+				// 1.1-003): issued renders link it to the same
+				// verification URL the QR encodes.
+				if ( 'certificate.credential_id' === $token ) {
+					$this->link_to_verification( $pdf, $element, $args );
+				}
 				break;
 
 			case 'image':
@@ -326,6 +333,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 			case 'qr':
 				$this->render_qr( $pdf, $element, $args );
+				$this->link_to_verification( $pdf, $element, $args );
 				break;
 		}
 	}
@@ -718,6 +726,37 @@ class PressPrimer_Certificate_PDF_Renderer {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Link an element's box to the credential's verification URL
+	 *
+	 * Clickable evidence (Feature 1.1-003): issued renders carry an
+	 * invisible link annotation over the QR and any credential-ID
+	 * field, targeting the exact URL the QR encodes (one builder, the
+	 * two can never diverge). Previews and sample renders carry no
+	 * credential and get no annotation - never a dead link. Annotations
+	 * do not rasterize (parity untouched) and survive the AES-256
+	 * protection settings (links are annotations, not content edits).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param TCPDF $pdf     Document.
+	 * @param array $element Clean element (box in page points).
+	 * @param array $args    Render arguments.
+	 */
+	private function link_to_verification( $pdf, $element, $args ) {
+		if ( empty( $args['credential_id'] ) ) {
+			return;
+		}
+
+		$pdf->Link(
+			(float) $element['x'],
+			(float) $element['y'],
+			(float) $element['w'],
+			(float) $element['h'],
+			self::qr_content( $args )
+		);
 	}
 
 	/**
