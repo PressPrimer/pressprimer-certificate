@@ -465,6 +465,105 @@ export default function Canvas( { layout, zoom, rulers = true } ) {
 	const activeGuides =
 		gesture && gesture.moved && gesture.guides ? gesture.guides : [];
 
+	const renderAlignGuide = ( guide ) => (
+		<div
+			key={ `${ guide.axis }-${ guide.at }` }
+			data-ppcert-guide={ guide.axis }
+			className={ `ppcert-designer__guide ppcert-designer__guide--${ guide.axis }` }
+			style={
+				'v' === guide.axis
+					? {
+							left: guide.at,
+							width: 1 / scale,
+					  }
+					: {
+							top: guide.at,
+							height: 1 / scale,
+					  }
+			}
+		/>
+	);
+
+	/**
+	 * Mirror-margin guide (1.1, Feature 004 FR-002): a distinctly
+	 * colored edge line plus a measurement bar with a pt badge at BOTH
+	 * matched margins, so the snap explains itself (Ryan's
+	 * identifiability concern, 2026-08-14).
+	 *
+	 * @param {Object} guide Mirror guide from snapDrag.
+	 * @return {JSX.Element|null} Guide markup.
+	 */
+	const renderMirrorGuide = ( guide ) => {
+		const primary =
+			gesture &&
+			layout.elements.find( ( el ) => el.id === gesture.pressedId );
+
+		if ( ! primary ) {
+			return null;
+		}
+
+		const vertical = 'v' === guide.axis;
+		const pageSize = vertical ? layout.page.width : layout.page.height;
+		const selfCross = vertical
+			? primary.y + gesture.dy + primary.h / 2
+			: primary.x + gesture.dx + primary.w / 2;
+
+		// The dragged element's bar hugs its matched page edge; the
+		// partner's bar hugs the opposite edge.
+		const selfStart =
+			'leading' === guide.side ? 0 : pageSize - guide.margin;
+		const partnerStart =
+			'leading' === guide.side ? pageSize - guide.margin : 0;
+
+		const label = `${ Math.round( guide.margin * 10 ) / 10 } pt`;
+
+		const bar = ( start, cross, role ) => (
+			<div
+				key={ role }
+				data-ppcert-mirror-bar={ role }
+				className={ `ppcert-designer__mirror-bar ppcert-designer__mirror-bar--${ guide.axis }` }
+				style={
+					vertical
+						? {
+								left: start,
+								width: guide.margin,
+								top: cross,
+								height: 1 / scale,
+						  }
+						: {
+								top: start,
+								height: guide.margin,
+								left: cross,
+								width: 1 / scale,
+						  }
+				}
+			>
+				<span
+					className="ppcert-designer__mirror-label"
+					style={ { fontSize: 11 / scale } }
+				>
+					{ label }
+				</span>
+			</div>
+		);
+
+		return (
+			<div key={ `mirror-${ guide.axis }-${ guide.at }` }>
+				<div
+					data-ppcert-guide={ `mirror-${ guide.axis }` }
+					className={ `ppcert-designer__guide ppcert-designer__guide--${ guide.axis } ppcert-designer__guide--mirror` }
+					style={
+						vertical
+							? { left: guide.at, width: 1 / scale }
+							: { top: guide.at, height: 1 / scale }
+					}
+				/>
+				{ bar( selfStart, selfCross, 'self' ) }
+				{ bar( partnerStart, guide.partnerCross, 'partner' ) }
+			</div>
+		);
+	};
+
 	return (
 		// eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- role="application" is the correct role for a keyboard-operated design canvas; arrow-key nudging lives here.
 		<div
@@ -624,24 +723,11 @@ export default function Canvas( { layout, zoom, rulers = true } ) {
 						/>
 					) }
 
-					{ activeGuides.map( ( guide ) => (
-						<div
-							key={ `${ guide.axis }-${ guide.at }` }
-							data-ppcert-guide={ guide.axis }
-							className={ `ppcert-designer__guide ppcert-designer__guide--${ guide.axis }` }
-							style={
-								'v' === guide.axis
-									? {
-											left: guide.at,
-											width: 1 / scale,
-									  }
-									: {
-											top: guide.at,
-											height: 1 / scale,
-									  }
-							}
-						/>
-					) ) }
+					{ activeGuides.map( ( guide ) =>
+						'mirror' === guide.kind
+							? renderMirrorGuide( guide )
+							: renderAlignGuide( guide )
+					) }
 				</div>
 			</div>
 

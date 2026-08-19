@@ -426,15 +426,73 @@ function axisPoints( start, size ) {
 }
 
 /**
+ * Mirrors only fire for partners actually hugging an edge: a margin
+ * wider than this fraction of the page dimension is layout, not
+ * margin styling, and offering it as a snap would blanket the canvas
+ * in tolerance bands (Ryan's snapping-frequency concern, 2026-08-14 -
+ * without the cap only ~10% of a starter's vertical drag range stays
+ * snap-free; with it, ~24%).
+ */
+export const MIRROR_MAX_MARGIN_RATIO = 0.25;
+
+/**
+ * Mirror-margin snap candidates against one other element, capped to
+ * edge-hugging partners by MIRROR_MAX_MARGIN_RATIO (1.1,
+ * Feature 004 FR-001): the dragged box's page margin on one side
+ * equals the partner's page margin on the OPPOSITE side. Point-locked:
+ * a leading-margin mirror only ever matches the dragged LEADING edge
+ * (point 0), a trailing mirror only the TRAILING edge (point 2) -
+ * centers never mirror.
+ *
+ * @param {Object} el       Partner element box on this axis
+ *                          { start, size, cross }.
+ * @param {number} pageSize Page dimension on this axis.
+ * @return {Array} Mirror candidates { at, point, margin, partnerCross }.
+ */
+function mirrorCandidates( el, pageSize ) {
+	const candidates = [];
+	const cap = pageSize * MIRROR_MAX_MARGIN_RATIO;
+	const partnerTrailingMargin = pageSize - ( el.start + el.size );
+	const partnerLeadingMargin = el.start;
+
+	// Dragged leading margin == partner trailing margin.
+	if ( partnerTrailingMargin > 0 && partnerTrailingMargin <= cap ) {
+		candidates.push( {
+			at: partnerTrailingMargin,
+			point: 0,
+			margin: partnerTrailingMargin,
+			partnerCross: el.cross,
+		} );
+	}
+
+	// Dragged trailing margin == partner leading margin.
+	if ( partnerLeadingMargin > 0 && partnerLeadingMargin <= cap ) {
+		candidates.push( {
+			at: pageSize - partnerLeadingMargin,
+			point: 2,
+			margin: partnerLeadingMargin,
+			partnerCross: el.cross,
+		} );
+	}
+
+	return candidates;
+}
+
+/**
  * Snap a dragged box against the other elements and the page (FR-002).
  *
  * Alignment targets are the other elements' edges/centers and the page
  * center; within tolerance the delta adjusts to align exactly and a
- * guide line is reported. The canvas NEVER snaps silently: no guide
- * shown means the pointer delta applies untouched (UX decision, Ryan
- * 2026-07-22 - the invisible 4pt grid fallback read as unexplained
- * stickiness). Alt disables snapping entirely (handled by the caller
- * not calling this).
+ * guide line is reported. Mirror-margin targets (1.1, Feature 1.1-004)
+ * additionally snap when the dragged box's page margin equals another
+ * element's opposite page margin - reported as kind 'mirror' guides
+ * carrying the margin measurement so the canvas can render them
+ * distinctly. The canvas NEVER snaps silently: no guide shown means
+ * the pointer delta applies untouched (UX decision, Ryan 2026-07-22 -
+ * the invisible 4pt grid fallback read as unexplained stickiness).
+ * Alt disables snapping entirely (handled by the caller not calling
+ * this). Ties between an align and a mirror target at identical
+ * distance keep the align guide (enumerated first).
  *
  * @param {Object} box    The dragged element's box at its ORIGINAL
  *                        position { x, y, w, h }.
@@ -442,7 +500,9 @@ function axisPoints( start, size ) {
  * @param {number} dy     Proposed delta y in points.
  * @param {Array}  others Other elements (excluded from dragging).
  * @param {Object} page   { width, height }.
- * @return {Object} { dx, dy, guides: [ { axis: 'v'|'h', at } ] }.
+ * @return {Object} { dx, dy, guides }. Guides: { axis: 'v'|'h', at,
+ *                  kind: 'align' } or { axis, at, kind: 'mirror',
+ *                  margin, side: 'leading'|'trailing', partnerCross }.
  */
 export function snapDrag( box, dx, dy, others, page ) {
 	const guides = [];
@@ -464,12 +524,28 @@ export function snapDrag( box, dx, dy, others, page ) {
 		page.height,
 	];
 
+	const mirrorsX = [];
+	const mirrorsY = [];
+
 	others.forEach( ( el ) => {
 		targetsX.push( ...axisPoints( el.x, el.w ) );
 		targetsY.push( ...axisPoints( el.y, el.h ) );
+
+		mirrorsX.push(
+			...mirrorCandidates(
+				{ start: el.x, size: el.w, cross: el.y + el.h / 2 },
+				page.width
+			)
+		);
+		mirrorsY.push(
+			...mirrorCandidates(
+				{ start: el.y, size: el.h, cross: el.x + el.w / 2 },
+				page.height
+			)
+		);
 	} );
 
-	const snapAxis = ( start, size, delta, targets ) => {
+	const snapAxis = ( start, size, delta, targets, mirrors ) => {
 		const moved = axisPoints( start + delta, size );
 		let best = null;
 
@@ -481,9 +557,26 @@ export function snapDrag( box, dx, dy, others, page ) {
 					distance <= SNAP_TOLERANCE_PT &&
 					( ! best || distance < best.distance )
 				) {
-					best = { distance, target, index };
+					best = { distance, target, index, kind: 'align' };
 				}
 			} );
+		} );
+
+		mirrors.forEach( ( mirror ) => {
+			const distance = Math.abs( moved[ mirror.point ] - mirror.at );
+
+			if (
+				distance <= SNAP_TOLERANCE_PT &&
+				( ! best || distance < best.distance )
+			) {
+				best = {
+					distance,
+					target: mirror.at,
+					index: mirror.point,
+					kind: 'mirror',
+					mirror,
+				};
+			}
 		} );
 
 		if ( best ) {
@@ -492,24 +585,155 @@ export function snapDrag( box, dx, dy, others, page ) {
 			return {
 				delta: best.target - offsets[ best.index ] - start,
 				guide: best.target,
+				kind: best.kind,
+				mirror: best.mirror || null,
 			};
 		}
 
 		// No alignment match: the pointer delta applies untouched.
-		return { delta, guide: null };
+		return { delta, guide: null, kind: null, mirror: null };
 	};
 
-	const x = snapAxis( box.x, box.w, dx, targetsX );
-	const y = snapAxis( box.y, box.h, dy, targetsY );
+	const x = snapAxis( box.x, box.w, dx, targetsX, mirrorsX );
+	const y = snapAxis( box.y, box.h, dy, targetsY, mirrorsY );
 
-	if ( null !== x.guide ) {
-		guides.push( { axis: 'v', at: x.guide } );
-	}
-	if ( null !== y.guide ) {
-		guides.push( { axis: 'h', at: y.guide } );
-	}
+	const pushGuide = ( axis, result ) => {
+		if ( null === result.guide ) {
+			return;
+		}
+
+		if ( 'mirror' === result.kind ) {
+			guides.push( {
+				axis,
+				at: result.guide,
+				kind: 'mirror',
+				margin: result.mirror.margin,
+				side: 0 === result.mirror.point ? 'leading' : 'trailing',
+				partnerCross: result.mirror.partnerCross,
+			} );
+			return;
+		}
+
+		guides.push( { axis, at: result.guide, kind: 'align' } );
+	};
+
+	pushGuide( 'v', x );
+	pushGuide( 'h', y );
 
 	return { dx: x.delta, dy: y.delta, guides };
+}
+
+/**
+ * Align selected elements against their common bounding box (1.1,
+ * Feature 004 FR-003).
+ *
+ * One call is one APPLY_LAYOUT dispatch, so every align is a single
+ * undo step. Fewer than two ids returns the layout untouched.
+ *
+ * @param {Object}   layout Layout document.
+ * @param {string[]} ids    Selected element ids.
+ * @param {string}   edge   left|center|right|top|middle|bottom.
+ * @return {Object} New layout.
+ */
+export function alignSelection( layout, ids, edge ) {
+	const selected = layout.elements.filter( ( el ) => ids.includes( el.id ) );
+
+	if ( selected.length < 2 ) {
+		return layout;
+	}
+
+	const minX = Math.min( ...selected.map( ( el ) => el.x ) );
+	const maxX = Math.max( ...selected.map( ( el ) => el.x + el.w ) );
+	const minY = Math.min( ...selected.map( ( el ) => el.y ) );
+	const maxY = Math.max( ...selected.map( ( el ) => el.y + el.h ) );
+
+	const target = ( el ) => {
+		switch ( edge ) {
+			case 'left':
+				return { x: minX };
+			case 'center':
+				return { x: ( minX + maxX ) / 2 - el.w / 2 };
+			case 'right':
+				return { x: maxX - el.w };
+			case 'top':
+				return { y: minY };
+			case 'middle':
+				return { y: ( minY + maxY ) / 2 - el.h / 2 };
+			case 'bottom':
+				return { y: maxY - el.h };
+			default:
+				return {};
+		}
+	};
+
+	return {
+		...layout,
+		elements: layout.elements.map( ( el ) => {
+			if ( ! ids.includes( el.id ) ) {
+				return el;
+			}
+
+			const box = clampBox( { ...el, ...target( el ) }, layout.page );
+
+			return { ...el, ...box };
+		} ),
+	};
+}
+
+/**
+ * Distribute selected elements evenly along one axis (1.1, Feature 004
+ * FR-004).
+ *
+ * The first and last elements (by position) hold; the gaps between
+ * neighbors equalize. Fewer than three ids returns the layout
+ * untouched. Overlapping elements distribute with negative gaps - the
+ * arrangement, not the overlap, is this tool's job.
+ *
+ * @param {Object}   layout Layout document.
+ * @param {string[]} ids    Selected element ids.
+ * @param {string}   axis   'x' or 'y'.
+ * @return {Object} New layout.
+ */
+export function distributeSelection( layout, ids, axis ) {
+	const size = 'x' === axis ? 'w' : 'h';
+	const selected = layout.elements
+		.filter( ( el ) => ids.includes( el.id ) )
+		.slice()
+		.sort( ( a, b ) => a[ axis ] - b[ axis ] );
+
+	if ( selected.length < 3 ) {
+		return layout;
+	}
+
+	const first = selected[ 0 ];
+	const last = selected[ selected.length - 1 ];
+	const span = last[ axis ] + last[ size ] - first[ axis ];
+	const total = selected.reduce( ( sum, el ) => sum + el[ size ], 0 );
+	const gap = ( span - total ) / ( selected.length - 1 );
+
+	const positions = {};
+	let cursor = first[ axis ];
+
+	selected.forEach( ( el ) => {
+		positions[ el.id ] = cursor;
+		cursor += el[ size ] + gap;
+	} );
+
+	return {
+		...layout,
+		elements: layout.elements.map( ( el ) => {
+			if ( ! ( el.id in positions ) ) {
+				return el;
+			}
+
+			const box = clampBox(
+				{ ...el, [ axis ]: positions[ el.id ] },
+				layout.page
+			);
+
+			return { ...el, ...box };
+		} ),
+	};
 }
 
 /**

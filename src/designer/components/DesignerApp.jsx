@@ -46,6 +46,7 @@ import {
 } from '../api';
 import TemplateGallery from './TemplateGallery';
 import Canvas from './Canvas';
+import AlignToolbar from './AlignToolbar';
 import ElementPalette from './ElementPalette';
 import PropertiesPanel from './PropertiesPanel';
 import TriggerPanel from './TriggerPanel';
@@ -536,6 +537,7 @@ export default function DesignerApp( { boot } ) {
 						aria-label={ __( 'Redo', 'pressprimer-certificate' ) }
 						onClick={ () => dispatch( { type: 'REDO' } ) }
 					/>
+					<AlignToolbar />
 					<span className="ppcert-designer__toolbar-spacer" />
 					<Button
 						type={ rulers ? 'primary' : 'text' }

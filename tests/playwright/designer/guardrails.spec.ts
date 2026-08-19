@@ -53,18 +53,20 @@ test.describe( 'guardrails', () => {
 		// No invisible grid (UX decision 2026-07-22): unless a guide is
 		// shown, the element lands exactly where the pointer puts it.
 		// The delta must keep every title edge AND center more than
-		// SNAP_TOLERANCE_PT from every other element's edges/centers -
-		// +39 stopped qualifying when 5.1 put the credential field's
-		// left edge (x=461) 1pt from the dragged title's center.
+		// SNAP_TOLERANCE_PT from every other element's edges/centers
+		// AND (1.1) every capped mirror-margin target - +39 stopped
+		// qualifying when 5.1 put the credential field's left edge
+		// (x=461) 1pt from the dragged title's center; +18 stopped when
+		// 1.1's mirror candidates landed a band there.
 		const from = await centerOf( page, TITLE.id );
 		await page.mouse.move( from.x, from.y );
 		await page.mouse.down();
-		await page.mouse.move( from.x + 50, from.y + 18, { steps: 5 } );
+		await page.mouse.move( from.x + 50, from.y + 8, { steps: 5 } );
 		await page.mouse.up();
 
 		const title = await getElement( page, TITLE.id );
 		expect( title.x ).toBe( TITLE.x + 50 );
-		expect( title.y ).toBe( TITLE.y + 18 );
+		expect( title.y ).toBe( TITLE.y + 8 );
 	} );
 
 	test( 'Alt suppresses alignment locking near a target', async ( {

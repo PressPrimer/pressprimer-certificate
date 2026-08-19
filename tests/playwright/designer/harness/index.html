@@ -16,6 +16,11 @@
 		.ppcert-harness__editor { display: flex; gap: 16px; align-items: flex-start; }
 		.ppcert-harness__palette { width: 180px; flex: none; }
 		.ppcert-harness__canvas { width: 900px; flex: none; }
+		/* Fixed height: the align toolbar mounts/unmounts with the
+		   selection, and the canvas must never shift (the real
+		   DesignerApp toolbar row is fixed-height too). */
+		.ppcert-harness__toolbar { height: 40px; display: flex; align-items: center; }
+		.ppcert-parity .ppcert-harness__toolbar { display: none; }
 		.ppcert-harness__panel { width: 300px; flex: none; }
 		/* Parity mode (Feature 007 FR-005): the page screenshot must
 		   contain only what the PDF renders. The dashed merge underline

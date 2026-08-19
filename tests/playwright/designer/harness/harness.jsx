@@ -25,6 +25,7 @@ import {
 	useDesignerStore,
 } from '../../../../src/designer/hooks/useDesignerStore';
 import Canvas from '../../../../src/designer/components/Canvas';
+import AlignToolbar from '../../../../src/designer/components/AlignToolbar';
 import ElementPalette from '../../../../src/designer/components/ElementPalette';
 import PropertiesPanel from '../../../../src/designer/components/PropertiesPanel';
 import { seedAttachmentUrl } from '../../../../src/designer/hooks/useAttachment';
@@ -246,6 +247,9 @@ function Harness() {
 					<ElementPalette />
 				</div>
 				<div className="ppcert-harness__canvas">
+					<div className="ppcert-harness__toolbar">
+						<AlignToolbar />
+					</div>
 					<Canvas
 						layout={ state.layout }
 						zoom={ zoom }
