@@ -24,6 +24,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * the issuance service's dispatch point calls send_issued(), and the two
  * filters fire HERE with their documented signatures.
  *
+ * Substitution (1.1, Feature 1.1-005): the legacy single-brace map
+ * ({subject}, {recipient_name}, ...) applies first, unchanged; then
+ * {{group.field}} merge tokens resolve from the certificate's
+ * merge_data snapshot - the email says exactly what the certificate
+ * says, and a resend after template edits still matches the ORIGINAL
+ * certificate. Unknown merge tokens render empty, never as syntax.
+ *
  * The email links to the verification URL in 1.0; Prompt 4.6's view page
  * becomes the primary link and verification moves secondary (TODO there).
  *
@@ -74,11 +81,12 @@ class PressPrimer_Certificate_Email_Service {
 
 		$template = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
 		$tokens   = self::tokens( $certificate, $recipient, $template );
+		$merge    = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
 
 		$content = [
 			'to'          => (string) $recipient->user_email,
-			'subject'     => self::substitute( $settings['email_issued_subject'], $tokens ),
-			'body'        => self::substitute( $settings['email_issued_body'], $tokens ),
+			'subject'     => self::substitute( $settings['email_issued_subject'], $tokens, $merge ),
+			'body'        => self::substitute( $settings['email_issued_body'], $tokens, $merge ),
 			'headers'     => [
 				'From: ' . $settings['email_from_name'] . ' <' . $settings['email_from_address'] . '>',
 			],
@@ -213,14 +221,23 @@ class PressPrimer_Certificate_Email_Service {
 	/**
 	 * Substitute {tokens} into a template string
 	 *
+	 * Legacy single-brace tokens first (strtr, unchanged since 1.0),
+	 * then {{group.field}} merge tokens from the certificate's snapshot
+	 * via the renderer's shared grammar helper (1.1, Feature 1.1-005) -
+	 * one substitution implementation across PDF text and email.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $text   Template text.
 	 * @param array  $tokens Token map.
+	 * @param array  $merge  Merge data snapshot (token key => value).
 	 * @return string
 	 */
-	private static function substitute( $text, $tokens ) {
-		return strtr( (string) $text, $tokens );
+	private static function substitute( $text, $tokens, array $merge = [] ) {
+		return PressPrimer_Certificate_PDF_Renderer::interpolate_tokens(
+			strtr( (string) $text, $tokens ),
+			$merge
+		);
 	}
 
 	/**

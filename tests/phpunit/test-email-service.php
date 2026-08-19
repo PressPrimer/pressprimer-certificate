@@ -99,7 +99,7 @@ class Test_Email_Service extends TestCase {
 				'source_type'          => 'manual',
 				'status'               => 'issued',
 				'layout_snapshot_json' => $layout,
-				'merge_data_json'      => '{"recipient.full_name":"Dana Whitfield"}',
+				'merge_data_json'      => '{"recipient.full_name":"Dana Whitfield","source.course_title":"Advanced Botany"}',
 				'issued_at'            => '2026-07-18 14:30:00',
 				'expires_at'           => null,
 			]
@@ -126,6 +126,35 @@ class Test_Email_Service extends TestCase {
 		$this->assertStringContainsString( 'From: Sunrise Training Academy <admin@sunrise.example>', $mail['headers'][0] );
 		$this->assertCount( 1, $mail['attachments'], 'PDF always attaches' );
 		$this->assertStringEndsWith( 'certificate-7Q4M-K9P2-XT3A.pdf', $mail['attachments'][0], 'Recipient-friendly attachment filename' );
+	}
+
+	/**
+	 * Merge tokens resolve from the certificate's snapshot in subject
+	 * and body, unknown tokens render empty, and both syntaxes mix in
+	 * one template (Feature 1.1-005).
+	 *
+	 * @return void
+	 */
+	public function test_merge_tokens_resolve_from_snapshot() {
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [
+			'email_issued_enabled' => 1,
+			'email_issued_subject' => 'Your {{source.course_title}} certificate ({credential_id})',
+			'email_issued_body'    => "For {{recipient.full_name}}\nMissing: ({{source.nothing_here}})\nLegacy: {verification_url}",
+		];
+
+		$sent = PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [ 'recipient_id' => 7 ] );
+
+		$this->assertTrue( $sent );
+
+		$mail = $GLOBALS['ppcert_test_mail'][0];
+
+		// Both syntaxes resolve in the subject.
+		$this->assertSame( 'Your Advanced Botany certificate (7Q4M-K9P2-XT3A)', $mail['subject'] );
+
+		// Snapshot value, empty unknown, legacy token - all in the body.
+		$this->assertStringContainsString( 'For Dana Whitfield', $mail['body'] );
+		$this->assertStringContainsString( 'Missing: ()', $mail['body'] );
+		$this->assertStringContainsString( 'ppcert_id=7Q4MK9P2XT3A', $mail['body'] );
 	}
 
 	/**

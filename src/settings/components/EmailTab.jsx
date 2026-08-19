@@ -254,6 +254,44 @@ const EmailTab = ( { settings, updateSetting, settingsData } ) => {
 							) }
 						/>
 					</div>
+					<div style={ { marginTop: 16 } }>
+						<Text strong>
+							{ __(
+								'Certificate merge fields:',
+								'pressprimer-certificate'
+							) }
+						</Text>
+						<Paragraph
+							type="secondary"
+							style={ { marginTop: 4, marginBottom: 8 } }
+						>
+							{ __(
+								'Any merge field from the certificate designer works here too, wrapped in double braces. The email uses the same values printed on the certificate. A few examples:',
+								'pressprimer-certificate'
+							) }
+						</Paragraph>
+						<TokenItem
+							token="{{source.course_title}}"
+							description={ __(
+								'The course that earned the certificate (quiz and assignment fields work the same way)',
+								'pressprimer-certificate'
+							) }
+						/>
+						<TokenItem
+							token="{{recipient.first_name}}"
+							description={ __(
+								"The recipient's first name",
+								'pressprimer-certificate'
+							) }
+						/>
+						<TokenItem
+							token="{{certificate.expiry_date}}"
+							description={ __(
+								'When the certificate expires, blank when it never does',
+								'pressprimer-certificate'
+							) }
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
