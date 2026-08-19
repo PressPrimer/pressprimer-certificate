@@ -310,6 +310,26 @@
 	width: 100%;
 }
 
+/* Insert-merge-field button under the text content box (1.1) */
+
+.ppcert-designer__insert-caret {
+	font-size: 10px;
+	margin-left: auto;
+}
+
+.ppcert-designer__prop-help {
+	display: block;
+	font-size: 12px;
+	line-height: 1.4;
+	margin-top: 2px;
+}
+
+/* Sample values in the merge menus (palette + insert picker) read at
+   WCAG AA contrast - antd's secondary tone is too faint at 13px. */
+.ppcert-designer__merge-item .ant-typography {
+	color: rgba(0, 0, 0, 0.65);
+}
+
 .ppcert-designer__media-preview {
 	border: 1px solid #e5e7eb;
 	border-radius: 4px;

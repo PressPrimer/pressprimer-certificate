@@ -7,12 +7,13 @@
  * to a family that lacks the active variant resets the flag.
  */
 
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
 	Button,
 	Input,
 	InputNumber,
+	Popover,
 	Segmented,
 	Select,
 	Typography,
@@ -22,11 +23,14 @@ import {
 	AlignCenterOutlined,
 	AlignRightOutlined,
 	BoldOutlined,
+	DownOutlined,
 	ItalicOutlined,
+	PlusOutlined,
 } from '@ant-design/icons';
 import { useDesignerStore } from '../../hooks/useDesignerStore';
 import { updateElementProps } from '../../schema/geometry';
 import { getBoot, getFontVariants } from '../../boot';
+import { loadMergeFields } from '../../mergeFields';
 import ColorField from './ColorField';
 import PropRow from './PropRow';
 
@@ -68,15 +72,105 @@ export default function TextSection( { element } ) {
 
 	// Content commits on blur so typing is not one history step per key.
 	const [ draft, setDraft ] = useState( p.content || '' );
+	const contentRef = useRef( null );
+	const [ insertOpen, setInsertOpen ] = useState( false );
+
+	// Last user-placed caret. Null until the user touches the content
+	// box - an untouched textarea reports caret 0, and inserting a
+	// field at the START of untouched text would surprise; with no
+	// caret history the token appends instead.
+	const caretRef = useRef( null );
+
+	// The insert-field picker reads the same scoped registry as the
+	// merge palette (Feature 1.1-001 FR-004): source fields follow the
+	// template's trigger.
+	const [ registry, setRegistry ] = useState( null );
+	const triggers = state.triggers || [];
+	const scope = triggers
+		.map( ( trigger ) => trigger.trigger_type )
+		.sort()
+		.join( ',' );
+
+	useEffect( () => {
+		let active = true;
+
+		loadMergeFields( '' === scope ? [] : scope.split( ',' ) ).then(
+			( data ) => active && setRegistry( data )
+		);
+
+		return () => {
+			active = false;
+		};
+	}, [ scope ] );
 
 	useEffect( () => {
 		setDraft( p.content || '' );
 	}, [ element.id, p.content ] );
 
+	useEffect( () => {
+		caretRef.current = null;
+	}, [ element.id ] );
+
+	const rememberCaret = () => {
+		const node = contentRef.current?.resizableTextArea?.textArea;
+
+		if ( node && 'number' === typeof node.selectionStart ) {
+			caretRef.current = [ node.selectionStart, node.selectionEnd ];
+		}
+	};
+
 	const patch = ( propsPatch ) => {
 		dispatch( {
 			type: 'APPLY_LAYOUT',
 			layout: updateElementProps( state.layout, element.id, propsPatch ),
+		} );
+	};
+
+	// Grouped fields for the insert menu, palette-style.
+	const fieldGroups = ! registry
+		? []
+		: Object.keys( registry.groups )
+				.map( ( groupId ) => ( {
+					id: groupId,
+					label: registry.groups[ groupId ],
+					fields: registry.fields.filter(
+						( field ) => field.group === groupId
+					),
+				} ) )
+				.filter( ( group ) => group.fields.length > 0 );
+
+	/**
+	 * Insert a merge token at the content caret (Feature 1.1-001 FR-004).
+	 *
+	 * The textarea keeps its selection through the blur into the picker,
+	 * so the token lands where the user last placed the caret; with no
+	 * caret history it appends. One history step, canvas updates
+	 * immediately, focus returns with the caret after the token.
+	 *
+	 * @param {string} key Field key (no braces).
+	 */
+	const insertField = ( key ) => {
+		const token = `{{${ key }}}`;
+		const [ start, end ] = caretRef.current || [
+			draft.length,
+			draft.length,
+		];
+		const next = draft.slice( 0, start ) + token + draft.slice( end );
+
+		setDraft( next );
+		patch( { content: next } );
+
+		const caret = start + token.length;
+
+		caretRef.current = [ caret, caret ];
+
+		window.requestAnimationFrame( () => {
+			const el = contentRef.current?.resizableTextArea?.textArea;
+
+			if ( el ) {
+				el.focus();
+				el.setSelectionRange( caret, caret );
+			}
 		} );
 	};
 
@@ -109,19 +203,91 @@ export default function TextSection( { element } ) {
 			</Text>
 
 			{ 'text' === element.type && (
-				<Input.TextArea
-					size="small"
-					autoSize={ { minRows: 2, maxRows: 5 } }
-					maxLength={ 2000 }
-					value={ draft }
-					data-ppcert-prop="content"
-					onChange={ ( event ) => setDraft( event.target.value ) }
-					onBlur={ () => {
-						if ( draft !== p.content ) {
-							patch( { content: draft } );
+				<>
+					<Input.TextArea
+						ref={ contentRef }
+						size="small"
+						autoSize={ { minRows: 2, maxRows: 5 } }
+						maxLength={ 2000 }
+						value={ draft }
+						data-ppcert-prop="content"
+						onChange={ ( event ) => setDraft( event.target.value ) }
+						onSelect={ rememberCaret }
+						onKeyUp={ rememberCaret }
+						onClick={ rememberCaret }
+						onBlur={ () => {
+							rememberCaret();
+							if ( draft !== p.content ) {
+								patch( { content: draft } );
+							}
+						} }
+					/>
+					<Popover
+						open={ insertOpen }
+						onOpenChange={ setInsertOpen }
+						trigger={ [ 'click' ] }
+						placement="bottomLeft"
+						content={
+							<div
+								className="ppcert-designer__merge-menu"
+								data-ppcert-insert-menu
+							>
+								{ fieldGroups.map( ( group ) => (
+									<div key={ group.id }>
+										<Text
+											type="secondary"
+											className="ppcert-designer__panel-heading"
+										>
+											{ group.label }
+										</Text>
+										{ group.fields.map( ( field ) => (
+											<button
+												key={ field.key }
+												type="button"
+												className="ppcert-designer__merge-item"
+												data-ppcert-insert-field={
+													field.key
+												}
+												onClick={ () => {
+													setInsertOpen( false );
+													insertField( field.key );
+												} }
+											>
+												<span>{ field.label }</span>
+												<Text type="secondary" ellipsis>
+													{ field.sample }
+												</Text>
+											</button>
+										) ) }
+									</div>
+								) ) }
+							</div>
 						}
-					} }
-				/>
+					>
+						<Button
+							size="small"
+							block
+							icon={ <PlusOutlined /> }
+							disabled={ 0 === fieldGroups.length }
+							data-ppcert-prop="insert_merge_field"
+						>
+							{ __(
+								'Insert merge field',
+								'pressprimer-certificate'
+							) }
+							<DownOutlined className="ppcert-designer__insert-caret" />
+						</Button>
+					</Popover>
+					<Text
+						type="secondary"
+						className="ppcert-designer__prop-help"
+					>
+						{ __(
+							'Fields drop in at the cursor in the text field above and print real values on each certificate. You can also type them, like {{recipient.display_name}}.',
+							'pressprimer-certificate'
+						) }
+					</Text>
+				</>
 			) }
 
 			<PropRow label={ __( 'Font', 'pressprimer-certificate' ) }>

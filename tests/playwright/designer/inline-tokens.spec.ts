@@ -128,6 +128,69 @@ test.describe( 'inline merge tokens in text', () => {
 		).toHaveText( 'ID 7Q4M-K9P2-XT3A for Jordan Rivera' );
 	} );
 
+	test( 'the insert picker appends a token when the content box is untouched', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		// Select the element whose content ends with a label.
+		await page.click( '[data-ppcert-el="el_inlunkwn"]' );
+		await page.waitForSelector( '[data-ppcert-prop="content"]' );
+
+		// Straight to the picker - no caret was ever placed.
+		await page.click( '[data-ppcert-prop="insert_merge_field"]' );
+		await page.click(
+			'[data-ppcert-insert-field="certificate.issue_date"]'
+		);
+
+		await expect(
+			page.locator( '[data-ppcert-prop="content"]' )
+		).toHaveValue(
+			'Ref ({{source.nothing_here}}) end{{certificate.issue_date}}'
+		);
+
+		// The canvas substitutes immediately (harness sample values).
+		await expect(
+			page.locator( '[data-ppcert-el="el_inlunkwn"]' )
+		).toHaveText( 'Ref () endJuly 22, 2026' );
+	} );
+
+	test( 'the insert picker drops the token at the user caret', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		await page.click( '[data-ppcert-el="el_inlknown"]' );
+		await page.waitForSelector( '[data-ppcert-prop="content"]' );
+
+		// Place the caret three characters in ("ID " ... ). Home/arrow
+		// keys are not portable across platforms in textareas, so the
+		// caret is set directly and the same `select` event a real
+		// user interaction fires drives the caret tracking.
+		await page.click( '[data-ppcert-prop="content"]' );
+		await page.evaluate( () => {
+			const el = document.querySelector(
+				'[data-ppcert-prop="content"]'
+			) as HTMLTextAreaElement;
+
+			el.setSelectionRange( 3, 3 );
+			el.dispatchEvent( new Event( 'select', { bubbles: true } ) );
+		} );
+
+		await page.click( '[data-ppcert-prop="insert_merge_field"]' );
+		await page.click( '[data-ppcert-insert-field="site.name"]' );
+
+		await expect(
+			page.locator( '[data-ppcert-prop="content"]' )
+		).toHaveValue(
+			'ID {{site.name}}{{certificate.credential_id}} for {{recipient.full_name}}'
+		);
+
+		await expect(
+			page.locator( '[data-ppcert-el="el_inlknown"]' )
+		).toHaveText( 'ID Acme Academy7Q4M-K9P2-XT3A for Jordan Rivera' );
+	} );
+
 	test( 'a loaded v1 document is migrated and interpolates after load', async ( {
 		page,
 	} ) => {
