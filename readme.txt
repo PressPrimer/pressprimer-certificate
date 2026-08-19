@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -38,6 +38,8 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Six bundled open-license fonts (SIL OFL) with real bold and italic faces
 * Text, merge field, image, signature, line/shape, QR code, and background elements
 * Merge fields for recipient, certificate, site, quiz, assignment, and course data, including custom user and post meta
+* Merge fields inside text: write "Expires:" and insert the expiry date field, and the whole line centers and wraps as one piece
+* Alignment tools: align and distribute selected elements, and matching-margin guides that show when two elements sit the same distance from opposite page edges
 * Live PDF preview from the real renderer
 
 **Design Defaults**
@@ -48,6 +50,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 **Issuance & Automation**
 
 * Automatic triggers: PressPrimer Quiz pass thresholds, PressPrimer Assignment grades, and course, lesson, topic, or quiz completion in LearnDash, LifterLMS, Tutor LMS, and LearnPress
+* "Any" award options: one trigger can cover any quiz, any course, or any lesson in a chosen course, so one certificate serves your whole catalog
 * Manually issue certificates with optional backdating and expiry dates
 * Validity periods: set how long certificates from a template stay valid (days, months, or years), pick an exact expiry date, or let them last forever
 * Per-trigger control over repeat completions: suppress duplicates or issue a fresh certificate every time (for compliance and recertification courses)
@@ -58,6 +61,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Unique, non-guessable credential IDs with a check that catches typos
 * Public verification page (shortcode and block) that anyone can use, no account needed
 * Optional QR code on every certificate linking to its verification page
+* The QR code and credential ID on issued PDFs are clickable, so an emailed certificate verifies in one click
 * A shareable certificate view page with PDF download
 * My Certificates list (shortcode and block) so logged-in learners can see, verify, and download everything they have earned, with status filters and sorting by date, name, or upcoming expiry
 * PDFs are protected against editing: Acrobat and other viewers refuse to modify the text, while printing and copying stay available
@@ -68,6 +72,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * A guided setup tour that walks you from a starter template to your first issued certificate in five minutes
 * Certificates screen with template, status, and source filters
 * Resend a certificate's email with one click
+* Certificate merge fields in the email subject and body, so the email can name the exact course or quiz that was completed
 * Earned certificates listed on each user's profile page with verify and download links
 * Certificate templates list with trigger, page size, and status columns
 
@@ -218,10 +223,21 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 
 == Changelog ==
 
+= 1.1.0 =
+* Added: Merge fields now work inside text elements. Write "Expires:" and insert the expiry date field, and the whole line centers and wraps as one piece. An Insert Merge Field button in the text panel drops fields at your cursor.
+* Added: "Any" award options in the trigger picker. One trigger can award for any quiz, any course, or any lesson in a chosen course, so a single certificate covers your whole catalog.
+* Added: The QR code and credential ID on issued PDFs are now clickable links to the certificate's verification page.
+* Added: Alignment tools in the designer. Align and distribute selected elements from the toolbar, and matching-margin guides show measurements when two elements sit the same distance from opposite page edges.
+* Added: Certificate merge fields in the issuance email subject and body, so the email can name the exact course or quiz that was completed.
+* Improved: Sample values in the designer's merge field menus render at higher contrast.
+
 = 1.0.0 =
 * Initial release: certificate designer, credential IDs, QR verification, automatic issuance from PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, and LearnPress, email delivery, and a public verification page.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Merge fields inside text, "Any" award triggers, clickable PDF credentials, designer alignment tools, and email merge fields. Existing certificates and templates are unchanged.
 
 = 1.0.0 =
 Initial release of PressPrimer Certificate. Design, issue, and verify certificates on your own site — free forever.

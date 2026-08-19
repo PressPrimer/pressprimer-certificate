@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Certificate 1.0.0\n"
+"Project-Id-Version: PressPrimer Certificate 1.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-certificate\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-06T13:23:21+00:00\n"
+"POT-Creation-Date: 2026-08-19T19:23:02+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -228,7 +228,7 @@ msgstr ""
 #: includes/frontend/class-ppcert-view-page.php:254
 #: includes/frontend/class-ppcert-view-page.php:344
 #: includes/services/class-ppcert-merge-field-registry.php:140
-#: includes/services/class-ppcert-pdf-renderer.php:208
+#: includes/services/class-ppcert-pdf-renderer.php:213
 #: includes/utilities/class-ppcert-privacy.php:113
 #: src/dashboard/components/RecentCertificates.jsx:104
 msgid "Certificate"
@@ -319,7 +319,7 @@ msgid "Certificate Templates"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin.php:295
-#: src/designer/components/DesignerApp.jsx:440
+#: src/designer/components/DesignerApp.jsx:441
 #: src/settings/components/StatusTab.jsx:517
 msgid "Templates"
 msgstr ""
@@ -367,9 +367,9 @@ msgstr ""
 #: includes/integrations/abstract-ppcert-lms-adapter.php:177
 #: includes/services/class-ppcert-merge-field-registry.php:142
 #: includes/utilities/class-ppcert-privacy.php:117
-#: src/designer/components/ElementPalette.jsx:248
-#: src/designer/components/TriggerPanel.jsx:702
-#: src/designer/components/TriggerPanel.jsx:949
+#: src/designer/components/ElementPalette.jsx:251
+#: src/designer/components/TriggerPanel.jsx:716
+#: src/designer/components/TriggerPanel.jsx:983
 msgid "Source"
 msgstr ""
 
@@ -488,7 +488,7 @@ msgid "Title"
 msgstr ""
 
 #: includes/admin/class-ppcert-templates-list-table.php:84
-#: src/designer/components/TriggerPanel.jsx:608
+#: src/designer/components/TriggerPanel.jsx:622
 msgid "Trigger"
 msgstr ""
 
@@ -524,7 +524,7 @@ msgid "(untitled)"
 msgstr ""
 
 #: includes/admin/class-ppcert-templates-list-table.php:260
-#: src/designer/components/TriggerPanel.jsx:1084
+#: src/designer/components/TriggerPanel.jsx:1118
 msgid "Edit"
 msgstr ""
 
@@ -593,7 +593,7 @@ msgstr ""
 msgid "Please enter a valid email address."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-merge-fields-controller.php:320
+#: includes/api/class-ppcert-rest-merge-fields-controller.php:354
 msgid "That post is not a source for any registered trigger type."
 msgstr ""
 
@@ -608,8 +608,8 @@ msgstr ""
 #: includes/api/class-ppcert-rest-templates-controller.php:227
 #: includes/api/class-ppcert-rest-templates-controller.php:256
 #: includes/api/class-ppcert-rest-templates-controller.php:380
-#: includes/api/class-ppcert-rest-triggers-controller.php:251
-#: includes/api/class-ppcert-rest-triggers-controller.php:276
+#: includes/api/class-ppcert-rest-triggers-controller.php:252
+#: includes/api/class-ppcert-rest-triggers-controller.php:277
 #: includes/models/class-ppcert-template.php:150
 #: includes/models/class-ppcert-template.php:253
 #: includes/models/class-ppcert-template.php:326
@@ -646,16 +646,21 @@ msgstr ""
 msgid "The preview file could not be stored."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-triggers-controller.php:200
+#: includes/api/class-ppcert-rest-triggers-controller.php:201
 msgid "Unknown trigger type."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-triggers-controller.php:286
+#: includes/api/class-ppcert-rest-triggers-controller.php:287
 msgid "The triggers payload must be an array."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-triggers-controller.php:321
+#: includes/api/class-ppcert-rest-triggers-controller.php:337
 msgid "Certificates support a single award trigger in this version. Duplicate the template to award it another way."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-triggers-controller.php:393
+#: src/designer/components/TriggerPanel.jsx:1052
+msgid "Any source"
 msgstr ""
 
 #: includes/api/class-ppcert-rest-verification-controller.php:101
@@ -796,66 +801,66 @@ msgstr ""
 msgid "Certificate preview for %s"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:421
+#: includes/integrations/abstract-ppcert-lms-adapter.php:499
 msgid "Course Title"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:422
+#: includes/integrations/abstract-ppcert-lms-adapter.php:500
 msgid "Introduction to Botany"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:427
-#: includes/integrations/class-ppcert-ppa-adapter.php:231
+#: includes/integrations/abstract-ppcert-lms-adapter.php:505
+#: includes/integrations/class-ppcert-ppa-adapter.php:242
 msgid "Completion Date"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:428
-#: includes/integrations/abstract-ppcert-lms-adapter.php:524
-#: includes/integrations/class-ppcert-ppa-adapter.php:232
-#: includes/integrations/class-ppcert-ppq-adapter.php:234
+#: includes/integrations/abstract-ppcert-lms-adapter.php:506
+#: includes/integrations/abstract-ppcert-lms-adapter.php:602
+#: includes/integrations/class-ppcert-ppa-adapter.php:243
+#: includes/integrations/class-ppcert-ppq-adapter.php:245
 #: includes/services/class-ppcert-merge-field-registry.php:410
 msgid "June 12, 2026"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:433
+#: includes/integrations/abstract-ppcert-lms-adapter.php:511
 msgid "Instructor"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:434
+#: includes/integrations/abstract-ppcert-lms-adapter.php:512
 msgid "Prof. Marisol Vega"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:503
-#: includes/integrations/class-ppcert-ppq-adapter.php:210
+#: includes/integrations/abstract-ppcert-lms-adapter.php:581
+#: includes/integrations/class-ppcert-ppq-adapter.php:221
 msgid "Quiz Title"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:504
-#: includes/integrations/class-ppcert-ppq-adapter.php:211
+#: includes/integrations/abstract-ppcert-lms-adapter.php:582
+#: includes/integrations/class-ppcert-ppq-adapter.php:222
 msgid "Advanced Botany Quiz"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:509
-#: includes/integrations/class-ppcert-ppq-adapter.php:216
+#: includes/integrations/abstract-ppcert-lms-adapter.php:587
+#: includes/integrations/class-ppcert-ppq-adapter.php:227
 msgid "Quiz Score"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:517
-#: includes/integrations/class-ppcert-ppa-adapter.php:225
-#: includes/integrations/class-ppcert-ppq-adapter.php:227
+#: includes/integrations/abstract-ppcert-lms-adapter.php:595
+#: includes/integrations/class-ppcert-ppa-adapter.php:236
+#: includes/integrations/class-ppcert-ppq-adapter.php:238
 msgid "Result"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:518
-#: includes/integrations/abstract-ppcert-lms-adapter.php:580
-#: includes/integrations/class-ppcert-ppa-adapter.php:226
-#: includes/integrations/class-ppcert-ppq-adapter.php:228
-#: includes/integrations/class-ppcert-ppq-adapter.php:298
+#: includes/integrations/abstract-ppcert-lms-adapter.php:596
+#: includes/integrations/abstract-ppcert-lms-adapter.php:658
+#: includes/integrations/class-ppcert-ppa-adapter.php:237
+#: includes/integrations/class-ppcert-ppq-adapter.php:239
+#: includes/integrations/class-ppcert-ppq-adapter.php:309
 msgid "Passed"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:523
-#: includes/integrations/class-ppcert-ppq-adapter.php:233
+#: includes/integrations/abstract-ppcert-lms-adapter.php:601
+#: includes/integrations/class-ppcert-ppq-adapter.php:244
 msgid "Pass Date"
 msgstr ""
 
@@ -877,13 +882,20 @@ msgid "Course"
 msgstr ""
 
 #: includes/integrations/class-ppcert-learndash-adapter.php:87
-msgid "LearnDash"
+#: includes/integrations/class-ppcert-learnpress-adapter.php:86
+#: includes/integrations/class-ppcert-lifterlms-adapter.php:86
+#: includes/integrations/class-ppcert-tutorlms-adapter.php:86
+msgid "Any course"
 msgstr ""
 
 #: includes/integrations/class-ppcert-learndash-adapter.php:98
-#: includes/integrations/class-ppcert-learnpress-adapter.php:97
-#: includes/integrations/class-ppcert-lifterlms-adapter.php:97
-#: includes/integrations/class-ppcert-tutorlms-adapter.php:97
+msgid "LearnDash"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-adapter.php:109
+#: includes/integrations/class-ppcert-learnpress-adapter.php:108
+#: includes/integrations/class-ppcert-lifterlms-adapter.php:108
+#: includes/integrations/class-ppcert-tutorlms-adapter.php:108
 msgid "Course completed"
 msgstr ""
 
@@ -900,11 +912,15 @@ msgstr ""
 msgid "Lesson completed"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:198
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:171
+msgid "Any lesson in this course"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:220
 msgid "Lesson Title"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:199
+#: includes/integrations/class-ppcert-learndash-lesson-adapter.php:221
 msgid "Leaf Structure and Function"
 msgstr ""
 
@@ -923,20 +939,27 @@ msgstr ""
 #: includes/integrations/class-ppcert-learndash-quiz-adapter.php:83
 #: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:83
 #: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:83
-#: includes/integrations/class-ppcert-ppq-adapter.php:98
+#: includes/integrations/class-ppcert-ppq-adapter.php:109
 #: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:91
 msgid "Quiz passed"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:208
-#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:213
-#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:220
-#: includes/integrations/class-ppcert-ppq-adapter.php:189
-#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:236
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:176
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:186
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:194
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:209
+msgid "Any quiz in this course"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:230
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:235
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:242
+#: includes/integrations/class-ppcert-ppq-adapter.php:200
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:258
 msgid "Minimum score (%)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:209
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:231
 msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own passing percentage."
 msgstr ""
 
@@ -952,11 +975,15 @@ msgstr ""
 msgid "Topic completed"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learndash-topic-adapter.php:211
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:184
+msgid "Any topic in this lesson"
+msgstr ""
+
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:234
 msgid "Topic Title"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learndash-topic-adapter.php:212
+#: includes/integrations/class-ppcert-learndash-topic-adapter.php:235
 msgid "Stomata Up Close"
 msgstr ""
 
@@ -964,7 +991,7 @@ msgstr ""
 msgid "Course completed (LearnPress)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learnpress-adapter.php:86
+#: includes/integrations/class-ppcert-learnpress-adapter.php:97
 msgid "LearnPress"
 msgstr ""
 
@@ -972,8 +999,8 @@ msgstr ""
 msgid "Quiz passed (LearnPress)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:214
-#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:237
+#: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:236
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:259
 msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own passing grade."
 msgstr ""
 
@@ -981,7 +1008,7 @@ msgstr ""
 msgid "Course completed (LifterLMS)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-lifterlms-adapter.php:86
+#: includes/integrations/class-ppcert-lifterlms-adapter.php:97
 msgid "LifterLMS"
 msgstr ""
 
@@ -989,7 +1016,7 @@ msgstr ""
 msgid "Quiz passed (LifterLMS)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:221
+#: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:243
 msgid "Leave blank to award on any passing grade. Enter a percentage to require more than the quiz's own minimum grade."
 msgstr ""
 
@@ -1002,26 +1029,30 @@ msgid "Assignment"
 msgstr ""
 
 #: includes/integrations/class-ppcert-ppa-adapter.php:90
-msgid "PressPrimer Assignment"
+msgid "Any assignment"
 msgstr ""
 
 #: includes/integrations/class-ppcert-ppa-adapter.php:101
+msgid "PressPrimer Assignment"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:112
 msgid "Assignment passed"
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppa-adapter.php:196
+#: includes/integrations/class-ppcert-ppa-adapter.php:207
 msgid "Minimum grade (%)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppa-adapter.php:197
+#: includes/integrations/class-ppcert-ppa-adapter.php:208
 msgid "Leave blank to award on any passing grade. Enter a percentage to require more than the assignment's own passing score."
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppa-adapter.php:217
+#: includes/integrations/class-ppcert-ppa-adapter.php:228
 msgid "Assignment Title"
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppa-adapter.php:218
+#: includes/integrations/class-ppcert-ppa-adapter.php:229
 msgid "Field Research Essay"
 msgstr ""
 
@@ -1030,10 +1061,14 @@ msgid "Quiz passed (PressPrimer Quiz)"
 msgstr ""
 
 #: includes/integrations/class-ppcert-ppq-adapter.php:87
+msgid "Any quiz"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppq-adapter.php:98
 msgid "PressPrimer Quiz"
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppq-adapter.php:190
+#: includes/integrations/class-ppcert-ppq-adapter.php:201
 msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own pass mark."
 msgstr ""
 
@@ -1041,7 +1076,7 @@ msgstr ""
 msgid "Course completed (Tutor LMS)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-tutorlms-adapter.php:86
+#: includes/integrations/class-ppcert-tutorlms-adapter.php:97
 msgid "Tutor LMS"
 msgstr ""
 
@@ -1077,7 +1112,7 @@ msgid "The template could not be created."
 msgstr ""
 
 #: includes/models/class-ppcert-template.php:302
-#: src/designer/components/DesignerApp.jsx:196
+#: src/designer/components/DesignerApp.jsx:197
 msgid "The template could not be saved."
 msgstr ""
 
@@ -1086,7 +1121,7 @@ msgid "The template could not be moved to the trash."
 msgstr ""
 
 #: includes/services/class-ppcert-element-types.php:63
-#: src/designer/components/properties/TextSection.jsx:108
+#: src/designer/components/properties/TextSection.jsx:202
 msgid "Text"
 msgstr ""
 
@@ -1122,11 +1157,11 @@ msgstr ""
 msgid "Background"
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:236
+#: includes/services/class-ppcert-email-service.php:253
 msgid "Your certificate: {subject}"
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:237
+#: includes/services/class-ppcert-email-service.php:254
 msgid ""
 "Hi {recipient_name},\n"
 "\n"
@@ -1154,79 +1189,75 @@ msgstr ""
 msgid "Certificate could not be written to the database."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:165
+#: includes/services/class-ppcert-layout-validator.php:170
 msgid "layout_schema_version: missing or unsupported schema version."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:177
+#: includes/services/class-ppcert-layout-validator.php:184
 msgid "must be a4 or letter."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:181
+#: includes/services/class-ppcert-layout-validator.php:188
 msgid "must be landscape or portrait."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:242
-#: includes/services/class-ppcert-layout-validator.php:566
-#: includes/services/class-ppcert-layout-validator.php:736
+#: includes/services/class-ppcert-layout-validator.php:277
+#: includes/services/class-ppcert-layout-validator.php:600
+#: includes/services/class-ppcert-layout-validator.php:770
 msgid "must be a hex color."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:266
+#: includes/services/class-ppcert-layout-validator.php:301
 msgid "must be an array."
 msgstr ""
 
 #. translators: %d: maximum number of elements
-#: includes/services/class-ppcert-layout-validator.php:275
+#: includes/services/class-ppcert-layout-validator.php:310
 #, php-format
 msgid "documents are limited to %d elements."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:289
+#: includes/services/class-ppcert-layout-validator.php:324
 msgid "must be an object."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:309
+#: includes/services/class-ppcert-layout-validator.php:344
 msgid "duplicate element id."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:338
+#: includes/services/class-ppcert-layout-validator.php:373
 msgid "must match el_ followed by 8 lowercase alphanumerics."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:345
+#: includes/services/class-ppcert-layout-validator.php:380
 msgid "unknown element type."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:430
-msgid "merge tokens are not allowed in text elements; use a merge field element."
-msgstr ""
-
-#: includes/services/class-ppcert-layout-validator.php:440
+#: includes/services/class-ppcert-layout-validator.php:474
 msgid "must be a {{group.field}} merge token."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:455
+#: includes/services/class-ppcert-layout-validator.php:489
 msgid "must be a number."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:464
+#: includes/services/class-ppcert-layout-validator.php:498
 msgid "must be left, center, or right."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:495
+#: includes/services/class-ppcert-layout-validator.php:529
 msgid "must be an existing image attachment."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:501
+#: includes/services/class-ppcert-layout-validator.php:535
 msgid "must be contain, cover, or stretch."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:526
+#: includes/services/class-ppcert-layout-validator.php:560
 msgid "must be line, rect, or ellipse."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:761
+#: includes/services/class-ppcert-layout-validator.php:795
 msgid "must be a hex color or empty."
 msgstr ""
 
@@ -1309,16 +1340,16 @@ msgstr ""
 msgid "PDF rendering failed."
 msgstr ""
 
-#: includes/services/class-ppcert-pdf-renderer.php:184
+#: includes/services/class-ppcert-pdf-renderer.php:189
 msgid "The layout document is not validator-clean; refusing to render."
 msgstr ""
 
-#: includes/services/class-ppcert-pdf-renderer.php:919
+#: includes/services/class-ppcert-pdf-renderer.php:1025
 msgid "PNG rasterization failed (GD)."
 msgstr ""
 
-#: includes/services/class-ppcert-pdf-renderer.php:950
-#: includes/services/class-ppcert-pdf-renderer.php:1026
+#: includes/services/class-ppcert-pdf-renderer.php:1056
+#: includes/services/class-ppcert-pdf-renderer.php:1132
 msgid "Could not create a temporary file for rasterization."
 msgstr ""
 
@@ -1350,12 +1381,16 @@ msgstr ""
 msgid "QR PNG encoding failed."
 msgstr ""
 
-#: includes/services/class-ppcert-trigger-registry.php:111
+#: includes/services/class-ppcert-trigger-registry.php:123
 msgid "Issue again on repeat completion"
 msgstr ""
 
-#: includes/services/class-ppcert-trigger-registry.php:112
+#: includes/services/class-ppcert-trigger-registry.php:124
 msgid "By default a recipient can earn this certificate only once from this trigger, and completing again does nothing. Turn this on for compliance or recertification courses so every completion issues a new certificate with its own credential ID."
+msgstr ""
+
+#: includes/services/class-ppcert-trigger-registry.php:251
+msgid "An \"Any\" trigger of this type must be scoped to a parent (for example, a specific course)."
 msgstr ""
 
 #: includes/utilities/class-ppcert-privacy.php:164
@@ -1522,6 +1557,42 @@ msgstr[1] ""
 msgid "Top Templates"
 msgstr ""
 
+#: src/designer/components/AlignToolbar.jsx:30
+msgid "Align left"
+msgstr ""
+
+#: src/designer/components/AlignToolbar.jsx:35
+msgid "Align center"
+msgstr ""
+
+#: src/designer/components/AlignToolbar.jsx:40
+msgid "Align right"
+msgstr ""
+
+#: src/designer/components/AlignToolbar.jsx:45
+msgid "Align top"
+msgstr ""
+
+#: src/designer/components/AlignToolbar.jsx:50
+msgid "Align middle"
+msgstr ""
+
+#: src/designer/components/AlignToolbar.jsx:55
+msgid "Align bottom"
+msgstr ""
+
+#: src/designer/components/AlignToolbar.jsx:63
+msgid "Distribute horizontally"
+msgstr ""
+
+#: src/designer/components/AlignToolbar.jsx:68
+msgid "Distribute vertically"
+msgstr ""
+
+#: src/designer/components/AlignToolbar.jsx:120
+msgid "Select three or more elements to distribute."
+msgstr ""
+
 #: src/designer/components/Canvas.jsx:445
 msgid "Bring forward"
 msgstr ""
@@ -1538,178 +1609,182 @@ msgstr ""
 msgid "Send to back"
 msgstr ""
 
-#: src/designer/components/Canvas.jsx:478
+#: src/designer/components/Canvas.jsx:577
 msgid "Certificate canvas"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:63
+#: src/designer/components/DesignerApp.jsx:64
 msgid "Fit width"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:148
+#: src/designer/components/DesignerApp.jsx:149
 msgid "Template published."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:149
+#: src/designer/components/DesignerApp.jsx:150
 msgid "Template saved."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:166
+#: src/designer/components/DesignerApp.jsx:167
 msgid "Changed elsewhere"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:170
+#: src/designer/components/DesignerApp.jsx:171
 msgid "This template was changed in another window since you opened it. Saving again will overwrite those changes."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:183
+#: src/designer/components/DesignerApp.jsx:184
 msgid "Save anyway"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:230
+#: src/designer/components/DesignerApp.jsx:231
 msgid "The preview could not be rendered."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:341
+#: src/designer/components/DesignerApp.jsx:342
 msgid "The template could not be loaded."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:365
+#: src/designer/components/DesignerApp.jsx:366
 msgid "Template created - happy designing!"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:396
+#: src/designer/components/DesignerApp.jsx:397
 msgid "Cannot open the designer"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:403
+#: src/designer/components/DesignerApp.jsx:404
 msgid "Back to Templates"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:428
+#: src/designer/components/DesignerApp.jsx:429
 msgid "You have unsaved changes. Leave without saving?"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:454
+#: src/designer/components/DesignerApp.jsx:455
 msgid "Template name"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:476
+#: src/designer/components/DesignerApp.jsx:477
 msgid "Save name"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:497
+#: src/designer/components/DesignerApp.jsx:498
 msgid "Rename template"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:527
 #: src/designer/components/DesignerApp.jsx:528
+#: src/designer/components/DesignerApp.jsx:529
 msgid "Undo"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:535
 #: src/designer/components/DesignerApp.jsx:536
+#: src/designer/components/DesignerApp.jsx:537
 msgid "Redo"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:544
-#: src/designer/components/DesignerApp.jsx:548
+#: src/designer/components/DesignerApp.jsx:546
+#: src/designer/components/DesignerApp.jsx:550
 msgid "Toggle rulers"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:558
+#: src/designer/components/DesignerApp.jsx:560
 msgid "Merge field display"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:565
+#: src/designer/components/DesignerApp.jsx:567
 msgid "Samples"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:572
+#: src/designer/components/DesignerApp.jsx:574
 msgid "Tokens"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:585
+#: src/designer/components/DesignerApp.jsx:587
 msgid "Zoom"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:594
+#: src/designer/components/DesignerApp.jsx:596
 msgid "Preview PDF"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:602
+#: src/designer/components/DesignerApp.jsx:604
 msgid "Switch to draft"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:613
+#: src/designer/components/DesignerApp.jsx:615
 msgid "Publish"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:626
+#: src/designer/components/DesignerApp.jsx:628
 msgid "Save"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:657
+#: src/designer/components/DesignerApp.jsx:659
 msgid "Design"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:665
+#: src/designer/components/DesignerApp.jsx:667
 msgid "Award"
 msgstr ""
 
-#: src/designer/components/ElementPalette.jsx:209
+#: src/designer/components/ElementPalette.jsx:212
 msgid "Source meta…"
 msgstr ""
 
-#: src/designer/components/ElementPalette.jsx:254
+#: src/designer/components/ElementPalette.jsx:257
 msgid "Add a trigger in the Award tab to unlock fields from your quiz or course plugin."
 msgstr ""
 
-#: src/designer/components/ElementPalette.jsx:267
+#: src/designer/components/ElementPalette.jsx:270
 msgid "Custom meta"
 msgstr ""
 
-#: src/designer/components/ElementPalette.jsx:281
+#: src/designer/components/ElementPalette.jsx:284
 msgid "Custom user meta…"
 msgstr ""
 
-#: src/designer/components/ElementPalette.jsx:288
+#: src/designer/components/ElementPalette.jsx:291
 msgid "Available once this template has an award trigger with a source."
 msgstr ""
 
-#: src/designer/components/ElementPalette.jsx:304
+#: src/designer/components/ElementPalette.jsx:307
 msgid "Elements"
 msgstr ""
 
-#: src/designer/components/ElementPalette.jsx:341
+#: src/designer/components/ElementPalette.jsx:344
 msgid "This certificate has reached the 100-element limit."
 msgstr ""
 
-#: src/designer/components/MetaPickerModal.jsx:83
+#: src/designer/components/MetaPickerModal.jsx:90
 msgid "Source meta field"
 msgstr ""
 
-#: src/designer/components/MetaPickerModal.jsx:84
+#: src/designer/components/MetaPickerModal.jsx:91
 msgid "User meta field"
 msgstr ""
 
-#: src/designer/components/MetaPickerModal.jsx:89
+#: src/designer/components/MetaPickerModal.jsx:96
 msgid "Search meta keys…"
 msgstr ""
 
 #: src/designer/components/MetaPickerModal.jsx:112
+msgid "This trigger awards for any source, so values preview from your most recent one. Each certificate prints its own source’s value."
+msgstr ""
+
+#: src/designer/components/MetaPickerModal.jsx:132
 msgid "No matching meta keys."
 msgstr ""
 
-#: src/designer/components/MetaPickerModal.jsx:144
+#: src/designer/components/MetaPickerModal.jsx:164
 msgid "Showing the first 50 matching keys. Type to narrow the list."
 msgstr ""
 
-#: src/designer/components/MetaPickerModal.jsx:153
+#: src/designer/components/MetaPickerModal.jsx:173
 msgid "Use a key not listed"
 msgstr ""
 
-#: src/designer/components/MetaPickerModal.jsx:160
+#: src/designer/components/MetaPickerModal.jsx:180
 msgid "Insert"
 msgstr ""
 
@@ -1787,7 +1862,7 @@ msgid "Design scaled to fit the new page. Undo restores it."
 msgstr ""
 
 #: src/designer/components/properties/PageSection.jsx:93
-#: src/designer/components/properties/TextSection.jsx:156
+#: src/designer/components/properties/TextSection.jsx:322
 msgid "Size"
 msgstr ""
 
@@ -1873,31 +1948,39 @@ msgstr ""
 msgid "Radius"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:127
+#: src/designer/components/properties/TextSection.jsx:274
+msgid "Insert merge field"
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:285
+msgid "Fields drop in at the cursor in the text field above and print real values on each certificate. You can also type them, like {{recipient.display_name}}."
+msgstr ""
+
+#: src/designer/components/properties/TextSection.jsx:293
 msgid "Font"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:171
+#: src/designer/components/properties/TextSection.jsx:337
 msgid "Line height"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:186
+#: src/designer/components/properties/TextSection.jsx:352
 msgid "Style"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:196
+#: src/designer/components/properties/TextSection.jsx:362
 msgid "This font does not bundle a bold variant."
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:212
+#: src/designer/components/properties/TextSection.jsx:378
 msgid "This font does not bundle an italic variant."
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:221
+#: src/designer/components/properties/TextSection.jsx:387
 msgid "Align"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:244
+#: src/designer/components/properties/TextSection.jsx:410
 msgid "Color"
 msgstr ""
 
@@ -1984,89 +2067,85 @@ msgid "Update trigger"
 msgstr ""
 
 #: src/designer/components/TriggerPanel.jsx:554
-#: src/designer/components/TriggerPanel.jsx:576
-#: src/designer/components/TriggerPanel.jsx:887
+#: src/designer/components/TriggerPanel.jsx:590
+#: src/designer/components/TriggerPanel.jsx:921
 msgid "Add trigger"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:575
+#: src/designer/components/TriggerPanel.jsx:589
 msgid "Edit trigger"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:582
+#: src/designer/components/TriggerPanel.jsx:596
 msgid "Integration"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:590
+#: src/designer/components/TriggerPanel.jsx:604
 msgid "Choose a plugin…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:618
+#: src/designer/components/TriggerPanel.jsx:632
 msgid "Choose a trigger…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:663
-#: src/designer/components/TriggerPanel.jsx:714
+#: src/designer/components/TriggerPanel.jsx:677
+#: src/designer/components/TriggerPanel.jsx:728
 msgid "Search…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:773
-#: src/designer/components/TriggerPanel.jsx:1049
+#: src/designer/components/TriggerPanel.jsx:807
+#: src/designer/components/TriggerPanel.jsx:1083
 #: src/settings/components/StatusTab.jsx:580
 msgid "Active"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:825
+#: src/designer/components/TriggerPanel.jsx:859
 msgid "Certificates can always be issued manually from the Certificates screen, with or without triggers."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:838
+#: src/designer/components/TriggerPanel.jsx:872
 msgid "No automatic award sources detected."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:847
+#: src/designer/components/TriggerPanel.jsx:881
 msgid "Install and activate an LMS plugin, <quiz>PressPrimer Quiz</quiz>, <assignment>PressPrimer Assignment</assignment>, or another integration to award this certificate based on user activity."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:898
+#: src/designer/components/TriggerPanel.jsx:932
 msgid "Award this certificate when…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:905
+#: src/designer/components/TriggerPanel.jsx:939
 msgid "Only one trigger can be added per certificate. To use another trigger, clone the certificate."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:921
+#: src/designer/components/TriggerPanel.jsx:955
 msgid "No trigger yet."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:936
+#: src/designer/components/TriggerPanel.jsx:970
 msgid "The source for this trigger no longer exists."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:966
+#: src/designer/components/TriggerPanel.jsx:1000
 msgid "Trigger deactivated"
 msgstr ""
 
 #. translators: %s: plugin name
-#: src/designer/components/TriggerPanel.jsx:982
+#: src/designer/components/TriggerPanel.jsx:1016
 #, js-format
 msgid "%s must be active to use this trigger."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:988
+#: src/designer/components/TriggerPanel.jsx:1022
 msgid "The plugin providing this trigger is not active."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1018
-msgid "Any source"
-msgstr ""
-
-#: src/designer/components/TriggerPanel.jsx:1032
+#: src/designer/components/TriggerPanel.jsx:1066
 msgid "Conditions"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1122
+#: src/designer/components/TriggerPanel.jsx:1156
 msgid "Trigger changes save with the Save button."
 msgstr ""
 
@@ -2477,6 +2556,26 @@ msgstr ""
 
 #: src/settings/components/EmailTab.jsx:251
 msgid "The site title from Settings → General"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:259
+msgid "Certificate merge fields:"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:268
+msgid "Any merge field from the certificate designer works here too, wrapped in double braces. The email uses the same values printed on the certificate. A few examples:"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:275
+msgid "The course that earned the certificate (quiz and assignment fields work the same way)"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:282
+msgid "The recipient's first name"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:289
+msgid "When the certificate expires, blank when it never does"
 msgstr ""
 
 #: src/settings/components/GeneralTab.jsx:35
