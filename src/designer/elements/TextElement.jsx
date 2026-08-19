@@ -9,8 +9,15 @@
  * kerning/ligatures/optical sizing stay off (TCPDF lays glyphs by plain
  * advance widths), and the text block shifts by the exact TCPDF-vs-
  * Chrome first-baseline difference.
+ *
+ * Schema v2 (Feature 1.1-001): content may carry inline merge tokens.
+ * Samples mode substitutes the shared sample map exactly as the PDF
+ * preview substitutes registry samples - unknown tokens render empty
+ * on both sides; the token toggle shows the raw content.
  */
 
+import { useDesignerView } from '../view-context';
+import { interpolateTokens } from '../schema/interpolate';
 import { useTextFit } from './useTextFit';
 import { baselineCompensation } from './baseline';
 
@@ -23,8 +30,14 @@ import { baselineCompensation } from './baseline';
  * @return {JSX.Element} Rendered text.
  */
 export default function TextElement( { element, box } ) {
+	const { tokenView, samples } = useDesignerView();
 	const p = element.props;
-	const fitted = useTextFit( p.content, box, p );
+
+	const display = tokenView
+		? p.content
+		: interpolateTokens( p.content, samples );
+
+	const fitted = useTextFit( display, box, p );
 	const dy = baselineCompensation( p, fitted.size );
 
 	return (

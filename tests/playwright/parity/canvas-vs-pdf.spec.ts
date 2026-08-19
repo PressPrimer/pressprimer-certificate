@@ -147,6 +147,130 @@ async function bootCanvas(
 	);
 }
 
+/**
+ * Inline-token fixture layout (schema v2, Feature 1.1-001) written to
+ * a temp file. Lives in tests/playwright/fixtures/ - NOT templates/ -
+ * because parity fixtures never ship in the plugin or seed the
+ * gallery.
+ * @param slug
+ * @param dir
+ */
+function fixtureLayout( slug: string, dir: string ) {
+	const raw = JSON.parse(
+		fs.readFileSync(
+			path.join(
+				PATHS.root,
+				'tests',
+				'playwright',
+				'fixtures',
+				`${ slug }.json`
+			),
+			'utf8'
+		)
+	);
+
+	const layoutPath = path.join( dir, `${ slug }.json` );
+	fs.writeFileSync( layoutPath, JSON.stringify( raw ) );
+
+	return { layout: raw, layoutPath };
+}
+
+const INLINE_TOKEN_FIXTURES = [
+	'parity-inline-tokens',
+	'parity-inline-tokens-portrait',
+];
+
+/**
+ * The parity assertion body, shared by starters and fixtures.
+ * @param page
+ * @param layout
+ * @param layoutPath
+ * @param dir
+ */
+async function runParityCase(
+	page: Page,
+	layout: any,
+	layoutPath: string,
+	dir: string
+): Promise< void > {
+	// PDF side.
+	const pdfPng = path.join( dir, 'pdf.png' );
+	renderPng(
+		layoutPath,
+		SAMPLES_PATH,
+		{ context: 'parity', dpi: DPI, credential_id: CREDENTIAL },
+		pdfPng
+	);
+
+	// Canvas side.
+	await bootCanvas( page, layout, sampleQr() );
+
+	const canvasPng = path.join( dir, 'canvas.png' );
+	await page
+		.locator( '.ppcert-designer__page' )
+		.screenshot( { path: canvasPng } );
+
+	// Pixel comparison (FR-005: <= 1.0% after AA tolerance).
+	const diffPath = path.join( dir, 'diff.png' );
+	const result = comparePngs( canvasPng, pdfPng, diffPath );
+
+	expect(
+		result.ratio,
+		`${ ( result.ratio * 100 ).toFixed(
+			3
+		) }% pixels differ (diff: ${ diffPath })`
+	).toBeLessThanOrEqual( PIXEL_DIFF_MAX_RATIO );
+
+	// Canvas bounding boxes vs declared geometry (<= 1 pt).
+	const pageBox = await page
+		.locator( '.ppcert-designer__page' )
+		.boundingBox();
+
+	for ( const element of layout.elements ) {
+		const domBox = await page
+			.locator( `[data-ppcert-el="${ element.id }"]` )
+			.boundingBox();
+
+		const drifts = {
+			x: Math.abs( domBox!.x - pageBox!.x - element.x ),
+			y: Math.abs( domBox!.y - pageBox!.y - element.y ),
+			w: Math.abs( domBox!.width - element.w ),
+			h: Math.abs( domBox!.height - element.h ),
+		};
+
+		for ( const [ edge, drift ] of Object.entries( drifts ) ) {
+			expect(
+				drift,
+				`${ element.id } ${ edge } drifts ${ drift.toFixed(
+					2
+				) }pt on the canvas`
+			).toBeLessThanOrEqual( BOX_DRIFT_MAX_PT );
+		}
+	}
+
+	// PDF bounding boxes vs declared geometry (parity-debug raster).
+	const debugPng = path.join( dir, 'debug.png' );
+	renderPng(
+		layoutPath,
+		SAMPLES_PATH,
+		{
+			context: 'parity',
+			dpi: DPI,
+			credential_id: CREDENTIAL,
+			parity_debug: true,
+		},
+		debugPng
+	);
+
+	const boxes = extractBoxes( debugPng, layout.elements.length );
+	const failures = boxDriftFailures( boxes, layout.elements, SCALE );
+
+	expect(
+		failures,
+		`PDF box drift: ${ JSON.stringify( failures ) }`
+	).toEqual( [] );
+}
+
 for ( const slug of STARTERS ) {
 	test( `${ slug }: canvas matches the PDF raster within parity thresholds`, async ( {
 		page,
@@ -154,81 +278,17 @@ for ( const slug of STARTERS ) {
 		const dir = tmpDir();
 		const { layout, layoutPath } = starterLayout( slug, dir );
 
-		// PDF side.
-		const pdfPng = path.join( dir, 'pdf.png' );
-		renderPng(
-			layoutPath,
-			SAMPLES_PATH,
-			{ context: 'parity', dpi: DPI, credential_id: CREDENTIAL },
-			pdfPng
-		);
+		await runParityCase( page, layout, layoutPath, dir );
+	} );
+}
 
-		// Canvas side.
-		await bootCanvas( page, layout, sampleQr() );
+for ( const slug of INLINE_TOKEN_FIXTURES ) {
+	test( `${ slug }: inline-token text matches the PDF raster within parity thresholds`, async ( {
+		page,
+	} ) => {
+		const dir = tmpDir();
+		const { layout, layoutPath } = fixtureLayout( slug, dir );
 
-		const canvasPng = path.join( dir, 'canvas.png' );
-		await page
-			.locator( '.ppcert-designer__page' )
-			.screenshot( { path: canvasPng } );
-
-		// Pixel comparison (FR-005: <= 1.0% after AA tolerance).
-		const diffPath = path.join( dir, 'diff.png' );
-		const result = comparePngs( canvasPng, pdfPng, diffPath );
-
-		expect(
-			result.ratio,
-			`${ ( result.ratio * 100 ).toFixed(
-				3
-			) }% pixels differ (diff: ${ diffPath })`
-		).toBeLessThanOrEqual( PIXEL_DIFF_MAX_RATIO );
-
-		// Canvas bounding boxes vs declared geometry (<= 1 pt).
-		const pageBox = await page
-			.locator( '.ppcert-designer__page' )
-			.boundingBox();
-
-		for ( const element of layout.elements ) {
-			const domBox = await page
-				.locator( `[data-ppcert-el="${ element.id }"]` )
-				.boundingBox();
-
-			const drifts = {
-				x: Math.abs( domBox!.x - pageBox!.x - element.x ),
-				y: Math.abs( domBox!.y - pageBox!.y - element.y ),
-				w: Math.abs( domBox!.width - element.w ),
-				h: Math.abs( domBox!.height - element.h ),
-			};
-
-			for ( const [ edge, drift ] of Object.entries( drifts ) ) {
-				expect(
-					drift,
-					`${ element.id } ${ edge } drifts ${ drift.toFixed(
-						2
-					) }pt on the canvas`
-				).toBeLessThanOrEqual( BOX_DRIFT_MAX_PT );
-			}
-		}
-
-		// PDF bounding boxes vs declared geometry (parity-debug raster).
-		const debugPng = path.join( dir, 'debug.png' );
-		renderPng(
-			layoutPath,
-			SAMPLES_PATH,
-			{
-				context: 'parity',
-				dpi: DPI,
-				credential_id: CREDENTIAL,
-				parity_debug: true,
-			},
-			debugPng
-		);
-
-		const boxes = extractBoxes( debugPng, layout.elements.length );
-		const failures = boxDriftFailures( boxes, layout.elements, SCALE );
-
-		expect(
-			failures,
-			`PDF box drift: ${ JSON.stringify( failures ) }`
-		).toEqual( [] );
+		await runParityCase( page, layout, layoutPath, dir );
 	} );
 }
