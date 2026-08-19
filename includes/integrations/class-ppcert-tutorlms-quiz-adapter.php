@@ -199,6 +199,17 @@ class PressPrimer_Certificate_TutorLMS_Quiz_Adapter extends PressPrimer_Certific
 	}
 
 	/**
+	 * "Any" option label (leaf-only Any, Feature 1.1-002 FR-003).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string
+	 */
+	public function get_any_source_label(): string {
+		return __( 'Any quiz in this course', 'pressprimer-certificate' );
+	}
+
+	/**
 	 * Listen for ended quiz attempts
 	 *
 	 * Hook citations (Tutor LMS 4.0.0): `tutor_quiz/attempt_ended`

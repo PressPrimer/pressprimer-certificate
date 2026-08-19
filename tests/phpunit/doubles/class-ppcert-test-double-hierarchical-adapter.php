@@ -38,4 +38,13 @@ class PPCert_Test_Double_Hierarchical_Adapter extends PPCert_Test_Double_Adapter
 	public function get_scope_condition_keys(): array {
 		return [ 'course_id' ];
 	}
+
+	/**
+	 * "Any" option label (Feature 1.1-002 FR-003).
+	 *
+	 * @return string
+	 */
+	public function get_any_source_label(): string {
+		return 'Any lesson in this course';
+	}
 }

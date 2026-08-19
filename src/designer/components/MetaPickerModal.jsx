@@ -23,18 +23,23 @@ const KEY_LIMIT = 50;
 /**
  * The modal.
  *
- * @param {Object}   props          Props.
- * @param {boolean}  props.open     Visibility.
- * @param {string}   props.scope    'user' or 'post'.
- * @param {number}   props.postId   Source post id (post scope).
- * @param {Function} props.onInsert Called with the meta key.
- * @param {Function} props.onClose  Close handler.
+ * @param {Object}   props             Props.
+ * @param {boolean}  props.open        Visibility.
+ * @param {string}   props.scope       'user' or 'post'.
+ * @param {number}   props.postId      Source post id (post scope).
+ * @param {string}   props.triggerType Trigger type id - set with an
+ *                                     'any' trigger, where previews
+ *                                     come from the most recent source
+ *                                     of the type (1.1).
+ * @param {Function} props.onInsert    Called with the meta key.
+ * @param {Function} props.onClose     Close handler.
  * @return {JSX.Element} Modal.
  */
 export default function MetaPickerModal( {
 	open,
 	scope,
 	postId = 0,
+	triggerType = '',
 	onInsert,
 	onClose,
 } ) {
@@ -52,19 +57,21 @@ export default function MetaPickerModal( {
 		setLoading( true );
 
 		const timer = setTimeout( () => {
-			searchMetaKeys( scope, search, postId ).then( ( results ) => {
-				if ( active ) {
-					setItems( results );
-					setLoading( false );
+			searchMetaKeys( scope, search, postId, triggerType ).then(
+				( results ) => {
+					if ( active ) {
+						setItems( results );
+						setLoading( false );
+					}
 				}
-			} );
+			);
 		}, 200 );
 
 		return () => {
 			active = false;
 			clearTimeout( timer );
 		};
-	}, [ open, scope, search, postId ] );
+	}, [ open, scope, search, postId, triggerType ] );
 
 	const rawValid = KEY_PATTERN.test( rawKey );
 
@@ -95,6 +102,19 @@ export default function MetaPickerModal( {
 				data-ppcert-meta-search
 				onChange={ ( event ) => setSearch( event.target.value ) }
 			/>
+
+			{ 'post' === scope && '' !== triggerType && postId < 1 && (
+				<Text
+					type="secondary"
+					className="ppcert-designer__meta-any-note"
+					data-ppcert-meta-any-note
+				>
+					{ __(
+						'This trigger awards for any source, so values preview from your most recent one. Each certificate prints its own source’s value.',
+						'pressprimer-certificate'
+					) }
+				</Text>
+			) }
 
 			{ loading ? (
 				<div className="ppcert-designer__meta-loading">

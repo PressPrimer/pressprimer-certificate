@@ -341,6 +341,48 @@ class Test_Triggers_REST extends TestCase {
 	// -------------------------------------------------------------------
 
 	/**
+	 * The types listing exposes each type's Any label.
+	 *
+	 * @return void
+	 */
+	public function test_types_listing_exposes_any_label() {
+		$response = $this->controller->get_types( new WP_REST_Request( [] ) );
+		$types    = $response->get_data();
+
+		$this->assertSame( 'Any course', $types[0]['any_label'] );
+	}
+
+	/**
+	 * Enrichment labels 'any' triggers with the type's Any wording and
+	 * never flags them orphaned.
+	 *
+	 * @return void
+	 */
+	public function test_enrich_labels_any_triggers() {
+		$this->wpdb->seed_row(
+			'wp_ppcert_triggers',
+			[
+				'uuid'            => 'trg-any-enrich',
+				'template_id'     => $this->template_id,
+				'trigger_type'    => 'double_lms',
+				'source_ref'      => 'any',
+				'conditions_json' => null,
+				'is_active'       => 1,
+			]
+		);
+
+		$response = $this->controller->get_triggers(
+			new WP_REST_Request( [ 'id' => $this->template_id ] )
+		);
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data );
+		$this->assertSame( 'any', $data[0]['source_ref'] );
+		$this->assertSame( 'Any course', $data[0]['source_label'] );
+		$this->assertTrue( $data[0]['source_found'] );
+	}
+
+	/**
 	 * A flat type saves an 'any' trigger with no scope requirement.
 	 *
 	 * @return void

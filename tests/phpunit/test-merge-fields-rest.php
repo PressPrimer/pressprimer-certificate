@@ -325,4 +325,81 @@ class Test_Merge_Fields_REST extends TestCase {
 		$this->controller->get_post_meta_keys( new WP_REST_Request( [ 'post_id' => 42 ] ) );
 		$this->assertSame( $queries, $this->wpdb->read_queries );
 	}
+
+	/**
+	 * With no bound post ('any' triggers, Feature 1.1-002 FR-004) the
+	 * route previews against the MOST RECENT published source of the
+	 * trigger type; unknown types and empty catalogs answer with an
+	 * empty list, never an error.
+	 *
+	 * @return void
+	 */
+	public function test_post_meta_keys_any_trigger_previews_most_recent_source() {
+		add_filter(
+			'ppcert_register_trigger_types',
+			static function ( $types ) {
+				$types[] = [
+					'id'                => 'learndash_course_completed',
+					'label'             => 'Course completed',
+					'source_post_types' => [ 'sfwd-courses' ],
+				];
+
+				return $types;
+			}
+		);
+
+		// Unknown type: empty list.
+		$empty = $this->controller->get_post_meta_keys(
+			new WP_REST_Request( [ 'trigger_type' => 'unregistered_type' ] )
+		);
+		$this->assertInstanceOf( WP_REST_Response::class, $empty );
+		$this->assertSame( [], $empty->get_data() );
+
+		// No sources yet: empty list.
+		$none = $this->controller->get_post_meta_keys(
+			new WP_REST_Request( [ 'trigger_type' => 'learndash_course_completed' ] )
+		);
+		$this->assertSame( [], $none->get_data() );
+
+		// Two courses: the newer one supplies the preview.
+		$GLOBALS['ppcert_test_posts'][42] = (object) [
+			'ID'          => 42,
+			'post_type'   => 'sfwd-courses',
+			'post_status' => 'publish',
+			'post_title'  => 'Older Course',
+			'post_date'   => '2026-01-01 00:00:00',
+		];
+		$GLOBALS['ppcert_test_posts'][43] = (object) [
+			'ID'          => 43,
+			'post_type'   => 'sfwd-courses',
+			'post_status' => 'publish',
+			'post_title'  => 'Newer Course',
+			'post_date'   => '2026-06-01 00:00:00',
+		];
+
+		$this->wpdb->seed_row(
+			'wp_postmeta',
+			[
+				'post_id'    => 43,
+				'meta_key'   => 'ce_hours', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Test fixture array, not a query.
+				'meta_value' => '8', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Test fixture array, not a query.
+			]
+		);
+		$this->wpdb->seed_row(
+			'wp_postmeta',
+			[
+				'post_id'    => 42,
+				'meta_key'   => 'old_key', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Test fixture array, not a query.
+				'meta_value' => 'stale', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Test fixture array, not a query.
+			]
+		);
+
+		$response = $this->controller->get_post_meta_keys(
+			new WP_REST_Request( [ 'trigger_type' => 'learndash_course_completed' ] )
+		);
+		$data     = $response->get_data();
+
+		$this->assertSame( [ 'ce_hours' ], array_column( $data, 'key' ) );
+		$this->assertSame( '8', $data[0]['sample'] );
+	}
 }

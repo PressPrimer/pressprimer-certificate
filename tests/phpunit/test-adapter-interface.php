@@ -279,6 +279,10 @@ class Test_Adapter_Interface extends TestCase {
 
 		$this->assertSame( [], $types['double_lms']['scope_condition_keys'] );
 		$this->assertSame( [ 'course_id' ], $types['double_lms_lesson']['scope_condition_keys'] );
+
+		// Any labels flow through; an entry without one gets ''.
+		$this->assertSame( 'Any course', $types['double_lms']['any_label'] );
+		$this->assertSame( 'Any lesson in this course', $types['double_lms_lesson']['any_label'] );
 	}
 
 	/**

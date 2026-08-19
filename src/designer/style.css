@@ -360,6 +360,22 @@
 	color: rgba(0, 0, 0, 0.65);
 }
 
+/* The pinned "Any" option leads the trigger source list, separated
+   from the searchable objects below it (1.1). */
+.ppcert-designer__any-option {
+	font-weight: 600;
+	border-bottom: 1px solid #e5e7eb;
+	border-radius: 0;
+	margin-bottom: 4px;
+}
+
+.ppcert-designer__meta-any-note {
+	display: block;
+	font-size: 12px;
+	line-height: 1.4;
+	margin-top: 8px;
+}
+
 .ppcert-designer__media-preview {
 	border: 1px solid #e5e7eb;
 	border-radius: 4px;

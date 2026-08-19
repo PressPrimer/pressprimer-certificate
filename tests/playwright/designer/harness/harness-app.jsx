@@ -215,6 +215,7 @@ const DOUBLE_TYPE = {
 	has_sources: true,
 	source_levels: [],
 	source_post_types: [ 'page' ],
+	any_label: 'Any course',
 	conditions_schema: {
 		min_score: {
 			type: 'number',
@@ -244,6 +245,7 @@ const HIER_TYPE = {
 	has_sources: true,
 	source_levels: [ { key: 'course', label: 'Course' } ],
 	source_post_types: [ 'page' ],
+	any_label: 'Any lesson in this course',
 	conditions_schema: {},
 };
 

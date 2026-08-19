@@ -787,8 +787,12 @@ if ( ! function_exists( 'get_posts' ) ) {
 		$matches = [];
 
 		foreach ( $posts as $post ) {
-			if ( isset( $args['post_type'] ) && ( ! isset( $post->post_type ) || $post->post_type !== $args['post_type'] ) ) {
-				continue;
+			if ( isset( $args['post_type'] ) ) {
+				$wanted = (array) $args['post_type'];
+
+				if ( ! isset( $post->post_type ) || ! in_array( $post->post_type, $wanted, true ) ) {
+					continue;
+				}
 			}
 
 			if ( isset( $args['post_status'] ) && ( ! isset( $post->post_status ) || $post->post_status !== $args['post_status'] ) ) {
@@ -815,6 +819,16 @@ if ( ! function_exists( 'get_posts' ) ) {
 				$matches,
 				static function ( $a, $b ) {
 					return strcasecmp( (string) $a->post_title, (string) $b->post_title );
+				}
+			);
+		}
+
+		// Newest-first by post_date (the 1.1 any-trigger meta preview).
+		if ( isset( $args['orderby'] ) && 'date' === $args['orderby'] ) {
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return strcmp( (string) ( $b->post_date ?? '' ), (string) ( $a->post_date ?? '' ) );
 				}
 			);
 		}

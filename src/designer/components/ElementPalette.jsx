@@ -93,7 +93,9 @@ export default function ElementPalette() {
 	}, [] );
 
 	// The source-meta picker unlocks when the staged trigger points at a
-	// post-backed source (Feature 002 FR-004 / Prompt 3.7).
+	// post-backed source (Feature 002 FR-004 / Prompt 3.7). An 'any'
+	// trigger (1.1) qualifies too: previews come from the most recent
+	// source of the type.
 	const postSourceTrigger = triggers.find( ( trigger ) => {
 		const type = triggerTypes.find(
 			( t ) => t.id === trigger.trigger_type
@@ -104,7 +106,8 @@ export default function ElementPalette() {
 			Array.isArray( type.source_post_types ) &&
 			type.source_post_types.length > 0 &&
 			trigger.source_ref &&
-			/^\d+$/.test( String( trigger.source_ref ) )
+			( 'any' === String( trigger.source_ref ) ||
+				/^\d+$/.test( String( trigger.source_ref ) ) )
 		);
 	} );
 
@@ -374,9 +377,18 @@ export default function ElementPalette() {
 				open={ pickerOpen }
 				scope={ pickerScope }
 				postId={
-					'post' === pickerScope && postSourceTrigger
+					'post' === pickerScope &&
+					postSourceTrigger &&
+					'any' !== String( postSourceTrigger.source_ref )
 						? parseInt( postSourceTrigger.source_ref, 10 )
 						: 0
+				}
+				triggerType={
+					'post' === pickerScope &&
+					postSourceTrigger &&
+					'any' === String( postSourceTrigger.source_ref )
+						? postSourceTrigger.trigger_type
+						: ''
 				}
 				onInsert={ ( key ) =>
 					insertToken(

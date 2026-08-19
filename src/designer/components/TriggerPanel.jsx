@@ -558,6 +558,20 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 				'data-ppcert-trigger-submit': true,
 			} }
 			onOk={ () => {
+				// An 'any' trigger of a hierarchical type carries its
+				// parent cascade in conditions (leaf-only Any, Feature
+				// 1.1-002): each chosen level persists as `<key>_id`.
+				// The registry strips undeclared keys server-side.
+				const scoped = { ...conditions };
+
+				if ( 'any' === sourceRef ) {
+					sourceLevels.forEach( ( level ) => {
+						if ( levels[ level.key ] ) {
+							scoped[ `${ level.key }_id` ] = levels[ level.key ];
+						}
+					} );
+				}
+
 				onSubmit( {
 					trigger_type: type.id,
 					type_label: type.label,
@@ -565,7 +579,7 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 					source_ref: sourceRef,
 					source_label: sourceLabel,
 					source_found: true,
-					conditions,
+					conditions: scoped,
 					is_active: isActive,
 				} );
 				onClose();
@@ -728,21 +742,41 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
 									setSourceRef( id );
 									setSourceLabel( option.label );
 								} }
-								options={
+								options={ ( () => {
 									// While editing an untouched cascade the
 									// stored source is the only option.
-									sources.length || null === sourceRef
-										? sources.map( ( source ) => ( {
-												value: source.id,
-												label: source.title,
-										  } ) )
-										: [
-												{
-													value: sourceRef,
-													label: sourceLabel,
-												},
-										  ]
-								}
+									const objects =
+										sources.length || null === sourceRef
+											? sources.map( ( source ) => ( {
+													value: source.id,
+													label: source.title,
+											  } ) )
+											: [
+													{
+														value: sourceRef,
+														label: sourceLabel,
+													},
+											  ];
+
+									// Pinned "Any" option, first and visually
+									// separated (Feature 1.1-002 FR-003).
+									// Types without a label opt out.
+									if (
+										type.any_label &&
+										! objects.some(
+											( o ) => 'any' === o.value
+										)
+									) {
+										objects.unshift( {
+											value: 'any',
+											label: type.any_label,
+											className:
+												'ppcert-designer__any-option',
+										} );
+									}
+
+									return objects;
+								} )() }
 								className="ppcert-designer__prop-wide"
 							/>
 						</span>

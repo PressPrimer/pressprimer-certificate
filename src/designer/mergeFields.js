@@ -124,12 +124,20 @@ export function getSampleMap( data = null ) {
 /**
  * Search meta keys for the picker.
  *
- * @param {string} scope  'user' or 'post'.
- * @param {string} search Search term.
- * @param {number} postId Source post id (post scope only).
+ * @param {string} scope       'user' or 'post'.
+ * @param {string} search      Search term.
+ * @param {number} postId      Source post id (post scope only).
+ * @param {string} triggerType Trigger type id - previews against the
+ *                             most recent source of the type when no
+ *                             post id is bound ('any' triggers, 1.1).
  * @return {Promise<Array>} [ { key, sample } ].
  */
-export function searchMetaKeys( scope, search = '', postId = 0 ) {
+export function searchMetaKeys(
+	scope,
+	search = '',
+	postId = 0,
+	triggerType = ''
+) {
 	const fixtures = metaKeyFixtures[ scope ];
 
 	if ( fixtures ) {
@@ -139,9 +147,14 @@ export function searchMetaKeys( scope, search = '', postId = 0 ) {
 		);
 	}
 
+	const source =
+		postId > 0
+			? `post_id=${ postId }`
+			: `trigger_type=${ encodeURIComponent( triggerType ) }`;
+
 	const path =
 		'post' === scope
-			? `/ppcert/v1/merge-fields/post-meta-keys?post_id=${ postId }&search=${ encodeURIComponent(
+			? `/ppcert/v1/merge-fields/post-meta-keys?${ source }&search=${ encodeURIComponent(
 					search
 			  ) }`
 			: `/ppcert/v1/merge-fields/user-meta-keys?search=${ encodeURIComponent(

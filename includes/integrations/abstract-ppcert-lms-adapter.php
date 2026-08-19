@@ -271,6 +271,25 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Label for the "Any" source option ("Any quiz", "Any lesson in
+	 * this course")
+	 *
+	 * Empty (the default) means the Award tab offers no "Any" option
+	 * for this type - explicit opt-in, so third-party adapters keep
+	 * their exact-source behavior until they choose otherwise. Bundled
+	 * adapters override with a translated label; hierarchical ones
+	 * phrase the parent scope ("in this course") since their cascade
+	 * stays specific (leaf-only "Any", Feature 1.1-002 FR-002).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string
+	 */
+	public function get_any_source_label(): string {
+		return '';
+	}
+
+	/**
 	 * Conditions keys that scope an 'any' trigger to its parent object
 	 *
 	 * Empty = flat type: "Any" matches every source unconditionally
@@ -353,6 +372,7 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 			'source_post_types' => $this->get_source_post_types(),
 			'conditions_schema' => $this->get_conditions_schema(),
 			'scope_keys'        => $this->get_scope_condition_keys(),
+			'any_label'         => $this->get_any_source_label(),
 		];
 
 		return $types;

@@ -184,6 +184,17 @@ class PressPrimer_Certificate_LifterLMS_Quiz_Adapter extends PressPrimer_Certifi
 	}
 
 	/**
+	 * "Any" option label (leaf-only Any, Feature 1.1-002 FR-003).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string
+	 */
+	public function get_any_source_label(): string {
+		return __( 'Any quiz in this course', 'pressprimer-certificate' );
+	}
+
+	/**
 	 * Listen for passed quizzes
 	 *
 	 * Hook citation (LifterLMS 10.0.8): `lifterlms_quiz_passed` fires in

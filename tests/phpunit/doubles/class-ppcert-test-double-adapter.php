@@ -63,6 +63,15 @@ class PPCert_Test_Double_Adapter extends PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * "Any" option label (Feature 1.1-002 FR-003).
+	 *
+	 * @return string
+	 */
+	public function get_any_source_label(): string {
+		return 'Any course';
+	}
+
+	/**
 	 * Test-only public wrapper for the protected fire-time scope check.
 	 *
 	 * @param object $trigger     Trigger row.

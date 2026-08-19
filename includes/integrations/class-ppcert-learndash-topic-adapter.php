@@ -174,6 +174,17 @@ class PressPrimer_Certificate_LearnDash_Topic_Adapter extends PressPrimer_Certif
 	}
 
 	/**
+	 * "Any" option label (leaf-only Any, Feature 1.1-002 FR-003).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string
+	 */
+	public function get_any_source_label(): string {
+		return __( 'Any topic in this lesson', 'pressprimer-certificate' );
+	}
+
+	/**
 	 * Listen for completed topics
 	 *
 	 * Hook citation (LearnDash 4.23.0): `learndash_topic_completed`

@@ -103,6 +103,11 @@ class PressPrimer_Certificate_Trigger_Registry {
 				'scope_condition_keys' => isset( $entry['scope_keys'] ) && is_array( $entry['scope_keys'] )
 					? array_values( array_filter( array_map( 'sanitize_key', $entry['scope_keys'] ) ) )
 					: [],
+				// "Any" option label; empty = the type opts out of the
+				// Award tab's Any option (Feature 1.1-002 FR-003).
+				'any_label'            => isset( $entry['any_label'] ) && is_string( $entry['any_label'] )
+					? $entry['any_label']
+					: '',
 			];
 
 			// Every trigger type carries the universal reissue toggle

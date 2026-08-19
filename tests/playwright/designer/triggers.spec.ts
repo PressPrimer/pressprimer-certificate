@@ -302,4 +302,77 @@ test.describe( 'trigger panel', () => {
 			)
 		).toBeVisible();
 	} );
+
+	test( 'flat Any: the pinned option leads the source list and stages the sentinel', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		await page.click( '[data-ppcert-trigger-add]' );
+		await page.click( '[data-ppcert-trigger-integration]' );
+		await page
+			.locator( '.ant-select-item-option', { hasText: 'Double LMS' } )
+			.click();
+		await page.click( '[data-ppcert-trigger-type]' );
+		await page
+			.locator( '.ant-select-item-option', {
+				hasText: 'Course completed',
+			} )
+			.click();
+
+		await page.click( '[data-ppcert-trigger-source]' );
+
+		// Pinned first, above the real sources (scoped to the OPEN
+		// dropdown - closed ones stay mounted in the DOM).
+		const options = page.locator(
+			'.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option'
+		);
+		await expect( options.first() ).toHaveText( 'Any course' );
+
+		await options.first().click();
+		await page.click( '[data-ppcert-trigger-submit]' );
+
+		const card = page.locator( '[data-ppcert-trigger-row="0"]' );
+		await expect( card ).toContainText( 'Any course' );
+
+		const triggers = await getTriggersState( page );
+		expect( triggers[ 0 ].source_ref ).toBe( 'any' );
+		expect( triggers[ 0 ].source_label ).toBe( 'Any course' );
+	} );
+
+	test( 'hierarchical Any: the course stays specific and lands in conditions', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		await page.click( '[data-ppcert-trigger-add]' );
+		await page.click( '[data-ppcert-trigger-integration]' );
+		await page
+			.locator( '.ant-select-item-option', { hasText: 'Double LMS' } )
+			.click();
+		await page.click( '[data-ppcert-trigger-type]' );
+		await page
+			.locator( '.ant-select-item-option', {
+				hasText: 'Lesson completed',
+			} )
+			.click();
+
+		// The course level is required before the source select opens.
+		await page.click( '[data-ppcert-trigger-level="course"]' );
+		await page
+			.locator( '.ant-select-item-option', { hasText: 'Botany 101' } )
+			.click();
+
+		await page.click( '[data-ppcert-trigger-source]' );
+		await page
+			.locator( '.ant-select-item-option', {
+				hasText: 'Any lesson in this course',
+			} )
+			.click();
+		await page.click( '[data-ppcert-trigger-submit]' );
+
+		const triggers = await getTriggersState( page );
+		expect( triggers[ 0 ].source_ref ).toBe( 'any' );
+		expect( triggers[ 0 ].conditions.course_id ).toBe( '11' );
+	} );
 } );

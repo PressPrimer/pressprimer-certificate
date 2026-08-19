@@ -105,10 +105,13 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 				'callback'            => [ $this, 'get_post_meta_keys' ],
 				'permission_callback' => [ $this, 'can_manage' ],
 				'args'                => [
-					'post_id' => [
+					'post_id'      => [
 						'sanitize_callback' => 'absint',
 					],
-					'search'  => [
+					'trigger_type' => [
+						'sanitize_callback' => 'sanitize_key',
+					],
+					'search'       => [
 						'sanitize_callback' => [ __CLASS__, 'sanitize_search' ],
 					],
 				],
@@ -312,7 +315,38 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 		global $wpdb;
 
 		$post_id = absint( $request->get_param( 'post_id' ) );
-		$post    = $post_id > 0 ? get_post( $post_id ) : null;
+		$type_id = sanitize_key( (string) $request->get_param( 'trigger_type' ) );
+
+		// 'Any' triggers have no bound source post: preview against the
+		// most recent published source of the trigger type (Feature
+		// 1.1-002 FR-004). No sources yet is an empty list, not an
+		// error.
+		if ( $post_id < 1 && '' !== $type_id ) {
+			$type       = PressPrimer_Certificate_Trigger_Registry::get_type( $type_id );
+			$post_types = $type ? $type['source_post_types'] : [];
+
+			if ( empty( $post_types ) ) {
+				return new WP_REST_Response( [], 200 );
+			}
+
+			$recent = get_posts(
+				[
+					'post_type'   => $post_types,
+					'post_status' => 'publish',
+					'numberposts' => 1,
+					'orderby'     => 'date',
+					'order'       => 'DESC',
+				]
+			);
+
+			if ( empty( $recent ) ) {
+				return new WP_REST_Response( [], 200 );
+			}
+
+			$post_id = (int) $recent[0]->ID;
+		}
+
+		$post = $post_id > 0 ? get_post( $post_id ) : null;
 
 		if ( ! $post || ! $this->is_source_post_type( (string) $post->post_type ) ) {
 			return new WP_Error(

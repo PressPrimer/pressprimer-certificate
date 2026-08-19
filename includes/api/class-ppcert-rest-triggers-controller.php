@@ -157,6 +157,7 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 				'has_sources'       => null !== $type['source_picker'],
 				'source_levels'     => $type['source_levels'],
 				'source_post_types' => $type['source_post_types'],
+				'any_label'         => $type['any_label'],
 				'conditions_schema' => self::schema_for_client( $type['conditions_schema'] ),
 			];
 		}
@@ -384,7 +385,14 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 			$source_label = '';
 			$source_found = '' === $source;
 
-			if ( '' !== $source && isset( $source_maps[ $type_id ][ $source ] ) ) {
+			if ( PressPrimer_Certificate_Trigger::SOURCE_ANY === $source ) {
+				// 'Any' triggers have no object to resolve: the label is
+				// the type's own Any wording (Feature 1.1-002 FR-003).
+				$source_label = $available && '' !== $types[ $type_id ]['any_label']
+					? $types[ $type_id ]['any_label']
+					: __( 'Any source', 'pressprimer-certificate' );
+				$source_found = true;
+			} elseif ( '' !== $source && isset( $source_maps[ $type_id ][ $source ] ) ) {
 				$source_label = $source_maps[ $type_id ][ $source ];
 				$source_found = true;
 			} elseif ( '' !== $source && $available ) {
