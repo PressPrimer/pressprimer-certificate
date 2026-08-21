@@ -4,7 +4,7 @@
 
 PressPrimer Certificate is an LMS-agnostic certificate authoring, issuance, and verification plugin for WordPress. It is the third plugin suite in the PressPrimer portfolio (Quiz, Assignment, Certificate).
 
-**Status: pre-1.0, in planning. No code exists yet.** That makes this the one moment where conventions are free to set and expensive to change later. Every convention in this guide and in `docs/architecture/CONVENTIONS.md` is binding from the first commit.
+**Status: 1.0.0 shipped to WordPress.org on 2026-08-10; 1.1.0 (the feedback fast-follow) is built and releasing.** The conventions in this guide and in `docs/architecture/CONVENTIONS.md` were set before the first commit and are binding on every change since; the as-built architecture docs in `docs/architecture/` describe the shipped code.
 
 **Read before any work:** `docs/CLAUDE-INSTRUCTIONS.md` for the reading order and current version context.
 
@@ -118,7 +118,7 @@ When changes span plugins: free plugin first, verify addons against it, release 
 
 ### Study Existing Implementations First
 
-Certificate has no code yet, so the reference implementations live in the sibling plugins. Examples:
+For patterns Certificate has not built yet, the reference implementations live in the sibling plugins; for patterns it has (REST controllers, list tables, the designer, adapters), Certificate's own shipped code is the reference. Examples from the sibling plugins:
 - Building the **addon manager**? Read Quiz's `class-ppq-addon-manager.php` first
 - Building a **REST controller**? Read an existing Quiz controller first
 - Building an **admin list table**? Read Quiz's banks list table first
