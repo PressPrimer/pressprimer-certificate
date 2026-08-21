@@ -556,6 +556,40 @@ class Test_LearnDash_Adapter extends TestCase { // phpcs:ignore Generic.Files.On
 	}
 
 	/**
+	 * An 'any' trigger's reissue setting governs every fired object:
+	 * with reissue on, completing the same lesson twice issues twice.
+	 *
+	 * @return void
+	 */
+	public function test_any_lesson_trigger_honors_reissue() {
+		$this->seed_sub_course_posts();
+		$adapter = new PressPrimer_Certificate_LearnDash_Lesson_Adapter();
+		$adapter->register();
+		$this->seed_typed_trigger(
+			'lms_learndash_lesson',
+			'any',
+			[
+				'course_id' => '301',
+				'reissue'   => true,
+			]
+		);
+
+		$payload = [
+			'user'     => (object) [ 'ID' => 7 ],
+			'course'   => $GLOBALS['ppcert_test_posts'][301],
+			'lesson'   => $GLOBALS['ppcert_test_posts'][305],
+			'progress' => [],
+		];
+
+		do_action( 'learndash_lesson_completed', $payload );
+		do_action( 'learndash_lesson_completed', $payload );
+
+		$rows = $this->wpdb->rows( 'wp_ppcert_certificates' );
+		$this->assertCount( 2, $rows );
+		$this->assertSame( '305', $rows[1]['source_ref'] );
+	}
+
+	/**
 	 * A scoped 'any' trigger fails closed when the payload cannot prove
 	 * its course.
 	 *

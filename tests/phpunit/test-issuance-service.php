@@ -560,4 +560,72 @@ class Test_Issuance_Service extends TestCase {
 		$certificate = PressPrimer_Certificate_Certificate::get( $id );
 		$this->assertSame( '', $certificate->merge_data['ghost.field'] );
 	}
+
+	/**
+	 * Inline tokens in text content (schema v2) resolve into the snapshot
+	 * exactly like merge_field tokens - the 1.1 regression Ryan caught
+	 * on 2026-08-21: the collector walked merge_field elements only, so
+	 * inline fields rendered empty on every issued certificate.
+	 *
+	 * @return void
+	 */
+	public function test_inline_text_tokens_resolve_into_snapshot() {
+		$layout                          = json_decode( $this->layout_json, true );
+		$layout['layout_schema_version'] = 2;
+		$layout['elements'][]            = [
+			'id'    => 'el_inlinetk',
+			'type'  => 'text',
+			'x'     => 100,
+			'y'     => 300,
+			'w'     => 400,
+			'h'     => 30,
+			'z'     => 9,
+			'props' => [
+				'content'     => 'Issued by {{site.name}} on {{certificate.issue_date}}',
+				'font_family' => 'playfair-display',
+				'font_size'   => 14,
+				'color'       => '#000000',
+				'align'       => 'center',
+				'line_height' => 1.2,
+				'bold'        => false,
+				'italic'      => false,
+			],
+		];
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			$this->template_id,
+			[ 'layout_json' => wp_json_encode( $layout ) ]
+		);
+
+		$id = PressPrimer_Certificate_Issuance_Service::issue( $this->args() );
+		$this->assertIsInt( $id );
+
+		$certificate = PressPrimer_Certificate_Certificate::get( $id );
+
+		$this->assertArrayHasKey( 'site.name', $certificate->merge_data );
+		$this->assertNotSame( '', $certificate->merge_data['site.name'] );
+		$this->assertArrayHasKey( 'certificate.issue_date', $certificate->merge_data );
+		$this->assertNotSame( '', $certificate->merge_data['certificate.issue_date'] );
+	}
+
+	/**
+	 * Merge tokens used only by the email templates also resolve into
+	 * the snapshot, so the email can print values the certificate does
+	 * not (Feature 1.1-005).
+	 *
+	 * @return void
+	 */
+	public function test_email_template_tokens_resolve_into_snapshot() {
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [
+			'email_issued_subject' => 'From {{certificate.issuer_name}}',
+		];
+
+		$id = PressPrimer_Certificate_Issuance_Service::issue( $this->args() );
+		$this->assertIsInt( $id );
+
+		$certificate = PressPrimer_Certificate_Certificate::get( $id );
+
+		$this->assertArrayHasKey( 'certificate.issuer_name', $certificate->merge_data );
+		$this->assertNotSame( '', $certificate->merge_data['certificate.issuer_name'] );
+	}
 }

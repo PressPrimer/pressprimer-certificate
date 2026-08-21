@@ -241,6 +241,27 @@ class PressPrimer_Certificate_Email_Service {
 	}
 
 	/**
+	 * Merge tokens referenced by the current email templates
+	 *
+	 * The issuance engine resolves these alongside the layout's tokens
+	 * so the certificate's snapshot covers the email too (1.1, Feature
+	 * 1.1-005). Tokens added to the settings AFTER a certificate was
+	 * issued are not in its snapshot and render empty on resend -
+	 * snapshot semantics, by design.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return string[] Unique token keys in inner form.
+	 */
+	public static function template_tokens() {
+		$settings = self::settings();
+
+		return PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text(
+			(string) $settings['email_issued_subject'] . "\n" . (string) $settings['email_issued_body']
+		);
+	}
+
+	/**
 	 * Effective email settings (stored values over defaults)
 	 *
 	 * @since 1.0.0

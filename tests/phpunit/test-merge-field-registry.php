@@ -478,4 +478,55 @@ class Test_Merge_Field_Registry extends TestCase {
 
 		$this->assertSame( [], PressPrimer_Certificate_Merge_Field_Registry::extract_tokens( [ 'elements' => [] ] ) );
 	}
+
+	/**
+	 * Schema v2 text content contributes its inline tokens (deduped
+	 * against merge_field tokens, non-grammar braces ignored); v1 text
+	 * is never scanned because v1 renders it literally.
+	 *
+	 * @return void
+	 */
+	public function test_extract_tokens_scans_v2_text_content() {
+		$elements = [
+			[
+				'type'  => 'text',
+				'props' => [ 'content' => 'Awarded to {{recipient.display_name}} by {{site.name}} {{not a token}}' ],
+			],
+			[
+				'type'  => 'merge_field',
+				'props' => [ 'token' => '{{recipient.display_name}}' ],
+			],
+			[
+				'type'  => 'text',
+				'props' => [ 'content' => 'Expires: {{certificate.expiry_date}}' ],
+			],
+		];
+
+		$this->assertSame(
+			[ 'recipient.display_name', 'site.name', 'certificate.expiry_date' ],
+			PressPrimer_Certificate_Merge_Field_Registry::extract_tokens(
+				[
+					'layout_schema_version' => 2,
+					'elements'              => $elements,
+				]
+			)
+		);
+
+		$this->assertSame(
+			[ 'recipient.display_name' ],
+			PressPrimer_Certificate_Merge_Field_Registry::extract_tokens(
+				[
+					'layout_schema_version' => 1,
+					'elements'              => $elements,
+				]
+			)
+		);
+
+		$this->assertSame(
+			[ 'source.course_title', 'recipient.meta.license-no' ],
+			PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text(
+				'Your {{source.course_title}} ({{recipient.meta.license-no}}) {{source.course_title}}'
+			)
+		);
+	}
 }

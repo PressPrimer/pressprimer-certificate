@@ -168,20 +168,65 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 
 		$elements = isset( $layout['elements'] ) && is_array( $layout['elements'] ) ? $layout['elements'] : [];
 
+		// Inline tokens in text content (schema v2+, Feature 1.1-001):
+		// the renderer interpolates them, so issuance must resolve them.
+		// v1 documents render text literally and are never scanned.
+		$scan_text = isset( $layout['layout_schema_version'] ) && (int) $layout['layout_schema_version'] >= 2;
+
 		foreach ( $elements as $element ) {
-			if ( ! is_array( $element ) || ! isset( $element['type'] ) || 'merge_field' !== $element['type'] ) {
+			if ( ! is_array( $element ) || ! isset( $element['type'] ) ) {
 				continue;
 			}
 
-			$token = isset( $element['props']['token'] ) ? (string) $element['props']['token'] : '';
-			$inner = self::strip_braces( $token );
+			if ( 'merge_field' === $element['type'] ) {
+				$token = isset( $element['props']['token'] ) ? (string) $element['props']['token'] : '';
+				$inner = self::strip_braces( $token );
 
-			if ( '' !== $inner && ! in_array( $inner, $tokens, true ) ) {
-				$tokens[] = $inner;
+				if ( '' !== $inner && ! in_array( $inner, $tokens, true ) ) {
+					$tokens[] = $inner;
+				}
+
+				continue;
+			}
+
+			if ( $scan_text && 'text' === $element['type'] && isset( $element['props']['content'] ) ) {
+				foreach ( self::extract_tokens_from_text( (string) $element['props']['content'] ) as $inner ) {
+					if ( ! in_array( $inner, $tokens, true ) ) {
+						$tokens[] = $inner;
+					}
+				}
 			}
 		}
 
 		return $tokens;
+	}
+
+	/**
+	 * The inline merge-token grammar embedded in free text
+	 *
+	 * One pattern for every scan and substitution surface (PDF text
+	 * content, email subject/body): {{group.field}} / {{group.meta.key}}
+	 * per layout-schema.md "Merge Token Grammar".
+	 *
+	 * @since 1.1.0
+	 * @var string
+	 */
+	const INLINE_TOKEN_PATTERN = '/\{\{([a-z0-9_]+\.[a-z0-9_.\-]+)\}\}/';
+
+	/**
+	 * Extract the merge tokens embedded in a text run
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string $text Text that may contain {{tokens}}.
+	 * @return string[] Unique token keys in inner form, in order.
+	 */
+	public static function extract_tokens_from_text( $text ) {
+		if ( ! preg_match_all( self::INLINE_TOKEN_PATTERN, (string) $text, $matches ) ) {
+			return [];
+		}
+
+		return array_values( array_unique( $matches[1] ) );
 	}
 
 	/**

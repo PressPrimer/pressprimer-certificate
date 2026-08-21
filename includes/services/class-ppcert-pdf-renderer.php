@@ -811,7 +811,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 */
 	public static function interpolate_tokens( $content, array $merge_data ) {
 		return (string) preg_replace_callback(
-			'/\{\{([a-z0-9_]+\.[a-z0-9_.\-]+)\}\}/',
+			PressPrimer_Certificate_Merge_Field_Registry::INLINE_TOKEN_PATTERN,
 			static function ( $matches ) use ( $merge_data ) {
 				return isset( $merge_data[ $matches[1] ] ) && is_scalar( $merge_data[ $matches[1] ] )
 					? (string) $merge_data[ $matches[1] ]

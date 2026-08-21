@@ -273,6 +273,16 @@ class PressPrimer_Certificate_Issuance_Service {
 			$tokens = PressPrimer_Certificate_Merge_Field_Registry::extract_tokens( $template->layout );
 		}
 
+		// The issuance email's merge tokens resolve into the same
+		// snapshot (1.1, Feature 1.1-005), so the email can name values
+		// the certificate itself does not print - and a resend still
+		// reads the immutable snapshot.
+		$tokens = array_values(
+			array_unique(
+				array_merge( $tokens, PressPrimer_Certificate_Email_Service::template_tokens() )
+			)
+		);
+
 		for ( $attempt = 1; $attempt <= self::MAX_INSERT_ATTEMPTS; $attempt++ ) {
 			$credential_id = PressPrimer_Certificate_Credential_ID_Service::generate();
 
@@ -404,7 +414,9 @@ class PressPrimer_Certificate_Issuance_Service {
 
 			$trigger_ref = isset( $trigger->source_ref ) ? (string) $trigger->source_ref : '';
 
-			if ( $trigger_ref !== (string) $source_ref ) {
+			// An 'any' trigger (1.1) fires for every ref of its type, so
+			// its reissue setting governs every fired object.
+			if ( $trigger_ref !== (string) $source_ref && PressPrimer_Certificate_Trigger::SOURCE_ANY !== $trigger_ref ) {
 				continue;
 			}
 
