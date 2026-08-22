@@ -148,7 +148,7 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 			'valid'          => $valid,
 			'status'         => $status,
 			'recipient_name' => self::snapshot_recipient_name( $certificate ),
-			'subject'        => null !== $certificate->template_title ? (string) $certificate->template_title : '',
+			'subject'        => PressPrimer_Certificate_Certificate::display_title( $certificate ),
 			'issuer_name'    => self::snapshot_issuer_name( $certificate ),
 			'issued_at'      => self::to_iso8601( (string) $certificate->issued_at ),
 			'expires_at'     => ! empty( $certificate->expires_at ) ? self::to_iso8601( (string) $certificate->expires_at ) : null,

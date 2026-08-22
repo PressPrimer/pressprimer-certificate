@@ -263,10 +263,70 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 			$values[ $token ] = self::resolve_token( $token, $fields, $context );
 		}
 
+		// Post-pass (Feature 1.1-006): the certificate's own name is the
+		// template's name pattern interpolated against everything resolved
+		// above, so it resolves LAST and always lands in the snapshot.
+		$values['certificate.title'] = self::resolve_title( $context, $values );
+
 		/** This filter is documented in docs/architecture/HOOKS.md */
 		$values = apply_filters( 'ppcert_merge_data', $values, $context );
 
 		return is_array( $values ) ? $values : [];
+	}
+
+	/**
+	 * Maximum resolved certificate-name length (Feature 1.1-006)
+	 *
+	 * @since 1.1.0
+	 * @var int
+	 */
+	const TITLE_MAX_LENGTH = 200;
+
+	/**
+	 * Resolve the certificate's name from the template's pattern
+	 *
+	 * `$context['template_settings']['certificate_name']` is the pattern
+	 * (merge tokens allowed); interpolated against the already-resolved
+	 * map. An empty pattern, or a pattern that resolves to nothing, falls
+	 * back to the template title from `$context['template_title']`.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array $context Issuance context.
+	 * @param array $values  Resolved merge values so far.
+	 * @return string
+	 */
+	public static function resolve_title( array $context, array $values ) {
+		$pattern = isset( $context['template_settings']['certificate_name'] )
+			? trim( (string) $context['template_settings']['certificate_name'] )
+			: '';
+
+		$title = '' !== $pattern
+			? trim( PressPrimer_Certificate_PDF_Renderer::interpolate_tokens( $pattern, $values ) )
+			: '';
+
+		if ( '' === $title ) {
+			$title = self::resolve_title_fallback( $context );
+		}
+
+		return function_exists( 'mb_substr' )
+			? mb_substr( $title, 0, self::TITLE_MAX_LENGTH )
+			: substr( $title, 0, self::TITLE_MAX_LENGTH );
+	}
+
+	/**
+	 * The certificate-name fallback: the template title
+	 *
+	 * Registered as the field's resolver so the token is never
+	 * "unregistered"; resolve() overrides it with the pattern result.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return string
+	 */
+	public static function resolve_title_fallback( array $context ) {
+		return isset( $context['template_title'] ) ? (string) $context['template_title'] : '';
 	}
 
 	/**
@@ -475,6 +535,15 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 				'label'    => __( 'Expiry Date', 'pressprimer-certificate' ),
 				'sample'   => __( 'June 12, 2028', 'pressprimer-certificate' ),
 				'resolver' => [ __CLASS__, 'resolve_expiry_date' ],
+			],
+			'certificate.title'         => [
+				'group'    => 'certificate',
+				'key'      => 'certificate.title',
+				'label'    => __( 'Display Name', 'pressprimer-certificate' ),
+				'sample'   => __( 'Certificate of Completion', 'pressprimer-certificate' ),
+				// Placeholder resolver: resolve() computes the real value
+				// LAST from the template's name pattern (Feature 1.1-006).
+				'resolver' => [ __CLASS__, 'resolve_title_fallback' ],
 			],
 			'site.name'                 => [
 				'group'    => 'site',

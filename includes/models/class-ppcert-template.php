@@ -509,6 +509,15 @@ class PressPrimer_Certificate_Template {
 			}
 		}
 
+		// Certificate name pattern (Feature 1.1-006): plain text with
+		// merge tokens allowed (braces survive sanitize_text_field);
+		// independent of the validity mode.
+		$name = isset( $settings['certificate_name'] ) ? sanitize_text_field( (string) $settings['certificate_name'] ) : '';
+
+		if ( '' !== $name ) {
+			$clean['certificate_name'] = function_exists( 'mb_substr' ) ? mb_substr( $name, 0, 200 ) : substr( $name, 0, 200 );
+		}
+
 		return $clean;
 	}
 }

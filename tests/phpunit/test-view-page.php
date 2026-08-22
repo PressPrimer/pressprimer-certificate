@@ -284,4 +284,23 @@ class Test_View_Page extends TestCase {
 
 		$this->assertStringContainsString( '<dt>Recipient</dt><dd>Dana Whitfield</dd>', $html );
 	}
+
+	/**
+	 * The stored certificate name (Feature 1.1-006) replaces the template
+	 * title in the details, escaped.
+	 *
+	 * @return void
+	 */
+	public function test_stored_certificate_name_leads_the_page() {
+		$certificate             = $this->certificate();
+		$certificate->merge_data = [
+			'recipient.full_name' => 'Dana Whitfield',
+			'certificate.title'   => 'Botany 101 <b>Certificate</b>',
+		];
+
+		$html = PressPrimer_Certificate_View_Page::render_content( $certificate );
+
+		$this->assertStringContainsString( '<dt>Certificate</dt><dd>Botany 101 &lt;b&gt;Certificate&lt;/b&gt;</dd>', $html );
+		$this->assertStringNotContainsString( '<dd>Completion Award</dd>', $html );
+	}
 }

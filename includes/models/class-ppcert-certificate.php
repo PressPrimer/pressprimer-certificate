@@ -514,6 +514,42 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * The certificate's display name (Feature 1.1-006)
+	 *
+	 * The name stored in the snapshot at issuance (`certificate.title`
+	 * in merge data), else the joined template title, else the caller's
+	 * fallback. Pre-1.1 certificates have no stored name and display
+	 * exactly as before. Accepts hydrated rows (`merge_data` array) and
+	 * raw rows (`merge_data_json`).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param object $row      Certificate row.
+	 * @param string $fallback Used when no name and no template title exist.
+	 * @return string
+	 */
+	public static function display_title( $row, $fallback = '' ) {
+		$merge = null;
+
+		if ( isset( $row->merge_data ) && is_array( $row->merge_data ) ) {
+			$merge = $row->merge_data;
+		} elseif ( ! empty( $row->merge_data_json ) ) {
+			$decoded = json_decode( (string) $row->merge_data_json, true );
+			$merge   = is_array( $decoded ) ? $decoded : null;
+		}
+
+		if ( is_array( $merge ) && isset( $merge['certificate.title'] ) && '' !== trim( (string) $merge['certificate.title'] ) ) {
+			return (string) $merge['certificate.title'];
+		}
+
+		if ( isset( $row->template_title ) && null !== $row->template_title && '' !== (string) $row->template_title ) {
+			return (string) $row->template_title;
+		}
+
+		return (string) $fallback;
+	}
+
+	/**
 	 * One batch of a recipient's certificates, oldest first
 	 *
 	 * The privacy exporter/eraser's paging query (Feature 008 FR-005):

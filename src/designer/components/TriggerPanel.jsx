@@ -19,6 +19,7 @@
 import {
 	createInterpolateElement,
 	useEffect,
+	useRef,
 	useState,
 } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
@@ -45,6 +46,7 @@ import {
 	InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useDesignerStore } from '../hooks/useDesignerStore';
+import InsertFieldButton, { useFieldGroups } from './InsertFieldButton';
 import { ADMIN_DATE_FORMAT } from '../../shared/date-formats';
 import {
 	getTriggerTypes,
@@ -197,6 +199,167 @@ function conditionSummary( trigger, type ) {
 			return `${ field.label }: ${ value }`;
 		} )
 		.filter( Boolean );
+}
+
+/**
+ * Certificate display name - the per-template pattern each certificate's
+ * own name resolves from at issuance (Feature 1.1-006).
+ *
+ * Distinct from the template name in the toolbar (that one is for the
+ * author; this one is what learners and verifiers see). Empty means
+ * the template name. With an Any trigger staged and no display name
+ * set, a compact suggestion built from the trigger's title field is one
+ * click away (FR-004) - single column, three short lines, so the
+ * validity section below stays in view (Ryan's review, 2026-08-21).
+ *
+ * @param {Object}   props          Props.
+ * @param {Object}   props.settings Current template settings.
+ * @param {Array}    props.triggers Staged triggers.
+ * @param {Function} props.onChange Receives the new pattern string.
+ * @return {JSX.Element} Section.
+ */
+function CertificateNameSection( { settings, triggers, onChange } ) {
+	const value = settings.certificate_name || '';
+	const [ draft, setDraft ] = useState( value );
+	const inputRef = useRef( null );
+	const caretRef = useRef( null );
+	const groups = useFieldGroups();
+
+	useEffect( () => {
+		setDraft( value );
+	}, [ value ] );
+
+	const rememberCaret = () => {
+		const node = inputRef.current?.input;
+
+		if ( node && 'number' === typeof node.selectionStart ) {
+			caretRef.current = [ node.selectionStart, node.selectionEnd ];
+		}
+	};
+
+	const commit = ( next ) => {
+		if ( next !== value ) {
+			onChange( next );
+		}
+	};
+
+	const insertField = ( key ) => {
+		const token = `{{${ key }}}`;
+		const [ start, end ] = caretRef.current || [
+			draft.length,
+			draft.length,
+		];
+		const next = draft.slice( 0, start ) + token + draft.slice( end );
+		const caret = start + token.length;
+
+		setDraft( next );
+		commit( next );
+		caretRef.current = [ caret, caret ];
+
+		window.requestAnimationFrame( () => {
+			const node = inputRef.current?.input;
+
+			if ( node ) {
+				node.focus();
+				node.setSelectionRange( caret, caret );
+			}
+		} );
+	};
+
+	// The Any nudge. The staged trigger's label IS its Any wording
+	// ("Any assignment"), so the copy names the real noun; the suggestion
+	// uses the scoped registry's first source title field (every bundled
+	// adapter registers one).
+	const anyTrigger = triggers.find(
+		( trigger ) => 'any' === String( trigger.source_ref )
+	);
+	const anyLabel = anyTrigger ? String( anyTrigger.source_label || '' ) : '';
+	const anyLower = anyLabel
+		? anyLabel.charAt( 0 ).toLowerCase() + anyLabel.slice( 1 )
+		: '';
+	const sourceGroup = groups.find( ( group ) => 'source' === group.id );
+	const titleField =
+		sourceGroup &&
+		sourceGroup.fields.find( ( field ) => /_title$/.test( field.key ) );
+	const suggestion = titleField
+		? `{{${ titleField.key }}} ${ __(
+				'Certificate',
+				'pressprimer-certificate'
+		  ) }`
+		: '';
+	const showNudge = !! anyTrigger && '' === value.trim() && '' !== suggestion;
+
+	return (
+		<div className="ppcert-designer__validity">
+			<span className="ppcert-designer__panel-heading">
+				{ __( 'Certificate display name', 'pressprimer-certificate' ) }
+				<Tooltip
+					title={ __(
+						'The template name in the toolbar is for you. The display name is what learners and verifiers see in certificate lists, on the verification page, and in emails. Leave it blank to use the template name.',
+						'pressprimer-certificate'
+					) }
+				>
+					<InfoCircleOutlined className="ppcert-designer__trigger-help" />
+				</Tooltip>
+			</span>
+			<Input
+				ref={ inputRef }
+				size="small"
+				value={ draft }
+				maxLength={ 200 }
+				placeholder={ __(
+					'Same as the template name',
+					'pressprimer-certificate'
+				) }
+				data-ppcert-certificate-name
+				onChange={ ( event ) => setDraft( event.target.value ) }
+				onSelect={ rememberCaret }
+				onKeyUp={ rememberCaret }
+				onClick={ rememberCaret }
+				onBlur={ () => {
+					rememberCaret();
+					commit( draft );
+				} }
+				onPressEnter={ () => commit( draft ) }
+			/>
+			<InsertFieldButton
+				onInsert={ insertField }
+				testId="insert_name_field"
+			/>
+			{ showNudge && (
+				<div
+					className="ppcert-designer__name-nudge"
+					data-ppcert-name-nudge
+				>
+					<Text type="secondary">
+						{ sprintf(
+							/* translators: %s: the trigger's Any option, e.g. "any assignment" */
+							__(
+								'Awards for %s. Suggested display name:',
+								'pressprimer-certificate'
+							),
+							anyLower
+						) }
+					</Text>
+					<code className="ppcert-designer__name-nudge-code">
+						{ suggestion }
+					</code>
+					<span className="ppcert-designer__name-nudge-actions">
+						<Button
+							size="small"
+							data-ppcert-name-nudge-apply
+							onClick={ () => {
+								setDraft( suggestion );
+								commit( suggestion );
+							} }
+						>
+							{ __( 'Use this name', 'pressprimer-certificate' ) }
+						</Button>
+					</span>
+				</div>
+			) }
+		</div>
+	);
 }
 
 /**
@@ -1142,11 +1305,38 @@ export default function TriggerPanel() {
 
 			{ manualNote }
 
+			<CertificateNameSection
+				settings={ state.template?.settings || {} }
+				triggers={ state.triggers || [] }
+				onChange={ ( certificateName ) => {
+					// Validity keys stay; an empty name drops the key so
+					// the server stores nothing for "same as template".
+					const next = { ...( state.template?.settings || {} ) };
+
+					if ( '' === certificateName.trim() ) {
+						delete next.certificate_name;
+					} else {
+						next.certificate_name = certificateName;
+					}
+
+					dispatch( { type: 'EDIT_SETTINGS', settings: next } );
+				} }
+			/>
+
 			<ValiditySection
 				settings={ state.template?.settings || {} }
-				onChange={ ( settings ) =>
-					dispatch( { type: 'EDIT_SETTINGS', settings } )
-				}
+				onChange={ ( validity ) => {
+					// The validity control replaces the whole object; the
+					// certificate name must survive it (1.1-006).
+					const name = state.template?.settings?.certificate_name;
+
+					dispatch( {
+						type: 'EDIT_SETTINGS',
+						settings: name
+							? { ...validity, certificate_name: name }
+							: validity,
+					} );
+				} }
 			/>
 
 			{ state.triggersDirty && (

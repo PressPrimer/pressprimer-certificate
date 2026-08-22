@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-19T19:23:02+00:00\n"
+"POT-Creation-Date: 2026-08-22T00:46:53+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -144,7 +144,7 @@ msgid "Appearance"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-settings.php:166
-#: includes/services/class-ppcert-merge-field-registry.php:402
+#: includes/services/class-ppcert-merge-field-registry.php:507
 #: src/settings/components/SettingsPage.jsx:66
 msgid "Email"
 msgstr ""
@@ -176,7 +176,7 @@ msgstr ""
 #: includes/admin/class-ppcert-admin-user-profile.php:150
 #: includes/admin/class-ppcert-certificates-list-table.php:68
 #: includes/admin/class-ppcert-certificates-list-table.php:155
-#: includes/admin/class-ppcert-certificates-list-table.php:376
+#: includes/admin/class-ppcert-certificates-list-table.php:386
 #: includes/frontend/class-ppcert-verification-page.php:97
 #: includes/frontend/class-ppcert-verification-page.php:268
 #: includes/frontend/class-ppcert-view-page.php:256
@@ -187,18 +187,18 @@ msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:151
 #: includes/admin/class-ppcert-certificates-list-table.php:156
-#: includes/admin/class-ppcert-certificates-list-table.php:377
-#: includes/frontend/class-ppcert-my-certificates.php:267
+#: includes/admin/class-ppcert-certificates-list-table.php:387
+#: includes/frontend/class-ppcert-my-certificates.php:268
 #: src/dashboard/components/RecentCertificates.jsx:70
 msgid "Revoked"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:152
 #: includes/admin/class-ppcert-certificates-list-table.php:157
-#: includes/admin/class-ppcert-certificates-list-table.php:378
+#: includes/admin/class-ppcert-certificates-list-table.php:388
 #: includes/frontend/class-ppcert-my-certificates.php:186
-#: includes/frontend/class-ppcert-my-certificates.php:266
-#: includes/frontend/class-ppcert-my-certificates.php:294
+#: includes/frontend/class-ppcert-my-certificates.php:267
+#: includes/frontend/class-ppcert-my-certificates.php:295
 #: includes/frontend/class-ppcert-verification-page.php:99
 #: includes/frontend/class-ppcert-verification-page.php:261
 #: includes/frontend/class-ppcert-view-page.php:249
@@ -216,7 +216,7 @@ msgstr ""
 #: includes/admin/class-ppcert-certificates-list-table.php:63
 #: includes/frontend/class-ppcert-verification-page.php:139
 #: includes/frontend/class-ppcert-view-page.php:255
-#: includes/services/class-ppcert-merge-field-registry.php:416
+#: includes/services/class-ppcert-merge-field-registry.php:521
 #: includes/utilities/class-ppcert-privacy.php:109
 #: src/dashboard/components/RecentCertificates.jsx:112
 msgid "Credential ID"
@@ -231,23 +231,24 @@ msgstr ""
 #: includes/services/class-ppcert-pdf-renderer.php:213
 #: includes/utilities/class-ppcert-privacy.php:113
 #: src/dashboard/components/RecentCertificates.jsx:104
+#: src/designer/components/TriggerPanel.jsx:285
 msgid "Certificate"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:161
-#: includes/frontend/class-ppcert-my-certificates.php:287
+#: includes/frontend/class-ppcert-my-certificates.php:288
 #: src/dashboard/components/RecentCertificates.jsx:144
 msgid "Earned"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:162
 #: includes/admin/class-ppcert-certificates-list-table.php:69
-#: includes/frontend/class-ppcert-my-certificates.php:295
+#: includes/frontend/class-ppcert-my-certificates.php:296
 #: includes/frontend/class-ppcert-verification-page.php:98
 #: includes/frontend/class-ppcert-verification-page.php:262
 #: includes/frontend/class-ppcert-view-page.php:250
 #: includes/utilities/class-ppcert-privacy.php:132
-#: src/designer/components/TriggerPanel.jsx:236
+#: src/designer/components/TriggerPanel.jsx:400
 msgid "Expires"
 msgstr ""
 
@@ -256,7 +257,7 @@ msgid "Links"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:172
-#: includes/frontend/class-ppcert-my-certificates.php:315
+#: includes/frontend/class-ppcert-my-certificates.php:316
 #: includes/frontend/class-ppcert-verification-page.php:144
 #: blocks/verify/index.js:81
 msgid "Verify"
@@ -264,21 +265,22 @@ msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:173
 #: includes/admin/class-ppcert-certificates-list-table.php:244
-#: includes/frontend/class-ppcert-my-certificates.php:316
+#: includes/frontend/class-ppcert-my-certificates.php:317
 #: includes/frontend/class-ppcert-view-page.php:284
 msgid "(opens in a new tab)"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:180
 #: includes/admin/class-ppcert-certificates-list-table.php:245
-#: includes/frontend/class-ppcert-my-certificates.php:310
+#: includes/frontend/class-ppcert-my-certificates.php:311
 #: includes/frontend/class-ppcert-view-page.php:277
 msgid "Download PDF"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:185
-#: includes/admin/class-ppcert-certificates-list-table.php:363
-#: includes/api/class-ppcert-rest-certificates-controller.php:476
+#: includes/admin/class-ppcert-certificates-list-table.php:362
+#: includes/api/class-ppcert-rest-certificates-controller.php:478
+#: includes/api/class-ppcert-rest-certificates-controller.php:482
 #: includes/frontend/class-ppcert-my-certificates.php:262
 #: src/dashboard/components/RecentCertificates.jsx:109
 #: src/dashboard/components/TopTemplates.jsx:74
@@ -286,17 +288,17 @@ msgid "(deleted template)"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:192
-#: includes/admin/class-ppcert-certificates-list-table.php:395
+#: includes/admin/class-ppcert-certificates-list-table.php:405
 msgid "Never expires"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:210
-#: includes/frontend/class-ppcert-my-certificates.php:344
+#: includes/frontend/class-ppcert-my-certificates.php:345
 msgid "&laquo; Previous"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:211
-#: includes/frontend/class-ppcert-my-certificates.php:345
+#: includes/frontend/class-ppcert-my-certificates.php:346
 msgid "Next &raquo;"
 msgstr ""
 
@@ -319,7 +321,7 @@ msgid "Certificate Templates"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin.php:295
-#: src/designer/components/DesignerApp.jsx:441
+#: src/designer/components/DesignerApp.jsx:459
 #: src/settings/components/StatusTab.jsx:517
 msgid "Templates"
 msgstr ""
@@ -368,8 +370,8 @@ msgstr ""
 #: includes/services/class-ppcert-merge-field-registry.php:142
 #: includes/utilities/class-ppcert-privacy.php:117
 #: src/designer/components/ElementPalette.jsx:251
-#: src/designer/components/TriggerPanel.jsx:716
-#: src/designer/components/TriggerPanel.jsx:983
+#: src/designer/components/TriggerPanel.jsx:880
+#: src/designer/components/TriggerPanel.jsx:1147
 msgid "Source"
 msgstr ""
 
@@ -405,7 +407,7 @@ msgid "Filter"
 msgstr ""
 
 #: includes/admin/class-ppcert-certificates-list-table.php:207
-#: includes/admin/class-ppcert-certificates-list-table.php:367
+#: includes/admin/class-ppcert-certificates-list-table.php:377
 msgid "Manual"
 msgstr ""
 
@@ -466,11 +468,11 @@ msgid "Delete"
 msgstr ""
 
 #: includes/admin/class-ppcert-certificates-list-table.php:358
-#: includes/api/class-ppcert-rest-certificates-controller.php:472
+#: includes/api/class-ppcert-rest-certificates-controller.php:474
 msgid "(deleted user)"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:421
+#: includes/admin/class-ppcert-certificates-list-table.php:431
 msgid "No certificates issued yet. Add an award trigger to a published template, or issue one manually."
 msgstr ""
 
@@ -488,7 +490,7 @@ msgid "Title"
 msgstr ""
 
 #: includes/admin/class-ppcert-templates-list-table.php:84
-#: src/designer/components/TriggerPanel.jsx:622
+#: src/designer/components/TriggerPanel.jsx:786
 msgid "Trigger"
 msgstr ""
 
@@ -524,7 +526,7 @@ msgid "(untitled)"
 msgstr ""
 
 #: includes/admin/class-ppcert-templates-list-table.php:260
-#: src/designer/components/TriggerPanel.jsx:1118
+#: src/designer/components/TriggerPanel.jsx:1282
 msgid "Edit"
 msgstr ""
 
@@ -633,16 +635,16 @@ msgstr ""
 msgid "Template settings must be an object."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:453
+#: includes/api/class-ppcert-rest-templates-controller.php:463
 msgid "The uploads directory is not writable."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:465
+#: includes/api/class-ppcert-rest-templates-controller.php:475
 #: includes/services/class-ppcert-preview-service.php:202
 msgid "The preview directory could not be created."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:491
+#: includes/api/class-ppcert-rest-templates-controller.php:501
 msgid "The preview file could not be stored."
 msgstr ""
 
@@ -659,7 +661,7 @@ msgid "Certificates support a single award trigger in this version. Duplicate th
 msgstr ""
 
 #: includes/api/class-ppcert-rest-triggers-controller.php:393
-#: src/designer/components/TriggerPanel.jsx:1052
+#: src/designer/components/TriggerPanel.jsx:1216
 msgid "Any source"
 msgstr ""
 
@@ -706,7 +708,7 @@ msgid "All"
 msgstr ""
 
 #: includes/frontend/class-ppcert-my-certificates.php:185
-#: includes/frontend/class-ppcert-my-certificates.php:265
+#: includes/frontend/class-ppcert-my-certificates.php:266
 msgid "Valid"
 msgstr ""
 
@@ -738,7 +740,7 @@ msgstr ""
 msgid "Sort"
 msgstr ""
 
-#: includes/frontend/class-ppcert-my-certificates.php:355
+#: includes/frontend/class-ppcert-my-certificates.php:356
 msgid "Certificates pagination"
 msgstr ""
 
@@ -818,7 +820,7 @@ msgstr ""
 #: includes/integrations/abstract-ppcert-lms-adapter.php:602
 #: includes/integrations/class-ppcert-ppa-adapter.php:243
 #: includes/integrations/class-ppcert-ppq-adapter.php:245
-#: includes/services/class-ppcert-merge-field-registry.php:410
+#: includes/services/class-ppcert-merge-field-registry.php:515
 msgid "June 12, 2026"
 msgstr ""
 
@@ -1112,7 +1114,7 @@ msgid "The template could not be created."
 msgstr ""
 
 #: includes/models/class-ppcert-template.php:302
-#: src/designer/components/DesignerApp.jsx:197
+#: src/designer/components/DesignerApp.jsx:198
 msgid "The template could not be saved."
 msgstr ""
 
@@ -1121,7 +1123,7 @@ msgid "The template could not be moved to the trash."
 msgstr ""
 
 #: includes/services/class-ppcert-element-types.php:63
-#: src/designer/components/properties/TextSection.jsx:202
+#: src/designer/components/properties/TextSection.jsx:163
 msgid "Text"
 msgstr ""
 
@@ -1157,11 +1159,11 @@ msgstr ""
 msgid "Background"
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:253
+#: includes/services/class-ppcert-email-service.php:280
 msgid "Your certificate: {subject}"
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:254
+#: includes/services/class-ppcert-email-service.php:281
 msgid ""
 "Hi {recipient_name},\n"
 "\n"
@@ -1185,7 +1187,7 @@ msgstr ""
 msgid "Certificate issuance failed before completion; no certificate was created."
 msgstr ""
 
-#: includes/services/class-ppcert-issuance-service.php:333
+#: includes/services/class-ppcert-issuance-service.php:355
 msgid "Certificate could not be written to the database."
 msgstr ""
 
@@ -1265,69 +1267,78 @@ msgstr ""
 msgid "Site"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:374
+#: includes/services/class-ppcert-merge-field-registry.php:479
 msgid "Recipient Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:375
-#: includes/services/class-ppcert-merge-field-registry.php:396
+#: includes/services/class-ppcert-merge-field-registry.php:480
+#: includes/services/class-ppcert-merge-field-registry.php:501
 msgid "Jordan Rivera"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:381
+#: includes/services/class-ppcert-merge-field-registry.php:486
 msgid "First Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:382
+#: includes/services/class-ppcert-merge-field-registry.php:487
 msgid "Jordan"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:388
+#: includes/services/class-ppcert-merge-field-registry.php:493
 msgid "Last Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:389
+#: includes/services/class-ppcert-merge-field-registry.php:494
 msgid "Rivera"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:395
+#: includes/services/class-ppcert-merge-field-registry.php:500
 msgid "Full Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:409
+#: includes/services/class-ppcert-merge-field-registry.php:514
 msgid "Issue Date"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:423
+#: includes/services/class-ppcert-merge-field-registry.php:528
 msgid "Issuer Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:424
-#: includes/services/class-ppcert-merge-field-registry.php:438
+#: includes/services/class-ppcert-merge-field-registry.php:529
+#: includes/services/class-ppcert-merge-field-registry.php:552
 msgid "Sunrise Training Academy"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:430
+#: includes/services/class-ppcert-merge-field-registry.php:535
 msgid "Expiry Date"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:431
+#: includes/services/class-ppcert-merge-field-registry.php:536
 msgid "June 12, 2028"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:437
+#: includes/services/class-ppcert-merge-field-registry.php:542
+msgid "Display Name"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:543
+#: src/settings/components/AppearanceTab.jsx:257
+msgid "Certificate of Completion"
+msgstr ""
+
+#: includes/services/class-ppcert-merge-field-registry.php:551
 msgid "Site Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:444
+#: includes/services/class-ppcert-merge-field-registry.php:558
 msgid "Site Tagline"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:445
+#: includes/services/class-ppcert-merge-field-registry.php:559
 msgid "Learn. Grow. Achieve."
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:451
+#: includes/services/class-ppcert-merge-field-registry.php:565
 #: src/settings/components/StatusTab.jsx:361
 msgid "Site URL"
 msgstr ""
@@ -1613,118 +1624,118 @@ msgstr ""
 msgid "Certificate canvas"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:64
+#: src/designer/components/DesignerApp.jsx:65
 msgid "Fit width"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:149
+#: src/designer/components/DesignerApp.jsx:150
 msgid "Template published."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:150
+#: src/designer/components/DesignerApp.jsx:151
 msgid "Template saved."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:167
+#: src/designer/components/DesignerApp.jsx:168
 msgid "Changed elsewhere"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:171
+#: src/designer/components/DesignerApp.jsx:172
 msgid "This template was changed in another window since you opened it. Saving again will overwrite those changes."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:184
+#: src/designer/components/DesignerApp.jsx:185
 msgid "Save anyway"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:231
+#: src/designer/components/DesignerApp.jsx:232
 msgid "The preview could not be rendered."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:342
+#: src/designer/components/DesignerApp.jsx:360
 msgid "The template could not be loaded."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:366
+#: src/designer/components/DesignerApp.jsx:384
 msgid "Template created - happy designing!"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:397
+#: src/designer/components/DesignerApp.jsx:415
 msgid "Cannot open the designer"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:404
+#: src/designer/components/DesignerApp.jsx:422
 msgid "Back to Templates"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:429
+#: src/designer/components/DesignerApp.jsx:447
 msgid "You have unsaved changes. Leave without saving?"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:455
+#: src/designer/components/DesignerApp.jsx:473
 msgid "Template name"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:477
+#: src/designer/components/DesignerApp.jsx:495
 msgid "Save name"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:498
+#: src/designer/components/DesignerApp.jsx:516
 msgid "Rename template"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:528
-#: src/designer/components/DesignerApp.jsx:529
+#: src/designer/components/DesignerApp.jsx:546
+#: src/designer/components/DesignerApp.jsx:547
 msgid "Undo"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:536
-#: src/designer/components/DesignerApp.jsx:537
+#: src/designer/components/DesignerApp.jsx:554
+#: src/designer/components/DesignerApp.jsx:555
 msgid "Redo"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:546
-#: src/designer/components/DesignerApp.jsx:550
+#: src/designer/components/DesignerApp.jsx:564
+#: src/designer/components/DesignerApp.jsx:568
 msgid "Toggle rulers"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:560
+#: src/designer/components/DesignerApp.jsx:578
 msgid "Merge field display"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:567
+#: src/designer/components/DesignerApp.jsx:585
 msgid "Samples"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:574
+#: src/designer/components/DesignerApp.jsx:592
 msgid "Tokens"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:587
+#: src/designer/components/DesignerApp.jsx:605
 msgid "Zoom"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:596
+#: src/designer/components/DesignerApp.jsx:614
 msgid "Preview PDF"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:604
+#: src/designer/components/DesignerApp.jsx:622
 msgid "Switch to draft"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:615
+#: src/designer/components/DesignerApp.jsx:633
 msgid "Publish"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:628
+#: src/designer/components/DesignerApp.jsx:646
 msgid "Save"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:659
+#: src/designer/components/DesignerApp.jsx:677
 msgid "Design"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:667
+#: src/designer/components/DesignerApp.jsx:685
 msgid "Award"
 msgstr ""
 
@@ -1754,6 +1765,10 @@ msgstr ""
 
 #: src/designer/components/ElementPalette.jsx:344
 msgid "This certificate has reached the 100-element limit."
+msgstr ""
+
+#: src/designer/components/InsertFieldButton.jsx:125
+msgid "Insert merge field"
 msgstr ""
 
 #: src/designer/components/MetaPickerModal.jsx:90
@@ -1862,7 +1877,7 @@ msgid "Design scaled to fit the new page. Undo restores it."
 msgstr ""
 
 #: src/designer/components/properties/PageSection.jsx:93
-#: src/designer/components/properties/TextSection.jsx:322
+#: src/designer/components/properties/TextSection.jsx:228
 msgid "Size"
 msgstr ""
 
@@ -1948,39 +1963,35 @@ msgstr ""
 msgid "Radius"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:274
-msgid "Insert merge field"
-msgstr ""
-
-#: src/designer/components/properties/TextSection.jsx:285
+#: src/designer/components/properties/TextSection.jsx:191
 msgid "Fields drop in at the cursor in the text field above and print real values on each certificate. You can also type them, like {{recipient.display_name}}."
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:293
+#: src/designer/components/properties/TextSection.jsx:199
 msgid "Font"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:337
+#: src/designer/components/properties/TextSection.jsx:243
 msgid "Line height"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:352
+#: src/designer/components/properties/TextSection.jsx:258
 msgid "Style"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:362
+#: src/designer/components/properties/TextSection.jsx:268
 msgid "This font does not bundle a bold variant."
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:378
+#: src/designer/components/properties/TextSection.jsx:284
 msgid "This font does not bundle an italic variant."
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:387
+#: src/designer/components/properties/TextSection.jsx:293
 msgid "Align"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:410
+#: src/designer/components/properties/TextSection.jsx:316
 msgid "Color"
 msgstr ""
 
@@ -2022,130 +2033,152 @@ msgstr ""
 msgid "Start blank"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:232
+#: src/designer/components/TriggerPanel.jsx:295
+msgid "Certificate display name"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:297
+msgid "The template name in the toolbar is for you. The display name is what learners and verifiers see in certificate lists, on the verification page, and in emails. Leave it blank to use the template name."
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:310
+msgid "Same as the template name"
+msgstr ""
+
+#. translators: %s: the trigger's Any option, e.g. "any assignment"
+#: src/designer/components/TriggerPanel.jsx:337
+#, js-format
+msgid "Awards for %s. Suggested display name:"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:357
+msgid "Use this name"
+msgstr ""
+
+#: src/designer/components/TriggerPanel.jsx:396
 msgid "Certificate validity"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:238
+#: src/designer/components/TriggerPanel.jsx:402
 msgid "Whether certificates from this template stop being valid: never, after a period counted from the earned date, or on a fixed date. Manual issuance can override this per certificate."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:270
+#: src/designer/components/TriggerPanel.jsx:434
 msgid "Never"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:274
+#: src/designer/components/TriggerPanel.jsx:438
 msgid "After a period"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:281
+#: src/designer/components/TriggerPanel.jsx:445
 msgid "On a date"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:295
+#: src/designer/components/TriggerPanel.jsx:459
 msgid "Valid for"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:331
+#: src/designer/components/TriggerPanel.jsx:495
 msgid "days"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:338
+#: src/designer/components/TriggerPanel.jsx:502
 msgid "months"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:345
+#: src/designer/components/TriggerPanel.jsx:509
 msgid "years"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:359
+#: src/designer/components/TriggerPanel.jsx:523
 msgid "Expiry date"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:553
+#: src/designer/components/TriggerPanel.jsx:717
 msgid "Update trigger"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:554
-#: src/designer/components/TriggerPanel.jsx:590
-#: src/designer/components/TriggerPanel.jsx:921
+#: src/designer/components/TriggerPanel.jsx:718
+#: src/designer/components/TriggerPanel.jsx:754
+#: src/designer/components/TriggerPanel.jsx:1085
 msgid "Add trigger"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:589
+#: src/designer/components/TriggerPanel.jsx:753
 msgid "Edit trigger"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:596
+#: src/designer/components/TriggerPanel.jsx:760
 msgid "Integration"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:604
+#: src/designer/components/TriggerPanel.jsx:768
 msgid "Choose a plugin…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:632
+#: src/designer/components/TriggerPanel.jsx:796
 msgid "Choose a trigger…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:677
-#: src/designer/components/TriggerPanel.jsx:728
+#: src/designer/components/TriggerPanel.jsx:841
+#: src/designer/components/TriggerPanel.jsx:892
 msgid "Search…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:807
-#: src/designer/components/TriggerPanel.jsx:1083
+#: src/designer/components/TriggerPanel.jsx:971
+#: src/designer/components/TriggerPanel.jsx:1247
 #: src/settings/components/StatusTab.jsx:580
 msgid "Active"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:859
+#: src/designer/components/TriggerPanel.jsx:1023
 msgid "Certificates can always be issued manually from the Certificates screen, with or without triggers."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:872
+#: src/designer/components/TriggerPanel.jsx:1036
 msgid "No automatic award sources detected."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:881
+#: src/designer/components/TriggerPanel.jsx:1045
 msgid "Install and activate an LMS plugin, <quiz>PressPrimer Quiz</quiz>, <assignment>PressPrimer Assignment</assignment>, or another integration to award this certificate based on user activity."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:932
+#: src/designer/components/TriggerPanel.jsx:1096
 msgid "Award this certificate when…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:939
+#: src/designer/components/TriggerPanel.jsx:1103
 msgid "Only one trigger can be added per certificate. To use another trigger, clone the certificate."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:955
+#: src/designer/components/TriggerPanel.jsx:1119
 msgid "No trigger yet."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:970
+#: src/designer/components/TriggerPanel.jsx:1134
 msgid "The source for this trigger no longer exists."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1000
+#: src/designer/components/TriggerPanel.jsx:1164
 msgid "Trigger deactivated"
 msgstr ""
 
 #. translators: %s: plugin name
-#: src/designer/components/TriggerPanel.jsx:1016
+#: src/designer/components/TriggerPanel.jsx:1180
 #, js-format
 msgid "%s must be active to use this trigger."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1022
+#: src/designer/components/TriggerPanel.jsx:1186
 msgid "The plugin providing this trigger is not active."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1066
+#: src/designer/components/TriggerPanel.jsx:1230
 msgid "Conditions"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1156
+#: src/designer/components/TriggerPanel.jsx:1347
 msgid "Trigger changes save with the Save button."
 msgstr ""
 
@@ -2400,10 +2433,6 @@ msgstr ""
 
 #: src/settings/components/AppearanceTab.jsx:197
 msgid "Remove"
-msgstr ""
-
-#: src/settings/components/AppearanceTab.jsx:257
-msgid "Certificate of Completion"
 msgstr ""
 
 #: src/settings/components/AppearanceTab.jsx:266

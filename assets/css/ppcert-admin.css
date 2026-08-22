@@ -288,3 +288,12 @@ a.ant-btn-default:visited {
 		transition: none;
 	}
 }
+
+/* Certificates list: the template title beneath a certificate's own
+   display name (1.1-006) reads as secondary text. */
+.wp-list-table .column-template .ppcert-list-secondary {
+	display: block;
+	color: #646970;
+	font-size: 12px;
+	margin-top: 2px;
+}

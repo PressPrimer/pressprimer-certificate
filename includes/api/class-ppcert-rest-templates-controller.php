@@ -400,6 +400,16 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			$merge_data[ $key ] = (string) $field['sample'];
 		}
 
+		// The certificate's name previews from the template's pattern
+		// against the samples, exactly as the canvas shows it (1.1-006).
+		$merge_data['certificate.title'] = PressPrimer_Certificate_Merge_Field_Registry::resolve_title(
+			[
+				'template_settings' => is_array( $row->settings ) ? $row->settings : [],
+				'template_title'    => (string) $row->title,
+			],
+			$merge_data
+		);
+
 		$sample_credential = isset( $merge_data['certificate.credential_id'] )
 			? preg_replace( '/[^A-Z0-9]/', '', strtoupper( $merge_data['certificate.credential_id'] ) )
 			: 'SAMPLE000000';

@@ -182,7 +182,7 @@ class PressPrimer_Certificate_Admin_User_Profile {
 
 			$output .= '<tr>';
 			$output .= '<td>' . esc_html( PressPrimer_Certificate_Credential_ID_Service::format_display( $credential ) ) . '</td>';
-			$output .= '<td>' . esc_html( isset( $certificate->template_title ) && null !== $certificate->template_title ? (string) $certificate->template_title : __( '(deleted template)', 'pressprimer-certificate' ) ) . '</td>';
+			$output .= '<td>' . esc_html( PressPrimer_Certificate_Certificate::display_title( $certificate, __( '(deleted template)', 'pressprimer-certificate' ) ) ) . '</td>';
 			$output .= '<td>' . esc_html( isset( $status_labels[ $status ] ) ? $status_labels[ $status ] : $status ) . '</td>';
 			// UTC in, localized out (CLAUDE.md Datetime Standard).
 			$output .= '<td>' . esc_html( get_date_from_gmt( (string) $certificate->issued_at, get_option( 'date_format' ) ) ) . '</td>';

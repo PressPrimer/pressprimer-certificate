@@ -273,15 +273,27 @@ class PressPrimer_Certificate_Issuance_Service {
 			$tokens = PressPrimer_Certificate_Merge_Field_Registry::extract_tokens( $template->layout );
 		}
 
-		// The issuance email's merge tokens resolve into the same
-		// snapshot (1.1, Feature 1.1-005), so the email can name values
-		// the certificate itself does not print - and a resend still
-		// reads the immutable snapshot.
+		// The issuance email's merge tokens and the certificate-name
+		// pattern's tokens resolve into the same snapshot (1.1, Features
+		// 005 + 006), so the email and the name can use values the
+		// certificate itself does not print - and a resend still reads
+		// the immutable snapshot.
+		$settings     = is_array( $template->settings ) ? $template->settings : [];
+		$name_pattern = isset( $settings['certificate_name'] ) ? (string) $settings['certificate_name'] : '';
+
 		$tokens = array_values(
 			array_unique(
-				array_merge( $tokens, PressPrimer_Certificate_Email_Service::template_tokens() )
+				array_merge(
+					$tokens,
+					PressPrimer_Certificate_Email_Service::template_tokens(),
+					PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text( $name_pattern )
+				)
 			)
 		);
+
+		// The registry's name post-pass reads these (Feature 1.1-006).
+		$context['template_settings'] = $settings;
+		$context['template_title']    = (string) $template->title;
 
 		for ( $attempt = 1; $attempt <= self::MAX_INSERT_ATTEMPTS; $attempt++ ) {
 			$credential_id = PressPrimer_Certificate_Credential_ID_Service::generate();

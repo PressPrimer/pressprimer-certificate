@@ -257,9 +257,10 @@ class PressPrimer_Certificate_My_Certificates {
 		$status     = PressPrimer_Certificate_Certificate::effective_status( $certificate );
 		$credential = (string) $certificate->credential_id;
 
-		$title = isset( $certificate->template_title ) && null !== $certificate->template_title
-			? (string) $certificate->template_title
-			: __( '(deleted template)', 'pressprimer-certificate' );
+		$title = PressPrimer_Certificate_Certificate::display_title(
+			$certificate,
+			__( '(deleted template)', 'pressprimer-certificate' )
+		);
 
 		$pills = [
 			'issued'  => [ 'valid', __( 'Valid', 'pressprimer-certificate' ) ],

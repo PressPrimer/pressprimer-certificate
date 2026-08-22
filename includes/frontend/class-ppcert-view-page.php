@@ -222,7 +222,7 @@ class PressPrimer_Certificate_View_Page {
 		$credential = (string) $certificate->credential_id;
 		$display_id = PressPrimer_Certificate_Credential_ID_Service::format_display( $credential );
 		$recipient  = self::recipient_name( $certificate );
-		$subject    = isset( $certificate->template_title ) ? (string) $certificate->template_title : '';
+		$subject    = PressPrimer_Certificate_Certificate::display_title( $certificate );
 
 		$output = '<div class="ppcert-view">';
 
@@ -315,7 +315,7 @@ class PressPrimer_Certificate_View_Page {
 		// Render failure: styled text card with the certificate facts
 		// (Feature 005 Edge Cases); the error was logged via the
 		// ppcert_preview_render_failed action.
-		$subject = isset( $certificate->template_title ) ? (string) $certificate->template_title : '';
+		$subject = PressPrimer_Certificate_Certificate::display_title( $certificate );
 
 		$card  = '<div class="ppcert-view__card">';
 		$card .= '<p class="ppcert-view__card-recipient">' . esc_html( $recipient ) . '</p>';
@@ -339,9 +339,10 @@ class PressPrimer_Certificate_View_Page {
 	 * @return WP_Post
 	 */
 	private static function build_stub_post( $certificate ) {
-		$subject = isset( $certificate->template_title ) && '' !== (string) $certificate->template_title
-			? (string) $certificate->template_title
-			: __( 'Certificate', 'pressprimer-certificate' );
+		$subject = PressPrimer_Certificate_Certificate::display_title(
+			$certificate,
+			__( 'Certificate', 'pressprimer-certificate' )
+		);
 
 		return new WP_Post(
 			(object) [

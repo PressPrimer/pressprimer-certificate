@@ -549,4 +549,38 @@ class Test_Template_List_And_Duplicate extends TestCase {
 		$missing = PressPrimer_Certificate_Template::duplicate( 99999, 4 );
 		$this->assertInstanceOf( WP_Error::class, $missing );
 	}
+
+	/**
+	 * The certificate-name pattern (Feature 1.1-006) sanitizes as plain
+	 * text with tokens intact, caps at 200 characters, and is stored only
+	 * when non-empty - independent of the validity mode.
+	 *
+	 * @return void
+	 */
+	public function test_settings_sanitize_certificate_name() {
+		$clean = PressPrimer_Certificate_Template::sanitize_settings(
+			[
+				'validity_mode'    => 'never',
+				'certificate_name' => '  {{source.course_title}} Certificate <b>x</b> ',
+			]
+		);
+
+		$this->assertSame( [ 'certificate_name' => '{{source.course_title}} Certificate x' ], $clean );
+
+		$capped = PressPrimer_Certificate_Template::sanitize_settings( [ 'certificate_name' => str_repeat( 'a', 300 ) ] );
+		$this->assertSame( 200, strlen( $capped['certificate_name'] ) );
+
+		$this->assertArrayNotHasKey( 'certificate_name', PressPrimer_Certificate_Template::sanitize_settings( [ 'certificate_name' => '' ] ) );
+
+		$both = PressPrimer_Certificate_Template::sanitize_settings(
+			[
+				'validity_mode'    => 'period',
+				'validity_amount'  => 2,
+				'validity_unit'    => 'years',
+				'certificate_name' => 'Named',
+			]
+		);
+		$this->assertSame( 'period', $both['validity_mode'] );
+		$this->assertSame( 'Named', $both['certificate_name'] );
+	}
 }

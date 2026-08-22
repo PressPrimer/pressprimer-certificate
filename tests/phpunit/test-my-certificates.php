@@ -308,4 +308,23 @@ class Test_My_Certificates extends TestCase {
 
 		unset( $_GET['ppcert_sort'], $_GET['ppcert_status'] );
 	}
+
+	/**
+	 * A stored certificate name (Feature 1.1-006) leads the row; rows
+	 * without one keep showing the template title.
+	 *
+	 * @return void
+	 */
+	public function test_rows_show_stored_certificate_name() {
+		$this->seed_certificate(
+			[
+				'credential_id'   => 'CERTAAAA0003',
+				'merge_data_json' => '{"certificate.title":"Botany 101 Certificate"}',
+			]
+		);
+
+		$html = PressPrimer_Certificate_My_Certificates::render_shortcode();
+
+		$this->assertStringContainsString( 'Botany 101 Certificate', $html );
+	}
 }

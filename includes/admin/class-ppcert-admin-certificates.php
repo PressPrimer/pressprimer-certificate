@@ -432,6 +432,8 @@ class PressPrimer_Certificate_Admin_Certificates {
 			[
 				'context'       => 'download',
 				'credential_id' => (string) $certificate->credential_id,
+				// PDF metadata title = the certificate's own name (1.1-006).
+				'title'         => PressPrimer_Certificate_Certificate::display_title( $certificate ),
 			]
 		);
 

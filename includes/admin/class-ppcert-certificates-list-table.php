@@ -358,9 +358,19 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 				return esc_html( $user ? (string) $user->display_name : __( '(deleted user)', 'pressprimer-certificate' ) );
 
 			case 'template':
-				$template = PressPrimer_Certificate_Template::get( (int) $item->template_id );
+				$template       = PressPrimer_Certificate_Template::get( (int) $item->template_id );
+				$template_title = $template ? (string) $template->title : __( '(deleted template)', 'pressprimer-certificate' );
 
-				return esc_html( $template ? (string) $template->title : __( '(deleted template)', 'pressprimer-certificate' ) );
+				// The certificate's own name leads (Feature 1.1-006); the
+				// template title shows beneath it only when they differ.
+				$item->template_title = $template ? (string) $template->title : null;
+				$name                 = PressPrimer_Certificate_Certificate::display_title( $item, $template_title );
+
+				if ( $name === $template_title ) {
+					return esc_html( $name );
+				}
+
+				return esc_html( $name ) . '<span class="ppcert-list-secondary">' . esc_html( $template_title ) . '</span>';
 
 			case 'source':
 				if ( 'manual' === (string) $item->source_type ) {

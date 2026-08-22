@@ -51,6 +51,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 
 * Automatic triggers: PressPrimer Quiz pass thresholds, PressPrimer Assignment grades, and course, lesson, topic, or quiz completion in LearnDash, LifterLMS, Tutor LMS, and LearnPress
 * "Any" award options: one trigger can cover any quiz, any course, or any lesson in a chosen course, so one certificate serves your whole catalog
+* Certificate display names built from merge fields, so a template reused across courses names each certificate after its course everywhere it appears
 * Manually issue certificates with optional backdating and expiry dates
 * Validity periods: set how long certificates from a template stay valid (days, months, or years), pick an exact expiry date, or let them last forever
 * Per-trigger control over repeat completions: suppress duplicates or issue a fresh certificate every time (for compliance and recertification courses)
@@ -229,6 +230,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Added: The QR code and credential ID on issued PDFs are now clickable links to the certificate's verification page.
 * Added: Alignment tools in the designer. Align and distribute selected elements from the toolbar, and matching-margin guides show measurements when two elements sit the same distance from opposite page edges.
 * Added: Certificate merge fields in the issuance email subject and body, so the email can name the exact course or quiz that was completed.
+* Added: Certificate display names. Set a display name pattern on the Award tab, like "{{source.course_title}} Certificate", and each certificate is named after what earned it in the My Certificates list, on its view and verification pages, in the admin list, and in emails. Leave it blank and the template name is used, as before.
 * Improved: Sample values in the designer's merge field menus render at higher contrast.
 
 = 1.0.0 =
@@ -237,7 +239,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 == Upgrade Notice ==
 
 = 1.1.0 =
-Merge fields inside text, "Any" award triggers, clickable PDF credentials, designer alignment tools, and email merge fields. Existing certificates and templates are unchanged.
+Merge fields inside text, "Any" award triggers, certificate names from merge fields, clickable PDF credentials, designer alignment tools, and email merge fields. Existing certificates and templates are unchanged.
 
 = 1.0.0 =
 Initial release of PressPrimer Certificate. Design, issue, and verify certificates on your own site — free forever.

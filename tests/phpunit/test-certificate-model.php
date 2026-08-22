@@ -304,4 +304,65 @@ class Test_Certificate_Model extends TestCase {
 		$this->assertInstanceOf( WP_Error::class, PressPrimer_Certificate_Certificate::delete( 999 ) );
 		$this->assertCount( 1, $calls );
 	}
+
+	/**
+	 * display_title() (Feature 1.1-006): stored name, else the joined
+	 * template title, else the caller's fallback - from hydrated and raw
+	 * rows alike.
+	 *
+	 * @return void
+	 */
+	public function test_display_title_chain() {
+		$model = 'PressPrimer_Certificate_Certificate';
+
+		// Stored name wins, hydrated form.
+		$this->assertSame(
+			'Botany 101 Certificate',
+			$model::display_title(
+				(object) [
+					'merge_data'     => [ 'certificate.title' => 'Botany 101 Certificate' ],
+					'template_title' => 'Course Certificate',
+				]
+			)
+		);
+
+		// Stored name wins, raw-row form.
+		$this->assertSame(
+			'Botany 101 Certificate',
+			$model::display_title(
+				(object) [
+					'merge_data_json' => '{"certificate.title":"Botany 101 Certificate"}',
+					'template_title'  => 'Course Certificate',
+				]
+			)
+		);
+
+		// Pre-1.1 certificate: no stored name, the template title.
+		$this->assertSame(
+			'Course Certificate',
+			$model::display_title(
+				(object) [
+					'merge_data'     => [ 'recipient.full_name' => 'Dana' ],
+					'template_title' => 'Course Certificate',
+				]
+			)
+		);
+
+		// Blank stored name is treated as absent.
+		$this->assertSame(
+			'Course Certificate',
+			$model::display_title(
+				(object) [
+					'merge_data'     => [ 'certificate.title' => '  ' ],
+					'template_title' => 'Course Certificate',
+				]
+			)
+		);
+
+		// Deleted template: the caller's fallback.
+		$this->assertSame(
+			'(deleted template)',
+			$model::display_title( (object) [ 'template_title' => null ], '(deleted template)' )
+		);
+	}
 }

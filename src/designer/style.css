@@ -376,6 +376,29 @@
 	margin-top: 8px;
 }
 
+/* Display-name suggestion for Any triggers (1.1): a compact, single
+   column block - text, the suggested pattern, two link actions. */
+.ppcert-designer__name-nudge {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-top: 6px;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.ppcert-designer__name-nudge-code {
+	font-size: 12px;
+	background: #f6f7f7;
+	border-radius: 3px;
+	padding: 2px 6px;
+	overflow-wrap: anywhere;
+}
+
+.ppcert-designer__name-nudge-actions {
+	margin-top: 4px;
+}
+
 .ppcert-designer__media-preview {
 	border: 1px solid #e5e7eb;
 	border-radius: 4px;

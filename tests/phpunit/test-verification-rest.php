@@ -349,4 +349,27 @@ class Test_Verification_REST extends TestCase {
 		$this->assertStringContainsString( 'verify', $routes[0]['route'] );
 		$this->assertSame( '__return_true', $routes[0]['args']['permission_callback'] );
 	}
+
+	/**
+	 * The public verification subject is the stored certificate name when
+	 * one exists (Feature 1.1-006); the template title otherwise (the
+	 * locked-shape test above).
+	 *
+	 * @return void
+	 */
+	public function test_subject_uses_stored_certificate_name() {
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$row  = $rows[0];
+
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Certificate::table(),
+			(int) $row['id'],
+			[ 'merge_data_json' => '{"recipient.full_name":"Dana Whitfield","certificate.title":"Botany 101 Certificate"}' ]
+		);
+
+		$controller = new PressPrimer_Certificate_REST_Verification_Controller();
+		$response   = $controller->verify( new WP_REST_Request( [ 'credential_id' => (string) $row['credential_id'] ] ) );
+
+		$this->assertSame( 'Botany 101 Certificate', $response->get_data()['subject'] );
+	}
 }

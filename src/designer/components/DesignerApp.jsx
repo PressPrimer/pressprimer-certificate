@@ -7,7 +7,7 @@
  * @package
  */
 
-import { useEffect, useRef, useState } from '@wordpress/element';
+import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import {
@@ -38,6 +38,7 @@ import {
 import { useDesignerStore } from '../hooks/useDesignerStore';
 import { DesignerViewContext } from '../view-context';
 import { loadMergeFields, getSampleMap } from '../mergeFields';
+import { interpolateTokens } from '../schema/interpolate';
 import {
 	getTriggers,
 	previewTemplate,
@@ -83,7 +84,7 @@ export default function DesignerApp( { boot } ) {
 	const [ loadError, setLoadError ] = useState( '' );
 	const [ zoom, setZoom ] = useState( 'fit' );
 	const [ tokenView, setTokenView ] = useState( false );
-	const [ samples, setSamples ] = useState( {} );
+	const [ rawSamples, setRawSamples ] = useState( {} );
 	const [ rulers, setRulers ] = useState( true );
 	const [ saving, setSaving ] = useState( false );
 	const [ renaming, setRenaming ] = useState( false );
@@ -249,8 +250,25 @@ export default function DesignerApp( { boot } ) {
 	useEffect( () => {
 		loadMergeFields(
 			'' === triggerScope ? [] : triggerScope.split( ',' )
-		).then( ( data ) => setSamples( getSampleMap( data ) ) );
+		).then( ( data ) => setRawSamples( getSampleMap( data ) ) );
 	}, [ triggerScope ] );
+
+	// The certificate's own name previews from the template's pattern
+	// against the samples (Feature 1.1-006) - live as the pattern or
+	// the trigger scope changes; empty pattern = the template title.
+	const namePattern = state.template?.settings?.certificate_name || '';
+	const templateTitle = state.template?.title || '';
+
+	const samples = useMemo( () => {
+		const resolved = namePattern
+			? interpolateTokens( namePattern, rawSamples ).trim()
+			: '';
+
+		return {
+			...rawSamples,
+			'certificate.title': resolved || templateTitle,
+		};
+	}, [ rawSamples, namePattern, templateTitle ] );
 
 	// Undo/redo + save shortcuts (FR-008/FR-007): Cmd/Ctrl+Z,
 	// Shift+Cmd/Ctrl+Z or Ctrl+Y, Cmd/Ctrl+S. Skipped while typing.

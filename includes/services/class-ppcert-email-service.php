@@ -168,7 +168,10 @@ class PressPrimer_Certificate_Email_Service {
 				'context'        => 'email',
 				'certificate_id' => (int) $certificate->id,
 				'credential_id'  => (string) $certificate->credential_id,
-				'title'          => $template ? (string) $template->title : '',
+				'title'          => PressPrimer_Certificate_Certificate::display_title(
+					$certificate,
+					$template ? (string) $template->title : ''
+				),
 				'recipient_name' => isset( $certificate->merge_data['recipient.full_name'] ) ? (string) $certificate->merge_data['recipient.full_name'] : '',
 			]
 		);
@@ -210,7 +213,10 @@ class PressPrimer_Certificate_Email_Service {
 
 		return [
 			'{recipient_name}'   => $name,
-			'{subject}'          => $template ? (string) $template->title : '',
+			'{subject}'          => PressPrimer_Certificate_Certificate::display_title(
+				$certificate,
+				$template ? (string) $template->title : ''
+			),
 			'{credential_id}'    => PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $certificate->credential_id ),
 			'{verification_url}' => ppcert_verification_url( (string) $certificate->credential_id ),
 			'{issuer_name}'      => (string) get_bloginfo( 'name' ),

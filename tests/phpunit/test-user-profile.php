@@ -196,4 +196,24 @@ class Test_User_Profile extends TestCase {
 		$this->section->render_section( (object) [ 'ID' => 99 ] );
 		$this->assertSame( '', ob_get_clean() );
 	}
+
+	/**
+	 * The profile section shows the stored certificate name (1.1-006).
+	 *
+	 * @return void
+	 */
+	public function test_section_shows_stored_certificate_name() {
+		$this->seed_certificate(
+			[
+				'recipient_id'    => 7,
+				'merge_data_json' => '{"certificate.title":"Botany 101 Certificate"}',
+			]
+		);
+
+		ob_start();
+		$this->section->render_section( (object) [ 'ID' => 7 ] );
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'Botany 101 Certificate', $html );
+	}
 }

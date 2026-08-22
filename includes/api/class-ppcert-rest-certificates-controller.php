@@ -373,6 +373,8 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 			[
 				'context'       => 'download',
 				'credential_id' => (string) $certificate->credential_id,
+				// PDF metadata title = the certificate's own name (1.1-006).
+				'title'         => PressPrimer_Certificate_Certificate::display_title( $certificate ),
 			]
 		);
 
@@ -471,6 +473,10 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 				'id'   => (int) $certificate->recipient_id,
 				'name' => $recipient ? (string) $recipient->display_name : __( '(deleted user)', 'pressprimer-certificate' ),
 			],
+			'title'             => PressPrimer_Certificate_Certificate::display_title(
+				$certificate,
+				$template ? (string) $template->title : __( '(deleted template)', 'pressprimer-certificate' )
+			),
 			'template'          => [
 				'id'    => (int) $certificate->template_id,
 				'title' => $template ? (string) $template->title : __( '(deleted template)', 'pressprimer-certificate' ),

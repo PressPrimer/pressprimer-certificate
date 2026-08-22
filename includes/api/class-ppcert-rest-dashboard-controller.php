@@ -223,7 +223,8 @@ class PressPrimer_Certificate_REST_Dashboard_Controller {
 				'id'             => (int) $certificate->id,
 				'credential_id'  => PressPrimer_Certificate_Credential_ID_Service::format_display( $credential ),
 				'recipient_name' => $recipient ? (string) $recipient->display_name : '',
-				'template_title' => $titles[ $template_id ],
+				// The certificate's own name when it has one (1.1-006).
+				'template_title' => PressPrimer_Certificate_Certificate::display_title( $certificate, $titles[ $template_id ] ),
 				'status'         => PressPrimer_Certificate_Certificate::effective_status( $certificate ),
 				'issued_at'      => (string) $certificate->issued_at,
 				'verify_url'     => ppcert_verification_url( $credential ),

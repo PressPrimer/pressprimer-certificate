@@ -529,4 +529,77 @@ class Test_Merge_Field_Registry extends TestCase {
 			)
 		);
 	}
+
+	/**
+	 * The certificate name (Feature 1.1-006): the template's pattern
+	 * interpolated against the resolved map, falling back to the
+	 * template title when the pattern is empty or resolves to nothing,
+	 * capped at 200 characters.
+	 *
+	 * @return void
+	 */
+	public function test_resolve_title_from_pattern() {
+		$registry = 'PressPrimer_Certificate_Merge_Field_Registry';
+		$values   = [ 'source.course_title' => 'Botany 101' ];
+
+		$this->assertSame(
+			'Botany 101 Certificate',
+			$registry::resolve_title(
+				[
+					'template_settings' => [ 'certificate_name' => '{{source.course_title}} Certificate' ],
+					'template_title'    => 'Course Certificate',
+				],
+				$values
+			)
+		);
+
+		// Empty pattern: the template title.
+		$this->assertSame(
+			'Course Certificate',
+			$registry::resolve_title( [ 'template_title' => 'Course Certificate' ], $values )
+		);
+
+		// A pattern that resolves to nothing (manual issuance, no source):
+		// the template title, never an empty name.
+		$this->assertSame(
+			'Course Certificate',
+			$registry::resolve_title(
+				[
+					'template_settings' => [ 'certificate_name' => '{{source.course_title}}' ],
+					'template_title'    => 'Course Certificate',
+				],
+				[]
+			)
+		);
+
+		// Capped.
+		$long = $registry::resolve_title(
+			[
+				'template_settings' => [ 'certificate_name' => str_repeat( 'x', 300 ) ],
+				'template_title'    => 'T',
+			],
+			[]
+		);
+		$this->assertSame( 200, strlen( $long ) );
+	}
+
+	/**
+	 * resolve() always carries certificate.title, computed LAST against
+	 * the other resolved values.
+	 *
+	 * @return void
+	 */
+	public function test_resolve_always_includes_certificate_title() {
+		$values = PressPrimer_Certificate_Merge_Field_Registry::resolve(
+			7,
+			[ 'site.name' ],
+			[
+				'template_settings' => [ 'certificate_name' => 'Issued by {{site.name}}' ],
+				'template_title'    => 'Fallback',
+			]
+		);
+
+		$this->assertArrayHasKey( 'certificate.title', $values );
+		$this->assertSame( 'Issued by ' . $values['site.name'], $values['certificate.title'] );
+	}
 }

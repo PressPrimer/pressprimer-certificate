@@ -158,6 +158,25 @@ class Test_Email_Service extends TestCase {
 	}
 
 	/**
+	 * The {subject} token is the certificate's own stored name when it
+	 * has one (Feature 1.1-006), and the PDF attachment title follows.
+	 *
+	 * @return void
+	 */
+	public function test_subject_token_uses_stored_certificate_name() {
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Certificate::table(),
+			$this->certificate_id,
+			[ 'merge_data_json' => '{"recipient.full_name":"Dana Whitfield","certificate.title":"Advanced Botany Certificate"}' ]
+		);
+
+		PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [ 'recipient_id' => 7 ] );
+
+		$mail = $GLOBALS['ppcert_test_mail'][0];
+		$this->assertSame( 'Your certificate: Advanced Botany Certificate', $mail['subject'] );
+	}
+
+	/**
 	 * The settings toggle and the ppcert_email_enabled filter both stop
 	 * sending.
 	 *

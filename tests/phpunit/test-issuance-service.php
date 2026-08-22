@@ -628,4 +628,37 @@ class Test_Issuance_Service extends TestCase {
 		$this->assertArrayHasKey( 'certificate.issuer_name', $certificate->merge_data );
 		$this->assertNotSame( '', $certificate->merge_data['certificate.issuer_name'] );
 	}
+
+	/**
+	 * The certificate's name resolves into the snapshot from the
+	 * template's pattern (Feature 1.1-006) - pattern tokens resolve even
+	 * when the layout does not use them, and an empty pattern stores the
+	 * template title.
+	 *
+	 * @return void
+	 */
+	public function test_certificate_name_resolves_into_snapshot() {
+		// Empty pattern: the template title is the name.
+		$plain = PressPrimer_Certificate_Certificate::get(
+			PressPrimer_Certificate_Issuance_Service::issue( $this->args() )
+		);
+		$this->assertSame( 'Completion Certificate', $plain->merge_data['certificate.title'] );
+
+		// A pattern using a field the layout never prints.
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			$this->template_id,
+			[ 'settings_json' => wp_json_encode( [ 'certificate_name' => '{{site.name}} Certificate' ] ) ]
+		);
+
+		$named = PressPrimer_Certificate_Certificate::get(
+			PressPrimer_Certificate_Issuance_Service::issue(
+				array_merge( $this->args(), [ 'source_ref' => 'named-run' ] )
+			)
+		);
+
+		$this->assertArrayHasKey( 'site.name', $named->merge_data );
+		$this->assertSame( $named->merge_data['site.name'] . ' Certificate', $named->merge_data['certificate.title'] );
+		$this->assertSame( $named->merge_data['certificate.title'], PressPrimer_Certificate_Certificate::display_title( $named ) );
+	}
 }
