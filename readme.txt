@@ -14,7 +14,7 @@ Design, issue, and verify certificates on your own site. A drag-and-drop designe
 
 **PressPrimer Certificate** brings the full certification lifecycle to your WordPress site. A drag-and-drop designer produces the certificate. Unique credential IDs, QR codes, and a public verification page make it authoritative. And it can all be connected to course activity in LearnDash, LifterLMS, Tutor LMS, or LearnPress.
 
-**This is a genuinely free plugin.** Unlimited templates, unlimited certificates, the full designer, a suite of integrations, public verification, and email delivery are all included at no cost. 
+**This is a genuinely free plugin.** Unlimited templates, unlimited certificates, the full designer, a suite of integrations, public verification, and email delivery are all included at no cost.
 
 https://www.youtube.com/watch?v=3MVuPFKdhzo
 
@@ -33,13 +33,13 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 
 **Certificate Designer**
 
-* True-size WYSIWYG canvas with drag, resize, keyboard nudging, undo/redo, and zoom
+* Interactive WYSIWYG canvas with drag, resize, keyboard nudging, undo/redo, and zoom
 * Six starter designs, each in Letter and A4, plus a blank option
 * Six bundled open-license fonts (SIL OFL) with real bold and italic faces
 * Text, merge field, image, signature, line/shape, QR code, and background elements
 * Merge fields for recipient, certificate, site, quiz, assignment, and course data, including custom user and post meta
 * Merge fields inside text: write "Expires:" and insert the expiry date field, and the whole line centers and wraps as one piece
-* Alignment tools: align and distribute selected elements, and matching-margin guides that show when two elements sit the same distance from opposite page edges
+* Alignment tools: align and distribute grouped elements, and guides to help with alignment
 * Live PDF preview from the real renderer
 
 **Design Defaults**
@@ -109,6 +109,8 @@ PressPrimer Certificate automatically detects and integrates with:
 
 **LearnPress:** Award on course or quiz completion, including quizzes inside course sections.
 
+Every integration also offers "Any" options, so one template can cover every course or quiz without a trigger per item.
+
 All integrations are bundled in the free version, and the plugin is still fully functional if you don't use an LMS plugin.
 
 = Built for Developers =
@@ -145,7 +147,7 @@ The `/src` directory contains all unminified source files. The plugin uses webpa
 
 = LMS Integration =
 
-If you have PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, or LearnPress installed, their triggers are enabled automatically. Open a certificate template's Award tab to connect it.
+If you have PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, or LearnPress installed, their triggers are enabled automatically. Open a certificate template's Award tab to connect it, choose a specific course or quiz, or an "Any" option to cover them all.
 
 == Privacy ==
 
@@ -184,7 +186,7 @@ The bundled fonts are all licensed under the SIL Open Font License 1.1, with lic
 
 = Is this really free, or is it a limited trial? =
 
-It's genuinely free and not locked down. PressPrimer Certificate includes unlimited templates, unlimited certificates, the full designer, automatic issuance triggers, public verification, and email delivery in the free version. We believe in earning upgrades by offering genuinely valuable features, not by crippling the free experience.
+It's genuinely free and not locked down. PressPrimer Certificate includes unlimited templates, unlimited certificates, the full designer, plugin integrations, public verification, and email delivery in the free version.
 
 = Does this plugin require an LMS? =
 
@@ -196,7 +198,7 @@ Yes. Quiz pass thresholds and Assignment grades are included triggers with their
 
 = How does verification work? =
 
-Every certificate can include a unique credential ID and/or a QR code. Scanning the QR code (or typing the ID into your site's verification page) shows whether the credential is valid, revoked, or expired, along with the recipient name, what it was awarded for, and the issue date. No account is needed to verify.
+Every certificate can include a unique credential ID and/or a QR code. Scanning the QR code, clicking it, or typing the ID into your site's verification page shows whether the credential is valid, revoked, or expired, along with the recipient name, what it was awarded for, and the issue date. No account is needed to verify.
 
 = How do learners see the certificates they have earned? =
 
@@ -204,7 +206,15 @@ Three ways. Each certificate is emailed as a PDF the moment it is issued. Learne
 
 = What happens if I edit a template after certificates have been issued? =
 
-Nothing changes for existing certificates. Each certificate snapshots its design and data at issue time, so a certificate always looks exactly as it did the day it was earned. Template edits only affect future issuance.
+Nothing changes for existing certificates. Each certificate snapshots its design and data at issue time, so a certificate always looks exactly as it did the day it was earned. That includes the display name: a certificate keeps the name it was issued with. Template edits only affect future issuance.
+
+= Can one certificate template cover all of my courses? =
+
+Yes. On a template's Award tab, choose an "Any" option instead of a specific course, quiz, or lesson, and that one trigger awards for every item of that type (lessons and topics are scoped to a course you pick). Pair it with a certificate display name like "{{source.course_title}} Certificate" and each certificate is named after what earned it in the My Certificates list, on the verification page, and in emails.
+
+= Can a merge field sit inside a sentence? =
+
+Yes. In any text element, put the cursor where the value belongs and use the Insert Merge Field button. The line centers, wraps, and styles as one piece, so "Awarded to {{recipient.display_name}} on [date]" behaves like a single line of text. Merge fields also work in the certificate email's subject and body.
 
 = Can someone edit a certificate PDF and change the name? =
 
@@ -225,12 +235,12 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 == Changelog ==
 
 = 1.1.0 =
-* Added: Merge fields now work inside text elements. Write "Expires:" and insert the expiry date field, and the whole line centers and wraps as one piece. An Insert Merge Field button in the text panel drops fields at your cursor.
+* Added: Merge fields now work inside text elements. 
 * Added: "Any" award options in the trigger picker. One trigger can award for any quiz, any course, or any lesson in a chosen course, so a single certificate covers your whole catalog.
 * Added: The QR code and credential ID on issued PDFs are now clickable links to the certificate's verification page.
 * Added: Alignment tools in the designer. Align and distribute selected elements from the toolbar, and matching-margin guides show measurements when two elements sit the same distance from opposite page edges.
 * Added: Certificate merge fields in the issuance email subject and body, so the email can name the exact course or quiz that was completed.
-* Added: Certificate display names. Set a display name pattern on the Award tab, like "{{source.course_title}} Certificate", and each certificate is named after what earned it in the My Certificates list, on its view and verification pages, in the admin list, and in emails. Leave it blank and the template name is used, as before.
+* Added: Certificate display names. Set a display name pattern on the Award tab, like "{{source.course_title}} Certificate", and each certificate is named after what earned it in the My Certificates list, on its view and verification pages, in the admin list, and in emails. 
 * Improved: Sample values in the designer's merge field menus render at higher contrast.
 
 = 1.0.0 =
