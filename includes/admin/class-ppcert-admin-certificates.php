@@ -455,7 +455,7 @@ class PressPrimer_Certificate_Admin_Certificates {
 		header( 'Content-Length: ' . (string) filesize( $pdf_path ) );
 
 		readfile( $pdf_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming a locally rendered temp file.
-		unlink( $pdf_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Removing the temp render.
+		wp_delete_file( $pdf_path );
 
 		exit;
 	}
