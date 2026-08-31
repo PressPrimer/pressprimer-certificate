@@ -528,4 +528,149 @@ class Test_PDF_Renderer extends TestCase {
 			PressPrimer_Certificate_PDF_Renderer::text_content_for_render( [], $element, $merge_data )
 		);
 	}
+
+	// -------------------------------------------------------------------
+	// Schema v3: multi-page rendering (2.0, Feature 2.0-006 FR-002).
+	// -------------------------------------------------------------------
+
+	/**
+	 * Load the two-page v3 parity fixture (shared with the Playwright
+	 * suite so both suites exercise the identical document).
+	 *
+	 * @return array
+	 */
+	private function multipage_fixture() {
+		return json_decode(
+			(string) file_get_contents( PPCERT_PLUGIN_DIR . 'tests/playwright/fixtures/parity-multipage.json' ),
+			true
+		);
+	}
+
+	/**
+	 * Count the PDF's rendered pages ("/Type /Page" objects, excluding
+	 * the "/Type /Pages" tree node).
+	 *
+	 * @param string $bytes PDF bytes.
+	 * @return int
+	 */
+	private function pdf_page_count( $bytes ) {
+		return (int) preg_match_all( '#/Type /Page(?!s)#', $bytes );
+	}
+
+	/**
+	 * The hand-authored two-page v3 fixture renders a two-page PDF; the
+	 * single-page sample keeps rendering one (guards the counter too).
+	 *
+	 * @return void
+	 */
+	public function test_v3_two_page_fixture_renders_two_pages() {
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+
+		$two_page = $renderer->render_pdf(
+			$this->multipage_fixture(),
+			[ 'recipient.display_name' => 'Dana Whitfield' ],
+			[
+				'context'       => 'preview',
+				'credential_id' => '7Q4MK9P2XT3A',
+			]
+		);
+
+		$this->assertIsString( $two_page );
+
+		$bytes = (string) file_get_contents( $two_page );
+		$this->assertStringStartsWith( '%PDF-', $bytes );
+		$this->assertSame( 2, $this->pdf_page_count( $bytes ) );
+
+		unlink( $two_page );
+
+		$sample = json_decode(
+			(string) file_get_contents( PPCERT_PLUGIN_DIR . 'tests/phpunit/fixtures/sample-document.json' ),
+			true
+		);
+
+		$one_page = $renderer->render_pdf( $sample, [], [ 'context' => 'preview' ] );
+
+		$this->assertIsString( $one_page );
+		$this->assertSame( 1, $this->pdf_page_count( (string) file_get_contents( $one_page ) ) );
+
+		unlink( $one_page );
+	}
+
+	/**
+	 * migrate_v2_to_v3 is render-lossless: the wrapped document's PNG is
+	 * byte-identical to the v2 original's (GD raster is deterministic -
+	 * this is the PHPUnit half of "v2 documents render identically
+	 * pre/post the v3 bump"; the parity suite's unchanged goldens are
+	 * the other half).
+	 *
+	 * @return void
+	 */
+	public function test_v3_wrap_renders_pixel_identical_to_v2() {
+		$sample = json_decode(
+			(string) file_get_contents( PPCERT_PLUGIN_DIR . 'tests/phpunit/fixtures/sample-document.json' ),
+			true
+		);
+
+		$merge_data = [ 'recipient.display_name' => 'Dana Whitfield' ];
+		$args       = [
+			'context'       => 'preview',
+			'dpi'           => 72,
+			'credential_id' => '7Q4MK9P2XT3A',
+		];
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+
+		$v2_png = $renderer->render_png( $sample, $merge_data, $args );
+		$this->assertIsString( $v2_png );
+
+		$wrapped_png = $renderer->render_png(
+			PressPrimer_Certificate_Layout_Validator::migrate_v2_to_v3( $sample ),
+			$merge_data,
+			$args
+		);
+		$this->assertIsString( $wrapped_png );
+
+		$this->assertSame(
+			md5_file( $v2_png ),
+			md5_file( $wrapped_png ),
+			'Wrapping a v2 document as v3 pages[0] must not change a single pixel.'
+		);
+
+		unlink( $v2_png );
+		unlink( $wrapped_png );
+	}
+
+	/**
+	 * render_png's page argument selects the page: the fixture's two
+	 * pages raster differently, and out-of-range requests clamp to the
+	 * last page.
+	 *
+	 * @return void
+	 */
+	public function test_render_png_page_selection() {
+		$fixture    = $this->multipage_fixture();
+		$merge_data = [ 'recipient.display_name' => 'Dana Whitfield' ];
+		$renderer   = new PressPrimer_Certificate_PDF_Renderer();
+
+		$args = [
+			'context'       => 'preview',
+			'dpi'           => 72,
+			'credential_id' => '7Q4MK9P2XT3A',
+		];
+
+		$page_one = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 1 ] ) );
+		$page_two = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 2 ] ) );
+		$clamped  = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 99 ] ) );
+
+		$this->assertIsString( $page_one );
+		$this->assertIsString( $page_two );
+		$this->assertIsString( $clamped );
+
+		$this->assertNotSame( md5_file( $page_one ), md5_file( $page_two ), 'The two pages render distinct content.' );
+		$this->assertSame( md5_file( $page_two ), md5_file( $clamped ), 'An out-of-range page clamps to the last page.' );
+
+		unlink( $page_one );
+		unlink( $page_two );
+		unlink( $clamped );
+	}
 }

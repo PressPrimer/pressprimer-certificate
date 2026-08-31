@@ -295,14 +295,15 @@ class Test_Layout_Validator extends TestCase {
 	}
 
 	/**
-	 * Versions newer than the validator supports are rejected.
+	 * Versions newer than the validator supports are rejected (v3 became
+	 * a supported version in 2.0, so the future version is now 4).
 	 *
 	 * @return void
 	 */
 	public function test_future_schema_version_rejected() {
 		$document = $this->document( [] );
 
-		$document['layout_schema_version'] = 3;
+		$document['layout_schema_version'] = 4;
 
 		$result = PressPrimer_Certificate_Layout_Validator::validate( $document );
 
@@ -595,5 +596,258 @@ class Test_Layout_Validator extends TestCase {
 
 		$this->assertIsArray( $result );
 		$this->assertSame( 'custom-font', $result['elements'][0]['props']['font_family'] );
+	}
+
+	// -------------------------------------------------------------------
+	// Schema v3: multi-page documents (2.0, Feature 2.0-006 FR-002).
+	// -------------------------------------------------------------------
+
+	/**
+	 * Wrap elements in a valid v3 document root (one page per array).
+	 *
+	 * @param array[] $element_lists One elements array per page.
+	 * @return array
+	 */
+	private function v3_document( array $element_lists ) {
+		$document = $this->document( [] );
+
+		unset( $document['elements'] );
+
+		$document['layout_schema_version'] = 3;
+		$document['pages']                 = array_map(
+			static function ( $elements ) {
+				return [ 'elements' => $elements ];
+			},
+			$element_lists
+		);
+
+		return $document;
+	}
+
+	/**
+	 * A two-page v3 document validates, keeps version 3, keeps its page
+	 * structure, and carries no root elements key.
+	 *
+	 * @return void
+	 */
+	public function test_v3_document_validates_and_stays_v3() {
+		$page_two = $this->text_element(
+			[
+				'id'    => 'el_test0002',
+				'props' => [ 'content' => 'Second page' ],
+			]
+		);
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate(
+			$this->v3_document( [ [ $this->text_element() ], [ $page_two ] ] )
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertSame( 3, $result['layout_schema_version'] );
+		$this->assertCount( 2, $result['pages'] );
+		$this->assertArrayNotHasKey( 'elements', $result, 'v3 documents carry no root elements key.' );
+		$this->assertSame( 'el_test0001', $result['pages'][0]['elements'][0]['id'] );
+		$this->assertSame( 'Second page', $result['pages'][1]['elements'][0]['props']['content'] );
+	}
+
+	/**
+	 * The free save path's divergence: a v2 document validates as v2 -
+	 * the validator never up-converts it to v3.
+	 *
+	 * @return void
+	 */
+	public function test_v2_document_never_upconverted() {
+		$result = PressPrimer_Certificate_Layout_Validator::validate(
+			$this->document( [ $this->text_element() ] )
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertSame( 2, $result['layout_schema_version'] );
+		$this->assertArrayHasKey( 'elements', $result );
+		$this->assertArrayNotHasKey( 'pages', $result );
+	}
+
+	/**
+	 * migrate_v2_to_v3(): wraps root elements as pages[0], strips the
+	 * root key, stamps 3; v1 input stamps to v2 first; v3 input passes
+	 * through untouched. Rendering equivalence is asserted in the
+	 * renderer suite.
+	 *
+	 * @return void
+	 */
+	public function test_migrate_v2_to_v3_shape() {
+		$v2      = $this->document( [ $this->text_element() ] );
+		$wrapped = PressPrimer_Certificate_Layout_Validator::migrate_v2_to_v3( $v2 );
+
+		$this->assertSame( 3, $wrapped['layout_schema_version'] );
+		$this->assertArrayNotHasKey( 'elements', $wrapped );
+		$this->assertCount( 1, $wrapped['pages'] );
+		$this->assertEquals( $v2['elements'], $wrapped['pages'][0]['elements'] );
+		$this->assertEquals( $v2['page'], $wrapped['page'] );
+		$this->assertEquals( $v2['background'], $wrapped['background'] );
+
+		// v1 input: stamp migration runs first, then the wrap.
+		$v1                          = $this->document( [ $this->text_element() ] );
+		$v1['layout_schema_version'] = 1;
+		$from_v1                     = PressPrimer_Certificate_Layout_Validator::migrate_v2_to_v3( $v1 );
+
+		$this->assertSame( 3, $from_v1['layout_schema_version'] );
+		$this->assertCount( 1, $from_v1['pages'] );
+
+		// v3 input: untouched.
+		$this->assertEquals( $wrapped, PressPrimer_Certificate_Layout_Validator::migrate_v2_to_v3( $wrapped ) );
+	}
+
+	/**
+	 * A v3 document without a usable pages array is rejected with the
+	 * pages path.
+	 *
+	 * @return void
+	 */
+	public function test_v3_missing_pages_rejected() {
+		$document = $this->document( [] );
+
+		unset( $document['elements'] );
+		$document['layout_schema_version'] = 3;
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $document );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertContains( 'pages', $this->error_paths( $result ) );
+
+		// An empty pages array is equally invalid (at least one page).
+		$document['pages'] = [];
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $document );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+	}
+
+	/**
+	 * The page cap rejects documents above MAX_PAGES.
+	 *
+	 * @return void
+	 */
+	public function test_v3_page_cap_rejected() {
+		$pages = array_fill( 0, PressPrimer_Certificate_Layout_Validator::MAX_PAGES + 1, [] );
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $this->v3_document( $pages ) );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertContains( 'pages', $this->error_paths( $result ) );
+	}
+
+	/**
+	 * Element ids are unique across the whole document, not per page.
+	 *
+	 * @return void
+	 */
+	public function test_v3_duplicate_ids_across_pages_rejected() {
+		$result = PressPrimer_Certificate_Layout_Validator::validate(
+			$this->v3_document( [ [ $this->text_element() ], [ $this->text_element() ] ] )
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertContains( 'pages[1].elements[0].id', $this->error_paths( $result ) );
+	}
+
+	/**
+	 * v3 failures carry page-prefixed element paths.
+	 *
+	 * @return void
+	 */
+	public function test_v3_error_paths_carry_page_prefix() {
+		$bad = $this->text_element(
+			[
+				'id'    => 'el_test0002',
+				'props' => [ 'font_size' => 'huge' ],
+			]
+		);
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate(
+			$this->v3_document( [ [ $this->text_element() ], [ $bad ] ] )
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertContains( 'pages[1].elements[0].props.font_size', $this->error_paths( $result ) );
+	}
+
+	/**
+	 * z-order normalizes per page: each page's elements renumber 1..n
+	 * independently.
+	 *
+	 * @return void
+	 */
+	public function test_v3_z_normalizes_per_page() {
+		$page_one = [
+			$this->text_element( [ 'z' => 40 ] ),
+			$this->text_element(
+				[
+					'id' => 'el_test0002',
+					'z'  => 7,
+				]
+			),
+		];
+		$page_two = [
+			$this->text_element(
+				[
+					'id' => 'el_test0003',
+					'z'  => 99,
+				]
+			),
+		];
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $this->v3_document( [ $page_one, $page_two ] ) );
+
+		$this->assertIsArray( $result );
+		$this->assertSame( 'el_test0002', $result['pages'][0]['elements'][0]['id'], 'Lower z sorts first within the page.' );
+		$this->assertSame( [ 1, 2 ], array_column( $result['pages'][0]['elements'], 'z' ) );
+		$this->assertSame( [ 1 ], array_column( $result['pages'][1]['elements'], 'z' ), 'The second page renumbers from 1.' );
+	}
+
+	/**
+	 * A stray root elements key on a v3 document is stripped by the
+	 * rebuild, never merged into a page.
+	 *
+	 * @return void
+	 */
+	public function test_v3_root_elements_stripped() {
+		$document             = $this->v3_document( [ [ $this->text_element() ] ] );
+		$document['elements'] = [ $this->text_element( [ 'id' => 'el_test0009' ] ) ];
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $document );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayNotHasKey( 'elements', $result );
+		$this->assertCount( 1, $result['pages'][0]['elements'] );
+		$this->assertSame( 'el_test0001', $result['pages'][0]['elements'][0]['id'] );
+	}
+
+	/**
+	 * layout_pages(): the one normalization every consumer uses - v1/v2
+	 * yield one page of the root elements, v3 yields one entry per page,
+	 * and raw/malformed shapes degrade to empty pages.
+	 *
+	 * @return void
+	 */
+	public function test_layout_pages_normalization() {
+		$v2 = $this->document( [ $this->text_element() ] );
+
+		$this->assertSame(
+			[ $v2['elements'] ],
+			PressPrimer_Certificate_Layout_Validator::layout_pages( $v2 )
+		);
+
+		$v3 = $this->v3_document( [ [ $this->text_element() ], [] ] );
+
+		$pages = PressPrimer_Certificate_Layout_Validator::layout_pages( $v3 );
+		$this->assertCount( 2, $pages );
+		$this->assertCount( 1, $pages[0] );
+		$this->assertSame( [], $pages[1] );
+
+		// Degenerate shapes never fatal: a v3 stamp without pages yields
+		// one empty page; a v2 doc without elements yields the same.
+		$this->assertSame( [ [] ], PressPrimer_Certificate_Layout_Validator::layout_pages( [ 'layout_schema_version' => 3 ] ) );
+		$this->assertSame( [ [] ], PressPrimer_Certificate_Layout_Validator::layout_pages( [ 'layout_schema_version' => 2 ] ) );
 	}
 }

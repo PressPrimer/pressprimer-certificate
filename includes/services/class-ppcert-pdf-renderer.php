@@ -105,22 +105,36 @@ class PressPrimer_Certificate_PDF_Renderer {
 		try {
 			$pdf = $this->create_document( $layout, $args );
 
-			if ( self::is_parity_debug( $args ) ) {
-				// Parity-only mode: white page, one solid rect per element
-				// in its index color - the harness extracts bounding boxes
-				// from these (FR-005 drift assertions).
-				$pdf->SetFillColorArray( [ 255, 255, 255 ] );
-				$pdf->Rect( 0, 0, (float) $layout['page']['width'], (float) $layout['page']['height'], 'F' );
+			// One PDF page per pages[] entry (v3, uniform dimensions);
+			// v1/v2 documents normalize to a single page. Element
+			// rendering, QR content, and link annotations are identical
+			// on any page - TCPDF targets the current page throughout.
+			$pages       = PressPrimer_Certificate_Layout_Validator::layout_pages( $layout );
+			$orientation = (float) $layout['page']['width'] >= (float) $layout['page']['height'] ? 'L' : 'P';
 
-				foreach ( array_values( $layout['elements'] ) as $index => $element ) {
-					$pdf->SetFillColorArray( self::parity_color( $index ) );
-					$pdf->Rect( (float) $element['x'], (float) $element['y'], (float) $element['w'], (float) $element['h'], 'F' );
+			foreach ( array_values( $pages ) as $page_index => $elements ) {
+				if ( $page_index > 0 ) {
+					$pdf->AddPage( $orientation, [ (float) $layout['page']['width'], (float) $layout['page']['height'] ] );
 				}
-			} else {
-				$this->render_background( $pdf, $layout );
 
-				foreach ( $layout['elements'] as $element ) {
-					$this->render_element( $pdf, $element, $merge_data, $layout, $args );
+				if ( self::is_parity_debug( $args ) ) {
+					// Parity-only mode: white page, one solid rect per
+					// element in its index color (per page - the harness
+					// captures pages individually) - the harness extracts
+					// bounding boxes from these (FR-005 drift assertions).
+					$pdf->SetFillColorArray( [ 255, 255, 255 ] );
+					$pdf->Rect( 0, 0, (float) $layout['page']['width'], (float) $layout['page']['height'], 'F' );
+
+					foreach ( array_values( $elements ) as $index => $element ) {
+						$pdf->SetFillColorArray( self::parity_color( $index ) );
+						$pdf->Rect( (float) $element['x'], (float) $element['y'], (float) $element['w'], (float) $element['h'], 'F' );
+					}
+				} else {
+					$this->render_background( $pdf, $layout );
+
+					foreach ( $elements as $element ) {
+						$this->render_element( $pdf, $element, $merge_data, $layout, $args );
+					}
 				}
 			}
 
@@ -172,16 +186,30 @@ class PressPrimer_Certificate_PDF_Renderer {
 	private function verify_structure( $layout ) {
 		// Every supported historical version renders (migrate-on-read
 		// contract): v1 snapshots render literally forever, the version
-		// gate in text_content_for_render() reads the stored value.
+		// gate in text_content_for_render() reads the stored value. v3
+		// documents (2.0) carry pages[] instead of a root elements array.
 		$version = isset( $layout['layout_schema_version'] ) ? (int) $layout['layout_schema_version'] : 0;
 
 		$valid = PressPrimer_Certificate_Layout_Validator::MIN_SUPPORTED_SCHEMA_VERSION <= $version
-			&& $version <= PressPrimer_Certificate_Layout_Validator::SCHEMA_VERSION
+			&& $version <= PressPrimer_Certificate_Layout_Validator::MAX_SCHEMA_VERSION
 			&& isset( $layout['page']['width'], $layout['page']['height'] )
 			&& is_numeric( $layout['page']['width'] )
-			&& is_numeric( $layout['page']['height'] )
-			&& isset( $layout['elements'] )
-			&& is_array( $layout['elements'] );
+			&& is_numeric( $layout['page']['height'] );
+
+		if ( $valid && $version >= 3 ) {
+			$valid = isset( $layout['pages'] ) && is_array( $layout['pages'] ) && ! empty( $layout['pages'] );
+
+			if ( $valid ) {
+				foreach ( $layout['pages'] as $page ) {
+					if ( ! is_array( $page ) || ! isset( $page['elements'] ) || ! is_array( $page['elements'] ) ) {
+						$valid = false;
+						break;
+					}
+				}
+			}
+		} elseif ( $valid ) {
+			$valid = isset( $layout['elements'] ) && is_array( $layout['elements'] );
+		}
 
 		if ( ! $valid ) {
 			return new WP_Error(
@@ -947,6 +975,13 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		$dpi = isset( $args['dpi'] ) ? max( 36, absint( $args['dpi'] ) ) : 300;
 
+		// Which page to rasterize (1-based; v3 documents have several -
+		// the parity harness captures them one at a time). Out-of-range
+		// requests clamp to the document.
+		$pages = PressPrimer_Certificate_Layout_Validator::layout_pages( $layout );
+		$page  = isset( $args['page'] ) ? max( 1, absint( $args['page'] ) ) : 1;
+		$page  = min( $page, count( $pages ) );
+
 		if ( extension_loaded( 'imagick' ) ) {
 			$pdf_path = $this->render_pdf( $layout, $merge_data, $args );
 
@@ -954,7 +989,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 				return $pdf_path;
 			}
 
-			$png_path = $this->imagick_raster( $pdf_path, $dpi );
+			$png_path = $this->imagick_raster( $pdf_path, $dpi, $page );
 			wp_delete_file( $pdf_path );
 
 			if ( null !== $png_path ) {
@@ -965,23 +1000,25 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		$this->warnings = [];
 
-		return $this->gd_rasterize( $layout, $merge_data, $args, $dpi );
+		return $this->gd_rasterize( $layout, $merge_data, $args, $dpi, $pages[ $page - 1 ] );
 	}
 
 	/**
-	 * Rasterize a PDF's first page with Imagick
+	 * Rasterize one PDF page with Imagick
 	 *
 	 * @since 1.0.0
+	 * @since 2.0.0 Accepts the 1-based page number (v3 multi-page).
 	 *
 	 * @param string $pdf_path PDF file path.
 	 * @param int    $dpi      Target resolution.
+	 * @param int    $page     1-based page number. Default 1.
 	 * @return string|null PNG temp path, or null when Imagick cannot read PDFs.
 	 */
-	private function imagick_raster( $pdf_path, $dpi ) {
+	private function imagick_raster( $pdf_path, $dpi, $page = 1 ) {
 		try {
 			$imagick = new \Imagick();
 			$imagick->setResolution( $dpi, $dpi );
-			$imagick->readImage( $pdf_path . '[0]' );
+			$imagick->readImage( $pdf_path . '[' . ( max( 1, (int) $page ) - 1 ) . ']' );
 			$imagick->setImageBackgroundColor( '#ffffff' );
 			$imagick->setImageAlphaChannel( \Imagick::ALPHACHANNEL_REMOVE );
 			$imagick->setImageFormat( 'png24' );
@@ -1002,17 +1039,25 @@ class PressPrimer_Certificate_PDF_Renderer {
 	}
 
 	/**
-	 * Draw the layout directly onto a GD canvas
+	 * Draw one page of the layout directly onto a GD canvas
 	 *
 	 * @since 1.0.0
+	 * @since 2.0.0 Accepts the page's element array (v3 multi-page).
 	 *
-	 * @param array $layout     Layout document.
-	 * @param array $merge_data Resolved merge data.
-	 * @param array $args       Render arguments.
-	 * @param int   $dpi        Target resolution.
+	 * @param array      $layout     Layout document.
+	 * @param array      $merge_data Resolved merge data.
+	 * @param array      $args       Render arguments.
+	 * @param int        $dpi        Target resolution.
+	 * @param array|null $elements   The page's elements; null renders the
+	 *                               document's first page.
 	 * @return string|WP_Error PNG temp path.
 	 */
-	private function gd_rasterize( $layout, $merge_data, $args, $dpi ) {
+	private function gd_rasterize( $layout, $merge_data, $args, $dpi, $elements = null ) {
+		if ( null === $elements ) {
+			$pages    = PressPrimer_Certificate_Layout_Validator::layout_pages( $layout );
+			$elements = $pages[0];
+		}
+
 		$scale  = $dpi / 72;
 		$width  = (int) round( (float) $layout['page']['width'] * $scale );
 		$height = (int) round( (float) $layout['page']['height'] * $scale );
@@ -1032,7 +1077,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 			// Parity-only mode: mirror of the PDF path's debug rendering.
 			imagefilledrectangle( $canvas, 0, 0, $width - 1, $height - 1, (int) imagecolorallocate( $canvas, 255, 255, 255 ) );
 
-			foreach ( array_values( $layout['elements'] ) as $index => $element ) {
+			foreach ( array_values( $elements ) as $index => $element ) {
 				$rgb = self::parity_color( $index );
 				imagefilledrectangle(
 					$canvas,
@@ -1075,7 +1120,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 			$this->gd_image( $canvas, $bg_attachment, 0, 0, $width, $height, 'cover', 1.0, 'background', $scale );
 		}
 
-		foreach ( $layout['elements'] as $element ) {
+		foreach ( $elements as $element ) {
 			$x = (float) $element['x'] * $scale;
 			$y = (float) $element['y'] * $scale;
 			$w = (float) $element['w'] * $scale;

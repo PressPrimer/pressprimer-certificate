@@ -531,6 +531,55 @@ class Test_Merge_Field_Registry extends TestCase {
 	}
 
 	/**
+	 * v3 multi-page documents: tokens on EVERY page resolve into the
+	 * snapshot - merge_field tokens and inline text tokens alike, deduped
+	 * across pages (2.0, Feature 2.0-006 FR-002; the 1.1 lesson applied
+	 * to the pages[] surface).
+	 *
+	 * @return void
+	 */
+	public function test_extract_tokens_walks_all_v3_pages() {
+		$layout = [
+			'layout_schema_version' => 3,
+			'pages'                 => [
+				[
+					'elements' => [
+						[
+							'type'  => 'merge_field',
+							'props' => [ 'token' => '{{recipient.display_name}}' ],
+						],
+						[
+							'type'  => 'text',
+							'props' => [ 'content' => 'By {{site.name}}' ],
+						],
+					],
+				],
+				[
+					'elements' => [
+						[
+							'type'  => 'merge_field',
+							'props' => [ 'token' => '{{recipient.display_name}}' ],
+						],
+						[
+							'type'  => 'text',
+							'props' => [ 'content' => 'Expires {{certificate.expiry_date}}' ],
+						],
+						[
+							'type'  => 'merge_field',
+							'props' => [ 'token' => '{{certificate.credential_id}}' ],
+						],
+					],
+				],
+			],
+		];
+
+		$this->assertSame(
+			[ 'recipient.display_name', 'site.name', 'certificate.expiry_date', 'certificate.credential_id' ],
+			PressPrimer_Certificate_Merge_Field_Registry::extract_tokens( $layout )
+		);
+	}
+
+	/**
 	 * The certificate name (Feature 1.1-006): the template's pattern
 	 * interpolated against the resolved map, falling back to the
 	 * template title when the pattern is empty or resolves to nothing,

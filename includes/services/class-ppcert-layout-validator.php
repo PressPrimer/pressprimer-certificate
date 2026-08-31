@@ -40,15 +40,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PressPrimer_Certificate_Layout_Validator {
 
 	/**
-	 * The layout schema version this validator implements
+	 * The schema version of single-page documents - the free designer's
+	 * save path, and the target of the v1 stamp migration
 	 *
 	 * Version 2 (plugin 1.1.0): text element content may contain merge
 	 * tokens, interpolated at render time. Structurally identical to v1.
+	 * Since 2.0 this is deliberately NOT the newest version (see
+	 * MAX_SCHEMA_VERSION): the validator preserves a v2 document's
+	 * version on save so the v3 bump cannot perturb free users.
 	 *
 	 * @since 1.0.0
 	 * @var int
 	 */
 	const SCHEMA_VERSION = 2;
+
+	/**
+	 * The newest schema version accepted for validation and rendering
+	 *
+	 * Version 3 (plugin 2.0.0): the multi-page pages[] document model,
+	 * authored by Educator, rendered by free (Feature 2.0-006 FR-002).
+	 *
+	 * @since 2.0.0
+	 * @var int
+	 */
+	const MAX_SCHEMA_VERSION = 3;
 
 	/**
 	 * The oldest schema version accepted (migrated in memory on validate)
@@ -57,6 +72,14 @@ class PressPrimer_Certificate_Layout_Validator {
 	 * @var int
 	 */
 	const MIN_SUPPORTED_SCHEMA_VERSION = 1;
+
+	/**
+	 * Hard cap on the number of pages in a v3 document
+	 *
+	 * @since 2.0.0
+	 * @var int
+	 */
+	const MAX_PAGES = 10;
 
 	/**
 	 * Hard cap on the number of elements in a document
@@ -145,6 +168,17 @@ class PressPrimer_Certificate_Layout_Validator {
 	private static $errors = [];
 
 	/**
+	 * Element ids seen during the current run
+	 *
+	 * Document-wide (across all pages of a v3 document - ids are unique
+	 * within the whole document, not per page). Reset per validate().
+	 *
+	 * @since 2.0.0
+	 * @var array
+	 */
+	private static $seen_ids = [];
+
+	/**
 	 * Validate a decoded layout document
 	 *
 	 * JSON decoding happens before this method (REST layer); the validator
@@ -157,14 +191,15 @@ class PressPrimer_Certificate_Layout_Validator {
 	 * @return array|WP_Error Rebuilt document, or WP_Error on any failure.
 	 */
 	public static function validate( array $raw ) {
-		self::$errors = [];
+		self::$errors   = [];
+		self::$seen_ids = [];
 
 		// Schema version: required, a supported integer. Documents without
 		// it are rejected outright (there are no pre-v1 documents in the
 		// wild); supported older versions migrate in memory first.
 		$version = isset( $raw['layout_schema_version'] ) ? (int) $raw['layout_schema_version'] : 0;
 
-		if ( $version < self::MIN_SUPPORTED_SCHEMA_VERSION || self::SCHEMA_VERSION < $version ) {
+		if ( $version < self::MIN_SUPPORTED_SCHEMA_VERSION || self::MAX_SCHEMA_VERSION < $version ) {
 			return new WP_Error(
 				'ppcert_invalid_layout',
 				__( 'layout_schema_version: missing or unsupported schema version.', 'pressprimer-certificate' ),
@@ -173,6 +208,10 @@ class PressPrimer_Certificate_Layout_Validator {
 		}
 
 		$raw = self::migrate( $raw );
+
+		// The version the rebuilt document carries: v1 migrated to v2, v2
+		// stays v2 (the free save path - never up-converted), v3 stays v3.
+		$version = (int) $raw['layout_schema_version'];
 
 		// Page: size and orientation must be valid or the document cannot
 		// be rebuilt (dimensions are recomputed from them).
@@ -202,20 +241,9 @@ class PressPrimer_Certificate_Layout_Validator {
 		// edits this, it never appears in elements).
 		$background = self::validate_background( isset( $raw['background'] ) ? $raw['background'] : [] );
 
-		// Elements.
-		$elements = self::validate_elements(
-			isset( $raw['elements'] ) ? $raw['elements'] : [],
-			$page_width,
-			$page_height
-		);
-
-		if ( ! empty( self::$errors ) ) {
-			return self::build_error();
-		}
-
-		// Rebuilt document - constructed key by key, never the input.
-		return [
-			'layout_schema_version' => self::SCHEMA_VERSION,
+		// Rebuilt document root - constructed key by key, never the input.
+		$clean = [
+			'layout_schema_version' => $version,
 			'page'                  => [
 				'size'        => $size,
 				'orientation' => $orientation,
@@ -223,8 +251,110 @@ class PressPrimer_Certificate_Layout_Validator {
 				'height'      => $page_height,
 			],
 			'background'            => $background,
-			'elements'              => $elements,
 		];
+
+		if ( $version >= 3 ) {
+			// v3: pages[] wraps the element arrays (multi-page, Educator-
+			// authored). A root elements key is stripped structurally by
+			// the rebuild. Ids are unique document-wide; z normalizes per
+			// page.
+			$clean['pages'] = self::validate_pages( isset( $raw['pages'] ) ? $raw['pages'] : null, $page_width, $page_height );
+		} else {
+			$clean['elements'] = self::validate_elements(
+				isset( $raw['elements'] ) ? $raw['elements'] : [],
+				$page_width,
+				$page_height
+			);
+		}
+
+		if ( ! empty( self::$errors ) ) {
+			return self::build_error();
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Validate a v3 document's pages array
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param mixed $raw         Raw pages value.
+	 * @param float $page_width  Page width in points.
+	 * @param float $page_height Page height in points.
+	 * @return array Clean page objects.
+	 */
+	private static function validate_pages( $raw, $page_width, $page_height ) {
+		if ( ! is_array( $raw ) || empty( $raw ) ) {
+			self::add_error( 'pages', __( 'must be an array with at least one page.', 'pressprimer-certificate' ) );
+			return [];
+		}
+
+		if ( count( $raw ) > self::MAX_PAGES ) {
+			self::add_error(
+				'pages',
+				sprintf(
+					/* translators: %d: maximum number of pages */
+					__( 'documents are limited to %d pages.', 'pressprimer-certificate' ),
+					self::MAX_PAGES
+				)
+			);
+			return [];
+		}
+
+		$clean = [];
+
+		foreach ( array_values( $raw ) as $index => $page ) {
+			$path = 'pages[' . $index . ']';
+
+			if ( ! is_array( $page ) ) {
+				self::add_error( $path, __( 'must be an object.', 'pressprimer-certificate' ) );
+				continue;
+			}
+
+			$clean[] = [
+				'elements' => self::validate_elements(
+					isset( $page['elements'] ) ? $page['elements'] : [],
+					$page_width,
+					$page_height,
+					$path . '.'
+				),
+			];
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * The element arrays of a document, one entry per rendered page
+	 *
+	 * The single normalization every consumer of "the elements" uses
+	 * (renderer, rasterizer, token extraction): v1/v2 documents yield one
+	 * page holding the root elements array; v3 documents yield one entry
+	 * per pages[] page. Tolerant of raw shapes (missing keys yield empty
+	 * arrays) so it is safe on stored snapshots as well as validator
+	 * output.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $layout Layout document (any supported version).
+	 * @return array[] One element array per page, in page order.
+	 */
+	public static function layout_pages( array $layout ) {
+		$version = isset( $layout['layout_schema_version'] ) ? (int) $layout['layout_schema_version'] : 0;
+
+		if ( $version >= 3 ) {
+			$pages = isset( $layout['pages'] ) && is_array( $layout['pages'] ) ? $layout['pages'] : [];
+			$lists = [];
+
+			foreach ( array_values( $pages ) as $page ) {
+				$lists[] = isset( $page['elements'] ) && is_array( $page['elements'] ) ? $page['elements'] : [];
+			}
+
+			return empty( $lists ) ? [ [] ] : $lists;
+		}
+
+		return [ isset( $layout['elements'] ) && is_array( $layout['elements'] ) ? $layout['elements'] : [] ];
 	}
 
 	/**
@@ -251,6 +381,44 @@ class PressPrimer_Certificate_Layout_Validator {
 		if ( 1 === $version ) {
 			$raw['layout_schema_version'] = 2;
 		}
+
+		// v2 is deliberately NOT migrated to v3 here: the free designer's
+		// save path keeps producing v2 single-page documents, so the 2.0
+		// schema bump cannot perturb free users (Feature 2.0-006 FR-002).
+		// Educator's designer calls migrate_v2_to_v3() explicitly.
+		return $raw;
+	}
+
+	/**
+	 * Convert a v2 single-page document to the v3 multi-page shape
+	 *
+	 * Wraps the root elements array as pages[0], removes the root key,
+	 * and stamps version 3. Lossless and shape-only: rendering the
+	 * wrapped document is pixel-identical to the v2 original. NOT called
+	 * by validate() - the free save path preserves v2; this is the
+	 * explicit conversion Educator's designer invokes when a user adds a
+	 * second page (v1 documents migrate to v2 first via migrate()).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $raw Layout document at version 2 (or 1; migrated first).
+	 * @return array The document at version 3.
+	 */
+	public static function migrate_v2_to_v3( array $raw ) {
+		$raw = self::migrate( $raw );
+
+		$version = isset( $raw['layout_schema_version'] ) ? (int) $raw['layout_schema_version'] : 0;
+
+		if ( $version >= 3 ) {
+			return $raw;
+		}
+
+		$elements = isset( $raw['elements'] ) && is_array( $raw['elements'] ) ? $raw['elements'] : [];
+
+		unset( $raw['elements'] );
+
+		$raw['layout_schema_version'] = 3;
+		$raw['pages']                 = [ [ 'elements' => $elements ] ];
 
 		return $raw;
 	}
@@ -287,24 +455,27 @@ class PressPrimer_Certificate_Layout_Validator {
 	}
 
 	/**
-	 * Validate the elements array
+	 * Validate an elements array (the root array in v1/v2, one page's
+	 * array in v3)
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param mixed $raw         Raw elements value.
-	 * @param float $page_width  Page width in points.
-	 * @param float $page_height Page height in points.
-	 * @return array Clean elements, z-order normalized.
+	 * @param mixed  $raw         Raw elements value.
+	 * @param float  $page_width  Page width in points.
+	 * @param float  $page_height Page height in points.
+	 * @param string $path_prefix Error path prefix ('' for the root array,
+	 *                            'pages[n].' for a v3 page).
+	 * @return array Clean elements, z-order normalized (per page).
 	 */
-	private static function validate_elements( $raw, $page_width, $page_height ) {
+	private static function validate_elements( $raw, $page_width, $page_height, $path_prefix = '' ) {
 		if ( ! is_array( $raw ) ) {
-			self::add_error( 'elements', __( 'must be an array.', 'pressprimer-certificate' ) );
+			self::add_error( $path_prefix . 'elements', __( 'must be an array.', 'pressprimer-certificate' ) );
 			return [];
 		}
 
 		if ( count( $raw ) > self::MAX_ELEMENTS ) {
 			self::add_error(
-				'elements',
+				$path_prefix . 'elements',
 				sprintf(
 					/* translators: %d: maximum number of elements */
 					__( 'documents are limited to %d elements.', 'pressprimer-certificate' ),
@@ -314,11 +485,10 @@ class PressPrimer_Certificate_Layout_Validator {
 			return [];
 		}
 
-		$clean    = [];
-		$seen_ids = [];
+		$clean = [];
 
 		foreach ( array_values( $raw ) as $index => $element ) {
-			$path = 'elements[' . $index . ']';
+			$path = $path_prefix . 'elements[' . $index . ']';
 
 			if ( ! is_array( $element ) ) {
 				self::add_error( $path, __( 'must be an object.', 'pressprimer-certificate' ) );
@@ -333,18 +503,19 @@ class PressPrimer_Certificate_Layout_Validator {
 				continue;
 			}
 
-			$validated = self::validate_element( $element, $index, $page_width, $page_height );
+			$validated = self::validate_element( $element, $index, $page_width, $page_height, $path_prefix );
 
 			if ( null === $validated ) {
 				continue;
 			}
 
-			// Ids must be unique within the document.
-			if ( isset( $seen_ids[ $validated['id'] ] ) ) {
+			// Ids must be unique within the whole document (across every
+			// page of a v3 document).
+			if ( isset( self::$seen_ids[ $validated['id'] ] ) ) {
 				self::add_error( $path . '.id', __( 'duplicate element id.', 'pressprimer-certificate' ) );
 				continue;
 			}
-			$seen_ids[ $validated['id'] ] = true;
+			self::$seen_ids[ $validated['id'] ] = true;
 
 			$clean[] = $validated;
 		}
@@ -357,14 +528,15 @@ class PressPrimer_Certificate_Layout_Validator {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $element     Raw element object.
-	 * @param int   $index       Element index (for error paths).
-	 * @param float $page_width  Page width in points.
-	 * @param float $page_height Page height in points.
+	 * @param array  $element     Raw element object.
+	 * @param int    $index       Element index (for error paths).
+	 * @param float  $page_width  Page width in points.
+	 * @param float  $page_height Page height in points.
+	 * @param string $path_prefix Error path prefix ('' or 'pages[n].').
 	 * @return array|null Clean element, or null when it failed validation.
 	 */
-	private static function validate_element( $element, $index, $page_width, $page_height ) {
-		$path   = 'elements[' . $index . ']';
+	private static function validate_element( $element, $index, $page_width, $page_height, $path_prefix = '' ) {
+		$path   = $path_prefix . 'elements[' . $index . ']';
 		$before = count( self::$errors );
 
 		// Id.

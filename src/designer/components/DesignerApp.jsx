@@ -38,6 +38,7 @@ import {
 import { useDesignerStore } from '../hooks/useDesignerStore';
 import { DesignerViewContext } from '../view-context';
 import { loadMergeFields, getSampleMap } from '../mergeFields';
+import { CURRENT_SCHEMA_VERSION } from '../schema/migrations';
 import { interpolateTokens } from '../schema/interpolate';
 import {
 	getTriggers,
@@ -348,6 +349,26 @@ export default function DesignerApp( { boot } ) {
 		if ( boot.template_id > 0 ) {
 			apiFetch( { path: `/ppcert/v1/templates/${ boot.template_id }` } )
 				.then( ( template ) => {
+					// A newer-version document (v3 multi-page, Educator-
+					// authored) never opens here: this designer is
+					// single-page and a save would destroy pages[].
+					// Issuance and rendering handle it fully regardless.
+					const version =
+						parseInt(
+							template.layout?.layout_schema_version,
+							10
+						) || 0;
+
+					if ( version > CURRENT_SCHEMA_VERSION ) {
+						setLoadError(
+							__(
+								'This design uses multi-page features from PressPrimer Certificate Educator, so it cannot be opened in the single-page designer. Certificates still award and download from it normally.',
+								'pressprimer-certificate'
+							)
+						);
+						return;
+					}
+
 					dispatch( {
 						type: 'LOAD_TEMPLATE',
 						template,

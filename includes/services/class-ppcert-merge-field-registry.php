@@ -166,7 +166,10 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 	public static function extract_tokens( array $layout ) {
 		$tokens = [];
 
-		$elements = isset( $layout['elements'] ) && is_array( $layout['elements'] ) ? $layout['elements'] : [];
+		// Every page of the document (v3 multi-page wraps elements in
+		// pages[]; v1/v2 normalize to one page) - a token on ANY page
+		// must resolve into the snapshot at issue time.
+		$elements = array_merge( ...PressPrimer_Certificate_Layout_Validator::layout_pages( $layout ) );
 
 		// Inline tokens in text content (schema v2+, Feature 1.1-001):
 		// the renderer interpolates them, so issuance must resolve them.

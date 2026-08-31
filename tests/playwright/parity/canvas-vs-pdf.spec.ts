@@ -182,28 +182,40 @@ const INLINE_TOKEN_FIXTURES = [
 
 /**
  * The parity assertion body, shared by starters and fixtures.
+ *
+ * For multi-page (v3) fixtures the PDF side rasterizes one page of the
+ * full document (`pdfPage`) while the canvas renders that page's
+ * elements as a single-page document (`canvasLayout`) - per-page parity
+ * proves elements render identically on any page.
  * @param page
  * @param layout
  * @param layoutPath
  * @param dir
+ * @param opts
+ * @param opts.pdfPage
+ * @param opts.canvasLayout
  */
 async function runParityCase(
 	page: Page,
 	layout: any,
 	layoutPath: string,
-	dir: string
+	dir: string,
+	opts: { pdfPage?: number; canvasLayout?: any } = {}
 ): Promise< void > {
+	const canvasLayout = opts.canvasLayout ?? layout;
+	const pageArg = opts.pdfPage ? { page: opts.pdfPage } : {};
+
 	// PDF side.
 	const pdfPng = path.join( dir, 'pdf.png' );
 	renderPng(
 		layoutPath,
 		SAMPLES_PATH,
-		{ context: 'parity', dpi: DPI, credential_id: CREDENTIAL },
+		{ context: 'parity', dpi: DPI, credential_id: CREDENTIAL, ...pageArg },
 		pdfPng
 	);
 
 	// Canvas side.
-	await bootCanvas( page, layout, sampleQr() );
+	await bootCanvas( page, canvasLayout, sampleQr() );
 
 	const canvasPng = path.join( dir, 'canvas.png' );
 	await page
@@ -226,7 +238,7 @@ async function runParityCase(
 		.locator( '.ppcert-designer__page' )
 		.boundingBox();
 
-	for ( const element of layout.elements ) {
+	for ( const element of canvasLayout.elements ) {
 		const domBox = await page
 			.locator( `[data-ppcert-el="${ element.id }"]` )
 			.boundingBox();
@@ -258,12 +270,13 @@ async function runParityCase(
 			dpi: DPI,
 			credential_id: CREDENTIAL,
 			parity_debug: true,
+			...pageArg,
 		},
 		debugPng
 	);
 
-	const boxes = extractBoxes( debugPng, layout.elements.length );
-	const failures = boxDriftFailures( boxes, layout.elements, SCALE );
+	const boxes = extractBoxes( debugPng, canvasLayout.elements.length );
+	const failures = boxDriftFailures( boxes, canvasLayout.elements, SCALE );
 
 	expect(
 		failures,
@@ -290,5 +303,39 @@ for ( const slug of INLINE_TOKEN_FIXTURES ) {
 		const { layout, layoutPath } = fixtureLayout( slug, dir );
 
 		await runParityCase( page, layout, layoutPath, dir );
+	} );
+}
+
+// The v3 multi-page fixture (schema v3, Feature 2.0-006 FR-002): every
+// page of the document is captured individually from the rendered PDF
+// and compared against the canvas rendering that page's elements as a
+// v2 single-page document. One test per page so a failure names the
+// page that drifted.
+const MULTIPAGE_SLUG = 'parity-multipage';
+const MULTIPAGE_PAGES = 2;
+
+for ( let pageNumber = 1; pageNumber <= MULTIPAGE_PAGES; pageNumber++ ) {
+	test( `${ MULTIPAGE_SLUG } page ${ pageNumber }: matches the PDF raster within parity thresholds`, async ( {
+		page,
+	} ) => {
+		const dir = tmpDir();
+		const { layout, layoutPath } = fixtureLayout( MULTIPAGE_SLUG, dir );
+
+		expect(
+			layout.pages.length,
+			'fixture page count drives the test matrix'
+		).toBe( MULTIPAGE_PAGES );
+
+		const canvasLayout = {
+			layout_schema_version: 2,
+			page: layout.page,
+			background: layout.background,
+			elements: layout.pages[ pageNumber - 1 ].elements,
+		};
+
+		await runParityCase( page, layout, layoutPath, dir, {
+			pdfPage: pageNumber,
+			canvasLayout,
+		} );
 	} );
 }
