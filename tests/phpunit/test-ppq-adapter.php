@@ -427,4 +427,62 @@ class Test_PPQ_Adapter extends TestCase { // phpcs:ignore Generic.Files.OneObjec
 		$this->assertSame( '', $empty['source.quiz_title'] );
 		$this->assertSame( '', $empty['source.grade'] );
 	}
+
+	/**
+	 * Past completions (2.0, FR-005): earliest passing submitted attempt
+	 * per user; guests, practice runs, failed and in-progress attempts
+	 * excluded; finished_at converts from PPQ's site-local storage to
+	 * UTC.
+	 *
+	 * @return void
+	 */
+	public function test_past_completions_from_attempts() {
+		$this->assertTrue( $this->adapter->supports_past_completions() );
+
+		// Simulate a UTC+2 site: PPQ stores finished_at in local time.
+		$GLOBALS['ppcert_test_gmt_offset'] = 2 * 3600;
+
+		$attempts = [
+			// User 7: two passes - the EARLIER one wins - plus noise.
+			[ 'user_id' => 7, 'quiz_id' => 9, 'status' => 'submitted', 'passed' => 1, 'finished_at' => '2026-06-12 09:30:00' ],
+			[ 'user_id' => 7, 'quiz_id' => 9, 'status' => 'submitted', 'passed' => 1, 'finished_at' => '2026-07-01 10:00:00' ],
+			[ 'user_id' => 7, 'quiz_id' => 9, 'status' => 'submitted', 'passed' => 0, 'finished_at' => '2026-05-01 08:00:00' ],
+			// User 8: pass on another quiz - filtered by ref.
+			[ 'user_id' => 8, 'quiz_id' => 10, 'status' => 'submitted', 'passed' => 1, 'finished_at' => '2026-06-13 09:30:00' ],
+			// User 9: practice pass - excluded.
+			[ 'user_id' => 9, 'quiz_id' => 9, 'status' => 'submitted', 'passed' => 1, 'is_practice' => 1, 'finished_at' => '2026-06-14 09:30:00' ],
+			// Guest pass - excluded (no account to award to).
+			[ 'user_id' => null, 'quiz_id' => 9, 'status' => 'submitted', 'passed' => 1, 'finished_at' => '2026-06-15 09:30:00' ],
+			// User 11: in-progress - excluded.
+			[ 'user_id' => 11, 'quiz_id' => 9, 'status' => 'in_progress', 'passed' => 1, 'finished_at' => '2026-06-16 09:30:00' ],
+			// User 12: clean single pass.
+			[ 'user_id' => 12, 'quiz_id' => 9, 'status' => 'submitted', 'passed' => 1, 'finished_at' => '2026-06-17 12:00:00' ],
+		];
+
+		foreach ( $attempts as $attempt ) {
+			$this->wpdb->seed_row( 'wp_ppq_attempts', $attempt );
+		}
+
+		$completions = $this->adapter->get_past_completions( '9' );
+
+		unset( $GLOBALS['ppcert_test_gmt_offset'] );
+
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-12 07:30:00',
+				],
+				[
+					'user_id'      => 12,
+					'completed_at' => '2026-06-17 10:00:00',
+				],
+			],
+			$completions,
+			'Earliest pass per user, local storage shifted to UTC.'
+		);
+
+		// Nonsense refs yield an empty list, never an error.
+		$this->assertSame( [], $this->adapter->get_past_completions( '0' ) );
+	}
 }

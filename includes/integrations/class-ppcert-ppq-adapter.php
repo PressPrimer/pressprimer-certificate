@@ -333,4 +333,63 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 			);
 		}
 	}
+
+	/**
+	 * Past completions: SUPPORTED (2.0, Feature 2.0-006 FR-005)
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function supports_past_completions(): bool {
+		return true;
+	}
+
+	/**
+	 * Users who passed this quiz, from wp_ppq_attempts
+	 *
+	 * Predicate mirrors PPQ's own historical pass checks (status
+	 * 'submitted' AND passed = 1) plus the is_practice = 0 filter PPQ's
+	 * statistics apply. Limitations, recorded per FR-005: guest attempts
+	 * (user_id NULL) are excluded - there is no account to award to;
+	 * min_score trigger conditions are not evaluated historically (the
+	 * retroactive flow's preview is the checkpoint). finished_at is
+	 * stored in SITE-LOCAL time by PPQ (current_time('mysql') in
+	 * Attempt::submit()) and converts to UTC here per the interface
+	 * contract.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref PPQ quiz row id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		global $wpdb;
+
+		$quiz_id = absint( $source_ref );
+
+		if ( $quiz_id < 1 ) {
+			return [];
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT user_id, MIN(finished_at) AS completed_at FROM %i WHERE quiz_id = %d AND user_id IS NOT NULL AND user_id > 0 AND status = 'submitted' AND passed = 1 AND is_practice = 0 AND finished_at IS NOT NULL GROUP BY user_id ORDER BY user_id ASC",
+				$wpdb->prefix . 'ppq_attempts',
+				$quiz_id
+			)
+		);
+
+		$completions = [];
+
+		foreach ( (array) $rows as $row ) {
+			$completions[] = [
+				'user_id'      => (int) $row->user_id,
+				// Local -> UTC (PPQ's storage convention).
+				'completed_at' => (string) get_gmt_from_date( (string) $row->completed_at ),
+			];
+		}
+
+		return $completions;
+	}
 }

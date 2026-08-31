@@ -129,6 +129,48 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	 */
 
 	/**
+	 * Whether this adapter can enumerate past completions
+	 *
+	 * The 2.0 optional capability pair backing School's retroactive
+	 * awarding (Feature 2.0-006 FR-005). Additive to the locked 1.0
+	 * contract: adapters that can answer "who completed this in the
+	 * past?" override BOTH methods; the default is a formal unsupported
+	 * declaration, never a guess.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function supports_past_completions(): bool {
+		return false;
+	}
+
+	/**
+	 * Past completions of a concrete source reference
+	 *
+	 * Returns one tuple per user - the EARLIEST qualifying completion -
+	 * with completed_at in UTC regardless of the LMS's own storage
+	 * convention. $source_ref is always concrete: enumerating an 'any'
+	 * trigger's sources is the caller's job (School-side, per the 1.1
+	 * Any semantics). Callers are capability-checked admin flows; this
+	 * interface adds no endpoint of its own.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Concrete source reference.
+	 * @return array|WP_Error [ [ 'user_id' => int, 'completed_at' =>
+	 *                        'Y-m-d H:i:s' UTC ], ... ] ordered by
+	 *                        user_id, or WP_Error
+	 *                        'ppcert_past_completions_unsupported'.
+	 */
+	public function get_past_completions( string $source_ref ) {
+		return new WP_Error(
+			'ppcert_past_completions_unsupported',
+			__( 'This integration cannot list past completions.', 'pressprimer-certificate' )
+		);
+	}
+
+	/**
 	 * Register this adapter with core
 	 *
 	 * Called on `ppcert_loaded`. No-ops when the source plugin is absent:

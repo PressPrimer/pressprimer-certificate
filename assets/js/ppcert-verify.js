@@ -74,12 +74,35 @@
 			region.removeChild( region.firstChild );
 		}
 
+		// Branding display data (2.0, ppcert_verification_display): logo,
+		// intro, and footer render when an addon supplied them, mirroring
+		// the server-side no-JS renderer exactly. accent_color is data
+		// for the branding addon's own CSS. All values land through
+		// textContent/setAttribute - never innerHTML.
+		const display = data && data.display ? data.display : null;
+
+		if ( display && display.logo_url ) {
+			const logo = document.createElement( 'img' );
+			logo.className = 'ppcert-verify__logo';
+			logo.setAttribute( 'src', display.logo_url );
+			logo.setAttribute( 'alt', '' );
+			region.appendChild( logo );
+		}
+
 		const heading = document.createElement( 'p' );
 		heading.className = 'ppcert-verify__status';
 		heading.textContent = i18n[ state ] || i18n.error;
 		region.appendChild( heading );
 
+		if ( display && display.intro ) {
+			const intro = document.createElement( 'p' );
+			intro.className = 'ppcert-verify__intro';
+			intro.textContent = display.intro;
+			region.appendChild( intro );
+		}
+
 		if ( ! data || ( state !== 'valid' && state !== 'expired' ) ) {
+			appendDisplayFooter( region, display );
 			return;
 		}
 
@@ -116,6 +139,25 @@
 		} );
 
 		region.appendChild( list );
+
+		appendDisplayFooter( region, display );
+	}
+
+	/**
+	 * Append the branding footer line when an addon supplied one.
+	 *
+	 * @param {Element}     region  Result region.
+	 * @param {Object|null} display Display structure from the response.
+	 */
+	function appendDisplayFooter( region, display ) {
+		if ( ! display || ! display.footer ) {
+			return;
+		}
+
+		const footer = document.createElement( 'p' );
+		footer.className = 'ppcert-verify__footer';
+		footer.textContent = display.footer;
+		region.appendChild( footer );
 	}
 
 	/**

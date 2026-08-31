@@ -524,7 +524,16 @@ if ( ! function_exists( 'get_date_from_gmt' ) ) {
 	 */
 	function get_date_from_gmt( $date_string, $format = 'Y-m-d H:i:s' ) {
 		$timestamp = strtotime( $date_string . ' +0000' );
-		return false === $timestamp ? '' : gmdate( $format, $timestamp );
+
+		if ( false === $timestamp ) {
+			return '';
+		}
+
+		// Optional site-timezone simulation (seconds east of UTC; default
+		// 0 = UTC site). Lets tests pin local-vs-UTC conversion bugs.
+		$offset = isset( $GLOBALS['ppcert_test_gmt_offset'] ) ? (int) $GLOBALS['ppcert_test_gmt_offset'] : 0;
+
+		return gmdate( $format, $timestamp + $offset );
 	}
 }
 
@@ -580,7 +589,16 @@ if ( ! function_exists( 'get_gmt_from_date' ) ) {
 	 */
 	function get_gmt_from_date( $date_string, $format = 'Y-m-d H:i:s' ) {
 		$timestamp = strtotime( $date_string . ' +0000' );
-		return false === $timestamp ? '' : gmdate( $format, $timestamp );
+
+		if ( false === $timestamp ) {
+			return '';
+		}
+
+		// Mirror of get_date_from_gmt(): local input shifts back by the
+		// simulated site offset (default 0 = UTC site).
+		$offset = isset( $GLOBALS['ppcert_test_gmt_offset'] ) ? (int) $GLOBALS['ppcert_test_gmt_offset'] : 0;
+
+		return gmdate( $format, $timestamp - $offset );
 	}
 }
 

@@ -280,4 +280,97 @@ class PressPrimer_Certificate_LearnPress_Adapter extends PressPrimer_Certificate
 
 		return is_object( $item ) && isset( $item->graduation ) ? (string) $item->graduation : '';
 	}
+
+	/**
+	 * Past completions: SUPPORTED (2.0, Feature 2.0-006 FR-005)
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function supports_past_completions(): bool {
+		return true;
+	}
+
+	/**
+	 * Users who finished this course, from wp_learnpress_user_items
+	 *
+	 * Course rows carry item_type 'lp_course' and status 'finished';
+	 * mirroring the fire-time graduation gate, 'failed' graduations are
+	 * excluded (NULL and legacy empty graduations count). end_time is
+	 * stored in UTC by LearnPress 4 (gmdate()/LP_Datetime, verified
+	 * against LearnPress 4.4.4 sources, 2026-08-30) and is read
+	 * directly.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Course post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		return $this->user_item_completions(
+			'lp_course',
+			absint( $source_ref ),
+			'finished',
+			false
+		);
+	}
+
+	/**
+	 * Earliest qualifying wp_learnpress_user_items rows per user
+	 *
+	 * Shared by the course and quiz adapters (same table, different
+	 * item types and graduation predicates).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $item_type       'lp_course' or 'lp_quiz'.
+	 * @param int    $item_id         Source post id.
+	 * @param string $status          Qualifying status value.
+	 * @param bool   $require_passed  True to require graduation
+	 *                                'passed' (quiz); false to exclude
+	 *                                only 'failed' (course).
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	protected function user_item_completions( string $item_type, int $item_id, string $status, bool $require_passed ) {
+		global $wpdb;
+
+		if ( $item_id < 1 ) {
+			return [];
+		}
+
+		if ( $require_passed ) {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT user_id, MIN(end_time) AS completed_at FROM %i WHERE item_type = %s AND item_id = %d AND status = %s AND graduation = 'passed' AND user_id > 0 AND end_time IS NOT NULL GROUP BY user_id ORDER BY user_id ASC",
+					$wpdb->prefix . 'learnpress_user_items',
+					$item_type,
+					$item_id,
+					$status
+				)
+			);
+		} else {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT user_id, MIN(end_time) AS completed_at FROM %i WHERE item_type = %s AND item_id = %d AND status = %s AND ( graduation IS NULL OR graduation <> 'failed' ) AND user_id > 0 AND end_time IS NOT NULL GROUP BY user_id ORDER BY user_id ASC",
+					$wpdb->prefix . 'learnpress_user_items',
+					$item_type,
+					$item_id,
+					$status
+				)
+			);
+		}
+
+		$completions = [];
+
+		foreach ( (array) $rows as $row ) {
+			$completions[] = [
+				'user_id'      => (int) $row->user_id,
+				// end_time is already UTC (LearnPress 4 convention).
+				'completed_at' => (string) $row->completed_at,
+			];
+		}
+
+		return $completions;
+	}
 }

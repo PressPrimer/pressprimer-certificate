@@ -253,4 +253,58 @@ class PressPrimer_Certificate_LifterLMS_Adapter extends PressPrimer_Certificate_
 			);
 		}
 	}
+
+	/**
+	 * Past completions: SUPPORTED (2.0, Feature 2.0-006 FR-005)
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function supports_past_completions(): bool {
+		return true;
+	}
+
+	/**
+	 * Users who completed this course, from wp_lifterlms_user_postmeta
+	 *
+	 * Completion rows are meta_key '_is_complete' with meta_value 'yes'.
+	 * updated_date is stored in SITE-LOCAL time by LifterLMS
+	 * (llms_current_time('mysql'), verified against LifterLMS 10.1.1
+	 * sources, 2026-08-30) and converts to UTC here.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Course post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		global $wpdb;
+
+		$course_id = absint( $source_ref );
+
+		if ( $course_id < 1 ) {
+			return [];
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT user_id, MIN(updated_date) AS completed_at FROM %i WHERE post_id = %d AND meta_key = '_is_complete' AND meta_value = 'yes' AND user_id > 0 GROUP BY user_id ORDER BY user_id ASC",
+				$wpdb->prefix . 'lifterlms_user_postmeta',
+				$course_id
+			)
+		);
+
+		$completions = [];
+
+		foreach ( (array) $rows as $row ) {
+			$completions[] = [
+				'user_id'      => (int) $row->user_id,
+				// Local -> UTC (LifterLMS's storage convention).
+				'completed_at' => (string) get_gmt_from_date( (string) $row->completed_at ),
+			];
+		}
+
+		return $completions;
+	}
 }

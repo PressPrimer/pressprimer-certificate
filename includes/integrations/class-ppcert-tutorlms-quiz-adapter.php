@@ -406,4 +406,52 @@ class PressPrimer_Certificate_TutorLMS_Quiz_Adapter extends PressPrimer_Certific
 			);
 		}
 	}
+
+	/**
+	 * Users who PASSED this quiz, from wp_tutor_quiz_attempts
+	 *
+	 * SUPPORTED (2.0, FR-005). Tutor's own verdict column is used:
+	 * result = 'pass' (computed by Tutor against the passing grade
+	 * snapshotted into each attempt - historical attempts keep the
+	 * grade in force when they were taken). attempt_ended_at is
+	 * SITE-LOCAL (tutor_time(), verified against Tutor LMS 4.0.5
+	 * sources, 2026-08-30) and converts to UTC here. Limitations per
+	 * FR-005: attempts predating Tutor 3.7.1's result column are not
+	 * counted, and min_score trigger conditions are not evaluated
+	 * historically.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Quiz post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		global $wpdb;
+
+		$quiz_id = absint( $source_ref );
+
+		if ( $quiz_id < 1 ) {
+			return [];
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT user_id, MIN(attempt_ended_at) AS completed_at FROM %i WHERE quiz_id = %d AND result = 'pass' AND user_id > 0 AND attempt_ended_at IS NOT NULL GROUP BY user_id ORDER BY user_id ASC",
+				$wpdb->prefix . 'tutor_quiz_attempts',
+				$quiz_id
+			)
+		);
+
+		$completions = [];
+
+		foreach ( (array) $rows as $row ) {
+			$completions[] = [
+				'user_id'      => (int) $row->user_id,
+				// Local -> UTC (Tutor's storage convention).
+				'completed_at' => (string) get_gmt_from_date( (string) $row->completed_at ),
+			];
+		}
+
+		return $completions;
+	}
 }

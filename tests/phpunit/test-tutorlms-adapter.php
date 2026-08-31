@@ -385,4 +385,82 @@ class Test_TutorLMS_Adapter extends TestCase { // phpcs:ignore Generic.Files.One
 
 		$this->assertSame( [], $adapter->get_sources_for_parents( [ 'course' => 999 ] ) );
 	}
+
+	/**
+	 * Past completions (2.0, FR-005): course completions come from
+	 * Tutor's completion comments - comment_date_gmt is already UTC and
+	 * passes through unshifted - while quiz passes read the attempts
+	 * table's local attempt_ended_at with Tutor's own result verdict.
+	 *
+	 * @return void
+	 */
+	public function test_past_completions_comments_and_attempts() {
+		// UTC+2 site: Tutor datetimes are local EXCEPT comment_date_gmt.
+		$GLOBALS['ppcert_test_gmt_offset'] = 2 * 3600;
+
+		$comments = [
+			[
+				'user_id'          => 7,
+				'comment_post_ID'  => 501,
+				'comment_type'     => 'course_completed',
+				'comment_agent'    => 'TutorLMSPlugin',
+				'comment_approved' => 'approved',
+				'comment_date'     => '2026-06-12 11:30:00',
+				'comment_date_gmt' => '2026-06-12 09:30:00',
+			],
+			// Ordinary comment on the course - excluded.
+			[
+				'user_id'          => 8,
+				'comment_post_ID'  => 501,
+				'comment_type'     => 'comment',
+				'comment_agent'    => '',
+				'comment_approved' => '1',
+				'comment_date'     => '2026-06-12 11:30:00',
+				'comment_date_gmt' => '2026-06-12 09:30:00',
+			],
+		];
+
+		foreach ( $comments as $row ) {
+			$this->wpdb->seed_row( 'wp_comments', $row );
+		}
+
+		$course = new PressPrimer_Certificate_TutorLMS_Adapter();
+
+		$this->assertTrue( $course->supports_past_completions() );
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-12 09:30:00',
+				],
+			],
+			$course->get_past_completions( '501' ),
+			'comment_date_gmt is UTC already - no shift.'
+		);
+
+		$attempts = [
+			[ 'user_id' => 7, 'quiz_id' => 503, 'result' => 'pass', 'attempt_status' => 'attempt_ended', 'attempt_ended_at' => '2026-06-12 11:30:00' ],
+			[ 'user_id' => 8, 'quiz_id' => 503, 'result' => 'fail', 'attempt_status' => 'attempt_ended', 'attempt_ended_at' => '2026-06-12 11:30:00' ],
+			[ 'user_id' => 9, 'quiz_id' => 503, 'result' => 'pending', 'attempt_status' => 'review_required', 'attempt_ended_at' => '2026-06-12 11:30:00' ],
+		];
+
+		foreach ( $attempts as $row ) {
+			$this->wpdb->seed_row( 'wp_tutor_quiz_attempts', $row );
+		}
+
+		$quiz = new PressPrimer_Certificate_TutorLMS_Quiz_Adapter();
+
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-12 09:30:00',
+				],
+			],
+			$quiz->get_past_completions( '503' ),
+			"Tutor's own result verdict; local attempt_ended_at shifts to UTC."
+		);
+
+		unset( $GLOBALS['ppcert_test_gmt_offset'] );
+	}
 }

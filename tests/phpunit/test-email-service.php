@@ -397,6 +397,29 @@ class Test_Email_Service extends TestCase {
 	}
 
 	/**
+	 * A resend records the 'reissued' lifecycle event (2.0, FR-006) -
+	 * only when the mail actually went out.
+	 *
+	 * @return void
+	 */
+	public function test_resend_records_reissued_event() {
+		$GLOBALS['ppcert_test_current_user'] = 5;
+
+		$this->assertTrue( PressPrimer_Certificate_Email_Service::resend( $this->certificate_id ) );
+
+		$events = $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() );
+		$this->assertCount( 1, $events );
+		$this->assertSame( 'reissued', $events[0]['event_type'] );
+		$this->assertSame( 5, (int) $events[0]['actor_id'] );
+
+		// A vetoed resend records nothing.
+		add_filter( 'ppcert_email_enabled', '__return_false_ppcert_test' );
+
+		$this->assertFalse( PressPrimer_Certificate_Email_Service::resend( $this->certificate_id ) );
+		$this->assertCount( 1, $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() ) );
+	}
+
+	/**
 	 * template_tokens() extracts from the EFFECTIVE content: the mapped
 	 * row's tokens when the chain selects one, the settings default's
 	 * tokens otherwise.

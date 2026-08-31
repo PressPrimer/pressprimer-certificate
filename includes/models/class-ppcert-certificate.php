@@ -319,6 +319,10 @@ class PressPrimer_Certificate_Certificate {
 			);
 		}
 
+		// Lifecycle event (2.0, Feature 2.0-006 FR-006): the staff-only
+		// reason stays on the certificate row, never in event meta.
+		self::record_event( absint( $id ), 'revoked', self::acting_user_id() );
+
 		/** This action is documented in docs/architecture/HOOKS.md */
 		do_action( 'ppcert_certificate_revoked', absint( $id ), $reason );
 
@@ -374,6 +378,9 @@ class PressPrimer_Certificate_Certificate {
 			);
 		}
 
+		// Lifecycle event (2.0, Feature 2.0-006 FR-006).
+		self::record_event( absint( $id ), 'reinstated', self::acting_user_id() );
+
 		/**
 		 * Fires when a revoked certificate is reinstated.
 		 *
@@ -384,6 +391,22 @@ class PressPrimer_Certificate_Certificate {
 		do_action( 'ppcert_certificate_reinstated', absint( $id ) );
 
 		return true;
+	}
+
+	/**
+	 * The acting user for lifecycle event rows
+	 *
+	 * Lifecycle transitions run in authenticated admin contexts; system
+	 * paths without a user record NULL (anonymous per the privacy rules).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return int|null
+	 */
+	private static function acting_user_id() {
+		$actor = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
+
+		return $actor > 0 ? $actor : null;
 	}
 
 	/**

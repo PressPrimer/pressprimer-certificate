@@ -248,4 +248,60 @@ class PressPrimer_Certificate_TutorLMS_Adapter extends PressPrimer_Certificate_L
 			);
 		}
 	}
+
+	/**
+	 * Past completions: SUPPORTED (2.0, Feature 2.0-006 FR-005)
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function supports_past_completions(): bool {
+		return true;
+	}
+
+	/**
+	 * Users who completed this course, from Tutor's completion comments
+	 *
+	 * Tutor records course completion as a wp_comments row
+	 * (comment_type 'course_completed', agent 'TutorLMSPlugin',
+	 * approved 'approved', user in user_id). comment_date_gmt is
+	 * populated in UTC by Tutor (get_gmt_from_date at insert, verified
+	 * against Tutor LMS 4.0.5 sources, 2026-08-30) and is read
+	 * directly.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Course post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		global $wpdb;
+
+		$course_id = absint( $source_ref );
+
+		if ( $course_id < 1 ) {
+			return [];
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT user_id, MIN(comment_date_gmt) AS completed_at FROM %i WHERE comment_type = 'course_completed' AND comment_agent = 'TutorLMSPlugin' AND comment_approved = 'approved' AND comment_post_ID = %d AND user_id > 0 GROUP BY user_id ORDER BY user_id ASC",
+				$wpdb->comments,
+				$course_id
+			)
+		);
+
+		$completions = [];
+
+		foreach ( (array) $rows as $row ) {
+			$completions[] = [
+				'user_id'      => (int) $row->user_id,
+				// comment_date_gmt is already UTC.
+				'completed_at' => (string) $row->completed_at,
+			];
+		}
+
+		return $completions;
+	}
 }

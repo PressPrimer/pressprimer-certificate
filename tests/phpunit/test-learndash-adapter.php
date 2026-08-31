@@ -874,4 +874,58 @@ class Test_LearnDash_Adapter extends TestCase { // phpcs:ignore Generic.Files.On
 		$this->assertArrayHasKey( 'source.course_title', $quiz_scope );
 		$this->assertArrayNotHasKey( 'source.lesson_title', $quiz_scope );
 	}
+
+	/**
+	 * Past completions (2.0, FR-005): activity rows filter by type,
+	 * object, and status; quiz rows use activity_status as the pass
+	 * flag; UNIX timestamps (already UTC) become UTC datetimes; the
+	 * earliest completion per user wins.
+	 *
+	 * @return void
+	 */
+	public function test_past_completions_from_activity_table() {
+		$activity = [
+			// User 7 completed course 301 twice - earliest wins.
+			[ 'user_id' => 7, 'post_id' => 301, 'activity_type' => 'course', 'activity_status' => 1, 'activity_completed' => 1781256600 ],
+			[ 'user_id' => 7, 'post_id' => 301, 'activity_type' => 'course', 'activity_status' => 1, 'activity_completed' => 1781356600 ],
+			// Incomplete row - excluded.
+			[ 'user_id' => 8, 'post_id' => 301, 'activity_type' => 'course', 'activity_status' => 0, 'activity_completed' => 0 ],
+			// Lesson row for the same object id - type isolation.
+			[ 'user_id' => 9, 'post_id' => 301, 'activity_type' => 'lesson', 'activity_status' => 1, 'activity_completed' => 1781256700 ],
+			// Quiz PASS and quiz FAIL (activity_status is the pass flag).
+			[ 'user_id' => 7, 'post_id' => 307, 'activity_type' => 'quiz', 'activity_status' => 1, 'activity_completed' => 1781256800 ],
+			[ 'user_id' => 10, 'post_id' => 307, 'activity_type' => 'quiz', 'activity_status' => 0, 'activity_completed' => 1781256900 ],
+		];
+
+		foreach ( $activity as $row ) {
+			$this->wpdb->seed_row( 'wp_learndash_user_activity', $row );
+		}
+
+		$this->assertTrue( $this->adapter->supports_past_completions() );
+
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => gmdate( 'Y-m-d H:i:s', 1781256600 ),
+				],
+			],
+			$this->adapter->get_past_completions( '301' ),
+			'Course rows only: earliest per user, epoch rendered as UTC.'
+		);
+
+		$lesson = new PressPrimer_Certificate_LearnDash_Lesson_Adapter();
+		$this->assertSame(
+			[ 9 ],
+			array_column( $lesson->get_past_completions( '301' ), 'user_id' ),
+			'The lesson adapter reads lesson rows for the same object id.'
+		);
+
+		$quiz = new PressPrimer_Certificate_LearnDash_Quiz_Adapter();
+		$this->assertSame(
+			[ 7 ],
+			array_column( $quiz->get_past_completions( '307' ), 'user_id' ),
+			'Quiz rows: activity_status 1 = passed; failures excluded.'
+		);
+	}
 }

@@ -280,4 +280,77 @@ class PressPrimer_Certificate_LearnDash_Adapter extends PressPrimer_Certificate_
 			);
 		}
 	}
+
+	/**
+	 * Past completions: SUPPORTED (2.0, Feature 2.0-006 FR-005)
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function supports_past_completions(): bool {
+		return true;
+	}
+
+	/**
+	 * Users who completed this course, from wp_learndash_user_activity
+	 *
+	 * Course completions are activity rows of type 'course' with
+	 * activity_status = 1; activity_completed is a UNIX timestamp
+	 * written with time() - already UTC (verified against LearnDash
+	 * 5.1.2 sources, 2026-08-30).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Course post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		return $this->activity_completions( 'course', absint( $source_ref ) );
+	}
+
+	/**
+	 * Earliest completed activity rows of one type for one object
+	 *
+	 * The shared LearnDash history query (course/lesson/topic/quiz
+	 * adapters all read the same activity table; quiz rows use
+	 * activity_status as the PASS flag). Limitation, recorded per
+	 * FR-005: min_score quiz conditions are not evaluated historically -
+	 * the percentage lives serialized in activity meta, and the
+	 * retroactive flow's preview is the checkpoint.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $activity_type LearnDash activity type.
+	 * @param int    $post_id       Source post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	protected function activity_completions( string $activity_type, int $post_id ) {
+		global $wpdb;
+
+		if ( $post_id < 1 ) {
+			return [];
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT user_id, MIN(activity_completed) AS completed_at FROM %i WHERE activity_type = %s AND post_id = %d AND activity_status = 1 AND user_id > 0 AND activity_completed > 0 GROUP BY user_id ORDER BY user_id ASC',
+				$wpdb->prefix . 'learndash_user_activity',
+				$activity_type,
+				$post_id
+			)
+		);
+
+		$completions = [];
+
+		foreach ( (array) $rows as $row ) {
+			$completions[] = [
+				'user_id'      => (int) $row->user_id,
+				// UNIX timestamp, already UTC (time() in LearnDash).
+				'completed_at' => gmdate( 'Y-m-d H:i:s', (int) $row->completed_at ),
+			];
+		}
+
+		return $completions;
+	}
 }

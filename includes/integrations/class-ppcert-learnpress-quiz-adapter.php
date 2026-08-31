@@ -348,4 +348,27 @@ class PressPrimer_Certificate_LearnPress_Quiz_Adapter extends PressPrimer_Certif
 			);
 		}
 	}
+
+	/**
+	 * Users who PASSED this quiz, from wp_learnpress_user_items
+	 *
+	 * SUPPORTED (2.0, FR-005). Quiz rows carry item_type 'lp_quiz',
+	 * status 'completed', and graduation 'passed'; end_time is UTC (see
+	 * the course adapter's user_item_completions()). Limitation per
+	 * FR-005: min_score trigger conditions are not evaluated
+	 * historically.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Quiz post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		return $this->user_item_completions(
+			'lp_quiz',
+			absint( $source_ref ),
+			'completed',
+			true
+		);
+	}
 }

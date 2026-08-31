@@ -387,4 +387,60 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	public function resolve_assignment_title( array $context ) {
 		return isset( $context['ppa_assignment_title'] ) ? (string) $context['ppa_assignment_title'] : '';
 	}
+
+	/**
+	 * Past completions: SUPPORTED (2.0, Feature 2.0-006 FR-005)
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function supports_past_completions(): bool {
+		return true;
+	}
+
+	/**
+	 * Users who passed this assignment, from wp_ppa_submissions
+	 *
+	 * Predicate mirrors PPA's own historical pass checks (passed = 1 -
+	 * which includes rows later moved to 'returned' status; a returned
+	 * submission keeps its pass). graded_at is stored in UTC by PPA
+	 * (current_time('mysql', true) in the grading service) - no
+	 * conversion. Limitation, recorded per FR-005: min_grade trigger
+	 * conditions are not evaluated historically.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref PPA assignment row id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		global $wpdb;
+
+		$assignment_id = absint( $source_ref );
+
+		if ( $assignment_id < 1 ) {
+			return [];
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT user_id, MIN(graded_at) AS completed_at FROM %i WHERE assignment_id = %d AND passed = 1 AND graded_at IS NOT NULL GROUP BY user_id ORDER BY user_id ASC',
+				$wpdb->prefix . 'ppa_submissions',
+				$assignment_id
+			)
+		);
+
+		$completions = [];
+
+		foreach ( (array) $rows as $row ) {
+			$completions[] = [
+				'user_id'      => (int) $row->user_id,
+				// Already UTC (PPA's storage convention).
+				'completed_at' => (string) $row->completed_at,
+			];
+		}
+
+		return $completions;
+	}
 }

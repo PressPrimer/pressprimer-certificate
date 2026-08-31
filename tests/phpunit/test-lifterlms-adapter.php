@@ -553,4 +553,68 @@ class Test_LifterLMS_Adapter extends TestCase { // phpcs:ignore Generic.Files.On
 		// Unknown course: empty, never the global list.
 		$this->assertSame( [], $adapter->get_sources_for_parents( [ 'course' => 999 ] ) );
 	}
+
+	/**
+	 * Past completions (2.0, FR-005): course completions come from the
+	 * _is_complete user-postmeta rows and quiz passes from the attempts
+	 * table (student_id column) - both stored SITE-LOCAL by LifterLMS
+	 * and converted to UTC.
+	 *
+	 * @return void
+	 */
+	public function test_past_completions_convert_local_storage() {
+		// UTC+2 site: every LifterLMS datetime is local wall-clock.
+		$GLOBALS['ppcert_test_gmt_offset'] = 2 * 3600;
+
+		$postmeta = [
+			[ 'user_id' => 7, 'post_id' => 401, 'meta_key' => '_is_complete', 'meta_value' => 'yes', 'updated_date' => '2026-06-12 09:30:00' ],
+			// Other meta on the same course - excluded.
+			[ 'user_id' => 8, 'post_id' => 401, 'meta_key' => '_completion_trigger', 'meta_value' => 'lesson_402', 'updated_date' => '2026-06-12 09:30:00' ],
+			// Completion of another course - excluded.
+			[ 'user_id' => 9, 'post_id' => 999, 'meta_key' => '_is_complete', 'meta_value' => 'yes', 'updated_date' => '2026-06-12 09:30:00' ],
+		];
+
+		foreach ( $postmeta as $row ) {
+			$this->wpdb->seed_row( 'wp_lifterlms_user_postmeta', $row );
+		}
+
+		$course = new PressPrimer_Certificate_LifterLMS_Adapter();
+
+		$this->assertTrue( $course->supports_past_completions() );
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-12 07:30:00',
+				],
+			],
+			$course->get_past_completions( '401' ),
+			'Local updated_date shifts to UTC.'
+		);
+
+		$attempts = [
+			[ 'student_id' => 7, 'quiz_id' => 402, 'status' => 'pass', 'end_date' => '2026-06-12 10:00:00' ],
+			[ 'student_id' => 8, 'quiz_id' => 402, 'status' => 'fail', 'end_date' => '2026-06-12 10:00:00' ],
+			[ 'student_id' => 9, 'quiz_id' => 402, 'status' => 'pending', 'end_date' => '2026-06-12 10:00:00' ],
+		];
+
+		foreach ( $attempts as $row ) {
+			$this->wpdb->seed_row( 'wp_lifterlms_quiz_attempts', $row );
+		}
+
+		$quiz = new PressPrimer_Certificate_LifterLMS_Quiz_Adapter();
+
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-12 08:00:00',
+				],
+			],
+			$quiz->get_past_completions( '402' ),
+			"status 'pass' only; student_id normalizes to user_id; local end_date shifts to UTC."
+		);
+
+		unset( $GLOBALS['ppcert_test_gmt_offset'] );
+	}
 }

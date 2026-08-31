@@ -459,4 +459,53 @@ class Test_PPA_Adapter extends TestCase { // phpcs:ignore Generic.Files.OneObjec
 		$this->assertSame( '', $empty['source.grade'] );
 		$this->assertSame( '', $empty['source.completion_date'] );
 	}
+
+	/**
+	 * Past completions (2.0, FR-005): earliest passing grade per user;
+	 * passed = 1 includes rows later moved to 'returned'; graded_at is
+	 * already UTC (PPA convention) so a site offset must NOT shift it.
+	 *
+	 * @return void
+	 */
+	public function test_past_completions_from_submissions() {
+		$this->assertTrue( $this->adapter->supports_past_completions() );
+
+		// A UTC+2 site: PPA timestamps are UTC and must pass through.
+		$GLOBALS['ppcert_test_gmt_offset'] = 2 * 3600;
+
+		$submissions = [
+			[ 'user_id' => 7, 'assignment_id' => 11, 'status' => 'graded', 'passed' => 1, 'graded_at' => '2026-06-12 14:30:00' ],
+			// Returned AFTER passing keeps the pass (statistics parity).
+			[ 'user_id' => 8, 'assignment_id' => 11, 'status' => 'returned', 'passed' => 1, 'graded_at' => '2026-06-13 14:30:00' ],
+			// Failed grade - excluded.
+			[ 'user_id' => 9, 'assignment_id' => 11, 'status' => 'graded', 'passed' => 0, 'graded_at' => '2026-06-14 14:30:00' ],
+			// Other assignment - filtered by ref.
+			[ 'user_id' => 10, 'assignment_id' => 12, 'status' => 'graded', 'passed' => 1, 'graded_at' => '2026-06-15 14:30:00' ],
+			// User 7's later resubmission pass - earliest wins.
+			[ 'user_id' => 7, 'assignment_id' => 11, 'status' => 'graded', 'passed' => 1, 'graded_at' => '2026-07-02 14:30:00' ],
+		];
+
+		foreach ( $submissions as $submission ) {
+			$this->wpdb->seed_row( 'wp_ppa_submissions', $submission );
+		}
+
+		$completions = $this->adapter->get_past_completions( '11' );
+
+		unset( $GLOBALS['ppcert_test_gmt_offset'] );
+
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-12 14:30:00',
+				],
+				[
+					'user_id'      => 8,
+					'completed_at' => '2026-06-13 14:30:00',
+				],
+			],
+			$completions,
+			'UTC storage passes through unshifted; returned rows keep their pass.'
+		);
+	}
 }

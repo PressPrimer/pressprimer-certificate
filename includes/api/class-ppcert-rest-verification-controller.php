@@ -33,7 +33,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Responses carry Cache-Control: no-store (TR-003 - status can change).
  * The response shape is locked by a snapshot test: exactly valid, status,
  * recipient_name, subject, issuer_name, issued_at (ISO 8601 UTC),
- * expires_at (nullable).
+ * expires_at (nullable), and - since 2.0 - display (the branding
+ * structure from ppcert_verification_display: logo_url, accent_color,
+ * intro, footer, issuer_id; neutral empties with no addons).
  *
  * @since 1.0.0
  */
@@ -129,14 +131,14 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 		// for typos" UX runs client-side in the shortcode, never here -
 		// no oracle).
 		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_well_formed( $raw ) ) {
-			return self::not_found_result();
+			return self::with_display( self::not_found_result(), null );
 		}
 
 		// The single prepared, indexed lookup.
 		$certificate = PressPrimer_Certificate_Certificate::get_for_verification( $raw );
 
 		if ( ! $certificate ) {
-			return self::not_found_result();
+			return self::with_display( self::not_found_result(), null );
 		}
 
 		// Authoritative status.
@@ -166,14 +168,21 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 		$filtered['valid']  = $valid;
 		$filtered['status'] = $status;
 
+		// Branding display structure (2.0, Feature 2.0-006 FR-003):
+		// assembled and filtered on this single path so REST and the
+		// no-JS page always agree. Neutral defaults in free.
+		$filtered = self::with_display( $filtered, $certificate );
+
 		// Privacy-minimal verified event (no IP, no user agent; actor
 		// only when a logged-in user performed the lookup). Site admins
 		// never record: browsers preload the verify links that admin
 		// screens list, writing phantom verifications while an admin
 		// merely browses (observed 2026-07-24). Teacher and public
 		// checks always count.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			$actor = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
+		$actor   = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
+		$counted = ! current_user_can( 'manage_options' );
+
+		if ( $counted ) {
 			PressPrimer_Certificate_Certificate::record_event(
 				(int) $certificate->id,
 				'verified',
@@ -181,7 +190,77 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 			);
 		}
 
+		// Every successful lookup is subscribable (2.0, FR-006):
+		// Enterprise's audit logging hooks here. Fires for every resolved
+		// certificate regardless of status - a revoked-certificate check
+		// is exactly what an auditor wants to see. `counted` says whether
+		// a verified event row was recorded (admin lookups are excluded
+		// from the stats by the preload rule above; subscribers get the
+		// context and decide for themselves).
+		/** This action is documented in docs/architecture/HOOKS.md */
+		do_action(
+			'ppcert_certificate_verified',
+			$certificate,
+			[
+				'status'   => $status,
+				'valid'    => $valid,
+				'actor_id' => $actor > 0 ? $actor : null,
+				'counted'  => $counted,
+			]
+		);
+
 		return $filtered;
+	}
+
+	/**
+	 * Assemble, filter, and re-sanitize the branding display structure
+	 *
+	 * The ppcert_verification_display extension point (2.0, Feature
+	 * 2.0-006 FR-003): free supplies neutral defaults; Educator fills
+	 * site-level branding; School overrides per issuer at a later
+	 * priority using the issuer context. Filters supply DATA, never
+	 * markup - values are sanitized here at the data level and escaped
+	 * again by every renderer. accent_color travels as data for branding
+	 * consumers to render (free's output does not paint with it);
+	 * issuer_id is context, re-asserted after the filter.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array       $result      Lookup result (post re-assertion).
+	 * @param object|null $certificate Resolved certificate, or null for
+	 *                                 not-found results (site-level
+	 *                                 branding still applies).
+	 * @return array The result with its display structure attached.
+	 */
+	private static function with_display( array $result, $certificate ) {
+		$issuer_id = $certificate && ! empty( $certificate->issuer_id ) ? (int) $certificate->issuer_id : 0;
+
+		$defaults = [
+			'logo_url'     => '',
+			'accent_color' => '',
+			'intro'        => '',
+			'footer'       => '',
+			'issuer_id'    => $issuer_id,
+		];
+
+		/** This filter is documented in docs/architecture/HOOKS.md */
+		$display = apply_filters( 'ppcert_verification_display', $defaults, $certificate, $result );
+
+		if ( ! is_array( $display ) ) {
+			$display = $defaults;
+		}
+
+		$accent = isset( $display['accent_color'] ) ? sanitize_hex_color( (string) $display['accent_color'] ) : '';
+
+		$result['display'] = [
+			'logo_url'     => isset( $display['logo_url'] ) ? esc_url_raw( (string) $display['logo_url'] ) : '',
+			'accent_color' => is_string( $accent ) ? $accent : '',
+			'intro'        => isset( $display['intro'] ) ? sanitize_text_field( (string) $display['intro'] ) : '',
+			'footer'       => isset( $display['footer'] ) ? sanitize_text_field( (string) $display['footer'] ) : '',
+			'issuer_id'    => $issuer_id,
+		];
+
+		return $result;
 	}
 
 	/**

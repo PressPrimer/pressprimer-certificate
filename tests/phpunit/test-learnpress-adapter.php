@@ -348,4 +348,68 @@ class Test_LearnPress_Adapter extends TestCase {
 
 		$this->assertSame( [], $adapter->get_sources_for_parents( [ 'course' => 999 ] ) );
 	}
+
+	/**
+	 * Past completions (2.0, FR-005): user_items rows - courses need
+	 * status 'finished' with a non-failed graduation, quizzes need
+	 * status 'completed' with graduation 'passed'; end_time is UTC in
+	 * LearnPress 4 and passes through unshifted.
+	 *
+	 * @return void
+	 */
+	public function test_past_completions_from_user_items() {
+		// UTC+2 site: LearnPress stores UTC - values must NOT shift.
+		$GLOBALS['ppcert_test_gmt_offset'] = 2 * 3600;
+
+		$items = [
+			// Passed course finish.
+			[ 'user_id' => 7, 'item_id' => 601, 'item_type' => 'lp_course', 'status' => 'finished', 'graduation' => 'passed', 'end_time' => '2026-06-12 09:30:00' ],
+			// Legacy row without graduation still counts.
+			[ 'user_id' => 8, 'item_id' => 601, 'item_type' => 'lp_course', 'status' => 'finished', 'graduation' => null, 'end_time' => '2026-06-13 09:30:00' ],
+			// Failed graduation - excluded (mirrors the fire-time gate).
+			[ 'user_id' => 9, 'item_id' => 601, 'item_type' => 'lp_course', 'status' => 'finished', 'graduation' => 'failed', 'end_time' => '2026-06-14 09:30:00' ],
+			// Still enrolled - excluded.
+			[ 'user_id' => 10, 'item_id' => 601, 'item_type' => 'lp_course', 'status' => 'enrolled', 'graduation' => 'in-progress', 'end_time' => '2026-06-15 09:30:00' ],
+			// Quiz rows: passed counts, failed does not.
+			[ 'user_id' => 7, 'item_id' => 602, 'item_type' => 'lp_quiz', 'status' => 'completed', 'graduation' => 'passed', 'end_time' => '2026-06-16 10:00:00' ],
+			[ 'user_id' => 8, 'item_id' => 602, 'item_type' => 'lp_quiz', 'status' => 'completed', 'graduation' => 'failed', 'end_time' => '2026-06-16 10:00:00' ],
+		];
+
+		foreach ( $items as $row ) {
+			$this->wpdb->seed_row( 'wp_learnpress_user_items', $row );
+		}
+
+		$course = new PressPrimer_Certificate_LearnPress_Adapter();
+
+		$this->assertTrue( $course->supports_past_completions() );
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-12 09:30:00',
+				],
+				[
+					'user_id'      => 8,
+					'completed_at' => '2026-06-13 09:30:00',
+				],
+			],
+			$course->get_past_completions( '601' ),
+			'Finished courses minus failed graduations; UTC end_time unshifted.'
+		);
+
+		$quiz = new PressPrimer_Certificate_LearnPress_Quiz_Adapter();
+
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-16 10:00:00',
+				],
+			],
+			$quiz->get_past_completions( '602' ),
+			"Quizzes require graduation 'passed'."
+		);
+
+		unset( $GLOBALS['ppcert_test_gmt_offset'] );
+	}
 }

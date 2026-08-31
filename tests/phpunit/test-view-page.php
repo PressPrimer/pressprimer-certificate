@@ -93,6 +93,40 @@ class Test_View_Page extends TestCase {
 	}
 
 	/**
+	 * ppcert_view_page_head (2.0, Feature 2.0-006 FR-004): fires during
+	 * head output with the resolved certificate, and never when the
+	 * request resolved no view page.
+	 *
+	 * @return void
+	 */
+	public function test_head_action_fires_with_resolved_certificate() {
+		$fired = [];
+
+		add_action(
+			'ppcert_view_page_head',
+			static function ( $certificate ) use ( &$fired ) {
+				$fired[] = $certificate;
+			}
+		);
+
+		// No resolved certificate: wp_head passes silently.
+		PressPrimer_Certificate_View_Page::fire_head_action();
+		$this->assertSame( [], $fired );
+
+		// Resolve one (the request state inject_virtual_page() sets).
+		$certificate = $this->certificate();
+
+		$property = new ReflectionProperty( PressPrimer_Certificate_View_Page::class, 'certificate' );
+		$property->setAccessible( true );
+		$property->setValue( null, $certificate );
+
+		PressPrimer_Certificate_View_Page::fire_head_action();
+
+		$this->assertCount( 1, $fired );
+		$this->assertSame( 'CRED00000042', (string) $fired[0]->credential_id );
+	}
+
+	/**
 	 * The rewrite rule and query var register.
 	 *
 	 * @return void

@@ -332,4 +332,17 @@ class PressPrimer_Certificate_LearnDash_Lesson_Adapter extends PressPrimer_Certi
 
 		return $author ? (string) $author->display_name : '';
 	}
+
+	/**
+	 * Users who completed this lesson - activity rows of type 'lesson'
+	 * (SUPPORTED; see the course adapter's activity_completions()).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Lesson post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		return $this->activity_completions( 'lesson', absint( $source_ref ) );
+	}
 }

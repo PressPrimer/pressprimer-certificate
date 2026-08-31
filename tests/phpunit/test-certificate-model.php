@@ -164,6 +164,45 @@ class Test_Certificate_Model extends TestCase {
 	}
 
 	/**
+	 * Lifecycle events (2.0, Feature 2.0-006 FR-006): revoke and
+	 * reinstate each record their event row with the acting user; the
+	 * staff-only reason never lands in event meta; no-op transitions
+	 * record nothing.
+	 *
+	 * @return void
+	 */
+	public function test_revoke_and_reinstate_record_events() {
+		$GLOBALS['ppcert_test_current_user'] = 5;
+
+		$id = $this->seed_certificate();
+
+		PressPrimer_Certificate_Certificate::revoke( $id, 'Issued in error' );
+		PressPrimer_Certificate_Certificate::revoke( $id, 'Again' ); // No-op.
+		PressPrimer_Certificate_Certificate::reinstate( $id );
+		PressPrimer_Certificate_Certificate::reinstate( $id ); // No-op.
+
+		$events = array_values(
+			array_filter(
+				$this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() ),
+				static function ( $row ) use ( $id ) {
+					return (int) $row['certificate_id'] === $id;
+				}
+			)
+		);
+
+		$this->assertCount( 2, $events, 'One event per real transition; no-ops record nothing.' );
+		$this->assertSame( 'revoked', $events[0]['event_type'] );
+		$this->assertSame( 5, (int) $events[0]['actor_id'] );
+		$this->assertStringNotContainsString(
+			'Issued in error',
+			(string) wp_json_encode( $events[0] ),
+			'The staff-only reason stays on the certificate row.'
+		);
+		$this->assertSame( 'reinstated', $events[1]['event_type'] );
+		$this->assertSame( 5, (int) $events[1]['actor_id'] );
+	}
+
+	/**
 	 * Reinstate undoes a revocation: status returns to issued, the
 	 * revocation record clears, and the hook fires. Non-revoked rows
 	 * no-op; unknown ids error.

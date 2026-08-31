@@ -349,4 +349,50 @@ class PressPrimer_Certificate_LifterLMS_Quiz_Adapter extends PressPrimer_Certifi
 			);
 		}
 	}
+
+	/**
+	 * Users who PASSED this quiz, from wp_lifterlms_quiz_attempts
+	 *
+	 * SUPPORTED (2.0, FR-005). Passing attempts carry status 'pass'
+	 * (LifterLMS's own is_passing() predicate); the user column is
+	 * student_id. end_date is SITE-LOCAL (current_time('mysql') in
+	 * LLMS_Quiz_Attempt::end(), verified against LifterLMS 10.1.1
+	 * sources, 2026-08-30) and converts to UTC here. Limitation per
+	 * FR-005: min_score trigger conditions are not evaluated
+	 * historically.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Quiz post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		global $wpdb;
+
+		$quiz_id = absint( $source_ref );
+
+		if ( $quiz_id < 1 ) {
+			return [];
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT student_id AS user_id, MIN(end_date) AS completed_at FROM %i WHERE quiz_id = %d AND status = 'pass' AND student_id > 0 AND end_date IS NOT NULL GROUP BY student_id ORDER BY student_id ASC",
+				$wpdb->prefix . 'lifterlms_quiz_attempts',
+				$quiz_id
+			)
+		);
+
+		$completions = [];
+
+		foreach ( (array) $rows as $row ) {
+			$completions[] = [
+				'user_id'      => (int) $row->user_id,
+				// Local -> UTC (LifterLMS's storage convention).
+				'completed_at' => (string) get_gmt_from_date( (string) $row->completed_at ),
+			];
+		}
+
+		return $completions;
+	}
 }

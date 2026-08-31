@@ -34,6 +34,20 @@ class Test_Verification_REST extends TestCase {
 		'issuer_name',
 		'issued_at',
 		'expires_at',
+		'display',
+	];
+
+	/**
+	 * The locked display sub-shape (2.0, ppcert_verification_display).
+	 *
+	 * @var string[]
+	 */
+	const LOCKED_DISPLAY_SHAPE = [
+		'logo_url',
+		'accent_color',
+		'intro',
+		'footer',
+		'issuer_id',
 	];
 
 	/**
@@ -130,6 +144,21 @@ class Test_Verification_REST extends TestCase {
 		$this->assertSame( 'Sunrise Training Academy', $data['issuer_name'] );
 		$this->assertSame( '2026-07-18T14:30:00Z', $data['issued_at'], 'ISO 8601 UTC' );
 		$this->assertNull( $data['expires_at'] );
+
+		// The 2.0 display structure: locked sub-shape, neutral empties
+		// with no addons.
+		$this->assertSame( self::LOCKED_DISPLAY_SHAPE, array_keys( $data['display'] ) );
+		$this->assertSame(
+			[
+				'logo_url'     => '',
+				'accent_color' => '',
+				'intro'        => '',
+				'footer'       => '',
+				'issuer_id'    => 0,
+			],
+			$data['display'],
+			'Free renders neutral defaults'
+		);
 
 		$headers = $response->get_headers();
 		$this->assertSame( 'no-store', $headers['Cache-Control'] );
@@ -371,5 +400,167 @@ class Test_Verification_REST extends TestCase {
 		$response   = $controller->verify( new WP_REST_Request( [ 'credential_id' => (string) $row['credential_id'] ] ) );
 
 		$this->assertSame( 'Botany 101 Certificate', $response->get_data()['subject'] );
+	}
+
+	/**
+	 * ppcert_verification_display: filtered values reach the response
+	 * data-sanitized; markup and invalid colors are neutralized; the
+	 * issuer_id context is re-asserted after the filter.
+	 *
+	 * @return void
+	 */
+	public function test_display_filter_fills_and_sanitizes() {
+		$seen = [];
+
+		add_filter(
+			'ppcert_verification_display',
+			static function ( $display, $certificate, $result ) use ( &$seen ) {
+				$seen = [
+					'issuer_id'   => $display['issuer_id'],
+					'certificate' => is_object( $certificate ),
+					'status'      => $result['status'],
+				];
+
+				$display['logo_url']     = 'https://example.test/logo.png';
+				$display['accent_color'] = '#1f2a44';
+				$display['intro']        = 'Issued <script>alert(1)</script>by Sunrise';
+				$display['footer']       = 'Questions? hello@sunrise.example';
+				$display['issuer_id']    = 999; // Must not stick.
+
+				return $display;
+			},
+			10,
+			3
+		);
+
+		$data = $this->call( $this->credential )->get_data();
+
+		$this->assertSame( 'https://example.test/logo.png', $data['display']['logo_url'] );
+		$this->assertSame( '#1f2a44', $data['display']['accent_color'] );
+		$this->assertStringNotContainsString( '<script>', $data['display']['intro'], 'Markup never survives the data-level sanitize' );
+		$this->assertSame( 'Questions? hello@sunrise.example', $data['display']['footer'] );
+		$this->assertSame( 0, $data['display']['issuer_id'], 'issuer_id is context, re-asserted after the filter' );
+
+		$this->assertSame( 0, $seen['issuer_id'], 'The certificate has no issuer, so context is 0' );
+		$this->assertTrue( $seen['certificate'], 'The resolved certificate is passed to the filter' );
+		$this->assertSame( 'valid', $seen['status'] );
+
+		// An invalid accent color neutralizes to ''.
+		add_filter(
+			'ppcert_verification_display',
+			static function ( $display ) {
+				$display['accent_color'] = 'red; background:url(x)';
+				return $display;
+			},
+			20
+		);
+
+		$data = $this->call( $this->credential )->get_data();
+		$this->assertSame( '', $data['display']['accent_color'] );
+	}
+
+	/**
+	 * The display filter runs for not-found results too (site-level
+	 * branding frames every result), with a null certificate.
+	 *
+	 * @return void
+	 */
+	public function test_display_filter_runs_for_not_found() {
+		$calls = 0;
+
+		add_filter(
+			'ppcert_verification_display',
+			static function ( $display, $certificate ) use ( &$calls ) {
+				$calls++;
+				$display['footer'] = null === $certificate ? 'no-cert' : 'cert';
+				return $display;
+			},
+			10,
+			2
+		);
+
+		$missing = PressPrimer_Certificate_Credential_ID_Service::generate();
+		$data    = $this->call( $missing )->get_data();
+
+		$this->assertSame( 1, $calls );
+		$this->assertSame( 'not_found', $data['status'] );
+		$this->assertSame( 'no-cert', $data['display']['footer'] );
+		$this->assertSame( self::LOCKED_DISPLAY_SHAPE, array_keys( $data['display'] ) );
+	}
+
+	/**
+	 * ppcert_certificate_verified fires on every successful lookup - any
+	 * status, both channels (single path) - and never for not-found. The
+	 * context reports whether the verified event row was counted.
+	 *
+	 * @return void
+	 */
+	public function test_verified_action_fires_on_success_only() {
+		$fired = [];
+
+		add_action(
+			'ppcert_certificate_verified',
+			static function ( $certificate, $context ) use ( &$fired ) {
+				$fired[] = [ (string) $certificate->credential_id, $context ];
+			},
+			10,
+			2
+		);
+
+		// Valid lookup: fires with counted=true (anonymous visitor).
+		$this->call( $this->credential );
+
+		$this->assertCount( 1, $fired );
+		$this->assertSame( $this->credential, $fired[0][0] );
+		$this->assertSame( 'valid', $fired[0][1]['status'] );
+		$this->assertTrue( $fired[0][1]['valid'] );
+		$this->assertNull( $fired[0][1]['actor_id'] );
+		$this->assertTrue( $fired[0][1]['counted'] );
+
+		// Revoked lookup still fires (auditors want failed checks).
+		$row = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() )[0];
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Certificate::table(), (int) $row['id'], [ 'status' => 'revoked' ] );
+
+		$this->call( $this->credential );
+
+		$this->assertCount( 2, $fired );
+		$this->assertSame( 'revoked', $fired[1][1]['status'] );
+		$this->assertFalse( $fired[1][1]['valid'] );
+
+		// Not-found never fires.
+		$this->call( PressPrimer_Certificate_Credential_ID_Service::generate() );
+		$this->assertCount( 2, $fired );
+	}
+
+	/**
+	 * Admin lookups fire the action with counted=false and still skip the
+	 * verified event row (the 1.0 preload rule, now visible to
+	 * subscribers).
+	 *
+	 * @return void
+	 */
+	public function test_verified_action_reports_uncounted_admin_lookup() {
+		$GLOBALS['ppcert_test_current_user'] = 5;
+		$GLOBALS['ppcert_test_user_caps']    = [ 'manage_options' ];
+
+		$context = null;
+
+		add_action(
+			'ppcert_certificate_verified',
+			static function ( $certificate, $ctx ) use ( &$context ) {
+				$context = $ctx;
+			},
+			10,
+			2
+		);
+
+		$this->call( $this->credential );
+
+		$this->assertIsArray( $context );
+		$this->assertFalse( $context['counted'] );
+		$this->assertSame( 5, $context['actor_id'] );
+
+		$events = $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() );
+		$this->assertSame( [], $events, 'Admin lookups never write verified event rows' );
 	}
 }

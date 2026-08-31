@@ -247,11 +247,27 @@ class PressPrimer_Certificate_Verification_Page {
 
 		$heading = isset( $headings[ $status ] ) ? $headings[ $status ] : $headings['not_found'];
 
-		$output = '<p class="ppcert-verify__status ppcert-verify__status--' . esc_attr( $status ) . '">'
+		// Branding display data (2.0, ppcert_verification_display via the
+		// single lookup path): free renders logo, intro, and footer when
+		// an addon supplies them - neutral empties render nothing.
+		// accent_color is data for the branding addon's own CSS, not
+		// painted here. Everything escapes at output like all page data.
+		$display = isset( $result['display'] ) && is_array( $result['display'] ) ? $result['display'] : [];
+		$output  = '';
+
+		if ( ! empty( $display['logo_url'] ) ) {
+			$output .= '<img class="ppcert-verify__logo" src="' . esc_url( (string) $display['logo_url'] ) . '" alt="" />';
+		}
+
+		$output .= '<p class="ppcert-verify__status ppcert-verify__status--' . esc_attr( $status ) . '">'
 			. esc_html( $heading ) . '</p>';
 
+		if ( ! empty( $display['intro'] ) ) {
+			$output .= '<p class="ppcert-verify__intro">' . esc_html( (string) $display['intro'] ) . '</p>';
+		}
+
 		if ( 'valid' !== $status && 'expired' !== $status ) {
-			return $output;
+			return $output . self::render_display_footer( $display );
 		}
 
 		// A date already in the past reads "Expired", not "Expires"
@@ -281,7 +297,23 @@ class PressPrimer_Certificate_Verification_Page {
 
 		$output .= '</dl>';
 
-		return $output;
+		return $output . self::render_display_footer( $display );
+	}
+
+	/**
+	 * The branding footer line, when an addon supplied one
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $display Display structure from the lookup result.
+	 * @return string Escaped markup, or ''.
+	 */
+	private static function render_display_footer( array $display ) {
+		if ( empty( $display['footer'] ) ) {
+			return '';
+		}
+
+		return '<p class="ppcert-verify__footer">' . esc_html( (string) $display['footer'] ) . '</p>';
 	}
 
 	/**

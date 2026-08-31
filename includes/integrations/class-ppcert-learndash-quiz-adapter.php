@@ -344,4 +344,19 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 			);
 		}
 	}
+
+	/**
+	 * Users who PASSED this quiz - activity rows of type 'quiz', where
+	 * LearnDash stores the pass flag as activity_status (SUPPORTED; see
+	 * the course adapter's activity_completions(), including the
+	 * min_score historical limitation).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Quiz post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		return $this->activity_completions( 'quiz', absint( $source_ref ) );
+	}
 }

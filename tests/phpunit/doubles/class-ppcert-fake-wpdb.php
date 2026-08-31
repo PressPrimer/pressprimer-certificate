@@ -41,6 +41,13 @@ class PPCert_Fake_WPDB {
 	public $postmeta = 'wp_postmeta';
 
 	/**
+	 * Core comments table name (the Tutor adapter reads it).
+	 *
+	 * @var string
+	 */
+	public $comments = 'wp_comments';
+
+	/**
 	 * Last auto-increment id from insert().
 	 *
 	 * @var int
@@ -454,6 +461,162 @@ class PPCert_Fake_WPDB {
 					];
 				},
 				array_slice( $matches, 0, (int) $args[2] )
+			);
+		}
+
+		// PPQ adapter past completions: earliest passing attempt per user.
+		if ( false !== strpos( $query, 'MIN(finished_at) AS completed_at' ) ) {
+			return $this->group_earliest(
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return isset( $row['user_id'] ) && (int) $row['user_id'] > 0
+							&& (int) $row['quiz_id'] === (int) $args[1]
+							&& 'submitted' === (string) ( isset( $row['status'] ) ? $row['status'] : '' )
+							&& 1 === (int) ( isset( $row['passed'] ) ? $row['passed'] : 0 )
+							&& empty( $row['is_practice'] )
+							&& ! empty( $row['finished_at'] );
+					}
+				),
+				'finished_at'
+			);
+		}
+
+		// PPA adapter past completions: earliest passing grade per user.
+		if ( false !== strpos( $query, 'MIN(graded_at) AS completed_at' ) ) {
+			return $this->group_earliest(
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return isset( $row['user_id'] ) && (int) $row['user_id'] > 0
+							&& (int) $row['assignment_id'] === (int) $args[1]
+							&& 1 === (int) ( isset( $row['passed'] ) ? $row['passed'] : 0 )
+							&& ! empty( $row['graded_at'] );
+					}
+				),
+				'graded_at'
+			);
+		}
+
+		// LearnDash adapter past completions: earliest completed activity
+		// row per user for one activity type + object.
+		if ( false !== strpos( $query, 'MIN(activity_completed) AS completed_at' ) ) {
+			return $this->group_earliest(
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return isset( $row['user_id'] ) && (int) $row['user_id'] > 0
+							&& (string) ( isset( $row['activity_type'] ) ? $row['activity_type'] : '' ) === (string) $args[1]
+							&& (int) ( isset( $row['post_id'] ) ? $row['post_id'] : 0 ) === (int) $args[2]
+							&& 1 === (int) ( isset( $row['activity_status'] ) ? $row['activity_status'] : 0 )
+							&& (int) ( isset( $row['activity_completed'] ) ? $row['activity_completed'] : 0 ) > 0;
+					}
+				),
+				'activity_completed'
+			);
+		}
+
+		// LifterLMS course adapter past completions: _is_complete rows.
+		if ( false !== strpos( $query, "meta_key = '_is_complete'" ) ) {
+			return $this->group_earliest(
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return isset( $row['user_id'] ) && (int) $row['user_id'] > 0
+							&& (int) ( isset( $row['post_id'] ) ? $row['post_id'] : 0 ) === (int) $args[1]
+							&& '_is_complete' === (string) ( isset( $row['meta_key'] ) ? $row['meta_key'] : '' )
+							&& 'yes' === (string) ( isset( $row['meta_value'] ) ? $row['meta_value'] : '' );
+					}
+				),
+				'updated_date'
+			);
+		}
+
+		// LifterLMS quiz adapter past completions: passing attempts
+		// (student_id column, normalized to user_id).
+		if ( false !== strpos( $query, 'MIN(end_date) AS completed_at' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return isset( $row['student_id'] ) && (int) $row['student_id'] > 0
+						&& (int) ( isset( $row['quiz_id'] ) ? $row['quiz_id'] : 0 ) === (int) $args[1]
+						&& 'pass' === (string) ( isset( $row['status'] ) ? $row['status'] : '' )
+						&& ! empty( $row['end_date'] );
+				}
+			);
+
+			$matches = array_map(
+				static function ( $row ) {
+					$row['user_id'] = $row['student_id'];
+					return $row;
+				},
+				$matches
+			);
+
+			return $this->group_earliest( $matches, 'end_date' );
+		}
+
+		// Tutor course adapter past completions: completion comments.
+		if ( false !== strpos( $query, "comment_type = 'course_completed'" ) ) {
+			return $this->group_earliest(
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return isset( $row['user_id'] ) && (int) $row['user_id'] > 0
+							&& 'course_completed' === (string) ( isset( $row['comment_type'] ) ? $row['comment_type'] : '' )
+							&& 'TutorLMSPlugin' === (string) ( isset( $row['comment_agent'] ) ? $row['comment_agent'] : '' )
+							&& 'approved' === (string) ( isset( $row['comment_approved'] ) ? $row['comment_approved'] : '' )
+							&& (int) ( isset( $row['comment_post_ID'] ) ? $row['comment_post_ID'] : 0 ) === (int) $args[1];
+					}
+				),
+				'comment_date_gmt'
+			);
+		}
+
+		// Tutor quiz adapter past completions: result = 'pass' attempts.
+		if ( false !== strpos( $query, 'MIN(attempt_ended_at) AS completed_at' ) ) {
+			return $this->group_earliest(
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return isset( $row['user_id'] ) && (int) $row['user_id'] > 0
+							&& (int) ( isset( $row['quiz_id'] ) ? $row['quiz_id'] : 0 ) === (int) $args[1]
+							&& 'pass' === (string) ( isset( $row['result'] ) ? $row['result'] : '' )
+							&& ! empty( $row['attempt_ended_at'] );
+					}
+				),
+				'attempt_ended_at'
+			);
+		}
+
+		// LearnPress adapters past completions: user_items rows. The
+		// course variant excludes 'failed' graduations; the quiz variant
+		// requires 'passed'.
+		if ( false !== strpos( $query, 'MIN(end_time) AS completed_at' ) ) {
+			$require_passed = false !== strpos( $query, "graduation = 'passed'" );
+
+			return $this->group_earliest(
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args, $require_passed ) {
+						$graduation = isset( $row['graduation'] ) ? (string) $row['graduation'] : '';
+
+						if ( $require_passed && 'passed' !== $graduation ) {
+							return false;
+						}
+
+						if ( ! $require_passed && 'failed' === $graduation ) {
+							return false;
+						}
+
+						return isset( $row['user_id'] ) && (int) $row['user_id'] > 0
+							&& (string) ( isset( $row['item_type'] ) ? $row['item_type'] : '' ) === (string) $args[1]
+							&& (int) ( isset( $row['item_id'] ) ? $row['item_id'] : 0 ) === (int) $args[2]
+							&& (string) ( isset( $row['status'] ) ? $row['status'] : '' ) === (string) $args[3]
+							&& ! empty( $row['end_time'] );
+					}
+				),
+				'end_time'
 			);
 		}
 
@@ -1196,6 +1359,43 @@ class PPCert_Fake_WPDB {
 		}
 
 		throw new RuntimeException( 'PPCert_Fake_WPDB: unsupported query shape: ' . $query );
+	}
+
+	/**
+	 * Group rows to (user_id, earliest datetime column) tuples - the
+	 * past-completions GROUP BY user_id / MIN(column) shape.
+	 *
+	 * @param array[] $rows   Matching rows.
+	 * @param string  $column Datetime column to minimize.
+	 * @return array[] Rows of [ user_id, completed_at ], user_id order.
+	 */
+	private function group_earliest( $rows, $column ) {
+		$earliest = [];
+
+		foreach ( $rows as $row ) {
+			$user_id = (int) $row['user_id'];
+			$value   = $row[ $column ];
+			// Numeric columns (LearnDash unix timestamps) compare
+			// numerically; datetimes lexically.
+			$value = is_numeric( $value ) ? (int) $value : (string) $value;
+
+			if ( ! isset( $earliest[ $user_id ] ) || $value < $earliest[ $user_id ] ) {
+				$earliest[ $user_id ] = $value;
+			}
+		}
+
+		ksort( $earliest );
+
+		$result = [];
+
+		foreach ( $earliest as $user_id => $completed_at ) {
+			$result[] = [
+				'user_id'      => $user_id,
+				'completed_at' => $completed_at,
+			];
+		}
+
+		return $result;
 	}
 
 	/**

@@ -102,6 +102,64 @@ class Test_Verification_Page extends TestCase {
 	}
 
 	/**
+	 * Display branding (2.0, ppcert_verification_display data): logo,
+	 * intro, and footer render escaped when supplied; neutral empties
+	 * render nothing; accent_color is never painted by free output.
+	 *
+	 * @return void
+	 */
+	public function test_result_rendering_includes_display_branding() {
+		$result = [
+			'valid'          => true,
+			'status'         => 'valid',
+			'recipient_name' => 'Dana Whitfield',
+			'subject'        => 'Advanced Botany',
+			'issuer_name'    => 'Sunrise',
+			'issued_at'      => '2026-07-18T14:30:00Z',
+			'expires_at'     => null,
+			'display'        => [
+				'logo_url'     => 'https://example.test/logo.png',
+				'accent_color' => '#1f2a44',
+				'intro'        => 'Official credential check <tag>',
+				'footer'       => 'Contact hello@sunrise.example',
+				'issuer_id'    => 0,
+			],
+		];
+
+		$html = PressPrimer_Certificate_Verification_Page::render_result( $result );
+
+		$this->assertStringContainsString( 'class="ppcert-verify__logo" src="https://example.test/logo.png"', $html );
+		$this->assertStringContainsString( 'Official credential check &lt;tag&gt;', $html, 'Intro escapes at output' );
+		$this->assertStringContainsString( 'ppcert-verify__footer', $html );
+		$this->assertStringContainsString( 'Contact hello@sunrise.example', $html );
+		$this->assertStringNotContainsString( '#1f2a44', $html, 'accent_color is data for addons, never painted by free' );
+
+		// Branding frames every status - a revoked result keeps it.
+		$result['status'] = 'revoked';
+		$result['valid']  = false;
+
+		$revoked = PressPrimer_Certificate_Verification_Page::render_result( $result );
+		$this->assertStringContainsString( 'ppcert-verify__logo', $revoked );
+		$this->assertStringContainsString( 'ppcert-verify__footer', $revoked );
+
+		// Neutral empties render exactly the 1.x markup.
+		$result['status']  = 'valid';
+		$result['valid']   = true;
+		$result['display'] = [
+			'logo_url'     => '',
+			'accent_color' => '',
+			'intro'        => '',
+			'footer'       => '',
+			'issuer_id'    => 0,
+		];
+
+		$neutral = PressPrimer_Certificate_Verification_Page::render_result( $result );
+		$this->assertStringNotContainsString( 'ppcert-verify__logo', $neutral );
+		$this->assertStringNotContainsString( 'ppcert-verify__intro', $neutral );
+		$this->assertStringNotContainsString( 'ppcert-verify__footer', $neutral );
+	}
+
+	/**
 	 * Every rendered value is escaped - the page displays
 	 * attacker-influenced data by definition.
 	 *

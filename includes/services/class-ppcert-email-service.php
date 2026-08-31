@@ -144,7 +144,22 @@ class PressPrimer_Certificate_Email_Service {
 	 * @return bool Whether an email was sent.
 	 */
 	public static function resend( $certificate_id ) {
-		return self::send_issued( absint( $certificate_id ), [ 'resend' => true ], true );
+		$sent = self::send_issued( absint( $certificate_id ), [ 'resend' => true ], true );
+
+		// Lifecycle event (2.0, Feature 2.0-006 FR-006): a resend records
+		// as the reserved 'reissued' type - only when the mail actually
+		// went out (a filter veto or mailer failure records nothing).
+		if ( $sent ) {
+			$actor = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
+
+			PressPrimer_Certificate_Certificate::record_event(
+				absint( $certificate_id ),
+				'reissued',
+				$actor > 0 ? $actor : null
+			);
+		}
+
+		return $sent;
 	}
 
 	/**

@@ -329,4 +329,17 @@ class PressPrimer_Certificate_LearnDash_Topic_Adapter extends PressPrimer_Certif
 	public function resolve_topic_title( array $context ) {
 		return isset( $context['lms_topic_title'] ) ? (string) $context['lms_topic_title'] : '';
 	}
+
+	/**
+	 * Users who completed this topic - activity rows of type 'topic'
+	 * (SUPPORTED; see the course adapter's activity_completions()).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $source_ref Topic post id.
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 */
+	public function get_past_completions( string $source_ref ) {
+		return $this->activity_completions( 'topic', absint( $source_ref ) );
+	}
 }

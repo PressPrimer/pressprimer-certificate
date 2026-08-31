@@ -428,4 +428,63 @@ class Test_Adapter_Interface extends TestCase {
 		$this->assertCount( 1, $only_any );
 		$this->assertSame( 'any', $only_any[0]->source_ref );
 	}
+
+	/**
+	 * Past-completions conformance (2.0, Feature 2.0-006 FR-005): every
+	 * one of the thirteen adapter classes answers the capability question
+	 * coherently - supported adapters return arrays, and the base
+	 * declaration is a formal WP_Error, never a silent empty.
+	 *
+	 * @return void
+	 */
+	public function test_past_completions_conformance_across_adapters() {
+		ppcert_tests_reset_wpdb();
+
+		$adapters = [
+			new PressPrimer_Certificate_PPQ_Adapter(),
+			new PressPrimer_Certificate_PPA_Adapter(),
+			new PressPrimer_Certificate_LearnDash_Adapter(),
+			new PressPrimer_Certificate_LearnDash_Lesson_Adapter(),
+			new PressPrimer_Certificate_LearnDash_Topic_Adapter(),
+			new PressPrimer_Certificate_LearnDash_Quiz_Adapter(),
+			new PressPrimer_Certificate_LifterLMS_Adapter(),
+			new PressPrimer_Certificate_LifterLMS_Quiz_Adapter(),
+			new PressPrimer_Certificate_TutorLMS_Adapter(),
+			new PressPrimer_Certificate_TutorLMS_Quiz_Adapter(),
+			new PressPrimer_Certificate_LearnPress_Adapter(),
+			new PressPrimer_Certificate_LearnPress_Quiz_Adapter(),
+		];
+
+		foreach ( $adapters as $adapter ) {
+			$id       = $adapter->get_id();
+			$supports = $adapter->supports_past_completions();
+
+			$this->assertIsBool( $supports, $id );
+
+			$result = $adapter->get_past_completions( '0' );
+
+			if ( $supports ) {
+				$this->assertIsArray( $result, "{$id}: a supported adapter answers with an array." );
+			} else {
+				$this->assertInstanceOf( WP_Error::class, $result, $id );
+				$this->assertSame( 'ppcert_past_completions_unsupported', $result->get_error_code(), $id );
+			}
+		}
+
+		// Every bundled 2.0 adapter implements the capability.
+		foreach ( $adapters as $adapter ) {
+			$this->assertTrue( $adapter->supports_past_completions(), $adapter->get_id() );
+		}
+
+		// The abstract base (the thirteenth class) formally declares
+		// unsupported - third-party adapters inherit that declaration,
+		// never a guess.
+		$base = new PPCert_Test_Double_Adapter();
+
+		$this->assertFalse( $base->supports_past_completions() );
+
+		$declared = $base->get_past_completions( '42' );
+		$this->assertInstanceOf( WP_Error::class, $declared );
+		$this->assertSame( 'ppcert_past_completions_unsupported', $declared->get_error_code() );
+	}
 }

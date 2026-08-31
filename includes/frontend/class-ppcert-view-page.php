@@ -58,6 +58,26 @@ class PressPrimer_Certificate_View_Page {
 		add_filter( 'query_vars', [ __CLASS__, 'register_query_var' ] );
 		add_filter( 'the_posts', [ __CLASS__, 'inject_virtual_page' ], 10, 2 );
 		add_filter( 'the_content', [ __CLASS__, 'filter_content' ], 20 );
+		add_action( 'wp_head', [ __CLASS__, 'fire_head_action' ] );
+	}
+
+	/**
+	 * Fire ppcert_view_page_head during head output (2.0, Feature
+	 * 2.0-006 FR-004)
+	 *
+	 * Runs on every wp_head but does nothing unless this request resolved
+	 * a certificate view page - Educator's OG-image/social feature hooks
+	 * the action to print its meta tags with the certificate in hand.
+	 *
+	 * @since 2.0.0
+	 */
+	public static function fire_head_action() {
+		if ( null === self::$certificate ) {
+			return;
+		}
+
+		/** This action is documented in docs/architecture/HOOKS.md */
+		do_action( 'ppcert_view_page_head', self::$certificate );
 	}
 
 	/**
