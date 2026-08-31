@@ -171,17 +171,31 @@ class PressPrimer_Certificate_Credential_ID_Service {
 	public static function is_well_formed( $input ) {
 		$candidate = self::normalize( $input );
 
-		if ( self::LENGTH !== strlen( $candidate ) ) {
+		if ( ! self::is_credential_shaped( $candidate ) ) {
 			return false;
 		}
 
 		$random = substr( $candidate, 0, self::RANDOM_LENGTH );
 
-		if ( ! preg_match( '/^[' . self::ALPHABET . ']+$/', $candidate ) ) {
-			return false;
-		}
-
 		return self::check_char( $random ) === $candidate[ self::RANDOM_LENGTH ];
+	}
+
+	/**
+	 * Whether a normalized candidate has the ID's length/character shape
+	 *
+	 * Shape only - NO checksum (that is is_well_formed()'s job). The list
+	 * search uses this gate (2.0, Feature 2.0-002 FR-001): anything
+	 * shaped like a credential resolves as an exact credential lookup, a
+	 * mistyped check character included - it simply matches no row.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $candidate NORMALIZED candidate (see normalize()).
+	 * @return bool
+	 */
+	public static function is_credential_shaped( $candidate ) {
+		return self::LENGTH === strlen( (string) $candidate )
+			&& (bool) preg_match( '/^[' . self::ALPHABET . ']+$/', (string) $candidate );
 	}
 
 	/**

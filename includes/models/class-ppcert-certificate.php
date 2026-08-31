@@ -91,12 +91,21 @@ class PressPrimer_Certificate_Certificate {
 	 * @param array $args {
 	 *     Optional filters.
 	 *
-	 *     @type int    $template_id Filter to one template. Default 0 (all).
-	 *     @type string $status      'issued'|'revoked'|'expired'. Default '' (all).
-	 *     @type string $source_type Trigger type or 'manual'. Default '' (all).
-	 *     @type string $search      Recipient name/email or credential ID.
-	 *     @type int    $per_page    Page size (1-100). Default 20.
-	 *     @type int    $page        1-based page. Default 1.
+	 *     @type int    $template_id   Filter to one template. Default 0 (all).
+	 *     @type string $status        'issued'|'revoked'|'expired' - matching
+	 *                                 the status PILL semantics (2.0, Feature
+	 *                                 2.0-002 FR-002): 'issued' means
+	 *                                 currently valid, 'expired' means issued
+	 *                                 but past expiry. Default '' (all).
+	 *     @type string $source_type   Trigger type or 'manual'. Default '' (all).
+	 *     @type string $search        One input (FR-001): credential-shaped
+	 *                                 terms resolve as an exact credential
+	 *                                 lookup; anything else matches recipient
+	 *                                 name/email and certificate title.
+	 *     @type string $issued_after  Y-m-d (site timezone), inclusive. Default ''.
+	 *     @type string $issued_before Y-m-d (site timezone), inclusive. Default ''.
+	 *     @type int    $per_page      Page size (1-100). Default 20.
+	 *     @type int    $page          1-based page. Default 1.
 	 * }
 	 * @return array{items:array,total:int} Hydrated rows + unpaged total.
 	 */
@@ -112,56 +121,116 @@ class PressPrimer_Certificate_Certificate {
 		$per_page    = isset( $args['per_page'] ) ? min( 100, max( 1, absint( $args['per_page'] ) ) ) : 20;
 		$page        = isset( $args['page'] ) ? max( 1, absint( $args['page'] ) ) : 1;
 
-		// Recipient matches: resolve user ids by name/email/login.
-		$recipient_csv = '';
+		// Issued date range (FR-002): Y-m-d in SITE timezone, inclusive
+		// day bounds, converted to UTC for the query (Datetime Standard).
+		// Reversed bounds swap defensively - the REST layer rejects them
+		// before they get here; the model never returns a nonsense empty.
+		$issued_after  = self::day_bound_utc( isset( $args['issued_after'] ) ? (string) $args['issued_after'] : '', '00:00:00' );
+		$issued_before = self::day_bound_utc( isset( $args['issued_before'] ) ? (string) $args['issued_before'] : '', '23:59:59' );
 
-		if ( '' !== $search ) {
-			$user_ids = get_users(
-				[
-					'search'         => '*' . $search . '*',
-					'search_columns' => [ 'user_login', 'user_email', 'user_nicename', 'display_name' ],
-					'fields'         => 'ID',
-					'number'         => 100,
-				]
-			);
-
-			$recipient_csv = implode( ',', array_map( 'absint', (array) $user_ids ) );
+		if ( '' !== $issued_after && '' !== $issued_before && $issued_after > $issued_before ) {
+			$swap          = $issued_after;
+			$issued_after  = self::day_bound_utc( (string) $args['issued_before'], '00:00:00' );
+			$issued_before = self::day_bound_utc( (string) $args['issued_after'], '23:59:59' );
+			unset( $swap );
 		}
 
-		// Credential matches compare against the normalized stored form.
-		$credential_like = '%' . $wpdb->esc_like(
-			PressPrimer_Certificate_Credential_ID_Service::normalize( $search )
-		) . '%';
+		// Search semantics (FR-001): a credential-shaped term (normalized
+		// form passes the checksum) resolves as an EXACT credential
+		// lookup; anything else matches recipients (name/email via the
+		// core user query) and certificate title (the 2.0 search-only
+		// column - never the JSON blob, TR-002).
+		$credential_exact = '';
+		$recipient_csv    = '';
+		$title_like       = '';
+
+		if ( '' !== $search ) {
+			$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $search );
+
+			if ( PressPrimer_Certificate_Credential_ID_Service::is_credential_shaped( $normalized ) ) {
+				$credential_exact = $normalized;
+			} else {
+				$user_ids = get_users(
+					[
+						'search'         => '*' . $search . '*',
+						'search_columns' => [ 'user_login', 'user_email', 'user_nicename', 'display_name' ],
+						'fields'         => 'ID',
+						'number'         => 100,
+					]
+				);
+
+				$recipient_csv = implode( ',', array_map( 'absint', (array) $user_ids ) );
+				$title_like    = '%' . $wpdb->esc_like( $search ) . '%';
+			}
+		}
+
+		// The status pill's read-time expiry semantics, applied in SQL so
+		// the filter and the pill can never disagree (FR-002).
+		$now = current_time( 'mysql', true );
+
+		// Unused date bounds bind an int flag 0 plus a VALID placeholder
+		// datetime: strict-mode MySQL type-checks a DATETIME comparison
+		// against '' even when the other side of the OR already decided
+		// the row ("Incorrect DATETIME value", found on the dev site
+		// 2026-08-31) - the string-column sentinel pattern must never be
+		// used on DATETIME columns.
+		$has_after  = '' !== $issued_after ? 1 : 0;
+		$has_before = '' !== $issued_before ? 1 : 0;
+
+		$after_sql  = $has_after ? $issued_after : '1970-01-01 00:00:00';
+		$before_sql = $has_before ? $issued_before : '1970-01-01 00:00:00';
 
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR status = %s ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id LIKE %s OR FIND_IN_SET( recipient_id, %s ) )",
+				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s )",
 				self::table(),
 				$template_id,
 				$template_id,
 				$status,
 				$status,
+				$status,
+				$now,
+				$status,
+				$now,
 				$source_type,
 				$source_type,
 				$search,
-				$credential_like,
-				$recipient_csv
+				$credential_exact,
+				$recipient_csv,
+				$recipient_csv,
+				$title_like,
+				$title_like,
+				$has_after,
+				$after_sql,
+				$has_before,
+				$before_sql
 			)
 		);
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR status = %s ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id LIKE %s OR FIND_IN_SET( recipient_id, %s ) ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
+				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
 				self::table(),
 				$template_id,
 				$template_id,
 				$status,
 				$status,
+				$status,
+				$now,
+				$status,
+				$now,
 				$source_type,
 				$source_type,
 				$search,
-				$credential_like,
+				$credential_exact,
 				$recipient_csv,
+				$recipient_csv,
+				$title_like,
+				$title_like,
+				$has_after,
+				$after_sql,
+				$has_before,
+				$before_sql,
 				$per_page,
 				( $page - 1 ) * $per_page
 			)
@@ -171,6 +240,23 @@ class PressPrimer_Certificate_Certificate {
 			'items' => array_map( [ __CLASS__, 'hydrate' ], (array) $rows ),
 			'total' => $total,
 		];
+	}
+
+	/**
+	 * Convert a site-timezone Y-m-d day edge to a UTC datetime bound
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $ymd  Y-m-d date (site timezone).
+	 * @param string $edge '00:00:00' (day start) or '23:59:59' (day end).
+	 * @return string UTC MySQL datetime, or '' for invalid input.
+	 */
+	private static function day_bound_utc( $ymd, $edge ) {
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $ymd ) ) {
+			return '';
+		}
+
+		return (string) get_gmt_from_date( $ymd . ' ' . $edge );
 	}
 
 	/**

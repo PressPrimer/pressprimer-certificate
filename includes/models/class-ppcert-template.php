@@ -349,6 +349,33 @@ class PressPrimer_Certificate_Template {
 	}
 
 	/**
+	 * Templates for the certificates screen's filter (2.0, Feature
+	 * 2.0-002 FR-002)
+	 *
+	 * Every non-deleted template (archived included - the UI labels
+	 * them), PLUS soft-deleted templates that still have certificates,
+	 * so those certificates stay findable through the filter (Feature
+	 * 002 Edge Cases). Title order.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return object[] Hydrated rows (deleted_at set on deleted rows).
+	 */
+	public static function get_certificate_filter_templates() {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT t.* FROM %i t WHERE EXISTS ( SELECT 1 FROM %i c WHERE c.template_id = t.id ) OR t.deleted_at IS NULL ORDER BY t.title ASC',
+				self::table(),
+				PressPrimer_Certificate_Certificate::table()
+			)
+		);
+
+		return array_map( [ __CLASS__, 'hydrate' ], (array) $rows );
+	}
+
+	/**
 	 * Get the bundled starter definitions from templates/*.json
 	 *
 	 * Each file carries a _meta block (slug, label); the returned layout

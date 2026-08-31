@@ -222,6 +222,193 @@ class Test_Certificates_REST extends TestCase {
 	}
 
 	/**
+	 * Status filter matches the pill semantics (2.0, Feature 2.0-002
+	 * FR-002): 'issued' means currently valid, 'expired' means issued
+	 * but past expiry - the filter and the pill can never disagree.
+	 *
+	 * @return void
+	 */
+	public function test_list_status_filter_matches_pill_semantics() {
+		$this->seed_certificate();
+		$this->seed_certificate( [ 'expires_at' => '2020-01-01 00:00:00' ] );
+		$this->seed_certificate( [ 'status' => 'revoked' ] );
+		$this->seed_certificate( [ 'expires_at' => '2099-01-01 00:00:00' ] );
+
+		$issued = $this->controller->get_list( new WP_REST_Request( [ 'status' => 'issued' ] ) )->get_data();
+		$this->assertSame( 2, $issued['total'], "'Issued' excludes expired and revoked rows." );
+
+		$expired = $this->controller->get_list( new WP_REST_Request( [ 'status' => 'expired' ] ) )->get_data();
+		$this->assertSame( 1, $expired['total'], "'Expired' is issued rows past their expiry only." );
+
+		$revoked = $this->controller->get_list( new WP_REST_Request( [ 'status' => 'revoked' ] ) )->get_data();
+		$this->assertSame( 1, $revoked['total'] );
+	}
+
+	/**
+	 * Title search (2.0, FR-001/TR-002): partial match against the
+	 * search-only title column; pre-1.1 rows (NULL title) cannot match
+	 * by title but stay findable through the template filter.
+	 *
+	 * @return void
+	 */
+	public function test_list_title_search_and_pre_1_1_fallback() {
+		$this->seed_certificate( [ 'title' => 'Advanced Botany Certificate' ] );
+		$this->seed_certificate( [ 'title' => 'Chemistry Certificate' ] );
+		$pre_1_1 = $this->seed_certificate(); // No title column value.
+
+		$botany = $this->controller->get_list( new WP_REST_Request( [ 'search' => 'botany' ] ) )->get_data();
+		$this->assertSame( 1, $botany['total'] );
+
+		$certificate = $this->controller->get_list( new WP_REST_Request( [ 'search' => 'certificate' ] ) )->get_data();
+		$this->assertSame( 2, $certificate['total'], 'NULL-title rows never match a title search.' );
+
+		$by_template = $this->controller->get_list( new WP_REST_Request( [ 'template_id' => $this->template_id ] ) )->get_data();
+		$this->assertSame( 3, $by_template['total'], 'The template filter still finds pre-1.1 rows.' );
+		$this->assertNotEmpty( $pre_1_1 );
+	}
+
+	/**
+	 * Credential-shaped input resolves as an EXACT lookup (FR-001):
+	 * 12 alphabet characters match one credential or nothing; partial
+	 * fragments fall through to recipient/title matching instead.
+	 *
+	 * @return void
+	 */
+	public function test_list_credential_shaped_search_is_exact() {
+		$this->seed_certificate(); // CRED0000000X-style ids from the seeder.
+
+		// A shaped-but-nonexistent credential matches nothing - never a
+		// partial credential scan.
+		$response = $this->controller->get_list( new WP_REST_Request( [ 'search' => 'ZZZZ-ZZZZ-ZZZZ' ] ) )->get_data();
+		$this->assertSame( 0, $response['total'] );
+
+		// An unshaped fragment searches recipients/titles, not credentials.
+		$fragment = $this->controller->get_list( new WP_REST_Request( [ 'search' => 'CRED0000' ] ) )->get_data();
+		$this->assertSame( 0, $fragment['total'], 'Partial credential fragments do not scan credential ids.' );
+	}
+
+	/**
+	 * Date range (FR-002): Y-m-d bounds interpreted in SITE timezone
+	 * with inclusive day edges, converted to UTC for the query; filters
+	 * combine with AND; a reversed range is a 400, not an empty list.
+	 *
+	 * @return void
+	 */
+	public function test_list_date_range_boundaries_and_combination() {
+		// UTC+2 site: a certificate issued 22:30 UTC on July 1 is July 2
+		// in site time, so a July 2 range must include it.
+		$GLOBALS['ppcert_test_gmt_offset'] = 2 * 3600;
+
+		$this->seed_certificate( [ 'issued_at' => '2026-07-01 22:30:00' ] );
+		$this->seed_certificate(
+			[
+				'issued_at'   => '2026-07-01 10:00:00',
+				'source_type' => 'ppq_quiz',
+				'source_ref'  => '9',
+			]
+		);
+
+		$july_second = $this->controller->get_list(
+			new WP_REST_Request(
+				[
+					'issued_after'  => '2026-07-02',
+					'issued_before' => '2026-07-02',
+				]
+			)
+		)->get_data();
+		$this->assertSame( 1, $july_second['total'], 'Site-timezone day includes the late-UTC row.' );
+
+		$july_first = $this->controller->get_list(
+			new WP_REST_Request(
+				[
+					'issued_after'  => '2026-07-01',
+					'issued_before' => '2026-07-01',
+				]
+			)
+		)->get_data();
+		$this->assertSame( 1, $july_first['total'], 'The late-UTC row belongs to July 2, not July 1.' );
+
+		// AND combination: the July 1 row is ppq_quiz-sourced.
+		$combined = $this->controller->get_list(
+			new WP_REST_Request(
+				[
+					'issued_before' => '2026-07-01',
+					'source_type'   => 'manual',
+				]
+			)
+		)->get_data();
+		$this->assertSame( 0, $combined['total'], 'Filters combine with AND.' );
+
+		unset( $GLOBALS['ppcert_test_gmt_offset'] );
+
+		// Reversed range: a validation error, never an empty query.
+		$reversed = $this->controller->get_list(
+			new WP_REST_Request(
+				[
+					'issued_after'  => '2026-07-02',
+					'issued_before' => '2026-07-01',
+				]
+			)
+		);
+		$this->assertInstanceOf( WP_Error::class, $reversed );
+		$this->assertSame( 'ppcert_invalid_date_range', $reversed->get_error_code() );
+
+		// Parameter validators.
+		$this->assertTrue( $this->controller->validate_filter_date( '2026-07-01' ) );
+		$this->assertFalse( $this->controller->validate_filter_date( '01/07/2026' ) );
+		$this->assertFalse( $this->controller->validate_filter_date( '2026-07-01 12:00:00' ) );
+		$this->assertTrue( $this->controller->validate_status_filter( 'expired' ) );
+		$this->assertFalse( $this->controller->validate_status_filter( 'draft' ) );
+	}
+
+	/**
+	 * Deleted-user and deleted-template cases (Feature 2.0-002 Edge
+	 * Cases): a deleted recipient cannot match by name but the row stays
+	 * findable by credential and template; soft-deleted templates with
+	 * certificates appear in the filter options.
+	 *
+	 * @return void
+	 */
+	public function test_list_deleted_user_and_template_cases() {
+		$this->seed_certificate( [ 'recipient_id' => 99 ] ); // User 99 does not exist.
+
+		$rows       = $this->wpdb->rows( 'wp_ppcert_certificates' );
+		$credential = (string) end( $rows )['credential_id'];
+
+		$by_name = $this->controller->get_list( new WP_REST_Request( [ 'search' => 'ghost' ] ) )->get_data();
+		$this->assertSame( 0, $by_name['total'], 'Deleted users cannot match a name search (documented).' );
+
+		$by_credential = $this->controller->get_list( new WP_REST_Request( [ 'search' => $credential ] ) )->get_data();
+		$this->assertSame( 1, $by_credential['total'], 'The credential still finds the row.' );
+
+		// Soft-delete the template: its certificates stay findable and it
+		// stays in the filter options, flagged deleted.
+		$this->wpdb->mutate_row( 'wp_ppcert_templates', $this->template_id, [ 'deleted_at' => '2026-08-01 00:00:00' ] );
+
+		$by_template = $this->controller->get_list( new WP_REST_Request( [ 'template_id' => $this->template_id ] ) )->get_data();
+		$this->assertSame( 1, $by_template['total'] );
+
+		$options = PressPrimer_Certificate_Template::get_certificate_filter_templates();
+		$this->assertCount( 1, $options );
+		$this->assertNotEmpty( $options[0]->deleted_at, 'Deleted-with-certificates templates surface for labeling.' );
+
+		// A deleted template with NO certificates disappears from options.
+		$empty_template = $this->wpdb->seed_row(
+			'wp_ppcert_templates',
+			[
+				'uuid'       => 'tpl-deleted-empty',
+				'title'      => 'Never Used',
+				'status'     => 'draft',
+				'deleted_at' => '2026-08-01 00:00:00',
+			]
+		);
+
+		$options = PressPrimer_Certificate_Template::get_certificate_filter_templates();
+		$this->assertCount( 1, $options );
+		$this->assertNotSame( $empty_template, (int) $options[0]->id );
+	}
+
+	/**
 	 * Capability gating: list needs view, issuance + picker need issue,
 	 * detail allows the recipient themselves.
 	 *

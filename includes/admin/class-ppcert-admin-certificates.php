@@ -308,9 +308,17 @@ class PressPrimer_Certificate_Admin_Certificates {
 			echo '</p></div>';
 		}
 
+		// One GET form wraps search, the extra_tablenav filter controls,
+		// and the table (the ecosystem list pattern - Assignment's
+		// Submissions screen is the reference), so filter state lives in
+		// the URL, survives reload, and can be shared between admins
+		// (Feature 2.0-002 FR-003).
 		echo '<form method="get">';
 		echo '<input type="hidden" name="page" value="ppcert-certificates" />';
 		$list_table->search_box( __( 'Search certificates', 'pressprimer-certificate' ), 'ppcert-certificates' );
+		echo '<p class="description ppcert-certificates-search-help">'
+			. esc_html__( 'Search matches recipient name or email, a full credential ID, and certificate titles.', 'pressprimer-certificate' )
+			. '</p>';
 		$list_table->display();
 		echo '</form>';
 
@@ -400,6 +408,7 @@ class PressPrimer_Certificate_Admin_Certificates {
 			]
 		);
 	}
+
 
 	/**
 	 * Stream a certificate PDF to staff (row action Download PDF)

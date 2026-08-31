@@ -55,12 +55,23 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 					'callback'            => [ $this, 'get_list' ],
 					'permission_callback' => [ $this, 'can_view' ],
 					'args'                => [
-						'template_id' => [ 'sanitize_callback' => 'absint' ],
-						'status'      => [ 'sanitize_callback' => 'sanitize_key' ],
-						'source_type' => [ 'sanitize_callback' => 'sanitize_key' ],
-						'search'      => [ 'sanitize_callback' => 'sanitize_text_field' ],
-						'page'        => [ 'sanitize_callback' => 'absint' ],
-						'per_page'    => [ 'sanitize_callback' => 'absint' ],
+						'template_id'   => [ 'sanitize_callback' => 'absint' ],
+						'status'        => [
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => [ $this, 'validate_status_filter' ],
+						],
+						'source_type'   => [ 'sanitize_callback' => 'sanitize_key' ],
+						'search'        => [ 'sanitize_callback' => 'sanitize_text_field' ],
+						'issued_after'  => [
+							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => [ $this, 'validate_filter_date' ],
+						],
+						'issued_before' => [
+							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => [ $this, 'validate_filter_date' ],
+						],
+						'page'          => [ 'sanitize_callback' => 'absint' ],
+						'per_page'      => [ 'sanitize_callback' => 'absint' ],
 					],
 				],
 				[
@@ -159,14 +170,29 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_list( $request ) {
+		$issued_after  = (string) $request->get_param( 'issued_after' );
+		$issued_before = (string) $request->get_param( 'issued_before' );
+
+		// A reversed range is a caller mistake, not an empty query
+		// (Feature 2.0-002 Edge Cases).
+		if ( '' !== $issued_after && '' !== $issued_before && $issued_after > $issued_before ) {
+			return new WP_Error(
+				'ppcert_invalid_date_range',
+				__( 'The issued-date range is reversed: the from date is after the to date.', 'pressprimer-certificate' ),
+				[ 'status' => 400 ]
+			);
+		}
+
 		$result = PressPrimer_Certificate_Certificate::query(
 			[
-				'template_id' => absint( $request->get_param( 'template_id' ) ),
-				'status'      => (string) $request->get_param( 'status' ),
-				'source_type' => (string) $request->get_param( 'source_type' ),
-				'search'      => (string) $request->get_param( 'search' ),
-				'page'        => absint( $request->get_param( 'page' ) ),
-				'per_page'    => absint( $request->get_param( 'per_page' ) ),
+				'template_id'   => absint( $request->get_param( 'template_id' ) ),
+				'status'        => (string) $request->get_param( 'status' ),
+				'source_type'   => (string) $request->get_param( 'source_type' ),
+				'search'        => (string) $request->get_param( 'search' ),
+				'issued_after'  => $issued_after,
+				'issued_before' => $issued_before,
+				'page'          => absint( $request->get_param( 'page' ) ),
+				'per_page'      => absint( $request->get_param( 'per_page' ) ),
 			]
 		);
 
@@ -177,6 +203,30 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 			],
 			200
 		);
+	}
+
+	/**
+	 * Validate a list filter date (Y-m-d, site timezone)
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param mixed $value Parameter value.
+	 * @return bool
+	 */
+	public function validate_filter_date( $value ) {
+		return is_string( $value ) && ( '' === $value || (bool) preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) );
+	}
+
+	/**
+	 * Validate the status filter enum
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param mixed $value Parameter value.
+	 * @return bool
+	 */
+	public function validate_status_filter( $value ) {
+		return is_string( $value ) && in_array( $value, [ '', 'issued', 'revoked', 'expired' ], true );
 	}
 
 	/**

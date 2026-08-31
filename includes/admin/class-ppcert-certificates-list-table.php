@@ -98,12 +98,14 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 
 		$result = PressPrimer_Certificate_Certificate::query(
 			[
-				'template_id' => absint( $this->request_filter( 'template_id' ) ),
-				'status'      => $this->request_filter( 'status' ),
-				'source_type' => $this->request_filter( 'source_type' ),
-				'search'      => $this->request_filter( 's' ),
-				'page'        => $page,
-				'per_page'    => self::PER_PAGE,
+				'template_id'   => absint( $this->request_filter( 'template_id' ) ),
+				'status'        => $this->request_filter( 'status' ),
+				'source_type'   => $this->request_filter( 'source_type' ),
+				'search'        => $this->request_filter( 's' ),
+				'issued_after'  => $this->request_filter( 'issued_after' ),
+				'issued_before' => $this->request_filter( 'issued_before' ),
+				'page'          => $page,
+				'per_page'      => self::PER_PAGE,
 			]
 		);
 
@@ -118,9 +120,17 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Filter dropdowns above the table (FR-003: template/status/source)
+	 * Filter controls above the table (2.0, Feature 2.0-002 FR-002/FR-003)
+	 *
+	 * The ecosystem list pattern (Assignment's Submissions screen is the
+	 * reference implementation): native selects and date inputs inside
+	 * extra_tablenav, one Filter submit, and a Reset Filters link that
+	 * hides itself when nothing is active. All controls submit through
+	 * the page's single GET form, so state lives in the URL.
 	 *
 	 * @since 1.0.0
+	 * @since 2.0.0 Date range, labeled archived/deleted template options,
+	 *              pill-semantics status filter, reset link.
 	 *
 	 * @param string $which 'top' or 'bottom'.
 	 */
@@ -132,25 +142,42 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 		$current_template = absint( $this->request_filter( 'template_id' ) );
 		$current_status   = $this->request_filter( 'status' );
 		$current_source   = $this->request_filter( 'source_type' );
+		$issued_after     = $this->request_filter( 'issued_after' );
+		$issued_before    = $this->request_filter( 'issued_before' );
 
 		echo '<div class="alignleft actions">';
 
+		// Template filter: every non-deleted template (archived labeled),
+		// plus deleted templates that still have certificates, so their
+		// rows stay findable (Feature 2.0-002 Edge Cases).
 		echo '<label class="screen-reader-text" for="ppcert-filter-template">'
 			. esc_html__( 'Filter by template', 'pressprimer-certificate' ) . '</label>';
 		echo '<select name="template_id" id="ppcert-filter-template">';
 		echo '<option value="">' . esc_html__( 'All templates', 'pressprimer-certificate' ) . '</option>';
 
-		foreach ( PressPrimer_Certificate_Template::get_all() as $template ) {
+		foreach ( PressPrimer_Certificate_Template::get_certificate_filter_templates() as $template ) {
+			$title = (string) $template->title;
+
+			if ( ! empty( $template->deleted_at ) ) {
+				/* translators: %s: template title */
+				$title = sprintf( __( '%s (deleted)', 'pressprimer-certificate' ), $title );
+			} elseif ( 'archived' === (string) $template->status ) {
+				/* translators: %s: template title */
+				$title = sprintf( __( '%s (archived)', 'pressprimer-certificate' ), $title );
+			}
+
 			printf(
 				'<option value="%d" %s>%s</option>',
 				(int) $template->id,
 				selected( $current_template, (int) $template->id, false ),
-				esc_html( (string) $template->title )
+				esc_html( $title )
 			);
 		}
 
 		echo '</select>';
 
+		// Status filter: the same read-time expiry semantics the status
+		// pill displays (FR-002 - the two must never disagree).
 		$statuses = [
 			'issued'  => __( 'Issued', 'pressprimer-certificate' ),
 			'revoked' => __( 'Revoked', 'pressprimer-certificate' ),
@@ -178,7 +205,7 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 		echo '<select name="source_type" id="ppcert-filter-source">';
 		echo '<option value="">' . esc_html__( 'All sources', 'pressprimer-certificate' ) . '</option>';
 
-		foreach ( $this->source_options( $current_source ) as $value => $label ) {
+		foreach ( self::source_options( $current_source ) as $value => $label ) {
 			printf(
 				'<option value="%s" %s>%s</option>',
 				esc_attr( $value ),
@@ -189,9 +216,58 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 
 		echo '</select>';
 
+		// Issued date range (FR-002): native date inputs, the Submissions
+		// screen idiom. Dates are interpreted in the site timezone with
+		// inclusive day edges (converted to UTC in the model query).
+		echo '<label class="screen-reader-text" for="ppcert-filter-issued-after">'
+			. esc_html__( 'Issued from date', 'pressprimer-certificate' ) . '</label>';
+		printf(
+			'<input type="date" name="issued_after" id="ppcert-filter-issued-after" value="%s" aria-label="%s" />',
+			esc_attr( $issued_after ),
+			esc_attr__( 'Issued from date', 'pressprimer-certificate' )
+		);
+		echo '<label for="ppcert-filter-issued-before"> '
+			. esc_html_x( 'to', 'date range separator between the two issued-date inputs', 'pressprimer-certificate' ) . ' </label>';
+		printf(
+			'<input type="date" name="issued_before" id="ppcert-filter-issued-before" value="%s" aria-label="%s" />',
+			esc_attr( $issued_before ),
+			esc_attr__( 'Issued to date', 'pressprimer-certificate' )
+		);
+
 		submit_button( __( 'Filter', 'pressprimer-certificate' ), '', 'filter_action', false );
 
+		$this->render_reset_link();
+
 		echo '</div>';
+	}
+
+	/**
+	 * Reset Filters link - rendered only when a filter is active
+	 *
+	 * The Submissions screen pattern: a plain link back to the bare list
+	 * URL, invisible when there is nothing to reset.
+	 *
+	 * @since 2.0.0
+	 */
+	private function render_reset_link() {
+		$active = false;
+
+		foreach ( [ 'template_id', 'status', 'source_type', 'issued_after', 'issued_before', 's' ] as $key ) {
+			if ( '' !== $this->request_filter( $key ) ) {
+				$active = true;
+				break;
+			}
+		}
+
+		if ( ! $active ) {
+			return;
+		}
+
+		printf(
+			' <a href="%s" class="button">%s</a>',
+			esc_url( admin_url( 'admin.php?page=ppcert-certificates' ) ),
+			esc_html__( 'Reset Filters', 'pressprimer-certificate' )
+		);
 	}
 
 	/**
@@ -203,7 +279,7 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	 * @param string $current Currently selected source type.
 	 * @return array<string,string>
 	 */
-	private function source_options( $current ) {
+	public static function source_options( $current ) {
 		$options = [ 'manual' => __( 'Manual', 'pressprimer-certificate' ) ];
 
 		foreach ( PressPrimer_Certificate_Trigger_Registry::get_types() as $type ) {
@@ -425,9 +501,70 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	/**
 	 * Empty-state message
 	 *
+	 * When filters are active the message names the criteria (Feature
+	 * 2.0-002 FR-004) so "no results" reads as "no results FOR THIS",
+	 * never as "nothing issued".
+	 *
 	 * @since 1.0.0
 	 */
 	public function no_items() {
-		esc_html_e( 'No certificates issued yet. Add an award trigger to a published template, or issue one manually.', 'pressprimer-certificate' );
+		$criteria = [];
+
+		$search = $this->request_filter( 's' );
+		if ( '' !== $search ) {
+			/* translators: %s: search term */
+			$criteria[] = sprintf( __( 'search "%s"', 'pressprimer-certificate' ), $search );
+		}
+
+		$template_id = absint( $this->request_filter( 'template_id' ) );
+		if ( $template_id > 0 ) {
+			$template = PressPrimer_Certificate_Template::get( $template_id );
+			/* translators: %s: template title */
+			$criteria[] = sprintf( __( 'template "%s"', 'pressprimer-certificate' ), $template ? (string) $template->title : (string) $template_id );
+		}
+
+		$status = $this->request_filter( 'status' );
+		if ( '' !== $status ) {
+			$labels = [
+				'issued'  => __( 'Issued', 'pressprimer-certificate' ),
+				'revoked' => __( 'Revoked', 'pressprimer-certificate' ),
+				'expired' => __( 'Expired', 'pressprimer-certificate' ),
+			];
+			/* translators: %s: status label */
+			$criteria[] = sprintf( __( 'status %s', 'pressprimer-certificate' ), isset( $labels[ $status ] ) ? $labels[ $status ] : $status );
+		}
+
+		$source = $this->request_filter( 'source_type' );
+		if ( '' !== $source ) {
+			$sources = self::source_options( $source );
+			/* translators: %s: source label */
+			$criteria[] = sprintf( __( 'source %s', 'pressprimer-certificate' ), isset( $sources[ $source ] ) ? $sources[ $source ] : $source );
+		}
+
+		$after  = $this->request_filter( 'issued_after' );
+		$before = $this->request_filter( 'issued_before' );
+		if ( '' !== $after || '' !== $before ) {
+			if ( '' !== $after && '' !== $before ) {
+				/* translators: 1: from date, 2: to date */
+				$criteria[] = sprintf( __( 'issued %1$s to %2$s', 'pressprimer-certificate' ), $after, $before );
+			} elseif ( '' !== $after ) {
+				/* translators: %s: from date */
+				$criteria[] = sprintf( __( 'issued from %s', 'pressprimer-certificate' ), $after );
+			} else {
+				/* translators: %s: to date */
+				$criteria[] = sprintf( __( 'issued up to %s', 'pressprimer-certificate' ), $before );
+			}
+		}
+
+		if ( empty( $criteria ) ) {
+			esc_html_e( 'No certificates issued yet. Add an award trigger to a published template, or issue one manually.', 'pressprimer-certificate' );
+			return;
+		}
+
+		printf(
+			/* translators: %s: comma-separated list of the active filters */
+			esc_html__( 'No certificates match the current filters: %s. Clear or adjust the filters above.', 'pressprimer-certificate' ),
+			esc_html( implode( ', ', $criteria ) )
+		);
 	}
 }

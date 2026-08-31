@@ -1044,27 +1044,46 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
-		// Certificates admin list (fixed-shape query): sentinel-driven
-		// filters + FIND_IN_SET recipient search. args: [table,
-		// template_id x2, status x2, source_type x2, search,
-		// credential_like, recipient_csv, (per_page, offset)].
-		if ( false !== strpos( $query, "OR FIND_IN_SET( recipient_id, %s )" ) ) {
-			$template_id   = (int) $args[1];
-			$status        = (string) $args[3];
-			$source_type   = (string) $args[5];
-			$search        = (string) $args[7];
-			$needle        = $this->like_to_substring( (string) $args[8] );
-			$recipient_ids = array_filter( array_map( 'intval', explode( ',', (string) $args[9] ) ) );
+		// Certificates admin list (fixed-shape query, 2.0 shape):
+		// sentinel-driven filters, pill-semantics status, exact
+		// credential, title LIKE, and UTC date bounds. args: [table,
+		// template_id x2, status x3 + now, status + now, source_type x2,
+		// search, credential_exact, recipient_csv x2, title_like x2,
+		// issued_after x2, issued_before x2, (per_page, offset)].
+		if ( false !== strpos( $query, 'FIND_IN_SET( recipient_id, %s )' ) ) {
+			$template_id      = (int) $args[1];
+			$status           = (string) $args[3];
+			$now              = (string) $args[6];
+			$source_type      = (string) $args[9];
+			$search           = (string) $args[11];
+			$credential_exact = (string) $args[12];
+			$recipient_ids    = array_filter( array_map( 'intval', explode( ',', (string) $args[13] ) ) );
+			$title_needle     = $this->like_to_substring( (string) $args[15] );
+			$issued_after     = 0 !== (int) $args[17] ? (string) $args[18] : '';
+			$issued_before    = 0 !== (int) $args[19] ? (string) $args[20] : '';
 
 			$matches = $this->filter_rows(
 				$rows,
-				static function ( $row ) use ( $template_id, $status, $source_type, $search, $needle, $recipient_ids ) {
+				static function ( $row ) use ( $template_id, $status, $now, $source_type, $search, $credential_exact, $recipient_ids, $title_needle, $issued_after, $issued_before ) {
 					if ( $template_id > 0 && (int) $row['template_id'] !== $template_id ) {
 						return false;
 					}
 
-					if ( '' !== $status && (string) $row['status'] !== $status ) {
-						return false;
+					if ( '' !== $status ) {
+						$row_status = (string) $row['status'];
+						$expires    = isset( $row['expires_at'] ) ? (string) $row['expires_at'] : '';
+
+						if ( 'revoked' === $status && 'revoked' !== $row_status ) {
+							return false;
+						}
+
+						if ( 'issued' === $status && ( 'issued' !== $row_status || ( '' !== $expires && $expires <= $now ) ) ) {
+							return false;
+						}
+
+						if ( 'expired' === $status && ( 'issued' !== $row_status || '' === $expires || $expires > $now ) ) {
+							return false;
+						}
 					}
 
 					if ( '' !== $source_type && (string) $row['source_type'] !== $source_type ) {
@@ -1072,12 +1091,22 @@ class PPCert_Fake_WPDB {
 					}
 
 					if ( '' !== $search ) {
-						$credential_hit = '' !== $needle && false !== stripos( (string) $row['credential_id'], $needle );
-						$recipient_hit  = in_array( (int) $row['recipient_id'], $recipient_ids, true );
+						$credential_hit = '' !== $credential_exact && (string) $row['credential_id'] === $credential_exact;
+						$recipient_hit  = ! empty( $recipient_ids ) && in_array( (int) $row['recipient_id'], $recipient_ids, true );
+						$title_hit      = '' !== $title_needle && isset( $row['title'] ) && null !== $row['title']
+							&& false !== stripos( (string) $row['title'], $title_needle );
 
-						if ( ! $credential_hit && ! $recipient_hit ) {
+						if ( ! $credential_hit && ! $recipient_hit && ! $title_hit ) {
 							return false;
 						}
+					}
+
+					if ( '' !== $issued_after && (string) $row['issued_at'] < $issued_after ) {
+						return false;
+					}
+
+					if ( '' !== $issued_before && (string) $row['issued_at'] > $issued_before ) {
+						return false;
 					}
 
 					return true;
@@ -1097,10 +1126,42 @@ class PPCert_Fake_WPDB {
 				return [ [ 'total' => count( $matches ) ] ];
 			}
 
-			$per_page = (int) $args[10];
-			$offset   = (int) $args[11];
+			$per_page = (int) $args[21];
+			$offset   = (int) $args[22];
 
 			return array_slice( $matches, $offset, $per_page );
+		}
+
+		// Template::get_certificate_filter_templates - non-deleted plus
+		// deleted-with-certificates, title order.
+		if ( false !== strpos( $query, 'EXISTS ( SELECT 1 FROM %i c WHERE c.template_id = t.id )' ) ) {
+			$certificates = $this->rows( (string) $args[1] );
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $certificates ) {
+					if ( empty( $row['deleted_at'] ) ) {
+						return true;
+					}
+
+					foreach ( $certificates as $certificate ) {
+						if ( (int) $certificate['template_id'] === (int) $row['id'] ) {
+							return true;
+						}
+					}
+
+					return false;
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return strcasecmp( (string) $a['title'], (string) $b['title'] );
+				}
+			);
+
+			return $matches;
 		}
 
 		// LearnPress quiz cascade: quiz item ids of a course's sections.
