@@ -661,4 +661,82 @@ class Test_Issuance_Service extends TestCase {
 		$this->assertSame( $named->merge_data['site.name'] . ' Certificate', $named->merge_data['certificate.title'] );
 		$this->assertSame( $named->merge_data['certificate.title'], PressPrimer_Certificate_Certificate::display_title( $named ) );
 	}
+
+	/**
+	 * The search-only title column is written at issuance from the
+	 * snapshot's certificate.title (Feature 2.0-002 TR-002) - both the
+	 * template-title default and a resolved pattern.
+	 *
+	 * @return void
+	 */
+	public function test_issued_row_carries_search_title_column() {
+		$id  = PressPrimer_Certificate_Issuance_Service::issue( $this->args() );
+		$row = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() )[0];
+
+		$this->assertIsInt( $id );
+		$this->assertSame( 'Completion Certificate', $row['title'], 'The column copies the snapshot title (template-title default).' );
+
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			$this->template_id,
+			[ 'settings_json' => wp_json_encode( [ 'certificate_name' => '{{site.name}} Certificate' ] ) ]
+		);
+
+		$named_id = PressPrimer_Certificate_Issuance_Service::issue(
+			array_merge( $this->args(), [ 'source_ref' => 'titled-run' ] )
+		);
+		$named    = PressPrimer_Certificate_Certificate::get( $named_id );
+
+		$named_row = null;
+
+		foreach ( $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() ) as $candidate ) {
+			if ( (int) $candidate['id'] === $named_id ) {
+				$named_row = $candidate;
+			}
+		}
+
+		$this->assertSame(
+			$named->merge_data['certificate.title'],
+			$named_row['title'],
+			'The column matches the resolved snapshot title exactly.'
+		);
+	}
+
+	/**
+	 * Tokens used only by a MAPPED email-template row (Decision 005)
+	 * resolve into the snapshot at issue time, exactly like the settings
+	 * default's tokens - the 1.1 lesson: every token surface must feed
+	 * issue-time collection, because previews use the sample map and
+	 * cannot catch collection gaps.
+	 *
+	 * @return void
+	 */
+	public function test_mapped_email_template_tokens_resolve_into_snapshot() {
+		$email_template_id = $this->wpdb->seed_row(
+			PressPrimer_Certificate_Email_Template::table(),
+			[
+				'uuid'       => 'emailtpl-0000-0001',
+				'title'      => 'Warm welcome',
+				'context'    => 'issuance',
+				'subject'    => 'From {{certificate.issuer_name}}',
+				'body'       => 'Congratulations!',
+				'status'     => 'active',
+				'deleted_at' => null,
+			]
+		);
+
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			$this->template_id,
+			[ 'settings_json' => wp_json_encode( [ 'email_template_id' => $email_template_id ] ) ]
+		);
+
+		$id = PressPrimer_Certificate_Issuance_Service::issue( $this->args() );
+		$this->assertIsInt( $id );
+
+		$certificate = PressPrimer_Certificate_Certificate::get( $id );
+
+		$this->assertArrayHasKey( 'certificate.issuer_name', $certificate->merge_data );
+		$this->assertNotSame( '', $certificate->merge_data['certificate.issuer_name'] );
+	}
 }

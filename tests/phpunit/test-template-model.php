@@ -583,4 +583,69 @@ class Test_Template_List_And_Duplicate extends TestCase {
 		$this->assertSame( 'period', $both['validity_mode'] );
 		$this->assertSame( 'Named', $both['certificate_name'] );
 	}
+
+	/**
+	 * The email template mapping (2.0, Decision 005): a positive integer
+	 * referencing a non-deleted email-template row is kept; zero,
+	 * negatives, non-numerics, unknown ids, and soft-deleted rows are
+	 * dropped. Archived rows still validate (the resolution chain skips
+	 * them at send time instead).
+	 *
+	 * @return void
+	 */
+	public function test_settings_sanitize_email_template_id() {
+		$active   = $this->wpdb->seed_row(
+			PressPrimer_Certificate_Email_Template::table(),
+			[
+				'uuid'       => 'emailtpl-sanitize-1',
+				'title'      => 'Mapped',
+				'context'    => 'issuance',
+				'subject'    => 'S',
+				'body'       => 'B',
+				'status'     => 'active',
+				'deleted_at' => null,
+			]
+		);
+		$archived = $this->wpdb->seed_row(
+			PressPrimer_Certificate_Email_Template::table(),
+			[
+				'uuid'       => 'emailtpl-sanitize-2',
+				'title'      => 'Archived',
+				'context'    => 'issuance',
+				'subject'    => 'S',
+				'body'       => 'B',
+				'status'     => 'archived',
+				'deleted_at' => null,
+			]
+		);
+		$deleted  = $this->wpdb->seed_row(
+			PressPrimer_Certificate_Email_Template::table(),
+			[
+				'uuid'       => 'emailtpl-sanitize-3',
+				'title'      => 'Deleted',
+				'context'    => 'issuance',
+				'subject'    => 'S',
+				'body'       => 'B',
+				'status'     => 'active',
+				'deleted_at' => '2026-08-01 00:00:00',
+			]
+		);
+
+		$clean = PressPrimer_Certificate_Template::sanitize_settings( [ 'email_template_id' => $active ] );
+		$this->assertSame( [ 'email_template_id' => $active ], $clean );
+
+		$clean = PressPrimer_Certificate_Template::sanitize_settings( [ 'email_template_id' => (string) $active ] );
+		$this->assertSame( [ 'email_template_id' => $active ], $clean, 'A numeric string is accepted as its integer.' );
+
+		$clean = PressPrimer_Certificate_Template::sanitize_settings( [ 'email_template_id' => $archived ] );
+		$this->assertSame( [ 'email_template_id' => $archived ], $clean, 'Archived rows keep their mapping.' );
+
+		foreach ( [ 0, -1, '3.5', 'abc', $deleted, 999 ] as $rejected ) {
+			$this->assertArrayNotHasKey(
+				'email_template_id',
+				PressPrimer_Certificate_Template::sanitize_settings( [ 'email_template_id' => $rejected ] ),
+				'Rejected value: ' . var_export( $rejected, true )
+			);
+		}
+	}
 }

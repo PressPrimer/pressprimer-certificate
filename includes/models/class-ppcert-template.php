@@ -518,6 +518,22 @@ class PressPrimer_Certificate_Template {
 			$clean['certificate_name'] = function_exists( 'mb_substr' ) ? mb_substr( $name, 0, 200 ) : substr( $name, 0, 200 );
 		}
 
+		// Email template mapping (2.0, Decision 005): a positive integer
+		// referencing a non-deleted wp_ppcert_email_templates row at save
+		// time; anything else is dropped and the built-in default email
+		// applies. Archived rows keep their mapping (the resolution chain
+		// skips them at send time). The round-trip cast rejects negatives
+		// and fractions rather than absint-coercing them onto another row.
+		if ( isset( $settings['email_template_id'] ) && is_numeric( $settings['email_template_id'] ) ) {
+			$mapped_id = (int) $settings['email_template_id'];
+
+			if ( $mapped_id > 0
+				&& (string) $mapped_id === (string) $settings['email_template_id']
+				&& PressPrimer_Certificate_Email_Template::exists( $mapped_id ) ) {
+				$clean['email_template_id'] = $mapped_id;
+			}
+		}
+
 		return $clean;
 	}
 }

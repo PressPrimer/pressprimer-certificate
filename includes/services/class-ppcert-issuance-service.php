@@ -285,7 +285,7 @@ class PressPrimer_Certificate_Issuance_Service {
 			array_unique(
 				array_merge(
 					$tokens,
-					PressPrimer_Certificate_Email_Service::template_tokens(),
+					PressPrimer_Certificate_Email_Service::template_tokens( $template ),
 					PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text( $name_pattern )
 				)
 			)
@@ -317,6 +317,16 @@ class PressPrimer_Certificate_Issuance_Service {
 
 			self::$last_resolution_failures = PressPrimer_Certificate_Merge_Field_Registry::get_last_resolution_failures();
 
+			// The search-only title column (Feature 2.0-002 TR-002): a copy
+			// of the snapshot's certificate.title, which the registry's name
+			// post-pass always resolves since 1.1. Display everywhere stays
+			// snapshot-first via Certificate::display_title().
+			$title = isset( $merge_data['certificate.title'] ) ? trim( (string) $merge_data['certificate.title'] ) : '';
+
+			if ( '' !== $title ) {
+				$title = function_exists( 'mb_substr' ) ? mb_substr( $title, 0, 200 ) : substr( $title, 0, 200 );
+			}
+
 			// Step 7: insert with snapshots. The layout snapshot is the
 			// template's raw JSON string, byte for byte.
 			$inserted = $wpdb->insert(
@@ -331,6 +341,7 @@ class PressPrimer_Certificate_Issuance_Service {
 					'source_type'           => $context['source_type'],
 					'source_ref'            => $context['source_ref'],
 					'status'                => 'issued',
+					'title'                 => '' !== $title ? $title : null,
 					'layout_schema_version' => (int) $template->layout_schema_version,
 					'layout_snapshot_json'  => (string) $template->layout_json,
 					'merge_data_json'       => wp_json_encode( $merge_data ),
@@ -339,7 +350,7 @@ class PressPrimer_Certificate_Issuance_Service {
 					'created_at'            => $issued_at,
 					'updated_at'            => $issued_at,
 				],
-				[ '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s' ]
+				[ '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s' ]
 			);
 
 			if ( $inserted ) {

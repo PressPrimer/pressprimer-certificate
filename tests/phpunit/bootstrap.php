@@ -28,6 +28,12 @@ if ( ! defined( 'PPCERT_VERSION' ) ) {
 	define( 'PPCERT_VERSION', '1.0.0-test' );
 }
 
+// The migration chain's head, mirroring the production constant (the
+// migrator tests drive maybe_migrate() against it).
+if ( ! defined( 'PPCERT_DB_VERSION' ) ) {
+	define( 'PPCERT_DB_VERSION', '2.0.0' );
+}
+
 // TCPDF font lookup roots in the plugin's converted-fonts directory,
 // exactly as the production bootstrap defines it (the release ZIP strips
 // TCPDF's bundled font collection; core metrics ship in fonts/tcpdf/).
@@ -356,6 +362,69 @@ if ( ! isset( $GLOBALS['wpdb'] ) ) {
 function ppcert_tests_reset_wpdb() {
 	$GLOBALS['wpdb'] = new PPCert_Fake_WPDB();
 	return $GLOBALS['wpdb'];
+}
+
+// The migrator require_onces ABSPATH wp-admin/includes/upgrade.php before
+// calling dbDelta(). Provide an empty stub at that path (dbDelta itself is
+// defined below) so migration tests can exercise the real chain.
+if ( ! file_exists( ABSPATH . 'wp-admin/includes/upgrade.php' ) ) {
+	if ( ! is_dir( ABSPATH . 'wp-admin/includes' ) ) {
+		mkdir( ABSPATH . 'wp-admin/includes', 0777, true );
+	}
+
+	file_put_contents(
+		ABSPATH . 'wp-admin/includes/upgrade.php',
+		"<?php // Test stub - dbDelta is defined by the PHPUnit bootstrap.\n"
+	);
+}
+
+if ( ! function_exists( 'dbDelta' ) ) {
+	/**
+	 * Stub: dbDelta against the fake wpdb's schema registry.
+	 *
+	 * Parses each CREATE TABLE statement just far enough to register the
+	 * table name and its column names with PPCert_Fake_WPDB. Re-running
+	 * merges columns into an existing registration - the shim's stand-in
+	 * for dbDelta's ADD COLUMN behavior. Row data is untouched (the fake
+	 * stores schemaless rows). Tables listed in
+	 * $GLOBALS['ppcert_test_dbdelta_skip_tables'] are skipped, so tests
+	 * can simulate a partially failed migration for the migrator's
+	 * verify-before-advance behavior.
+	 *
+	 * @param string $sql CREATE TABLE statements.
+	 * @return array Empty (return value unused by the migrator).
+	 */
+	function dbDelta( $sql ) {
+		$skip = isset( $GLOBALS['ppcert_test_dbdelta_skip_tables'] )
+			? (array) $GLOBALS['ppcert_test_dbdelta_skip_tables']
+			: [];
+
+		preg_match_all( '/CREATE TABLE ([^\s(]+)\s*\((.*?)\)[^();]*;/s', (string) $sql, $statements, PREG_SET_ORDER );
+
+		foreach ( $statements as $statement ) {
+			$table = trim( $statement[1], '`' );
+
+			if ( in_array( $table, $skip, true ) ) {
+				continue;
+			}
+
+			$columns = [];
+
+			foreach ( explode( "\n", $statement[2] ) as $line ) {
+				$line = trim( $line );
+
+				if ( '' === $line || preg_match( '/^(PRIMARY\s+KEY|UNIQUE\s+KEY|KEY|CONSTRAINT)\b/i', $line ) ) {
+					continue;
+				}
+
+				$columns[] = trim( strtok( $line, " \t" ), '`' );
+			}
+
+			$GLOBALS['wpdb']->register_table( $table, $columns );
+		}
+
+		return [];
+	}
 }
 
 if ( ! function_exists( 'get_userdata' ) ) {

@@ -26,8 +26,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * version with a half-applied schema (the Quiz 3.0 verify-before-advance
  * lesson, in its simplest form - a presence check per step).
  *
- * 1.0 ships the initial chain entry only.
- *
  * @since 1.0.0
  */
 class PressPrimer_Certificate_Migrator {
@@ -128,6 +126,17 @@ class PressPrimer_Certificate_Migrator {
 				'callback' => [ __CLASS__, 'migrate_to_1_0_1' ],
 				'targets'  => [ 'ppcert_templates' => [ 'settings_json' ] ],
 			],
+			// 2.0.0: the email templates table (Decision 005, schema only)
+			// and the search-only title column on certificates (Feature
+			// 2.0-002 TR-002), backfilled from each row's snapshot.
+			[
+				'version'  => '2.0.0',
+				'callback' => [ __CLASS__, 'migrate_to_2_0_0' ],
+				'targets'  => [
+					'ppcert_email_templates' => [],
+					'ppcert_certificates'    => [ 'title' ],
+				],
+			],
 		];
 	}
 
@@ -156,6 +165,89 @@ class PressPrimer_Certificate_Migrator {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		dbDelta( PressPrimer_Certificate_Schema::get_schema() );
+	}
+
+	/**
+	 * Migration step 2.0.0: email templates table + certificate title column
+	 *
+	 * Runs dbDelta over the full schema (creates wp_ppcert_email_templates
+	 * and adds the title column with its prefix index), then backfills
+	 * title from each existing row's merge_data_json. Idempotent: dbDelta
+	 * is a no-op when the schema matches, and the backfill only touches
+	 * rows whose title is still NULL.
+	 *
+	 * @since 2.0.0
+	 */
+	public static function migrate_to_2_0_0() {
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		dbDelta( PressPrimer_Certificate_Schema::get_schema() );
+
+		self::backfill_certificate_titles();
+	}
+
+	/**
+	 * Backfill wp_ppcert_certificates.title from merge_data_json
+	 *
+	 * The title column is a search-only copy of the snapshot's
+	 * certificate.title (Feature 2.0-002 TR-002): rows whose snapshot
+	 * carries a non-empty certificate.title get it copied (200-char cap,
+	 * matching the pattern sanitizer); rows without one - every pre-1.1
+	 * certificate - stay NULL. Display logic is unchanged and keeps
+	 * reading the snapshot via Certificate::display_title().
+	 *
+	 * Keyset-paginated so large sites never load the whole table; safe to
+	 * re-run (only NULL-title rows are examined, and unmatched rows are
+	 * simply skipped again).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $batch_size Rows per batch (tests exercise multi-batch
+	 *                        paging with a small size). Default 500.
+	 */
+	public static function backfill_certificate_titles( $batch_size = 500 ) {
+		global $wpdb;
+
+		$table      = $wpdb->prefix . 'ppcert_certificates';
+		$batch_size = max( 1, absint( $batch_size ) );
+		$last_id    = 0;
+
+		do {
+			$rows = (array) $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT id, merge_data_json FROM %i WHERE title IS NULL AND id > %d ORDER BY id ASC LIMIT %d',
+					$table,
+					$last_id,
+					$batch_size
+				)
+			);
+
+			$batch_count = count( $rows );
+
+			foreach ( $rows as $row ) {
+				$last_id = max( $last_id, (int) $row->id );
+
+				$merge = json_decode( (string) $row->merge_data_json, true );
+
+				if ( ! is_array( $merge ) || ! isset( $merge['certificate.title'] ) ) {
+					continue;
+				}
+
+				$title = trim( (string) $merge['certificate.title'] );
+
+				if ( '' === $title ) {
+					continue;
+				}
+
+				$wpdb->update(
+					$table,
+					[ 'title' => function_exists( 'mb_substr' ) ? mb_substr( $title, 0, 200 ) : substr( $title, 0, 200 ) ],
+					[ 'id' => (int) $row->id ],
+					[ '%s' ],
+					[ '%d' ]
+				);
+			}
+		} while ( $batch_count === $batch_size );
 	}
 
 	/**

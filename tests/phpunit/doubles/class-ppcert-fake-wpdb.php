@@ -62,6 +62,15 @@ class PPCert_Fake_WPDB {
 	private $tables = [];
 
 	/**
+	 * Registered table schemas: table => column names (2.0, migrator
+	 * tests). Populated by the bootstrap's dbDelta shim; answers the
+	 * migrator's SHOW TABLES / SHOW COLUMNS presence checks.
+	 *
+	 * @var array
+	 */
+	private $schemas = [];
+
+	/**
 	 * Auto-increment counters per table.
 	 *
 	 * @var array
@@ -99,6 +108,31 @@ class PPCert_Fake_WPDB {
 	 */
 	public function rows( $table ) {
 		return isset( $this->tables[ $table ] ) ? array_values( $this->tables[ $table ] ) : [];
+	}
+
+	/**
+	 * Register a table schema (the bootstrap dbDelta shim's "CREATE TABLE").
+	 *
+	 * Re-registering merges column lists - the shim's stand-in for
+	 * dbDelta adding missing columns to an existing table.
+	 *
+	 * @param string   $table   Full table name.
+	 * @param string[] $columns Column names.
+	 * @return void
+	 */
+	public function register_table( $table, array $columns ) {
+		$existing               = isset( $this->schemas[ $table ] ) ? $this->schemas[ $table ] : [];
+		$this->schemas[ $table ] = array_values( array_unique( array_merge( $existing, $columns ) ) );
+	}
+
+	/**
+	 * Registered column names of a table (test assertions).
+	 *
+	 * @param string $table Full table name.
+	 * @return string[] Column names; empty when unregistered.
+	 */
+	public function table_columns( $table ) {
+		return isset( $this->schemas[ $table ] ) ? $this->schemas[ $table ] : [];
 	}
 
 	/**
@@ -237,6 +271,16 @@ class PPCert_Fake_WPDB {
 	}
 
 	/**
+	 * wpdb::get_charset_collate() - empty in the fake (the schema SQL is
+	 * parsed by the bootstrap's dbDelta shim, which ignores the clause).
+	 *
+	 * @return string
+	 */
+	public function get_charset_collate() {
+		return '';
+	}
+
+	/**
 	 * wpdb::get_var() - first column of the first matching row.
 	 *
 	 * @param string $prepared Encoded payload from prepare().
@@ -371,6 +415,47 @@ class PPCert_Fake_WPDB {
 		$args  = $payload['args'];
 		$table = isset( $args[0] ) ? (string) $args[0] : '';
 		$rows  = $this->rows( $table );
+
+		// Migrator::verify_targets - table presence. The LIKE pattern is
+		// the exact table name (the migrator escapes nothing wild).
+		if ( 'SHOW TABLES LIKE %s' === $query ) {
+			$name = (string) $args[0];
+
+			return isset( $this->schemas[ $name ] ) ? [ [ 'name' => $name ] ] : [];
+		}
+
+		// Migrator::verify_targets - column presence.
+		if ( 'SHOW COLUMNS FROM %i' === $query ) {
+			return array_map(
+				static function ( $column ) {
+					return [ 'Field' => $column ];
+				},
+				$this->table_columns( $table )
+			);
+		}
+
+		// Migrator::backfill_certificate_titles - keyset-paginated batch
+		// of NULL-title rows.
+		if ( false !== strpos( $query, 'WHERE title IS NULL AND id > %d ORDER BY id ASC LIMIT %d' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					$title = isset( $row['title'] ) ? $row['title'] : null;
+
+					return null === $title && (int) $row['id'] > (int) $args[1];
+				}
+			);
+
+			return array_map(
+				static function ( $row ) {
+					return [
+						'id'              => $row['id'],
+						'merge_data_json' => isset( $row['merge_data_json'] ) ? $row['merge_data_json'] : '',
+					];
+				},
+				array_slice( $matches, 0, (int) $args[2] )
+			);
+		}
 
 		// Template::get - by id, excluding soft-deleted.
 		if ( false !== strpos( $query, 'WHERE id = %d AND deleted_at IS NULL' ) ) {

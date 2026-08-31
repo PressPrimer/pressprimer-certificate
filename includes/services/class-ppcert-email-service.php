@@ -83,10 +83,17 @@ class PressPrimer_Certificate_Email_Service {
 		$tokens   = self::tokens( $certificate, $recipient, $template );
 		$merge    = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
 
+		// Decision 005 resolution chain: the template's mapped active
+		// email-template row when present, otherwise the built-in
+		// default from settings. Substitution is identical either way.
+		$resolved = self::resolve_content( $template );
+		$subject  = null !== $resolved ? $resolved['subject'] : (string) $settings['email_issued_subject'];
+		$body     = null !== $resolved ? $resolved['body'] : (string) $settings['email_issued_body'];
+
 		$content = [
 			'to'          => (string) $recipient->user_email,
-			'subject'     => self::substitute( $settings['email_issued_subject'], $tokens, $merge ),
-			'body'        => self::substitute( $settings['email_issued_body'], $tokens, $merge ),
+			'subject'     => self::substitute( $subject, $tokens, $merge ),
+			'body'        => self::substitute( $body, $tokens, $merge ),
 			'headers'     => [
 				'From: ' . $settings['email_from_name'] . ' <' . $settings['email_from_address'] . '>',
 			],
@@ -247,6 +254,50 @@ class PressPrimer_Certificate_Email_Service {
 	}
 
 	/**
+	 * Resolve the effective email subject/body for a certificate template
+	 *
+	 * The Decision 005 resolution chain: when the template maps to an
+	 * email-template row (settings_json.email_template_id) and that row
+	 * is active, non-deleted, and of the requested context, its stored
+	 * subject/body win; in every other state - no mapping, missing row,
+	 * soft-deleted, archived, wrong context - the caller falls back to
+	 * the built-in default. Works with the table empty and with no
+	 * addons installed, and behaves identically for the future reminder
+	 * context.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param object|null $template      Template row (hydrated, with
+	 *                                   decoded settings), or null.
+	 * @param string      $email_context Email context to match.
+	 *                                   Default 'issuance'.
+	 * @return array|null [ 'subject' => string, 'body' => string ], or
+	 *                    null when the built-in default applies.
+	 */
+	public static function resolve_content( $template, $email_context = 'issuance' ) {
+		$settings = $template && isset( $template->settings ) && is_array( $template->settings )
+			? $template->settings
+			: [];
+
+		$mapped_id = isset( $settings['email_template_id'] ) ? absint( $settings['email_template_id'] ) : 0;
+
+		if ( $mapped_id < 1 ) {
+			return null;
+		}
+
+		$row = PressPrimer_Certificate_Email_Template::get_active( $mapped_id );
+
+		if ( ! $row || (string) $row->context !== (string) $email_context ) {
+			return null;
+		}
+
+		return [
+			'subject' => (string) $row->subject,
+			'body'    => (string) $row->body,
+		];
+	}
+
+	/**
 	 * Merge tokens referenced by the current email templates
 	 *
 	 * The issuance engine resolves these alongside the layout's tokens
@@ -255,15 +306,34 @@ class PressPrimer_Certificate_Email_Service {
 	 * issued are not in its snapshot and render empty on resend -
 	 * snapshot semantics, by design.
 	 *
-	 * @since 1.1.0
+	 * Since 2.0 the tokens come from the EFFECTIVE content for the given
+	 * template - the mapped email-template row when the resolution chain
+	 * selects one, else the settings default - so a mapped row's tokens
+	 * are collected at issue time too (the 1.1 lesson: every token
+	 * surface must feed the issuance-path collection, because previews
+	 * substitute the sample map and cannot catch collection gaps).
 	 *
+	 * @since 1.1.0
+	 * @since 2.0.0 Accepts the template whose effective content applies.
+	 *
+	 * @param object|null $template Template row, or null for the
+	 *                              settings default.
 	 * @return string[] Unique token keys in inner form.
 	 */
-	public static function template_tokens() {
-		$settings = self::settings();
+	public static function template_tokens( $template = null ) {
+		$resolved = self::resolve_content( $template );
+
+		if ( null !== $resolved ) {
+			$subject = $resolved['subject'];
+			$body    = $resolved['body'];
+		} else {
+			$settings = self::settings();
+			$subject  = (string) $settings['email_issued_subject'];
+			$body     = (string) $settings['email_issued_body'];
+		}
 
 		return PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text(
-			(string) $settings['email_issued_subject'] . "\n" . (string) $settings['email_issued_body']
+			$subject . "\n" . $body
 		);
 	}
 

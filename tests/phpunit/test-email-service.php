@@ -297,6 +297,145 @@ class Test_Email_Service extends TestCase {
 		);
 		$this->assertCount( 1, $GLOBALS['ppcert_test_mail'], 'Duplicate suppression must not re-email' );
 	}
+
+	/**
+	 * Seed an email-template row and map the setUp template to it.
+	 *
+	 * @param array $overrides Row overrides.
+	 * @return int Email template row id.
+	 */
+	private function seed_mapped_email_template( array $overrides = [] ) {
+		$row_id = $this->wpdb->seed_row(
+			PressPrimer_Certificate_Email_Template::table(),
+			array_merge(
+				[
+					'uuid'       => 'emailtpl-mapped-' . wp_rand( 1000, 9999 ),
+					'title'      => 'Custom welcome',
+					'context'    => 'issuance',
+					'subject'    => 'Well done, {{recipient.full_name}}',
+					'body'       => "Your {{source.course_title}} certificate is ready.\nLegacy: {credential_id}",
+					'status'     => 'active',
+					'deleted_at' => null,
+				],
+				$overrides
+			)
+		);
+
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			40,
+			[ 'settings_json' => wp_json_encode( [ 'email_template_id' => $row_id ] ) ]
+		);
+
+		return $row_id;
+	}
+
+	/**
+	 * The Decision 005 resolution chain: a mapped active issuance row's
+	 * subject/body replace the built-in default, with both token syntaxes
+	 * substituting exactly as before.
+	 *
+	 * @return void
+	 */
+	public function test_mapped_email_template_row_wins() {
+		$this->seed_mapped_email_template();
+
+		$sent = PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [ 'recipient_id' => 7 ] );
+
+		$this->assertTrue( $sent );
+
+		$mail = $GLOBALS['ppcert_test_mail'][0];
+		$this->assertSame( 'Well done, Dana Whitfield', $mail['subject'] );
+		$this->assertStringContainsString( 'Your Advanced Botany certificate is ready.', $mail['body'] );
+		$this->assertStringContainsString( 'Legacy: 7Q4M-K9P2-XT3A', $mail['body'], 'Legacy tokens substitute in mapped content too' );
+	}
+
+	/**
+	 * Every fallback state of the resolution chain lands on the built-in
+	 * default: soft-deleted mapping, archived row, wrong context, and a
+	 * mapping to a row that never existed. The chain never fails a send.
+	 *
+	 * @return void
+	 */
+	public function test_mapped_row_fallback_states() {
+		$row_id = $this->seed_mapped_email_template();
+
+		$states = [
+			'soft-deleted'  => [ 'deleted_at' => '2026-08-15 00:00:00', 'status' => 'active', 'context' => 'issuance' ],
+			'archived'      => [ 'deleted_at' => null, 'status' => 'archived', 'context' => 'issuance' ],
+			'wrong context' => [ 'deleted_at' => null, 'status' => 'active', 'context' => 'reminder' ],
+		];
+
+		foreach ( $states as $label => $mutation ) {
+			$GLOBALS['ppcert_test_mail'] = [];
+			$this->wpdb->mutate_row( PressPrimer_Certificate_Email_Template::table(), $row_id, $mutation );
+
+			PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [ 'recipient_id' => 7 ] );
+
+			$this->assertSame(
+				'Your certificate: Advanced Botany Certification',
+				$GLOBALS['ppcert_test_mail'][0]['subject'],
+				"A {$label} mapping must fall back to the default subject."
+			);
+		}
+
+		// A mapping pointing at a row that never existed.
+		$GLOBALS['ppcert_test_mail'] = [];
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			40,
+			[ 'settings_json' => wp_json_encode( [ 'email_template_id' => 4040 ] ) ]
+		);
+
+		PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [ 'recipient_id' => 7 ] );
+
+		$this->assertSame(
+			'Your certificate: Advanced Botany Certification',
+			$GLOBALS['ppcert_test_mail'][0]['subject'],
+			'A dangling mapping must fall back to the default subject.'
+		);
+	}
+
+	/**
+	 * template_tokens() extracts from the EFFECTIVE content: the mapped
+	 * row's tokens when the chain selects one, the settings default's
+	 * tokens otherwise.
+	 *
+	 * @return void
+	 */
+	public function test_template_tokens_follow_resolution_chain() {
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [
+			'email_issued_subject' => 'Default {{site.name}}',
+			'email_issued_body'    => 'Default body',
+		];
+
+		$this->assertSame(
+			[ 'site.name' ],
+			PressPrimer_Certificate_Email_Service::template_tokens( PressPrimer_Certificate_Template::get( 40 ) ),
+			'Unmapped template: tokens come from the settings default.'
+		);
+
+		$row_id = $this->seed_mapped_email_template(
+			[
+				'subject' => 'Ready, {{recipient.first_name}}',
+				'body'    => 'See {{source.quiz_title}}',
+			]
+		);
+
+		$this->assertSame(
+			[ 'recipient.first_name', 'source.quiz_title' ],
+			PressPrimer_Certificate_Email_Service::template_tokens( PressPrimer_Certificate_Template::get( 40 ) ),
+			'Mapped template: tokens come from the mapped row.'
+		);
+
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Email_Template::table(), $row_id, [ 'status' => 'archived' ] );
+
+		$this->assertSame(
+			[ 'site.name' ],
+			PressPrimer_Certificate_Email_Service::template_tokens( PressPrimer_Certificate_Template::get( 40 ) ),
+			'Archived mapping: token collection follows the fallback.'
+		);
+	}
 }
 
 /**
