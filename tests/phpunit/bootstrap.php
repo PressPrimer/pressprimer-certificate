@@ -124,6 +124,47 @@ if ( ! function_exists( 'add_filter' ) ) {
 	}
 }
 
+if ( ! function_exists( 'remove_filter' ) ) {
+	/**
+	 * Stub: Unregister a callback (identity + priority match, like core).
+	 *
+	 * @param string   $hook_name Hook name.
+	 * @param callable $callback  Callback to remove.
+	 * @param int      $priority  Priority it was added with.
+	 * @return bool Whether anything was removed.
+	 */
+	function remove_filter( $hook_name, $callback, $priority = 10 ) {
+		if ( empty( $GLOBALS['ppcert_test_hooks'][ $hook_name ] ) ) {
+			return false;
+		}
+
+		$removed = false;
+
+		foreach ( $GLOBALS['ppcert_test_hooks'][ $hook_name ] as $index => $entry ) {
+			if ( $entry['callback'] === $callback && (int) $priority === $entry['priority'] ) {
+				unset( $GLOBALS['ppcert_test_hooks'][ $hook_name ][ $index ] );
+				$removed = true;
+			}
+		}
+
+		return $removed;
+	}
+}
+
+if ( ! function_exists( 'remove_action' ) ) {
+	/**
+	 * Stub: Unregister an action callback.
+	 *
+	 * @param string   $hook_name Hook name.
+	 * @param callable $callback  Callback to remove.
+	 * @param int      $priority  Priority it was added with.
+	 * @return bool Whether anything was removed.
+	 */
+	function remove_action( $hook_name, $callback, $priority = 10 ) {
+		return remove_filter( $hook_name, $callback, $priority );
+	}
+}
+
 if ( ! function_exists( 'add_action' ) ) {
 	/**
 	 * Stub: Register an action callback.
@@ -1194,6 +1235,17 @@ if ( ! function_exists( 'ppcert_verification_url' ) ) {
 	function ppcert_verification_url( $credential_id ) {
 		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $credential_id );
 
+		return add_query_arg( 'ppcert_id', rawurlencode( $normalized ), ppcert_verification_page_url() );
+	}
+}
+
+if ( ! function_exists( 'ppcert_verification_page_url' ) ) {
+	/**
+	 * Mirror of the bootstrap helper: the verification page base URL.
+	 *
+	 * @return string
+	 */
+	function ppcert_verification_page_url() {
 		$settings = get_option( 'ppcert_settings', [] );
 		$page_id  = is_array( $settings ) && isset( $settings['verification_page_id'] ) ? absint( $settings['verification_page_id'] ) : 0;
 
@@ -1203,7 +1255,7 @@ if ( ! function_exists( 'ppcert_verification_url' ) ) {
 			$base = home_url( '/' );
 		}
 
-		return add_query_arg( 'ppcert_id', rawurlencode( $normalized ), $base );
+		return $base;
 	}
 }
 
@@ -1575,6 +1627,17 @@ if ( ! function_exists( 'wp_mail' ) ) {
 	 * @return bool
 	 */
 	function wp_mail( $to, $subject, $message, $headers = [], $attachments = [] ) {
+		// Failure knob: set $GLOBALS['ppcert_test_mail_fail'] to a reason
+		// string to simulate a mailer failure (fires wp_mail_failed with
+		// it, like PHPMailer does).
+		if ( ! empty( $GLOBALS['ppcert_test_mail_fail'] ) ) {
+			do_action(
+				'wp_mail_failed',
+				new WP_Error( 'wp_mail_failed', (string) $GLOBALS['ppcert_test_mail_fail'] )
+			);
+			return false;
+		}
+
 		$GLOBALS['ppcert_test_mail'][] = [
 			'to'          => $to,
 			'subject'     => $subject,
@@ -1583,6 +1646,83 @@ if ( ! function_exists( 'wp_mail' ) ) {
 			'attachments' => $attachments,
 		];
 		return true;
+	}
+}
+
+if ( ! class_exists( 'PPCert_Test_User' ) ) {
+	/**
+	 * Minimal WP_User stand-in for wp_get_current_user().
+	 */
+	class PPCert_Test_User { // phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound -- Bootstrap stub.
+		/**
+		 * User id.
+		 *
+		 * @var int
+		 */
+		public $ID = 0;
+
+		/**
+		 * Display name.
+		 *
+		 * @var string
+		 */
+		public $display_name = '';
+
+		/**
+		 * Email address.
+		 *
+		 * @var string
+		 */
+		public $user_email = '';
+
+		/**
+		 * First name.
+		 *
+		 * @var string
+		 */
+		public $first_name = '';
+
+		/**
+		 * Hydrate from a test-user object.
+		 *
+		 * @param int         $id   User id.
+		 * @param object|null $data Test user record.
+		 */
+		public function __construct( $id, $data ) {
+			$this->ID = (int) $id;
+
+			if ( is_object( $data ) ) {
+				$this->display_name = (string) ( $data->display_name ?? '' );
+				$this->user_email   = (string) ( $data->user_email ?? '' );
+				$this->first_name   = (string) ( $data->first_name ?? '' );
+			}
+		}
+
+		/**
+		 * Whether the user exists (WP_User semantics).
+		 *
+		 * @return bool
+		 */
+		public function exists() {
+			return $this->ID > 0;
+		}
+	}
+}
+
+if ( ! function_exists( 'wp_get_current_user' ) ) {
+	/**
+	 * Stub: The current user as a WP_User-shaped object.
+	 *
+	 * Reads $GLOBALS['ppcert_test_current_user'] +
+	 * $GLOBALS['ppcert_test_users'] like the other user stubs.
+	 *
+	 * @return PPCert_Test_User
+	 */
+	function wp_get_current_user() {
+		$id    = isset( $GLOBALS['ppcert_test_current_user'] ) ? (int) $GLOBALS['ppcert_test_current_user'] : 0;
+		$users = isset( $GLOBALS['ppcert_test_users'] ) ? $GLOBALS['ppcert_test_users'] : [];
+
+		return new PPCert_Test_User( $id, $id > 0 && isset( $users[ $id ] ) ? $users[ $id ] : null );
 	}
 }
 

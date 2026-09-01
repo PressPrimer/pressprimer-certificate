@@ -83,22 +83,7 @@ class PressPrimer_Certificate_Email_Service {
 		$tokens   = self::tokens( $certificate, $recipient, $template );
 		$merge    = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
 
-		// Decision 005 resolution chain: the template's mapped active
-		// email-template row when present, otherwise the built-in
-		// default from settings. Substitution is identical either way.
-		$resolved = self::resolve_content( $template );
-		$subject  = null !== $resolved ? $resolved['subject'] : (string) $settings['email_issued_subject'];
-		$body     = null !== $resolved ? $resolved['body'] : (string) $settings['email_issued_body'];
-
-		$content = [
-			'to'          => (string) $recipient->user_email,
-			'subject'     => self::substitute( $subject, $tokens, $merge ),
-			'body'        => self::substitute( $body, $tokens, $merge ),
-			'headers'     => [
-				'From: ' . $settings['email_from_name'] . ' <' . $settings['email_from_address'] . '>',
-			],
-			'attachments' => [],
-		];
+		$content = self::assemble( $template, $tokens, $merge, (string) $recipient->user_email );
 
 		// The PDF always attaches when rendering succeeds; the temp
 		// file is deleted after sending (Feature 007 FR-006 - nothing
@@ -266,6 +251,175 @@ class PressPrimer_Certificate_Email_Service {
 			strtr( (string) $text, $tokens ),
 			$merge
 		);
+	}
+
+	/**
+	 * The one email assembly (2.0, Feature 2.0-003 TR-002)
+	 *
+	 * Production issuance and the test send share this builder: the
+	 * Decision 005 resolution chain picks the subject/body source, both
+	 * token syntaxes substitute identically, and the From header comes
+	 * from the same settings. The paths differ only in recipient, the
+	 * [Test] prefix, and the data map (snapshot vs samples) - exactly
+	 * the contract US-2 promises.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param object|null $template Template row (hydrated), or null.
+	 * @param array       $tokens   Legacy single-brace token map.
+	 * @param array       $merge    Merge value map ({{group.field}}).
+	 * @param string      $to       Recipient address.
+	 * @return array to / subject / body / headers / attachments.
+	 */
+	private static function assemble( $template, array $tokens, array $merge, $to ) {
+		$settings = self::settings();
+
+		// Decision 005 resolution chain: the template's mapped active
+		// email-template row when present, otherwise the built-in
+		// default from settings. Substitution is identical either way.
+		$resolved = self::resolve_content( $template );
+		$subject  = null !== $resolved ? $resolved['subject'] : (string) $settings['email_issued_subject'];
+		$body     = null !== $resolved ? $resolved['body'] : (string) $settings['email_issued_body'];
+
+		return [
+			'to'          => $to,
+			'subject'     => self::substitute( $subject, $tokens, $merge ),
+			'body'        => self::substitute( $body, $tokens, $merge ),
+			'headers'     => [
+				'From: ' . $settings['email_from_name'] . ' <' . $settings['email_from_address'] . '>',
+			],
+			'attachments' => [],
+		];
+	}
+
+	/**
+	 * Send the test email for a template to the current user (2.0,
+	 * Feature 2.0-003)
+	 *
+	 * The production assembly with the designer's sample map: the
+	 * resolution chain, both token syntaxes, and the From header are the
+	 * real send path. Differences, per the spec: the recipient is always
+	 * the CURRENT USER (never request input), the subject carries a
+	 * [Test] prefix, credential-dependent links target the verification
+	 * page base (no credential exists), and no PDF attaches - a body
+	 * note says so, since real award emails include it.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param object $template Template row (hydrated).
+	 * @return true|WP_Error True when the mail was accepted; WP_Error
+	 *                       carrying the mailer's reason otherwise.
+	 */
+	public static function send_test( $template ) {
+		$user = wp_get_current_user();
+
+		if ( ! $user || ! $user->exists() || '' === (string) $user->user_email ) {
+			return new WP_Error(
+				'ppcert_test_email_no_recipient',
+				__( 'Your account has no email address to send the test to.', 'pressprimer-certificate' )
+			);
+		}
+
+		$samples = self::sample_merge_map( $template );
+
+		$tokens = [
+			'{recipient_name}'   => (string) $user->display_name,
+			'{subject}'          => isset( $samples['certificate.title'] ) ? (string) $samples['certificate.title'] : (string) $template->title,
+			'{credential_id}'    => isset( $samples['certificate.credential_id'] ) ? (string) $samples['certificate.credential_id'] : '',
+			'{verification_url}' => ppcert_verification_page_url(),
+			'{issuer_name}'      => (string) get_bloginfo( 'name' ),
+			'{site_name}'        => (string) get_bloginfo( 'name' ),
+		];
+
+		$content = self::assemble( $template, $tokens, $samples, (string) $user->user_email );
+
+		/* translators: prefix marking a test email's subject line */
+		$content['subject'] = __( '[Test]', 'pressprimer-certificate' ) . ' ' . $content['subject'];
+
+		$content['body'] .= "\n\n" . __( 'This is a test of the award email, sent with sample values and without the PDF attachment. Real award emails include the certificate PDF.', 'pressprimer-certificate' );
+
+		/** This filter is documented in docs/architecture/HOOKS.md */
+		$content = apply_filters(
+			'ppcert_email_content',
+			$content,
+			'test',
+			[
+				'template_id' => (int) $template->id,
+				'test'        => true,
+			]
+		);
+
+		if ( ! is_array( $content ) || empty( $content['to'] ) ) {
+			return new WP_Error(
+				'ppcert_test_email_vetoed',
+				__( 'The test email was blocked by a filter.', 'pressprimer-certificate' )
+			);
+		}
+
+		// Capture the mailer's failure reason so the UI can report it
+		// honestly (FR-001) instead of a generic shrug.
+		$mail_error = null;
+		$capture    = static function ( $wp_error ) use ( &$mail_error ) {
+			$mail_error = $wp_error;
+		};
+
+		add_action( 'wp_mail_failed', $capture );
+
+		$sent = wp_mail(
+			$content['to'],
+			(string) $content['subject'],
+			(string) $content['body'],
+			isset( $content['headers'] ) ? $content['headers'] : [],
+			[]
+		);
+
+		remove_action( 'wp_mail_failed', $capture );
+
+		if ( $sent ) {
+			return true;
+		}
+
+		return new WP_Error(
+			'ppcert_test_email_failed',
+			is_wp_error( $mail_error ) && '' !== $mail_error->get_error_message()
+				? $mail_error->get_error_message()
+				: __( 'The site could not send the email. Check the WordPress email configuration.', 'pressprimer-certificate' )
+		);
+	}
+
+	/**
+	 * The designer's sample map, keyed for substitution (FR-003)
+	 *
+	 * Identical source to the canvas's Samples mode: every registered
+	 * merge field's sample value, all groups (a template without a
+	 * trigger still tests - source tokens show generic samples).
+	 * certificate.title resolves from the template's certificate_name
+	 * pattern against the samples, falling back to the template title -
+	 * the same chain a real issuance runs.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param object $template Template row (hydrated).
+	 * @return array Map of token key => sample value.
+	 */
+	private static function sample_merge_map( $template ) {
+		$samples = [];
+
+		foreach ( PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' ) as $field ) {
+			if ( isset( $field['key'] ) && array_key_exists( 'sample', (array) $field ) ) {
+				$samples[ (string) $field['key'] ] = (string) $field['sample'];
+			}
+		}
+
+		$samples['certificate.title'] = PressPrimer_Certificate_Merge_Field_Registry::resolve_title(
+			[
+				'template_settings' => isset( $template->settings ) && is_array( $template->settings ) ? $template->settings : [],
+				'template_title'    => (string) $template->title,
+			],
+			$samples
+		);
+
+		return $samples;
 	}
 
 	/**

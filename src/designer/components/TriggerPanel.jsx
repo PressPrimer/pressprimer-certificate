@@ -23,6 +23,7 @@ import {
 	useState,
 } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
 import {
 	Alert,
 	Button,
@@ -36,6 +37,7 @@ import {
 	Tag,
 	Tooltip,
 	Typography,
+	message,
 } from 'antd';
 import dayjs from 'dayjs';
 import {
@@ -989,6 +991,92 @@ function TriggerModal( { open, types, initial, onSubmit, onClose } ) {
  *
  * @return {JSX.Element} Panel.
  */
+/**
+ * Send Test Email (2.0, Feature 2.0-003)
+ *
+ * Sends the current user this template's award email with sample
+ * values through the real send pipeline. Uses the LAST-SAVED template:
+ * a note says so while there are unsaved changes. Disabled until the
+ * template exists on the server.
+ *
+ * @param {Object} props       Component props.
+ * @param {Object} props.state Designer store state.
+ * @return {JSX.Element} Section.
+ */
+function TestEmailSection( { state } ) {
+	const [ sending, setSending ] = useState( false );
+
+	const templateId = state.template?.id || 0;
+	const hasUnsaved = state.dirty || state.triggersDirty;
+
+	const onSend = () => {
+		setSending( true );
+
+		apiFetch( {
+			path: `/ppcert/v1/templates/${ templateId }/test-email`,
+			method: 'POST',
+		} )
+			.then( ( response ) => {
+				message.success(
+					response?.message ||
+						__( 'Test email sent.', 'pressprimer-certificate' )
+				);
+			} )
+			.catch( ( error ) => {
+				message.error(
+					error?.message ||
+						__(
+							'The test email could not be sent.',
+							'pressprimer-certificate'
+						)
+				);
+			} )
+			.finally( () => setSending( false ) );
+	};
+
+	return (
+		<div className="ppcert-designer__validity">
+			<span className="ppcert-designer__panel-heading">
+				{ __( 'Award email', 'pressprimer-certificate' ) }
+			</span>
+			<Typography.Paragraph type="secondary">
+				{ __(
+					'Send yourself this certificate’s award email with sample values to check the subject, body, and merge fields.',
+					'pressprimer-certificate'
+				) }
+			</Typography.Paragraph>
+			{ templateId > 0 ? (
+				<Button loading={ sending } onClick={ onSend }>
+					{ __( 'Send Test Email', 'pressprimer-certificate' ) }
+				</Button>
+			) : (
+				<Tooltip
+					placement="bottom"
+					title={ __(
+						'Save the template first - the test sends the saved design.',
+						'pressprimer-certificate'
+					) }
+				>
+					<Button disabled>
+						{ __( 'Send Test Email', 'pressprimer-certificate' ) }
+					</Button>
+				</Tooltip>
+			) }
+			{ hasUnsaved && templateId > 0 && (
+				<Typography.Paragraph
+					type="secondary"
+					className="ppcert-designer__test-email-note"
+				>
+					{ __(
+						'You have unsaved changes - the test uses the last-saved version of this template.',
+						'pressprimer-certificate'
+					) }
+				</Typography.Paragraph>
+			) }
+		</div>
+	);
+}
+
 export default function TriggerPanel() {
 	const { state, dispatch } = useDesignerStore();
 	const [ types, setTypes ] = useState( null );
@@ -1349,6 +1437,8 @@ export default function TriggerPanel() {
 					) }
 				/>
 			) }
+
+			<TestEmailSection state={ state } />
 
 			<TriggerModal
 				open={ modalOpen }

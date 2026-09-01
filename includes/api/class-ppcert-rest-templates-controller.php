@@ -100,6 +100,92 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 				'permission_callback' => [ $this, 'can_manage' ],
 			]
 		);
+
+		// Test email (2.0, Feature 2.0-003 TR-001): capability-gated to
+		// the template-edit capability; the REST cookie auth's X-WP-Nonce
+		// is the nonce. The recipient is ALWAYS the current user -
+		// derived server-side, never from request input.
+		register_rest_route(
+			'ppcert/v1',
+			'/templates/(?P<id>\d+)/test-email',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'send_test_email' ],
+				'permission_callback' => [ $this, 'can_manage' ],
+			]
+		);
+	}
+
+	/**
+	 * Test emails allowed per user per window (TR-003: invisible in
+	 * normal use, a wall for a leaked nonce used as a mail cannon)
+	 *
+	 * @since 2.0.0
+	 * @var int
+	 */
+	const TEST_EMAIL_RATE_LIMIT = 5;
+
+	/**
+	 * Test email rate window in seconds
+	 *
+	 * @since 2.0.0
+	 * @var int
+	 */
+	const TEST_EMAIL_RATE_WINDOW = 60;
+
+	/**
+	 * POST /templates/{id}/test-email - send the current user this
+	 * template's award email with sample values (2.0, Feature 2.0-003)
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param WP_REST_Request $request The request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function send_test_email( $request ) {
+		$template = PressPrimer_Certificate_Template::get( absint( $request->get_param( 'id' ) ) );
+
+		if ( ! $template ) {
+			return new WP_Error(
+				'ppcert_template_not_found',
+				__( 'Template not found.', 'pressprimer-certificate' ),
+				[ 'status' => 404 ]
+			);
+		}
+
+		if ( ! PressPrimer_Certificate_Rate_Limiter::allow(
+			'ppcert_testmail_' . get_current_user_id(),
+			self::TEST_EMAIL_RATE_LIMIT,
+			self::TEST_EMAIL_RATE_WINDOW
+		) ) {
+			return new WP_Error(
+				'ppcert_test_email_throttled',
+				__( 'Too many test emails. Please wait a minute and try again.', 'pressprimer-certificate' ),
+				[ 'status' => 429 ]
+			);
+		}
+
+		$result = PressPrimer_Certificate_Email_Service::send_test( $template );
+
+		if ( is_wp_error( $result ) ) {
+			$result->add_data( [ 'status' => 500 ] );
+
+			return $result;
+		}
+
+		$user = wp_get_current_user();
+
+		return new WP_REST_Response(
+			[
+				'success' => true,
+				'message' => sprintf(
+					/* translators: %s: the current user's email address */
+					__( 'Test email sent to %s.', 'pressprimer-certificate' ),
+					(string) $user->user_email
+				),
+			],
+			200
+		);
 	}
 
 	/**

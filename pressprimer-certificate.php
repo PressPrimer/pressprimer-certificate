@@ -127,6 +127,21 @@ add_action( 'init', 'ppcert_init', 0 );
 function ppcert_verification_url( $credential_id ) {
 	$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $credential_id );
 
+	return add_query_arg( 'ppcert_id', rawurlencode( $normalized ), ppcert_verification_page_url() );
+}
+
+/**
+ * Get the verification page's base URL (no credential)
+ *
+ * The test email's link target (2.0, Feature 2.0-003 FR-004): no
+ * credential exists for a test, so credential-dependent links point at
+ * the page itself.
+ *
+ * @since 2.0.0
+ *
+ * @return string
+ */
+function ppcert_verification_page_url() {
 	$settings = get_option( 'ppcert_settings', [] );
 	$page_id  = is_array( $settings ) && isset( $settings['verification_page_id'] ) ? absint( $settings['verification_page_id'] ) : 0;
 
@@ -136,7 +151,7 @@ function ppcert_verification_url( $credential_id ) {
 		$base = home_url( '/' );
 	}
 
-	return add_query_arg( 'ppcert_id', rawurlencode( $normalized ), $base );
+	return $base;
 }
 
 /**

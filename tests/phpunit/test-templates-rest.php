@@ -295,4 +295,60 @@ class Test_Templates_REST extends TestCase {
 
 		wp_delete_file( $file );
 	}
+
+	/**
+	 * POST /templates/{id}/test-email (2.0, Feature 2.0-003 TR-001/TR-003):
+	 * unknown templates 404, successes report the sent-to address, and
+	 * the per-user throttle turns the sixth call inside the window into
+	 * a 429 - even for a fully-authorized user.
+	 *
+	 * @return void
+	 */
+	public function test_test_email_route_validates_and_throttles() {
+		ppcert_tests_reset_transients();
+
+		$GLOBALS['ppcert_test_mail']         = [];
+		$GLOBALS['ppcert_test_current_user'] = 7;
+		$GLOBALS['ppcert_test_users']        = [
+			7 => (object) [
+				'ID'           => 7,
+				'display_name' => 'Dana Whitfield',
+				'user_email'   => 'dana@example.test',
+			],
+		];
+
+		$template_id = $this->wpdb->seed_row(
+			'wp_ppcert_templates',
+			[
+				'uuid'        => 'tpl-test-email',
+				'title'       => 'Completion Award',
+				'status'      => 'published',
+				'layout_json' => '{"layout_schema_version":2,"elements":[]}',
+				'deleted_at'  => null,
+			]
+		);
+
+		// Unknown template: 404.
+		$missing = $this->controller->send_test_email( new WP_REST_Request( [ 'id' => 999 ] ) );
+		$this->assertInstanceOf( WP_Error::class, $missing );
+		$this->assertSame( 'ppcert_template_not_found', $missing->get_error_code() );
+
+		// Success: { success, message } with the current user's address.
+		$response = $this->controller->send_test_email( new WP_REST_Request( [ 'id' => $template_id ] ) );
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertTrue( $response->get_data()['success'] );
+		$this->assertStringContainsString( 'dana@example.test', $response->get_data()['message'] );
+		$this->assertCount( 1, $GLOBALS['ppcert_test_mail'] );
+
+		// The throttle: five per minute, the sixth is a 429.
+		for ( $i = 0; $i < 4; $i++ ) {
+			$this->controller->send_test_email( new WP_REST_Request( [ 'id' => $template_id ] ) );
+		}
+
+		$throttled = $this->controller->send_test_email( new WP_REST_Request( [ 'id' => $template_id ] ) );
+		$this->assertInstanceOf( WP_Error::class, $throttled );
+		$this->assertSame( 'ppcert_test_email_throttled', $throttled->get_error_code() );
+		$this->assertSame( 429, $throttled->get_error_data()['status'] );
+		$this->assertCount( 5, $GLOBALS['ppcert_test_mail'], 'The sixth call never reached the mailer.' );
+	}
 }

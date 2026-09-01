@@ -420,6 +420,90 @@ class Test_Email_Service extends TestCase {
 	}
 
 	/**
+	 * send_test (2.0, Feature 2.0-003): production assembly with the
+	 * sample map - [Test] prefix, current-user recipient, pattern-driven
+	 * certificate.title, verification links at the page base, no
+	 * attachment plus the explanatory note, and the same From header the
+	 * real send uses (TR-002 shared-builder parity).
+	 *
+	 * @return void
+	 */
+	public function test_send_test_uses_samples_and_production_assembly() {
+		$GLOBALS['ppcert_test_current_user'] = 7;
+
+		// A display-name pattern proves FR-003's title chain runs.
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			40,
+			[ 'settings_json' => wp_json_encode( [ 'certificate_name' => '{{site.name}} Certificate' ] ) ]
+		);
+
+		$result = PressPrimer_Certificate_Email_Service::send_test(
+			PressPrimer_Certificate_Template::get( 40 )
+		);
+
+		$this->assertTrue( $result );
+		$this->assertCount( 1, $GLOBALS['ppcert_test_mail'] );
+
+		$mail = $GLOBALS['ppcert_test_mail'][0];
+
+		$this->assertSame( 'dana@example.test', $mail['to'], 'The recipient is always the current user.' );
+		$this->assertStringStartsWith( '[Test] ', $mail['subject'] );
+		$this->assertStringContainsString( ' Certificate', $mail['subject'], 'The {subject} token resolves the certificate_name pattern with samples.' );
+		$this->assertSame( [], $mail['attachments'], 'Tests never attach the PDF.' );
+		$this->assertStringContainsString( 'without the PDF attachment', $mail['body'], 'The no-attachment note is appended (FR-004).' );
+		$this->assertStringNotContainsString( 'ppcert_id=', $mail['body'], 'Credential-dependent links target the verification page base.' );
+		$this->assertStringContainsString( 'From: Sunrise Training Academy <admin@sunrise.example>', $mail['headers'][0], 'Shared assembly: the production From header.' );
+
+		// Shared-builder parity: the real send's From header matches.
+		PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [ 'recipient_id' => 7 ] );
+		$this->assertSame( $mail['headers'], $GLOBALS['ppcert_test_mail'][1]['headers'] );
+	}
+
+	/**
+	 * send_test honors the Decision 005 resolution chain: a mapped
+	 * active email-template row's subject is what the test sends -
+	 * exactly what a real send would use.
+	 *
+	 * @return void
+	 */
+	public function test_send_test_respects_resolution_chain() {
+		$GLOBALS['ppcert_test_current_user'] = 7;
+
+		$this->seed_mapped_email_template( [ 'subject' => 'Well earned, {recipient_name}' ] );
+
+		$this->assertTrue(
+			PressPrimer_Certificate_Email_Service::send_test( PressPrimer_Certificate_Template::get( 40 ) )
+		);
+
+		$this->assertSame(
+			'[Test] Well earned, Dana Whitfield',
+			$GLOBALS['ppcert_test_mail'][0]['subject']
+		);
+	}
+
+	/**
+	 * A mailer failure reports its reason honestly (FR-001, Edge Cases) -
+	 * never a pretended success.
+	 *
+	 * @return void
+	 */
+	public function test_send_test_reports_mailer_failure() {
+		$GLOBALS['ppcert_test_current_user'] = 7;
+		$GLOBALS['ppcert_test_mail_fail']    = 'SMTP connection refused';
+
+		$result = PressPrimer_Certificate_Email_Service::send_test(
+			PressPrimer_Certificate_Template::get( 40 )
+		);
+
+		unset( $GLOBALS['ppcert_test_mail_fail'] );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'ppcert_test_email_failed', $result->get_error_code() );
+		$this->assertStringContainsString( 'SMTP connection refused', $result->get_error_message() );
+	}
+
+	/**
 	 * template_tokens() extracts from the EFFECTIVE content: the mapped
 	 * row's tokens when the chain selects one, the settings default's
 	 * tokens otherwise.

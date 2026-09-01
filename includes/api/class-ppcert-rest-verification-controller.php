@@ -322,22 +322,15 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 	private static function within_rate_limit() {
 		$limit = defined( 'PPCERT_VERIFY_RATE_LIMIT' ) ? (int) PPCERT_VERIFY_RATE_LIMIT : self::DEFAULT_RATE_LIMIT;
 
-		if ( $limit < 1 ) {
-			return true; // Explicitly disabled.
-		}
-
 		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
 
-		$key   = 'ppcert_verify_' . wp_hash( $ip . wp_salt() );
-		$count = (int) get_transient( $key );
-
-		if ( $count >= $limit ) {
-			return false;
-		}
-
-		set_transient( $key, $count + 1, self::rate_window() );
-
-		return true;
+		// Same key, limit, and window as the 1.0 inline implementation;
+		// the counter itself moved to the shared utility in 2.0.
+		return PressPrimer_Certificate_Rate_Limiter::allow(
+			'ppcert_verify_' . wp_hash( $ip . wp_salt() ),
+			$limit,
+			self::rate_window()
+		);
 	}
 
 	/**
