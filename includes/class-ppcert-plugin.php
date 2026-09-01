@@ -177,6 +177,12 @@ class PressPrimer_Certificate_Plugin {
 			$user_profile->init();
 		}
 
+		// The Upgrade page (2.0, Feature 2.0-004).
+		if ( class_exists( 'PressPrimer_Certificate_Upgrade_Page' ) ) {
+			$upgrade_page = new PressPrimer_Certificate_Upgrade_Page();
+			$upgrade_page->init();
+		}
+
 		// The guided setup tour (Phase 5B item 2).
 		if ( class_exists( 'PressPrimer_Certificate_Onboarding' ) ) {
 			PressPrimer_Certificate_Onboarding::get_instance();

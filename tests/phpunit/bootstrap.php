@@ -1262,6 +1262,21 @@ if ( ! function_exists( 'ppcert_verification_page_url' ) ) {
 // Behavior-identical mirrors of the plugin bootstrap's public API
 // delegations (2.0, Feature 2.0-007 FR-001) - the bootstrap file itself
 // is not loaded in unit tests.
+if ( ! function_exists( 'ppcert_addon_manager' ) ) {
+	/**
+	 * Mirror: the addon manager singleton (null when the class is absent).
+	 *
+	 * @return PressPrimer_Certificate_Addon_Manager|null
+	 */
+	function ppcert_addon_manager() {
+		if ( ! class_exists( 'PressPrimer_Certificate_Addon_Manager' ) ) {
+			return null;
+		}
+
+		return PressPrimer_Certificate_Addon_Manager::get_instance();
+	}
+}
+
 if ( ! function_exists( 'ppcert_issue_certificate' ) ) {
 	/**
 	 * Mirror: issue a certificate.
@@ -1405,6 +1420,45 @@ if ( ! function_exists( 'esc_attr__' ) ) {
 	 */
 	function esc_attr__( $text, $domain = 'default' ) { // phpcs:ignore WordPress.WP.I18n
 		return esc_attr( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_html_e' ) ) {
+	/**
+	 * Stub: Echo an HTML-escaped translated string.
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Domain.
+	 */
+	function esc_html_e( $text, $domain = 'default' ) { // phpcs:ignore WordPress.WP.I18n
+		echo esc_html( $text ); // phpcs:ignore WordPress.Security.EscapeOutput
+	}
+}
+
+if ( ! function_exists( 'esc_attr_e' ) ) {
+	/**
+	 * Stub: Echo an attribute-escaped translated string.
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Domain.
+	 */
+	function esc_attr_e( $text, $domain = 'default' ) { // phpcs:ignore WordPress.WP.I18n
+		echo esc_attr( $text ); // phpcs:ignore WordPress.Security.EscapeOutput
+	}
+}
+
+if ( ! function_exists( 'sanitize_html_class' ) ) {
+	/**
+	 * Stub: Strip characters not valid in an HTML class name.
+	 *
+	 * @param string $classname Raw class.
+	 * @param string $fallback  Fallback when nothing survives.
+	 * @return string
+	 */
+	function sanitize_html_class( $classname, $fallback = '' ) {
+		$sanitized = preg_replace( '/[^A-Za-z0-9_-]/', '', (string) $classname );
+
+		return '' === $sanitized ? $fallback : $sanitized;
 	}
 }
 
@@ -1640,7 +1694,19 @@ if ( ! function_exists( 'add_query_arg' ) ) {
 	 * @param string|null $url   Base URL (current request when omitted).
 	 * @return string
 	 */
-	function add_query_arg( $key, $value, $url = null ) {
+	function add_query_arg( $key, $value = null, $url = null ) {
+		// Array form: add_query_arg( [ k => v, ... ], $url ).
+		if ( is_array( $key ) ) {
+			$url = null === $value ? 'https://test.example/wp-admin/user-edit.php?user_id=7' : (string) $value;
+
+			foreach ( $key as $arg => $arg_value ) {
+				$separator = false === strpos( $url, '?' ) ? '?' : '&';
+				$url      .= $separator . $arg . '=' . rawurlencode( (string) $arg_value );
+			}
+
+			return $url;
+		}
+
 		if ( null === $url ) {
 			$url = 'https://test.example/wp-admin/user-edit.php?user_id=7';
 		}
