@@ -1474,11 +1474,13 @@ class PressPrimer_Certificate_PDF_Renderer {
 				break;
 
 			case 'ellipse':
+				// Centers round to int explicitly - odd pixel sizes halve
+				// to floats, a PHP 8.1+ deprecation in the GD calls.
 				if ( $has_fill ) {
-					imagefilledellipse( $canvas, $x + ( $w / 2 ), $y + ( $h / 2 ), $w, $h, $fill_color );
+					imagefilledellipse( $canvas, (int) round( $x + ( $w / 2 ) ), (int) round( $y + ( $h / 2 ) ), (int) round( $w ), (int) round( $h ), $fill_color );
 				}
 				if ( $has_stroke ) {
-					imageellipse( $canvas, $x + ( $w / 2 ), $y + ( $h / 2 ), $w, $h, $stroke_color );
+					imageellipse( $canvas, (int) round( $x + ( $w / 2 ) ), (int) round( $y + ( $h / 2 ) ), (int) round( $w ), (int) round( $h ), $stroke_color );
 				}
 				break;
 

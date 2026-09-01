@@ -226,6 +226,56 @@ class Test_Template_Model extends TestCase {
 	}
 
 	/**
+	 * The Geometric starters (2.0, Feature 2.0-001) expose a default
+	 * certificate_name pattern from _meta; starters without one expose
+	 * an empty string; create() carries sanitized settings into
+	 * settings_json.
+	 *
+	 * @return void
+	 */
+	public function test_starter_certificate_name_and_create_settings() {
+		$starters = PressPrimer_Certificate_Template::get_starters();
+
+		$this->assertSame(
+			'{{source.course_title}} Certificate',
+			$starters['starter-geometric-landscape']['certificate_name']
+		);
+		$this->assertSame(
+			'{{source.course_title}} Certificate',
+			$starters['starter-geometric-portrait-letter']['certificate_name']
+		);
+		$this->assertSame( '', $starters['starter-modern-landscape']['certificate_name'], 'The 1.0 set ships no pattern.' );
+
+		// create() with settings: sanitized and stored.
+		$id = PressPrimer_Certificate_Template::create(
+			[
+				'title'     => 'Geometric Copy',
+				'layout'    => $starters['starter-geometric-landscape']['layout'],
+				'author_id' => 1,
+				'settings'  => [
+					'certificate_name' => '{{source.course_title}} Certificate',
+					'bogus_key'        => 'dropped',
+				],
+			]
+		);
+
+		$this->assertIsInt( $id );
+
+		$row = PressPrimer_Certificate_Template::get( $id );
+		$this->assertSame( [ 'certificate_name' => '{{source.course_title}} Certificate' ], $row->settings );
+
+		// Empty settings store NULL, exactly as before.
+		$plain = PressPrimer_Certificate_Template::create(
+			[
+				'title'     => 'Plain',
+				'layout'    => $starters['starter-geometric-landscape']['layout'],
+				'author_id' => 1,
+			]
+		);
+		$this->assertSame( [], PressPrimer_Certificate_Template::get( $plain )->settings );
+	}
+
+	/**
 	 * Every bundled starter layout must be validator-clean.
 	 *
 	 * The gallery clones these documents straight into new templates, so a

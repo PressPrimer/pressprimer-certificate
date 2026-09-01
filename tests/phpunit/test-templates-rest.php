@@ -297,6 +297,40 @@ class Test_Templates_REST extends TestCase {
 	}
 
 	/**
+	 * Creating from a Geometric starter clones its default
+	 * certificate_name into the new template's settings (2.0, Feature
+	 * 2.0-001 FR-002); 1.0 starters keep storing no settings.
+	 *
+	 * @return void
+	 */
+	public function test_create_from_starter_carries_certificate_name() {
+		$response = $this->controller->create_template(
+			new WP_REST_Request( [ 'starter' => 'starter-geometric-landscape' ] )
+		);
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+
+		$rows = $this->wpdb->rows( 'wp_ppcert_templates' );
+		$row  = end( $rows );
+
+		$this->assertSame(
+			[ 'certificate_name' => '{{source.course_title}} Certificate' ],
+			json_decode( (string) $row['settings_json'], true )
+		);
+
+		// A 1.0 starter (no pattern) stores no settings.
+		$this->controller->create_template(
+			new WP_REST_Request( [ 'starter' => 'starter-modern-landscape' ] )
+		);
+
+		$rows = $this->wpdb->rows( 'wp_ppcert_templates' );
+		$row  = end( $rows );
+
+		$this->assertArrayNotHasKey( 'settings_json', array_filter( $row, static fn( $v ) => null !== $v ), 'No pattern, no settings row.' );
+	}
+
+	/**
 	 * POST /templates/{id}/test-email (2.0, Feature 2.0-003 TR-001/TR-003):
 	 * unknown templates 404, successes report the sent-to address, and
 	 * the per-user throttle turns the sixth call inside the window into

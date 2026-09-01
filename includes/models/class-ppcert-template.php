@@ -176,6 +176,9 @@ class PressPrimer_Certificate_Template {
 	 *     @type array  $layout    Validator-clean layout document.
 	 *     @type int    $author_id Author user id.
 	 *     @type string $status    'draft' (default) or 'published'.
+	 *     @type array  $settings  Optional settings (sanitized field by
+	 *                             field; since 2.0 - starter clones carry
+	 *                             a default certificate_name).
 	 * }
 	 * @return int|WP_Error New template row id.
 	 */
@@ -195,6 +198,10 @@ class PressPrimer_Certificate_Template {
 			? $args['status']
 			: 'draft';
 
+		$settings = isset( $args['settings'] ) && is_array( $args['settings'] )
+			? self::sanitize_settings( $args['settings'] )
+			: [];
+
 		$now = current_time( 'mysql', true );
 
 		$inserted = $wpdb->insert(
@@ -208,11 +215,12 @@ class PressPrimer_Certificate_Template {
 				'orientation'           => isset( $layout['page']['orientation'] ) ? (string) $layout['page']['orientation'] : 'landscape',
 				'layout_schema_version' => isset( $layout['layout_schema_version'] ) ? (int) $layout['layout_schema_version'] : 1,
 				'layout_json'           => wp_json_encode( $layout ),
+				'settings_json'         => empty( $settings ) ? null : wp_json_encode( $settings ),
 				'is_starter'            => 0,
 				'created_at'            => $now,
 				'updated_at'            => $now,
 			],
-			[ '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%d', '%s', '%s' ]
+			[ '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s' ]
 		);
 
 		if ( ! $inserted ) {
@@ -412,15 +420,22 @@ class PressPrimer_Certificate_Template {
 			$slots = isset( $decoded['_meta']['image_slots'] ) && is_array( $decoded['_meta']['image_slots'] )
 				? $decoded['_meta']['image_slots']
 				: [];
+			// Default display-name pattern (2.0, Feature 2.0-001 FR-002):
+			// cloned into the new template's settings so the 1.1 naming
+			// feature is on display from the first award.
+			$name = isset( $decoded['_meta']['certificate_name'] )
+				? sanitize_text_field( (string) $decoded['_meta']['certificate_name'] )
+				: '';
 
 			unset( $decoded['_meta'] );
 
 			$starters[ $slug ] = [
-				'slug'        => $slug,
-				'label'       => $label,
-				'layout'      => $decoded,
-				'color_roles' => $roles,
-				'image_slots' => $slots,
+				'slug'             => $slug,
+				'label'            => $label,
+				'layout'           => $decoded,
+				'color_roles'      => $roles,
+				'image_slots'      => $slots,
+				'certificate_name' => $name,
 			];
 		}
 

@@ -52,6 +52,11 @@ const STARTERS = [
 	'starter-modern-portrait-letter',
 	'starter-playful-landscape-letter',
 	'starter-playful-portrait-letter',
+	// 2.0 (Feature 2.0-001): the Geometric family, all four variants.
+	'starter-geometric-landscape',
+	'starter-geometric-portrait',
+	'starter-geometric-landscape-letter',
+	'starter-geometric-portrait-letter',
 ];
 
 test.use( { viewport: { width: 1100, height: 800 }, deviceScaleFactor: 2 } );
@@ -275,8 +280,27 @@ async function runParityCase(
 		debugPng
 	);
 
-	const boxes = extractBoxes( debugPng, canvasLayout.elements.length );
-	const failures = boxDriftFailures( boxes, canvasLayout.elements, SCALE );
+	// The raster clips elements at the page edge, so bleed elements
+	// (schema-supported: positions may run to -page) compare against
+	// their page-clipped boxes, not the declared ones (2.0, the
+	// Geometric starters are the first bleeding fixtures).
+	const pageW = canvasLayout.page.width;
+	const pageH = canvasLayout.page.height;
+	const clipped = canvasLayout.elements.map( ( element: any ) => {
+		const x = Math.max( 0, element.x );
+		const y = Math.max( 0, element.y );
+
+		return {
+			...element,
+			x,
+			y,
+			w: Math.min( element.x + element.w, pageW ) - x,
+			h: Math.min( element.y + element.h, pageH ) - y,
+		};
+	} );
+
+	const boxes = extractBoxes( debugPng, clipped.length );
+	const failures = boxDriftFailures( boxes, clipped, SCALE );
 
 	expect(
 		failures,

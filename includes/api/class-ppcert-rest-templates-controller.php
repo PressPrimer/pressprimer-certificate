@@ -277,12 +277,21 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			return $clean;
 		}
 
+		// A starter's default display-name pattern rides into the clone's
+		// settings (2.0, Feature 2.0-001 FR-002).
+		$settings = [];
+
+		if ( '' !== $starter_slug && '' !== (string) $starters[ $starter_slug ]['certificate_name'] ) {
+			$settings['certificate_name'] = (string) $starters[ $starter_slug ]['certificate_name'];
+		}
+
 		$template_id = PressPrimer_Certificate_Template::create(
 			[
 				'title'     => $title,
 				'layout'    => $clean,
 				'author_id' => get_current_user_id(),
 				'status'    => 'draft',
+				'settings'  => $settings,
 			]
 		);
 
