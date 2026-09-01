@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
 Tested up to: 7.1
-Stable tag: 1.1.0
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -237,10 +237,16 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 == Changelog ==
 
 = 2.0.0 =
+* Added: Search and filters on the Certificates screen. Find certificates by recipient, certificate name, or exact credential ID, and filter by status, template, and issue date range.
+* Added: Send yourself a test award email from the template editor, with sample values filled in, before the template goes live.
+* Added: Four Geometric starter templates - a modern design family drawn from your brand colors, in portrait and landscape for both A4 and Letter sizes.
+* Added: Multi-page certificate rendering. Certificates designed with multiple pages (created with the Educator addon) download, email, and verify as complete multi-page PDFs.
+* Added: An Upgrade page under the Certificates menu comparing the free plugin with the new Educator, School, and Enterprise tiers.
 * Added: Public developer API. New `ppcert_*()` functions let other plugins issue certificates, render PDFs, look up a learner's certificate, and build view and download links through a supported, stable surface.
 * Added: Value-only award triggers. Integrations can register triggers with no source object - points thresholds, membership tenure, credits earned - and they configure in the Award tab like any other trigger.
 * Added: Third-party certificate integrations now appear with their proper names everywhere the built-in integrations do, including while their plugin is deactivated.
 * Added: A duplicate-suppression scoping filter for integrations whose completion events carry per-occurrence references.
+* Improved: Designer sidebar labels and help icons render at higher contrast.
 * Fixed: Custom merge-field groups registered with a sub-field named "label", "key", or "resolver" no longer disappear from the designer palette.
 
 = 1.1.0 =
@@ -256,6 +262,9 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Initial release: certificate designer, credential IDs, QR verification, automatic issuance from PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, and LearnPress, email delivery, and a public verification page.
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+Certificate search and filters, test award emails, Geometric starter templates, multi-page rendering, a public developer API, and the new Educator, School, and Enterprise premium tiers. Existing certificates and templates are unchanged.
 
 = 1.1.0 =
 Merge fields inside text, "Any" award triggers, certificate names from merge fields, clickable PDF credentials, designer alignment tools, and email merge fields. Existing certificates and templates are unchanged.

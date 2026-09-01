@@ -3,7 +3,7 @@
  * Plugin Name:       PressPrimer Certificate
  * Plugin URI:        https://pressprimer.com/certificate
  * Description:       Design, issue, and verify certificates on your own site. Build them in a drag-and-drop designer, award them automatically through integrations with popular LMS plugins, and let anyone scan a QR code to confirm a certificate is real.
- * Version:           1.1.0
+ * Version:           2.0.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            PressPrimer
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'PPCERT_VERSION', '1.1.0' );
+define( 'PPCERT_VERSION', '2.0.0' );
 define( 'PPCERT_PLUGIN_FILE', __FILE__ );
 define( 'PPCERT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PPCERT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
