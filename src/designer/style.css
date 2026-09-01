@@ -360,6 +360,16 @@
 	color: rgba(0, 0, 0, 0.65);
 }
 
+/* Secondary text in the right-sidebar panels (the Award tab and the
+   property sections share this wrapper) reads at WCAG AA contrast:
+   antd's 45% secondary tone is 3.4:1 on white, under the 4.5:1
+   minimum for body-size text (Ryan's 2.2 review, 2026-09-01). Same
+   remedy as the merge-menu fix above; 65% black is 7.0:1. */
+.ppcert-designer__prop-section .ant-typography-secondary,
+.ppcert-designer__prop-section .ant-empty-description {
+	color: rgba(0, 0, 0, 0.65);
+}
+
 /* The pinned "Any" option leads the trigger source list, separated
    from the searchable objects below it (1.1). */
 .ppcert-designer__any-option {
@@ -579,9 +589,12 @@
 	flex: none;
 }
 
+/* The help icon's #9ca3af was 2.5:1 on white - below the 3:1 non-text
+   minimum for meaningful icons (WCAG 1.4.11). #6b7280 (4.8:1) matches
+   the panel's label grey. */
 .ppcert-designer__trigger-help {
 	margin-left: 4px;
-	color: #9ca3af;
+	color: #6b7280;
 	cursor: help;
 }
 
