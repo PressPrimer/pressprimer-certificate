@@ -11,7 +11,7 @@
  * 1.0 registers two blocks: pressprimer-certificate/verify
  * ([ppcert_verify]) and pressprimer-certificate/my-certificates
  * ([ppcert_my_certificates] - restored to free 1.0 on 2026-07-26;
- * Educator 2.0's "wallet" means wallet-SIZED printable variants).
+ * the Educator "wallet" means wallet-SIZED printable variants).
  *
  * @package PressPrimer_Certificate
  * @subpackage Blocks

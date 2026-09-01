@@ -3,8 +3,8 @@
  * Designer element types registry
  *
  * The seven 1.0 element types (Feature 001 FR-003), extensible through
- * the ppcert_designer_element_types filter so Educator 2.0 can add
- * types without core changes.
+ * the ppcert_designer_element_types filter so addons can add types
+ * without core changes.
  *
  * @package PressPrimer_Certificate
  * @subpackage Services
@@ -170,7 +170,7 @@ class PressPrimer_Certificate_Element_Types {
 		/**
 		 * Filters the designer element type registry.
 		 *
-		 * Educator 2.0 adds custom element types here. Added types need a
+		 * Addons add custom element types here. Added types need a
 		 * matching canvas component and properties section registered
 		 * client-side, and a PDF render callback (Feature 007).
 		 * See docs/architecture/HOOKS.md.

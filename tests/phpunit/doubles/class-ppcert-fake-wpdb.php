@@ -1044,6 +1044,19 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Trigger::find_active, null-ref form (2.0 value-only types):
+		// NULL rows or the 'any' sentinel.
+		if ( false !== strpos( $query, 'WHERE trigger_type = %s AND ( source_ref IS NULL OR source_ref = %s ) AND is_active = 1' ) ) {
+			return $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return $row['trigger_type'] === $args[1]
+						&& ( ! isset( $row['source_ref'] ) || null === $row['source_ref'] || $row['source_ref'] === $args[2] )
+						&& 1 === (int) $row['is_active'];
+				}
+			);
+		}
+
 		// Certificates admin list (fixed-shape query, 2.0 shape):
 		// sentinel-driven filters, pill-semantics status, exact
 		// credential, title LIKE, and UTC date bounds. args: [table,

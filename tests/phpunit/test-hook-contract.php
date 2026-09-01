@@ -283,10 +283,11 @@ class Test_Hook_Contract extends TestCase {
 
 		$entry = $types['double_lms'];
 		$this->assertSame(
-			[ 'id', 'label', 'integration', 'short_label', 'source_label', 'source_picker', 'source_levels', 'level_picker', 'scoped_picker', 'conditions_schema', 'source_post_types', 'scope_condition_keys', 'any_label' ],
+			[ 'id', 'label', 'integration', 'short_label', 'source_label', 'source_picker', 'has_sources', 'source_levels', 'level_picker', 'scoped_picker', 'conditions_schema', 'source_post_types', 'scope_condition_keys', 'any_label' ],
 			array_keys( $entry ),
-			'Trigger type entry keys per HOOKS.md (source_post_types: post-meta picker, Prompt 3.4; source_label: Award card noun; integration/short_label: two-step trigger picker; source_levels/level_picker/scoped_picker: hierarchical source cascade - Award tab reviews 2026-07-22/23; scope_condition_keys + any_label: any-source triggers, Feature 1.1-002)'
+			'Trigger type entry keys per HOOKS.md (source_post_types: post-meta picker, Prompt 3.4; source_label: Award card noun; integration/short_label: two-step trigger picker; source_levels/level_picker/scoped_picker: hierarchical source cascade - Award tab reviews 2026-07-22/23; scope_condition_keys + any_label: any-source triggers, Feature 1.1-002; has_sources: value-only trigger types, Feature 2.0-007)'
 		);
+		$this->assertTrue( $entry['has_sources'], 'Source-picker adapters default to has_sources true' );
 	}
 
 	/**

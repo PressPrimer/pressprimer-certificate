@@ -86,6 +86,12 @@ class PressPrimer_Certificate_Trigger_Registry {
 				// the Award tab source line and the palette source group.
 				'source_label'         => isset( $entry['source_label'] ) && is_string( $entry['source_label'] ) ? $entry['source_label'] : '',
 				'source_picker'        => isset( $entry['source_picker'] ) && is_callable( $entry['source_picker'] ) ? $entry['source_picker'] : null,
+				// Value-only types declare has_sources => false (2.0,
+				// Feature 2.0-007 FR-002); the default follows picker
+				// presence so filter-registered types opt in either way.
+				'has_sources'          => isset( $entry['has_sources'] )
+					? (bool) $entry['has_sources']
+					: ( isset( $entry['source_picker'] ) && is_callable( $entry['source_picker'] ) ),
 				'source_levels'        => $source_levels,
 				'level_picker'         => isset( $entry['level_picker'] ) && is_callable( $entry['level_picker'] ) ? $entry['level_picker'] : null,
 				'scoped_picker'        => isset( $entry['scoped_picker'] ) && is_callable( $entry['scoped_picker'] ) ? $entry['scoped_picker'] : null,

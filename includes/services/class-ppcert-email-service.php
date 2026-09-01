@@ -162,43 +162,15 @@ class PressPrimer_Certificate_Email_Service {
 	 * @return string Attachment temp path, or '' for link-only.
 	 */
 	private static function render_attachment( $certificate, $template ) {
-		if ( ! is_array( $certificate->layout_snapshot ) ) {
-			return '';
-		}
+		// Delegates to the public render step (2.0, Feature 2.0-007
+		// FR-001) - one implementation for the email attachment and for
+		// integrations attaching the PDF to their own emails. $template
+		// is no longer consulted: the renderer loads it for the title.
+		unset( $template );
 
-		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$path = PressPrimer_Certificate_PDF_Renderer::render_certificate( (int) $certificate->id, 'email' );
 
-		$path = $renderer->render_pdf(
-			$certificate->layout_snapshot,
-			is_array( $certificate->merge_data ) ? $certificate->merge_data : [],
-			[
-				'context'        => 'email',
-				'certificate_id' => (int) $certificate->id,
-				'credential_id'  => (string) $certificate->credential_id,
-				'title'          => PressPrimer_Certificate_Certificate::display_title(
-					$certificate,
-					$template ? (string) $template->title : ''
-				),
-				'recipient_name' => isset( $certificate->merge_data['recipient.full_name'] ) ? (string) $certificate->merge_data['recipient.full_name'] : '',
-			]
-		);
-
-		if ( is_wp_error( $path ) ) {
-			return '';
-		}
-
-		// A recipient-friendly filename: mail clients type the attachment
-		// by extension (the raw wp_tempnam name is a .tmp).
-		$friendly = dirname( $path ) . '/certificate-'
-			. PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $certificate->credential_id )
-			. '.pdf';
-
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Temp-to-temp rename in the same directory; WP_Filesystem is for user-visible storage.
-		if ( rename( $path, $friendly ) ) {
-			return $friendly;
-		}
-
-		return $path;
+		return is_wp_error( $path ) ? '' : $path;
 	}
 
 	/**

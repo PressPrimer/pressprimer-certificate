@@ -313,6 +313,25 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Whether this type has selectable sources
+	 *
+	 * Return false for VALUE-ONLY types whose triggers are defined by
+	 * conditions alone ("credits earned >= N", "member for 5 years"):
+	 * the Award tab skips the source step, the trigger row stores a
+	 * NULL source_ref, and listeners find their triggers with
+	 * Trigger::find_active( $type, null ) (2.0, Feature 2.0-007
+	 * FR-002). Concrete and overridable - NOT part of the locked
+	 * contract.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function has_sources(): bool {
+		return true;
+	}
+
+	/**
 	 * Label for the "Any" source option ("Any quiz", "Any lesson in
 	 * this course")
 	 *
@@ -407,7 +426,9 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 			'integration'       => $this->get_integration_label(),
 			'short_label'       => $this->get_short_label(),
 			'source_label'      => $this->get_source_group_label(),
-			'source_picker'     => [ $this, 'get_sources' ],
+			// Value-only types (2.0): no picker, no source step.
+			'source_picker'     => $this->has_sources() ? [ $this, 'get_sources' ] : null,
+			'has_sources'       => $this->has_sources(),
 			'source_levels'     => $this->get_source_levels(),
 			'level_picker'      => [ $this, 'get_level_options' ],
 			'scoped_picker'     => [ $this, 'get_sources_for_parents' ],

@@ -155,8 +155,8 @@ class PressPrimer_Certificate_Privacy {
 			];
 		}
 
-		// Credit rows (dormant 3.0 foundation) export on the first page -
-		// the ledger is small until credits ship a UI.
+		// Credit rows (dormant foundation table) export on the first page -
+		// the ledger is small while no UI writes to it.
 		if ( 1 === $page ) {
 			foreach ( self::user_credits( (int) $user->ID ) as $credit ) {
 				$items[] = [

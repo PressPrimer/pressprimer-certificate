@@ -154,6 +154,147 @@ function ppcert_verification_page_url() {
 	return $base;
 }
 
+/*
+ * --------------------------------------------------------------------
+ * The public integration API (2.0, Feature 2.0-007 FR-001).
+ *
+ * These functions - plus the registration filters documented in the
+ * public hooks reference - are the SUPPORTED surface for third-party
+ * plugins. Class internals may change at any time; these signatures
+ * follow the deprecation policy (a deprecation notice one version
+ * before any removal).
+ * --------------------------------------------------------------------
+ */
+
+/**
+ * Issue a certificate
+ *
+ * Wraps the issuance service - the plugin's ONE writer of certificate
+ * rows. Duplicate suppression, validation filters, snapshotting, the
+ * issued event, and email dispatch all apply exactly as for bundled
+ * triggers. `issued_at` (UTC `Y-m-d H:i:s`) is supported for any caller
+ * recording a completion moment - manual backdating and integrations
+ * alike.
+ *
+ * @since 2.0.0
+ *
+ * @param array $args {
+ *     Issuance arguments.
+ *
+ *     @type int    $template_id  Published template row id.
+ *     @type int    $recipient_id Recipient user id.
+ *     @type string $source_type  'manual' or an integration id. Default 'manual'.
+ *     @type string $source_ref   Source object reference; null for manual.
+ *     @type int    $issued_by    Acting user id; system events pass 0.
+ *     @type array  $context      Integration-supplied resolution context.
+ *     @type bool   $force        Bypass duplicate suppression. Default false.
+ *     @type string $issued_at    UTC MySQL datetime override. Default now.
+ *     @type string $expires_at   UTC MySQL datetime override. Default: the
+ *                                template's validity settings, or never.
+ * }
+ * @return int|WP_Error Certificate row id (the existing id when
+ *                      duplicate-suppressed), or WP_Error on abort.
+ */
+function ppcert_issue_certificate( array $args ) {
+	return PressPrimer_Certificate_Issuance_Service::issue( $args );
+}
+
+/**
+ * Render an issued certificate to a PDF temp file
+ *
+ * @since 2.0.0
+ *
+ * @param int    $certificate_id Certificate row id.
+ * @param string $context        'download' | 'email' | 'preview'. Default 'download'.
+ * @return string|WP_Error Absolute temp path (the caller owns the file:
+ *                         attach or stream, then wp_delete_file()).
+ */
+function ppcert_render_certificate_pdf( $certificate_id, $context = 'download' ) {
+	return PressPrimer_Certificate_PDF_Renderer::render_certificate( $certificate_id, $context );
+}
+
+/**
+ * Public share URL for a certificate's view page
+ *
+ * @since 2.0.0
+ *
+ * @param string $credential_id Credential ID (any accepted input form).
+ * @return string URL, or '' for an invalid credential.
+ */
+function ppcert_certificate_view_url( $credential_id ) {
+	return PressPrimer_Certificate_View_Page::view_url( $credential_id );
+}
+
+/**
+ * Public PDF download URL for a certificate
+ *
+ * @since 2.0.0
+ *
+ * @param string $credential_id Credential ID (any accepted input form).
+ * @return string URL, or '' for an invalid credential.
+ */
+function ppcert_certificate_pdf_url( $credential_id ) {
+	return PressPrimer_Certificate_View_Page::pdf_url( $credential_id );
+}
+
+/**
+ * Template summaries for integration pickers
+ *
+ * @since 2.0.0
+ *
+ * @param array $args {
+ *     Optional filters.
+ *
+ *     @type string $status Restrict to one status ('published' for
+ *                          award-ready templates). Default '' (all
+ *                          non-deleted templates).
+ * }
+ * @return array[] Summaries: [ 'id' => int, 'title' => string,
+ *                 'status' => string ].
+ */
+function ppcert_get_templates( array $args = [] ) {
+	$status    = isset( $args['status'] ) ? sanitize_key( (string) $args['status'] ) : '';
+	$summaries = [];
+
+	foreach ( PressPrimer_Certificate_Template::get_all() as $template ) {
+		if ( '' !== $status && (string) $template->status !== $status ) {
+			continue;
+		}
+
+		$summaries[] = [
+			'id'     => (int) $template->id,
+			'title'  => (string) $template->title,
+			'status' => (string) $template->status,
+		];
+	}
+
+	return $summaries;
+}
+
+/**
+ * Find a recipient's existing certificate for a source
+ *
+ * The duplicate-suppression lookup, exposed so integrations can link an
+ * earned certificate to its credential page: the newest non-revoked row
+ * matching (recipient, template, source_type, source_ref).
+ *
+ * @since 2.0.0
+ *
+ * @param int         $recipient_id Recipient user id.
+ * @param int         $template_id  Template row id.
+ * @param string      $source_type  Source type id.
+ * @param string|null $source_ref   Source reference (null when none).
+ * @return object|null Hydrated certificate row, or null.
+ */
+function ppcert_find_certificate( $recipient_id, $template_id, $source_type, $source_ref = null ) {
+	return PressPrimer_Certificate_Certificate::find_duplicate(
+		absint( $recipient_id ),
+		absint( $template_id ),
+		sanitize_key( (string) $source_type ),
+		null === $source_ref || '' === $source_ref ? null : (string) $source_ref
+	);
+}
+
 /**
  * Get the addon manager instance
  *

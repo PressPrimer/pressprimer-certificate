@@ -73,10 +73,11 @@ class PressPrimer_Certificate_Issuance_Service {
 	 *     @type array  $context      Adapter-supplied resolution context.
 	 *     @type bool   $force        Bypass duplicate suppression (manual
 	 *                                "Issue anyway" - 003 Edge Cases). Default false.
-	 *     @type string $issued_at    UTC MySQL datetime override for manual
-	 *                                backdating (Phase 5B item 6). Default now.
-	 *     @type string $expires_at   UTC MySQL datetime override for manual
-	 *                                issuance. Default: the template's
+	 *     @type string $issued_at    UTC MySQL datetime override for backdated
+	 *                                issuance - any caller may pass it (manual
+	 *                                admin issue, past-completion imports,
+	 *                                third-party integrations). Default now.
+	 *     @type string $expires_at   UTC MySQL datetime override. Default: the template's
 	 *                                validity_months setting counted from
 	 *                                issued_at, or never.
 	 * }
@@ -139,7 +140,18 @@ class PressPrimer_Certificate_Issuance_Service {
 		// flag or by the firing trigger's reissue condition (compliance
 		// and recertification sites issue a fresh credential on every
 		// qualifying completion, 2026-07-24).
-		if ( ! $force && self::trigger_allows_reissue( $template_id, $source_type, $source_ref ) ) {
+		//
+		// The filtered ref scopes ONLY the duplicate window (2.0, Feature
+		// 2.0-007 FR-005): callers whose refs are per-occurrence (e.g. an
+		// automation run id) can widen suppression to a stable key. The
+		// certificate row still records the REAL $source_ref.
+		/** This filter is documented in docs/architecture/HOOKS.md */
+		$duplicate_ref = apply_filters( 'ppcert_issue_duplicate_ref', $source_ref, $context );
+		$duplicate_ref = null === $duplicate_ref || '' === $duplicate_ref
+			? null
+			: substr( sanitize_text_field( (string) $duplicate_ref ), 0, 191 );
+
+		if ( ! $force && self::trigger_allows_reissue( $template_id, $source_type, $duplicate_ref ) ) {
 			$force = true;
 		}
 
@@ -148,7 +160,7 @@ class PressPrimer_Certificate_Issuance_Service {
 				$recipient_id,
 				$template_id,
 				$source_type,
-				$source_ref
+				$duplicate_ref
 			);
 
 			if ( $existing ) {
@@ -178,9 +190,10 @@ class PressPrimer_Certificate_Issuance_Service {
 		/** This action is documented in docs/architecture/HOOKS.md */
 		do_action( 'ppcert_before_issue', $context );
 
-		// Steps 5-7 inside the pre-insert error boundary. Manual
-		// issuance may backdate via the validated issued_at override;
-		// everything else stamps now (UTC everywhere).
+		// Steps 5-7 inside the pre-insert error boundary. Any caller may
+		// backdate via the validated issued_at override (admin manual
+		// issue, past-completion imports, integrations); without one the
+		// row stamps now (UTC everywhere).
 		$issued_at = isset( $args['issued_at'] )
 			&& preg_match( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', (string) $args['issued_at'] )
 			? (string) $args['issued_at']

@@ -169,6 +169,71 @@ class PressPrimer_Certificate_PDF_Renderer {
 		return $this->warnings;
 	}
 
+	/**
+	 * Render an ISSUED certificate to a PDF temp file (2.0, Feature
+	 * 2.0-007 FR-001)
+	 *
+	 * The load-row-render-snapshot step integrations need to attach the
+	 * PDF to their own emails: loads the certificate, renders its
+	 * immutable snapshot with its merge data, and returns a temp file
+	 * with a recipient-friendly name (certificate-XXXX-XXXX-XXXX.pdf).
+	 * The email service's attachment path delegates here. The caller
+	 * owns the file: attach or stream it, then wp_delete_file().
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int    $certificate_id Certificate row id.
+	 * @param string $context        'download' | 'email' | 'preview'.
+	 * @return string|WP_Error Absolute temp path, or WP_Error.
+	 */
+	public static function render_certificate( $certificate_id, $context = 'download' ) {
+		$certificate = PressPrimer_Certificate_Certificate::get( absint( $certificate_id ) );
+
+		if ( ! $certificate || ! is_array( $certificate->layout_snapshot ) ) {
+			return new WP_Error(
+				'ppcert_invalid_certificate',
+				__( 'Certificate not found.', 'pressprimer-certificate' )
+			);
+		}
+
+		$template = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
+		$merge    = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
+
+		$renderer = new self();
+
+		$path = $renderer->render_pdf(
+			$certificate->layout_snapshot,
+			$merge,
+			[
+				'context'        => in_array( $context, [ 'download', 'email', 'preview' ], true ) ? $context : 'download',
+				'certificate_id' => (int) $certificate->id,
+				'credential_id'  => (string) $certificate->credential_id,
+				'title'          => PressPrimer_Certificate_Certificate::display_title(
+					$certificate,
+					$template ? (string) $template->title : ''
+				),
+				'recipient_name' => isset( $merge['recipient.full_name'] ) ? (string) $merge['recipient.full_name'] : '',
+			]
+		);
+
+		if ( is_wp_error( $path ) ) {
+			return $path;
+		}
+
+		// A recipient-friendly filename: mail clients and download
+		// managers type the file by extension (wp_tempnam yields .tmp).
+		$friendly = dirname( $path ) . '/certificate-'
+			. PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $certificate->credential_id )
+			. '.pdf';
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Temp-to-temp rename in the same directory; WP_Filesystem is for user-visible storage.
+		if ( rename( $path, $friendly ) ) {
+			return $friendly;
+		}
+
+		return $path;
+	}
+
 	/*
 	 * ------------------------------------------------------------------
 	 * Document setup.

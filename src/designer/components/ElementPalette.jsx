@@ -2,7 +2,7 @@
  * Element palette (Feature 001 FR-003, Feature 002 FR-004)
  *
  * Entries come from the ppcert_designer_element_types registry (boot
- * data) so Educator 2.0 types appear without core changes. Clicking an
+ * data) so addon types appear without core changes. Clicking an
  * entry adds an element with the registry's validator-clean defaults,
  * centered with a small cascade, and selects it.
  *

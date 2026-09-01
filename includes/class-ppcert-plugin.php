@@ -188,7 +188,7 @@ class PressPrimer_Certificate_Plugin {
 	 *
 	 * Loads public-facing functionality: the certificate view page and
 	 * the public verification page. (The recipient wallet is an
-	 * Educator 2.0 paid feature - scope decision 2026-07-23.)
+	 * Educator paid feature - scope decision 2026-07-23.)
 	 *
 	 * @since 1.0.0
 	 */
@@ -255,7 +255,7 @@ class PressPrimer_Certificate_Plugin {
 	 * @return string[] Class names.
 	 */
 	public static function get_adapter_classes() {
-		return [
+		$bundled = [
 			'PressPrimer_Certificate_LearnDash_Adapter',
 			'PressPrimer_Certificate_LearnDash_Lesson_Adapter',
 			'PressPrimer_Certificate_LearnDash_Quiz_Adapter',
@@ -269,6 +269,22 @@ class PressPrimer_Certificate_Plugin {
 			'PressPrimer_Certificate_TutorLMS_Adapter',
 			'PressPrimer_Certificate_TutorLMS_Quiz_Adapter',
 		];
+
+		/** This filter is documented in docs/architecture/HOOKS.md */
+		$classes = apply_filters( 'ppcert_adapter_classes', $bundled );
+
+		// Every consumer instantiates these for LABELS even when the
+		// source plugin is inactive (2.0, Feature 2.0-007 FR-004), so
+		// only real adapter subclasses pass, and only ones that exist.
+		return array_values(
+			array_filter(
+				array_unique( array_filter( (array) $classes, 'is_string' ) ),
+				static function ( $adapter_class ) {
+					return class_exists( $adapter_class )
+						&& is_subclass_of( $adapter_class, 'PressPrimer_Certificate_LMS_Adapter' );
+				}
+			)
+		);
 	}
 
 	/**
@@ -364,7 +380,7 @@ class PressPrimer_Certificate_Plugin {
 	 * Initialize Gutenberg blocks
 	 *
 	 * Registers block types for the block editor. (The my-certificates
-	 * wallet block moved to Educator 2.0 with the wallet - scope
+	 * wallet block moved to the Educator addon with the wallet - scope
 	 * decision 2026-07-23.)
 	 *
 	 * @since 1.0.0

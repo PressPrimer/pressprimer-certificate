@@ -154,7 +154,7 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 				'integration'       => $type['integration'],
 				'short_label'       => $type['short_label'],
 				'source_label'      => $type['source_label'],
-				'has_sources'       => null !== $type['source_picker'],
+				'has_sources'       => ! empty( $type['has_sources'] ),
 				'source_levels'     => $type['source_levels'],
 				'source_post_types' => $type['source_post_types'],
 				'any_label'         => $type['any_label'],
@@ -297,9 +297,17 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 			}
 
 			$type_id    = sanitize_key( (string) $trigger['trigger_type'] );
-			$registered = null !== PressPrimer_Certificate_Trigger_Registry::get_type( $type_id );
+			$type       = PressPrimer_Certificate_Trigger_Registry::get_type( $type_id );
+			$registered = null !== $type;
 			$conditions = isset( $trigger['conditions'] ) && is_array( $trigger['conditions'] ) ? $trigger['conditions'] : [];
 			$source_ref = isset( $trigger['source_ref'] ) ? (string) $trigger['source_ref'] : null;
+
+			// Value-only types (2.0, Feature 2.0-007 FR-002) store no
+			// source, whatever was posted - never a ref, never the 'any'
+			// sentinel.
+			if ( $registered && empty( $type['has_sources'] ) ) {
+				$source_ref = null;
+			}
 
 			// Registered types: the schema walk is authoritative.
 			// Unregistered (inert) types: preserve stored shape - the

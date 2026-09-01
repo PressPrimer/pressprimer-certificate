@@ -1259,6 +1259,105 @@ if ( ! function_exists( 'ppcert_verification_page_url' ) ) {
 	}
 }
 
+// Behavior-identical mirrors of the plugin bootstrap's public API
+// delegations (2.0, Feature 2.0-007 FR-001) - the bootstrap file itself
+// is not loaded in unit tests.
+if ( ! function_exists( 'ppcert_issue_certificate' ) ) {
+	/**
+	 * Mirror: issue a certificate.
+	 *
+	 * @param array $args Issuance arguments.
+	 * @return int|WP_Error
+	 */
+	function ppcert_issue_certificate( array $args ) {
+		return PressPrimer_Certificate_Issuance_Service::issue( $args );
+	}
+}
+
+if ( ! function_exists( 'ppcert_render_certificate_pdf' ) ) {
+	/**
+	 * Mirror: render an issued certificate to a PDF temp file.
+	 *
+	 * @param int    $certificate_id Certificate row id.
+	 * @param string $context        Render context.
+	 * @return string|WP_Error
+	 */
+	function ppcert_render_certificate_pdf( $certificate_id, $context = 'download' ) {
+		return PressPrimer_Certificate_PDF_Renderer::render_certificate( $certificate_id, $context );
+	}
+}
+
+if ( ! function_exists( 'ppcert_certificate_view_url' ) ) {
+	/**
+	 * Mirror: public share URL for a certificate's view page.
+	 *
+	 * @param string $credential_id Credential ID.
+	 * @return string
+	 */
+	function ppcert_certificate_view_url( $credential_id ) {
+		return PressPrimer_Certificate_View_Page::view_url( $credential_id );
+	}
+}
+
+if ( ! function_exists( 'ppcert_certificate_pdf_url' ) ) {
+	/**
+	 * Mirror: public PDF download URL for a certificate.
+	 *
+	 * @param string $credential_id Credential ID.
+	 * @return string
+	 */
+	function ppcert_certificate_pdf_url( $credential_id ) {
+		return PressPrimer_Certificate_View_Page::pdf_url( $credential_id );
+	}
+}
+
+if ( ! function_exists( 'ppcert_get_templates' ) ) {
+	/**
+	 * Mirror: template summaries for integration pickers.
+	 *
+	 * @param array $args Optional filters.
+	 * @return array[]
+	 */
+	function ppcert_get_templates( array $args = [] ) {
+		$status    = isset( $args['status'] ) ? sanitize_key( (string) $args['status'] ) : '';
+		$summaries = [];
+
+		foreach ( PressPrimer_Certificate_Template::get_all() as $template ) {
+			if ( '' !== $status && (string) $template->status !== $status ) {
+				continue;
+			}
+
+			$summaries[] = [
+				'id'     => (int) $template->id,
+				'title'  => (string) $template->title,
+				'status' => (string) $template->status,
+			];
+		}
+
+		return $summaries;
+	}
+}
+
+if ( ! function_exists( 'ppcert_find_certificate' ) ) {
+	/**
+	 * Mirror: find a recipient's existing certificate for a source.
+	 *
+	 * @param int         $recipient_id Recipient user id.
+	 * @param int         $template_id  Template row id.
+	 * @param string      $source_type  Source type id.
+	 * @param string|null $source_ref   Source reference.
+	 * @return object|null
+	 */
+	function ppcert_find_certificate( $recipient_id, $template_id, $source_type, $source_ref = null ) {
+		return PressPrimer_Certificate_Certificate::find_duplicate(
+			absint( $recipient_id ),
+			absint( $template_id ),
+			sanitize_key( (string) $source_type ),
+			null === $source_ref || '' === $source_ref ? null : (string) $source_ref
+		);
+	}
+}
+
 if ( ! function_exists( 'esc_html' ) ) {
 	/**
 	 * Stub: HTML-escape.

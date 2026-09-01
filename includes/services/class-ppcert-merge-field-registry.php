@@ -88,8 +88,36 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 			// Adapters register group-keyed maps (HOOKS.md example shape:
 			// $fields['source']['course_title']); core registers flat
 			// token-keyed entries. Accept both, normalizing to flat.
-			if ( is_array( $field ) && ! isset( $field['key'] ) && ! isset( $field['resolver'] ) && ! isset( $field['label'] ) ) {
+			//
+			// A field is detected POSITIVELY - a string top-level 'key'
+			// (every field definition carries its token key as a string).
+			// Anything else that contains array values is a group, its
+			// sub-key NAMES irrelevant. The 1.x absence-of-reserved-keys
+			// heuristic silently dropped whole groups whose SUB-KEY was
+			// named label/key/resolver (found by a third-party
+			// integration, 2026-08-31 - a group registered as
+			// $fields['credits']['label'] vanished; Feature 2.0-007
+			// FR-003).
+			$is_field = is_array( $field ) && isset( $field['key'] ) && is_string( $field['key'] );
+			$is_group = false;
+
+			if ( ! $is_field && is_array( $field ) ) {
 				foreach ( $field as $sub_field ) {
+					if ( is_array( $sub_field ) ) {
+						$is_group = true;
+						break;
+					}
+				}
+			}
+
+			if ( $is_group ) {
+				foreach ( $field as $sub_field ) {
+					// A stray scalar in a group drops per-field, never
+					// the whole group (Feature 2.0-007 Edge Cases).
+					if ( ! is_array( $sub_field ) ) {
+						continue;
+					}
+
 					$normalized = self::normalize_field( $sub_field, (string) $key );
 					if ( null !== $normalized ) {
 						$clean[ $normalized['key'] ] = $normalized;
@@ -690,8 +718,8 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 	}
 
 	/**
-	 * Resolve the issuer name: site name in 1.0; the issuer entity fills
-	 * this same field in School 2.0 with no new token.
+	 * Resolve the issuer name: site name by default; an issuer entity can
+	 * fill this same field later with no new token.
 	 *
 	 * @since 1.0.0
 	 *
@@ -703,8 +731,8 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 	}
 
 	/**
-	 * Resolve the expiry date: empty in 1.0 issuance (the field exists so
-	 * Educator 2.0 needs no new token).
+	 * Resolve the expiry date: empty in free issuance (the field exists so
+	 * addons need no new token).
 	 *
 	 * @since 1.0.0
 	 *

@@ -182,6 +182,24 @@ class PressPrimer_Certificate_Trigger {
 	public static function find_active( $trigger_type, $source_ref ) {
 		global $wpdb;
 
+		// Value-only types (2.0, Feature 2.0-007 FR-002): their triggers
+		// store no source, so a null/empty ref matches NULL rows - the
+		// 1.x string comparison could never return them (NULL = '' is
+		// never true in SQL). The 'any' sentinel keeps matching in both
+		// forms.
+		if ( null === $source_ref || '' === (string) $source_ref ) {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT * FROM %i WHERE trigger_type = %s AND ( source_ref IS NULL OR source_ref = %s ) AND is_active = 1',
+					self::table(),
+					sanitize_key( $trigger_type ),
+					self::SOURCE_ANY
+				)
+			);
+
+			return array_map( [ __CLASS__, 'hydrate' ], (array) $rows );
+		}
+
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				'SELECT * FROM %i WHERE trigger_type = %s AND ( source_ref = %s OR source_ref = %s ) AND is_active = 1',

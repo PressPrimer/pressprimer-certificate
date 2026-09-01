@@ -455,7 +455,21 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 
 				$type = PressPrimer_Certificate_Trigger_Registry::get_type( (string) $item->source_type );
 
-				return esc_html( $type ? $type['label'] : (string) $item->source_type );
+				if ( $type ) {
+					return esc_html( $type['label'] );
+				}
+
+				// Unregistered at render time (deactivated integration):
+				// the adapter-class details still label it, exactly like
+				// the templates list (2.0, Feature 2.0-007 FR-004) - a
+				// raw source_type id is the last resort.
+				$details = PressPrimer_Certificate_Plugin::get_trigger_type_details();
+
+				if ( isset( $details[ (string) $item->source_type ] ) ) {
+					return esc_html( $details[ (string) $item->source_type ]['short_label'] );
+				}
+
+				return esc_html( (string) $item->source_type );
 
 			case 'status':
 				$labels = [

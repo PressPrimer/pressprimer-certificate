@@ -429,6 +429,27 @@ class PressPrimer_Certificate_View_Page {
 	}
 
 	/**
+	 * Public PDF download URL for a credential (2.0, Feature 2.0-007)
+	 *
+	 * The canonical public PDF route URL, mirroring view_url()'s
+	 * semantics: '' for input that does not normalize.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $credential_id Credential ID (any accepted form).
+	 * @return string URL, or '' for an invalid credential.
+	 */
+	public static function pdf_url( $credential_id ) {
+		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( (string) $credential_id );
+
+		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_credential_shaped( $normalized ) ) {
+			return '';
+		}
+
+		return self::download_url( $normalized );
+	}
+
+	/**
 	 * Public share URL for a credential's view page
 	 *
 	 * @since 1.0.0
@@ -439,7 +460,12 @@ class PressPrimer_Certificate_View_Page {
 	public static function view_url( $credential_id ) {
 		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( (string) $credential_id );
 
-		if ( '' === $normalized ) {
+		// Shape-gated, not checksummed - the same deliberate choice as
+		// the list search (Feature 2.0-002 FR-001): integration callers
+		// get '' for input that cannot be a credential (Feature 2.0-007
+		// FR-001), while anything credential-shaped builds its canonical
+		// URL and simply 404s if no row exists.
+		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_credential_shaped( $normalized ) ) {
 			return '';
 		}
 

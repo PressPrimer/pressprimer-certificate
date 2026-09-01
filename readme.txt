@@ -115,10 +115,12 @@ All integrations are bundled in the free version, and the plugin is still fully 
 
 = Built for Developers =
 
+* Public `ppcert_*()` functions for issuing, rendering, and linking certificates from your own plugin
 * Action hooks for issuance, revocation, and verification events
-* Filter-based registries for custom trigger types and merge fields
+* Filter-based registries for custom trigger types (including value-only "threshold" triggers) and merge fields
 * REST API support
 * Custom database tables with automatic schema migration
+* [Developer Reference](https://pressprimer.com/knowledge-base/pressprimer-certificate/developer-reference/) - the supported hooks and API surface
 
 = Documentation & Support =
 
@@ -233,6 +235,13 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 5. The My Certificates page where learners view, verify, and download their certificates
 
 == Changelog ==
+
+= 2.0.0 =
+* Added: Public developer API. New `ppcert_*()` functions let other plugins issue certificates, render PDFs, look up a learner's certificate, and build view and download links through a supported, stable surface.
+* Added: Value-only award triggers. Integrations can register triggers with no source object - points thresholds, membership tenure, credits earned - and they configure in the Award tab like any other trigger.
+* Added: Third-party certificate integrations now appear with their proper names everywhere the built-in integrations do, including while their plugin is deactivated.
+* Added: A duplicate-suppression scoping filter for integrations whose completion events carry per-occurrence references.
+* Fixed: Custom merge-field groups registered with a sub-field named "label", "key", or "resolver" no longer disappear from the designer palette.
 
 = 1.1.0 =
 * Added: Merge fields now work inside text elements. 

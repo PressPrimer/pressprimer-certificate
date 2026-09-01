@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * needs exactly two answers from it - "does this row exist?" (save-time
  * validation of settings_json.email_template_id) and "give me the mapped
  * active row" (the email builder's resolution chain). Create/update/list
- * arrive with Educator 2.1's manager UI; Educator 2.0 writes reminder
+ * arrive with the Educator addon's manager UI; Educator writes reminder
  * rows through its own code against this same model.
  *
  * @since 2.0.0

@@ -387,8 +387,7 @@ class PressPrimer_Certificate_Template {
 	 * Get the bundled starter definitions from templates/*.json
 	 *
 	 * Each file carries a _meta block (slug, label); the returned layout
-	 * has _meta stripped. Starters are provisional until Prompt 5.1
-	 * finalizes the set (ROADMAP Open Decision 6).
+	 * has _meta stripped.
 	 *
 	 * @since 1.0.0
 	 *

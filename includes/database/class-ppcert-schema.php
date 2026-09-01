@@ -27,9 +27,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * insert/update in plugin code supplies explicit UTC values.
  *
  * The issuer, credit, and event foundation tables ship in 1.0 with no UI so
- * that 2.0 (issuers) and 3.0 (credits) land without migrations; the email
- * templates table ships schema-only in 2.0 for Educator 2.0/2.1 (Decision
- * 005). Do not remove or "clean up" dormant tables.
+ * that later features land without migrations; the email templates table
+ * ships schema-only in 2.0 (Decision 005). Do not remove or "clean up"
+ * dormant tables.
  *
  * @since 1.0.0
  */
@@ -220,7 +220,7 @@ class PressPrimer_Certificate_Schema {
 	}
 
 	/**
-	 * Get issuers table schema (dormant foundation - UI in School 2.0)
+	 * Get issuers table schema (dormant foundation - no UI yet)
 	 *
 	 * @since 1.0.0
 	 *
@@ -250,7 +250,7 @@ class PressPrimer_Certificate_Schema {
 	}
 
 	/**
-	 * Get issuer members table schema (dormant foundation - UI in School 2.0)
+	 * Get issuer members table schema (dormant foundation - no UI yet)
 	 *
 	 * Issuer membership model (public identity + delegated issuance rights),
 	 * not a classroom Groups model - see docs/decisions/001.
@@ -276,7 +276,7 @@ class PressPrimer_Certificate_Schema {
 	}
 
 	/**
-	 * Get credit types table schema (dormant foundation - UI in 3.0)
+	 * Get credit types table schema (dormant foundation - no UI yet)
 	 *
 	 * @since 1.0.0
 	 *
@@ -303,10 +303,11 @@ class PressPrimer_Certificate_Schema {
 	}
 
 	/**
-	 * Get credits table schema (dormant foundation - UI in 3.0)
+	 * Get credits table schema (dormant foundation - no UI yet)
 	 *
-	 * The credit ledger. certificate_id is nullable so 3.0 can record credits
-	 * from sources other than a certificate without a schema change.
+	 * The credit ledger. certificate_id is nullable so credits can one day
+	 * be recorded from sources other than a certificate without a schema
+	 * change.
 	 *
 	 * @since 1.0.0
 	 *
@@ -336,14 +337,15 @@ class PressPrimer_Certificate_Schema {
 	/**
 	 * Get email templates table schema (dormant foundation - Decision 005)
 	 *
-	 * Ships schema-only in free 2.0. Educator 2.0 writes the expiry-reminder
-	 * subject/body as a reminder-context row; Educator 2.1 ships the manager
-	 * UI for issuance-context rows mapped from certificate templates via
-	 * settings_json.email_template_id. The free plugin owns the table and
-	 * the resolution chain, so deactivating Educator degrades cleanly.
+	 * Ships schema-only in free 2.0. The Educator addon writes the
+	 * expiry-reminder subject/body as a reminder-context row and provides
+	 * the manager UI for issuance-context rows mapped from certificate
+	 * templates via settings_json.email_template_id. The free plugin owns
+	 * the table and the resolution chain, so deactivating Educator
+	 * degrades cleanly.
 	 *
 	 * context is VARCHAR, not ENUM, so future email kinds need no migration
-	 * (recognized 2.x values: 'issuance', 'reminder').
+	 * (recognized values: 'issuance', 'reminder').
 	 *
 	 * @since 2.0.0
 	 *

@@ -835,8 +835,8 @@ class PressPrimer_Certificate_Layout_Validator {
 		 * Filters the registered designer/renderer font set.
 		 *
 		 * Keys are font slugs usable in layout font_family props. The
-		 * bundled font manifest populates the default set; Educator 2.0
-		 * adds custom fonts through this same filter.
+		 * bundled font manifest populates the default set; addons add
+		 * custom fonts through this same filter.
 		 * See docs/architecture/HOOKS.md.
 		 *
 		 * @since 1.0.0
