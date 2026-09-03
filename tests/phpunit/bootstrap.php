@@ -1423,6 +1423,21 @@ if ( ! function_exists( 'esc_attr__' ) ) {
 	}
 }
 
+if ( ! function_exists( 'is_admin' ) ) {
+	/**
+	 * Stub: Whether the current request is an admin screen.
+	 *
+	 * Defaults false (front-end); tests set $GLOBALS['ppcert_test_is_admin']
+	 * to exercise admin-only registration paths (used by the Educator
+	 * addon's shared-harness suite).
+	 *
+	 * @return bool
+	 */
+	function is_admin() {
+		return ! empty( $GLOBALS['ppcert_test_is_admin'] );
+	}
+}
+
 if ( ! function_exists( 'esc_html_e' ) ) {
 	/**
 	 * Stub: Echo an HTML-escaped translated string.
