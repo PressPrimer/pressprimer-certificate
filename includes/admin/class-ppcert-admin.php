@@ -494,6 +494,21 @@ class PressPrimer_Certificate_Admin {
 				],
 			]
 		);
+
+		/**
+		 * Fires after the designer bundle and its boot data are enqueued.
+		 *
+		 * The designer extension surface (2.0, Feature 2.0-006 addon
+		 * contract): addons enqueue their designer extension bundles here
+		 * with a dependency on the 'ppcert-designer' handle, so they load
+		 * after the app and can use `window.ppcert_designer_api` once the
+		 * `ppcert-designer-ready` event fires. See docs/architecture/HOOKS.md.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $handle The designer script handle ('ppcert-designer').
+		 */
+		do_action( 'ppcert_designer_enqueued', 'ppcert-designer' );
 	}
 
 	/**

@@ -673,4 +673,95 @@ class Test_PDF_Renderer extends TestCase {
 		unlink( $page_two );
 		unlink( $clamped );
 	}
+
+	/**
+	 * Filter-registered font families resolve in the PDF (2.0, Feature
+	 * 2.0-006 addon contract): an addon family with absolute tcpdf_file
+	 * and ttf_file paths renders with no font fallback warning, while an
+	 * unregistered family still substitutes the default with a warning.
+	 *
+	 * @return void
+	 */
+	public function test_filter_registered_font_resolves_in_pdf() {
+		add_filter(
+			'ppcert_designer_fonts',
+			static function ( $fonts ) {
+				$fonts['acme-serif'] = [
+					'label'    => 'Acme Serif',
+					'variants' => [
+						'regular' => [
+							'tcpdf_font' => 'playfairdisplay',
+							'tcpdf_file' => PPCERT_PLUGIN_DIR . 'fonts/tcpdf/playfairdisplay.php',
+							'ttf_file'   => PPCERT_PLUGIN_DIR . 'fonts/playfair-display/PlayfairDisplay-Regular.ttf',
+							'metrics'    => [ 'ascent' => 885 ],
+						],
+					],
+				];
+
+				return $fonts;
+			}
+		);
+
+		$layout = [
+			'layout_schema_version' => 1,
+			'page'                  => [
+				'size'        => 'a4',
+				'orientation' => 'landscape',
+				'width'       => 842,
+				'height'      => 595,
+			],
+			'background'            => [
+				'color'         => '#ffffff',
+				'attachment_id' => 0,
+			],
+			'elements'              => [
+				[
+					'id'    => 'el_addonfont',
+					'type'  => 'text',
+					'x'     => 100,
+					'y'     => 200,
+					'w'     => 600,
+					'h'     => 60,
+					'z'     => 1,
+					'props' => [
+						'text'        => 'Addon font body',
+						'font_family' => 'acme-serif',
+						'font_size'   => 24,
+						'color'       => '#1f2a44',
+						'align'       => 'left',
+						'line_height' => 1.2,
+						'bold'        => false,
+						'italic'      => false,
+					],
+				],
+			],
+		];
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$path     = $renderer->render_pdf( $layout, [], [ 'context' => 'preview' ] );
+
+		$this->assertIsString( $path );
+		$this->assertFileExists( $path );
+
+		$warnings = array_column( $renderer->get_last_render_warnings(), 'warning' );
+		$this->assertNotContains( 'font_family_fallback', $warnings, 'The filtered family resolves without fallback' );
+		unlink( $path );
+
+		// The resolution itself prefers the addon's absolute paths (not
+		// the bundled fonts/tcpdf/ construction).
+		$method = new ReflectionMethod( PressPrimer_Certificate_PDF_Renderer::class, 'resolve_font' );
+		$method->setAccessible( true );
+		$resolved = $method->invoke( new PressPrimer_Certificate_PDF_Renderer(), 'acme-serif', false, false, 'el_x' );
+
+		$this->assertSame( PPCERT_PLUGIN_DIR . 'fonts/tcpdf/playfairdisplay.php', $resolved['file'] );
+		$this->assertSame( PPCERT_PLUGIN_DIR . 'fonts/playfair-display/PlayfairDisplay-Regular.ttf', $resolved['ttf'] );
+
+		// A family absent from the registry still substitutes the
+		// default with the fallback warning (deleted-font semantics).
+		$renderer2 = new PressPrimer_Certificate_PDF_Renderer();
+		$method->invoke( $renderer2, 'never-registered', false, false, 'el_y' );
+
+		$warnings2 = array_column( $renderer2->get_last_render_warnings(), 'warning' );
+		$this->assertContains( 'font_family_fallback', $warnings2 );
+	}
 }

@@ -337,4 +337,43 @@ class Test_View_Page extends TestCase {
 		$this->assertStringContainsString( '<dt>Certificate</dt><dd>Botany 101 &lt;b&gt;Certificate&lt;/b&gt;</dd>', $html );
 		$this->assertStringNotContainsString( '<dd>Completion Award</dd>', $html );
 	}
+
+	/**
+	 * The view page's action links filter (2.0, Feature 2.0-006): added
+	 * entries render escaped; malformed entries drop; the default
+	 * download/verify pair survives untouched.
+	 *
+	 * @return void
+	 */
+	public function test_view_page_actions_filter() {
+		$certificate                 = $this->certificate();
+		$this->preview_credentials[] = 'CRED00000042';
+
+		add_filter(
+			'ppcert_view_page_actions',
+			static function ( $actions, $row, $status ) {
+				$actions['share'] = [
+					'label'   => 'Share on LinkedIn <b>now</b>',
+					'url'     => 'https://example.test/share?id=' . $row->credential_id,
+					'class'   => 'ppcert-educator-share',
+					'new_tab' => true,
+				];
+				$actions['junk']  = 'not-an-action';
+				$actions['empty'] = [ 'label' => '', 'url' => '' ];
+
+				return $actions;
+			},
+			10,
+			3
+		);
+
+		$html = PressPrimer_Certificate_View_Page::render_content( $certificate );
+
+		$this->assertStringContainsString( 'ppcert-educator-share', $html );
+		$this->assertStringContainsString( 'Share on LinkedIn &lt;b&gt;now&lt;/b&gt;', $html, 'Labels escape at output' );
+		$this->assertStringContainsString( 'https://example.test/share?id=CRED00000042', $html );
+		$this->assertStringContainsString( 'Download PDF', $html );
+		$this->assertStringContainsString( 'Verify this certificate', $html );
+		$this->assertStringNotContainsString( 'not-an-action', $html, 'Malformed entries drop' );
+	}
 }

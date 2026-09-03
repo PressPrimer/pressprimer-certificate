@@ -48,6 +48,7 @@ import {
 } from '../api';
 import TemplateGallery from './TemplateGallery';
 import Canvas from './Canvas';
+import ExtensionBridge from './ExtensionBridge';
 import AlignToolbar from './AlignToolbar';
 import ElementPalette from './ElementPalette';
 import PropertiesPanel from './PropertiesPanel';
@@ -455,6 +456,7 @@ export default function DesignerApp( { boot } ) {
 
 	return (
 		<DesignerViewContext.Provider value={ { tokenView, samples } }>
+			<ExtensionBridge />
 			<Layout className="ppcert-designer">
 				<Header className="ppcert-designer__toolbar">
 					<Button
@@ -678,6 +680,14 @@ export default function DesignerApp( { boot } ) {
 					</Sider>
 
 					<Content className="ppcert-designer__canvas-region">
+						{ /* Addon extension slot (Feature 2.0-006): the
+						     Educator page rail mounts its own React root
+						     here; :empty CSS keeps it invisible until an
+						     extension does. */ }
+						<div
+							id="ppcert-designer-extension-rail"
+							className="ppcert-designer__extension-rail"
+						/>
 						<Canvas
 							layout={ state.layout }
 							zoom={ zoom }

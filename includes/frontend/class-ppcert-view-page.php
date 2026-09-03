@@ -289,20 +289,43 @@ class PressPrimer_Certificate_View_Page {
 
 		$output .= '</dl>';
 
-		$output .= '<p class="ppcert-view__actions">';
+		$actions = [];
 
 		if ( 'revoked' !== $status ) {
-			$output .= '<a class="ppcert-view__download button" href="'
-				. esc_url( self::download_url( $credential ) ) . '">'
-				. esc_html__( 'Download PDF', 'pressprimer-certificate' ) . '</a> ';
+			$actions['download'] = [
+				'label' => __( 'Download PDF', 'pressprimer-certificate' ),
+				'url'   => self::download_url( $credential ),
+				'class' => 'ppcert-view__download button',
+			];
 		}
 
 		// New tab: verification is the side trip, the certificate stays put.
-		$output .= '<a class="ppcert-view__verify" href="'
-			. esc_url( ppcert_verification_url( $credential ) ) . '" target="_blank" rel="noopener">'
-			. esc_html__( 'Verify this certificate', 'pressprimer-certificate' )
-			. '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'pressprimer-certificate' ) . '</span></a>';
+		$actions['verify'] = [
+			'label'   => __( 'Verify this certificate', 'pressprimer-certificate' ),
+			'url'     => ppcert_verification_url( $credential ),
+			'class'   => 'ppcert-view__verify',
+			'new_tab' => true,
+		];
 
+		/**
+		 * Filters the view page's action links (2.0, Feature 2.0-006
+		 * addon contract - Educator's share controls render here).
+		 *
+		 * Each entry: label, url, class (CSS classes), new_tab (bool).
+		 * Everything escapes at output; malformed entries are dropped.
+		 * Revoked certificates arrive without the download entry - added
+		 * entries should respect the same status semantics.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array  $actions     Map of action id => link definition.
+		 * @param object $certificate Hydrated certificate row.
+		 * @param string $status      Effective status (issued|expired|revoked).
+		 */
+		$actions = apply_filters( 'ppcert_view_page_actions', $actions, $certificate, $status );
+
+		$output .= '<p class="ppcert-view__actions">';
+		$output .= self::render_action_links( is_array( $actions ) ? $actions : [] );
 		$output .= '</p>';
 		$output .= '</div>';
 
@@ -414,6 +437,44 @@ class PressPrimer_Certificate_View_Page {
 		$user = get_userdata( (int) $certificate->recipient_id );
 
 		return $user ? (string) $user->display_name : '';
+	}
+
+	/**
+	 * Render a filtered action-link set, escaping every value
+	 *
+	 * Shared by the view page and My Certificates rows (the two
+	 * front-end surfaces the ppcert_*_actions filters extend). Entries
+	 * without a non-empty label and url are dropped; new-tab links gain
+	 * rel="noopener" and the screen-reader suffix.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $actions Map of action id => [ label, url, class, new_tab ].
+	 * @return string HTML anchors.
+	 */
+	public static function render_action_links( array $actions ) {
+		$output = '';
+
+		foreach ( $actions as $action ) {
+			if ( ! is_array( $action ) || empty( $action['label'] ) || empty( $action['url'] ) ) {
+				continue;
+			}
+
+			$class   = isset( $action['class'] ) ? (string) $action['class'] : '';
+			$new_tab = ! empty( $action['new_tab'] );
+
+			$output .= '<a class="' . esc_attr( $class ) . '" href="' . esc_url( (string) $action['url'] ) . '"'
+				. ( $new_tab ? ' target="_blank" rel="noopener"' : '' ) . '>'
+				. esc_html( (string) $action['label'] );
+
+			if ( $new_tab ) {
+				$output .= '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'pressprimer-certificate' ) . '</span>';
+			}
+
+			$output .= '</a> ';
+		}
+
+		return rtrim( $output );
 	}
 
 	/**

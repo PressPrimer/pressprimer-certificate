@@ -327,4 +327,36 @@ class Test_My_Certificates extends TestCase {
 
 		$this->assertStringContainsString( 'Botany 101 Certificate', $html );
 	}
+
+	/**
+	 * The row action links filter (2.0, Feature 2.0-006): added entries
+	 * render per row with escaping; defaults survive.
+	 *
+	 * @return void
+	 */
+	public function test_row_actions_filter() {
+		$this->seed_certificate();
+
+		add_filter(
+			'ppcert_my_certificates_row_actions',
+			static function ( $actions, $certificate, $status ) {
+				$actions['share'] = [
+					'label' => 'Share',
+					'url'   => 'https://example.test/share?c=' . $certificate->credential_id . '&s=' . $status,
+					'class' => 'ppcert-educator-share',
+				];
+
+				return $actions;
+			},
+			10,
+			3
+		);
+
+		$html = PressPrimer_Certificate_My_Certificates::render_shortcode();
+
+		$this->assertStringContainsString( 'ppcert-educator-share', $html );
+		$this->assertStringContainsString( 'Share', $html );
+		$this->assertStringContainsString( 'Download PDF', $html );
+		$this->assertStringContainsString( 'Verify', $html );
+	}
 }

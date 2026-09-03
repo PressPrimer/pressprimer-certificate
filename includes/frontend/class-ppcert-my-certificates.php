@@ -302,20 +302,41 @@ class PressPrimer_Certificate_My_Certificates {
 
 		$output .= '</p></div>';
 
-		$output .= '<span class="ppcert-my-certificates__links">';
+		$actions = [];
 
 		// Revoked certificates are not served by the download route.
 		if ( 'revoked' !== $status ) {
-			$output .= '<a class="ppcert-button-primary" href="'
-				. esc_url( rest_url( 'ppcert/v1/certificates/' . rawurlencode( $credential ) . '/pdf' ) ) . '">'
-				. esc_html__( 'Download PDF', 'pressprimer-certificate' ) . '</a>';
+			$actions['download'] = [
+				'label' => __( 'Download PDF', 'pressprimer-certificate' ),
+				'url'   => rest_url( 'ppcert/v1/certificates/' . rawurlencode( $credential ) . '/pdf' ),
+				'class' => 'ppcert-button-primary',
+			];
 		}
 
 		// New tab: verifying is a side trip, the list stays put.
-		$output .= '<a class="ppcert-button-secondary" href="' . esc_url( ppcert_verification_url( $credential ) ) . '" target="_blank" rel="noopener">'
-			. esc_html__( 'Verify', 'pressprimer-certificate' )
-			. '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'pressprimer-certificate' ) . '</span></a>';
+		$actions['verify'] = [
+			'label'   => __( 'Verify', 'pressprimer-certificate' ),
+			'url'     => ppcert_verification_url( $credential ),
+			'class'   => 'ppcert-button-secondary',
+			'new_tab' => true,
+		];
 
+		/**
+		 * Filters a My Certificates row's action links (2.0, Feature
+		 * 2.0-006 addon contract - Educator's share controls render
+		 * here). Same entry shape and escaping rules as
+		 * ppcert_view_page_actions.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array  $actions Map of action id => link definition.
+		 * @param object $certificate Certificate row.
+		 * @param string $status  Effective status (issued|expired|revoked).
+		 */
+		$actions = apply_filters( 'ppcert_my_certificates_row_actions', $actions, $certificate, $status );
+
+		$output .= '<span class="ppcert-my-certificates__links">';
+		$output .= PressPrimer_Certificate_View_Page::render_action_links( is_array( $actions ) ? $actions : [] );
 		$output .= '</span></li>';
 
 		return $output;

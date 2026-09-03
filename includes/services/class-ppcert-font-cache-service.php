@@ -57,6 +57,12 @@ class PressPrimer_Certificate_Font_Cache_Service {
 	 * @return string Absolute path, or '' when unavailable.
 	 */
 	public static function ttf_path( array $variant ) {
+		// Filter-registered variants (addon custom fonts) name their TTF
+		// by absolute path (Feature 2.0-006 addon contract).
+		if ( isset( $variant['ttf_file'] ) && '' !== (string) $variant['ttf_file'] && file_exists( (string) $variant['ttf_file'] ) ) {
+			return (string) $variant['ttf_file'];
+		}
+
 		$rel = isset( $variant['ttf'] ) ? (string) $variant['ttf'] : '';
 
 		if ( '' === $rel ) {

@@ -597,11 +597,18 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 * }
 	 */
 	private function resolve_font( $family_slug, $bold, $italic, $element_id ) {
-		$manifest = self::manifest();
-		$families = isset( $manifest['families'] ) ? $manifest['families'] : [];
+		// The FILTERED font registry - the same ppcert_designer_fonts set
+		// that drives the picker, validation, and canvas @font-face - so
+		// filter-registered families (Educator custom fonts, Feature
+		// 2.0-006 addon contract) resolve in the PDF identically and the
+		// surfaces cannot drift. Addon variant entries carry absolute
+		// paths ('tcpdf_file', 'ttf_file'); bundled entries keep their
+		// manifest-relative resolution.
+		$families = PressPrimer_Certificate_Layout_Validator::get_registered_fonts();
 
 		// Unknown family: use the default family (validator already
-		// prevents this for stored documents).
+		// prevents this for stored documents; a deleted addon font at
+		// render time substitutes identically on canvas and PDF).
 		if ( ! isset( $families[ $family_slug ] ) ) {
 			$this->warn( $element_id, 'font_family_fallback' );
 			$family_slug = PressPrimer_Certificate_Layout_Validator::DEFAULT_FONT;
@@ -628,11 +635,18 @@ class PressPrimer_Certificate_PDF_Renderer {
 		$font_key = isset( $variants[ $variant ]['tcpdf_font'] ) ? (string) $variants[ $variant ]['tcpdf_font'] : '';
 		$ascent   = isset( $variants[ $variant ]['metrics']['ascent'] ) ? (int) $variants[ $variant ]['metrics']['ascent'] : 1000;
 
+		// Filter-registered variants name their TCPDF definition by
+		// absolute path; bundled variants live in fonts/tcpdf/.
+		$font_file = isset( $variants[ $variant ]['tcpdf_file'] ) && '' !== (string) $variants[ $variant ]['tcpdf_file']
+			? (string) $variants[ $variant ]['tcpdf_file']
+			: PPCERT_PLUGIN_DIR . 'fonts/tcpdf/' . $font_key . '.php';
+
 		return [
 			'key'    => $font_key,
-			'file'   => PPCERT_PLUGIN_DIR . 'fonts/tcpdf/' . $font_key . '.php',
+			'file'   => $font_file,
 			// Bundled TTF when present, else the inflate-on-demand
-			// cache (the release ZIP ships fonts only in .z form).
+			// cache (the release ZIP ships fonts only in .z form);
+			// addon variants may carry an absolute ttf_file instead.
 			'ttf'    => PressPrimer_Certificate_Font_Cache_Service::ttf_path( $variants[ $variant ] ),
 			'ascent' => $ascent,
 		];

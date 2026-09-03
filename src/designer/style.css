@@ -705,3 +705,9 @@
 	gap: 10px;
 	margin-bottom: 16px;
 }
+
+/* Addon extension slot (Feature 2.0-006): invisible until an addon
+   mounts into it; the extension styles its own contents. */
+.ppcert-designer__extension-rail:empty {
+	display: none;
+}
