@@ -1491,6 +1491,31 @@ if ( ! function_exists( 'update_option' ) ) {
 	}
 }
 
+if ( ! function_exists( 'delete_option' ) ) {
+	/**
+	 * Stub: Remove an option.
+	 *
+	 * @param string $option Option name.
+	 * @return bool
+	 */
+	function delete_option( $option ) {
+		unset( $GLOBALS['ppcert_test_options'][ $option ] );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'plugin_basename' ) ) {
+	/**
+	 * Stub: plugin-dir-relative basename (dir/file.php).
+	 *
+	 * @param string $file Absolute plugin file path.
+	 * @return string
+	 */
+	function plugin_basename( $file ) {
+		return basename( dirname( (string) $file ) ) . '/' . basename( (string) $file );
+	}
+}
+
 if ( ! function_exists( 'add_shortcode' ) ) {
 	/**
 	 * Stub: Record shortcode registrations.
@@ -1681,7 +1706,45 @@ if ( ! function_exists( 'wp_remote_post' ) ) {
 			'args' => $args,
 		];
 
+		// Tests may script the response (e.g. the Educator addon's
+		// license status-transition tests); default unchanged.
+		if ( isset( $GLOBALS['ppcert_test_remote_response'] ) ) {
+			return $GLOBALS['ppcert_test_remote_response'];
+		}
+
 		return [ 'response' => [ 'code' => 200 ] ];
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	/**
+	 * Stub: Read the body from a stubbed HTTP response.
+	 *
+	 * @param array|WP_Error $response Response.
+	 * @return string
+	 */
+	function wp_remote_retrieve_body( $response ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) ) {
+			return '';
+		}
+
+		return isset( $response['body'] ) ? (string) $response['body'] : '';
+	}
+}
+
+if ( ! function_exists( 'rest_ensure_response' ) ) {
+	/**
+	 * Stub: Wrap data in a WP_REST_Response unless it already is one.
+	 *
+	 * @param mixed $response Data or response object.
+	 * @return WP_REST_Response|mixed
+	 */
+	function rest_ensure_response( $response ) {
+		if ( is_wp_error( $response ) || $response instanceof WP_REST_Response ) {
+			return $response;
+		}
+
+		return new WP_REST_Response( $response );
 	}
 }
 
