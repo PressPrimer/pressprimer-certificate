@@ -1142,6 +1142,32 @@ if ( ! class_exists( 'WP_REST_Request' ) ) {
 		public function get_json_params() {
 			return $this->json;
 		}
+
+		/**
+		 * Uploaded files.
+		 *
+		 * @var array
+		 */
+		private $files = [];
+
+		/**
+		 * Set uploaded files ($_FILES shape).
+		 *
+		 * @param array $files Files.
+		 * @return void
+		 */
+		public function set_file_params( $files ) {
+			$this->files = (array) $files;
+		}
+
+		/**
+		 * Get uploaded files.
+		 *
+		 * @return array
+		 */
+		public function get_file_params() {
+			return $this->files;
+		}
 	}
 }
 
@@ -2204,6 +2230,13 @@ if ( ! function_exists( 'get_user_by' ) ) {
 	function get_user_by( $field, $value ) {
 		$users = isset( $GLOBALS['ppcert_test_users'] ) ? $GLOBALS['ppcert_test_users'] : [];
 
+		// Callers read $user->ID; stamp it from the store key.
+		foreach ( $users as $id => $user ) {
+			if ( ! isset( $user->ID ) ) {
+				$user->ID = (int) $id;
+			}
+		}
+
 		if ( 'id' === $field ) {
 			return isset( $users[ (int) $value ] ) ? $users[ (int) $value ] : false;
 		}
@@ -2211,6 +2244,14 @@ if ( ! function_exists( 'get_user_by' ) ) {
 		if ( 'email' === $field ) {
 			foreach ( $users as $user ) {
 				if ( isset( $user->user_email ) && strtolower( $user->user_email ) === strtolower( (string) $value ) ) {
+					return $user;
+				}
+			}
+		}
+
+		if ( 'login' === $field ) {
+			foreach ( $users as $user ) {
+				if ( isset( $user->user_login ) && $user->user_login === (string) $value ) {
 					return $user;
 				}
 			}
