@@ -1,0 +1,72 @@
+{
+	"layout_schema_version": 1,
+	"page": {
+		"size": "a4",
+		"orientation": "landscape",
+		"width": 842,
+		"height": 595
+	},
+	"background": {
+		"color": "#ffffff",
+		"attachment_id": 0
+	},
+	"elements": [
+		{
+			"id": "el_customtext",
+			"type": "text",
+			"x": 80,
+			"y": 110,
+			"w": 680,
+			"h": 60,
+			"z": 1,
+			"props": {
+				"content": "Custom font body renders in the uploaded face",
+				"font_family": "parity-custom-font",
+				"font_size": 30,
+				"color": "#1f2a44",
+				"align": "left",
+				"line_height": 1.2,
+				"bold": false,
+				"italic": false
+			}
+		},
+		{
+			"id": "el_customname",
+			"type": "merge_field",
+			"x": 80,
+			"y": 230,
+			"w": 680,
+			"h": 48,
+			"z": 2,
+			"props": {
+				"token": "{{recipient.display_name}}",
+				"font_family": "parity-custom-font",
+				"font_size": 26,
+				"color": "#1f2a44",
+				"align": "center",
+				"line_height": 1.2,
+				"bold": false,
+				"italic": false
+			}
+		},
+		{
+			"id": "el_control",
+			"type": "text",
+			"x": 80,
+			"y": 360,
+			"w": 680,
+			"h": 44,
+			"z": 3,
+			"props": {
+				"content": "Control line in the bundled default font",
+				"font_family": "playfair-display",
+				"font_size": 20,
+				"color": "#1f2a44",
+				"align": "left",
+				"line_height": 1.2,
+				"bold": false,
+				"italic": false
+			}
+		}
+	]
+}

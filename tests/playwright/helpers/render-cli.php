@@ -33,6 +33,44 @@ if ( ! is_array( $ppcert_layout ) || ! is_array( $ppcert_merge ) || ! is_array( 
 	exit( 1 );
 }
 
+// Parity fixtures for the addon font contract: args.custom_fonts maps
+// a custom slug to a bundled family it aliases - the entry is built
+// with the absolute-path keys exactly as an Educator upload registers
+// (Feature 2.0-006 font pipeline contract).
+if ( ! empty( $ppcert_args['custom_fonts'] ) && is_array( $ppcert_args['custom_fonts'] ) ) {
+	$ppcert_custom = $ppcert_args['custom_fonts'];
+
+	add_filter(
+		'ppcert_designer_fonts',
+		static function ( $ppcert_fonts ) use ( $ppcert_custom ) {
+			foreach ( $ppcert_custom as $ppcert_slug => $ppcert_alias ) {
+				if ( ! isset( $ppcert_fonts[ $ppcert_alias ]['variants'] ) ) {
+					continue;
+				}
+
+				$ppcert_variants = [];
+
+				foreach ( $ppcert_fonts[ $ppcert_alias ]['variants'] as $ppcert_variant => $ppcert_def ) {
+					$ppcert_variants[ $ppcert_variant ] = [
+						'tcpdf_font' => $ppcert_def['tcpdf_font'],
+						'tcpdf_file' => PPCERT_PLUGIN_DIR . 'fonts/tcpdf/' . $ppcert_def['tcpdf_font'] . '.php',
+						'ttf_file'   => PPCERT_PLUGIN_DIR . 'fonts/' . $ppcert_def['ttf'],
+						'metrics'    => $ppcert_def['metrics'],
+					];
+				}
+
+				$ppcert_fonts[ $ppcert_slug ] = [
+					'label'    => $ppcert_slug,
+					'group'    => 'custom',
+					'variants' => $ppcert_variants,
+				];
+			}
+
+			return $ppcert_fonts;
+		}
+	);
+}
+
 $ppcert_renderer = new PressPrimer_Certificate_PDF_Renderer();
 $ppcert_png      = $ppcert_renderer->render_png( $ppcert_layout, $ppcert_merge, $ppcert_args );
 

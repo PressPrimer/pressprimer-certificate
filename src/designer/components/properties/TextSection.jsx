@@ -55,6 +55,47 @@ function hasVariant( variants, bold, italic ) {
 }
 
 /**
+ * Build the font Select options, grouped when custom fonts exist.
+ *
+ * Registry entries carrying group: 'custom' (Educator uploads, free
+ * font-pipeline contract) render under "Your fonts" above the bundled
+ * set (E-001). Free-only sites have no custom entries and keep the
+ * flat, ungrouped list unchanged.
+ *
+ * @param {Object} fonts Registered font map from boot data.
+ * @return {Array} Ant Design Select options (flat or grouped).
+ */
+export function buildFontOptions( fonts ) {
+	const toOption = ( slug ) => ( {
+		value: slug,
+		label: fonts[ slug ].label || slug,
+	} );
+
+	const custom = Object.keys( fonts ).filter(
+		( slug ) => 'custom' === fonts[ slug ].group
+	);
+
+	if ( ! custom.length ) {
+		return Object.keys( fonts ).map( toOption );
+	}
+
+	const bundled = Object.keys( fonts ).filter(
+		( slug ) => 'custom' !== fonts[ slug ].group
+	);
+
+	return [
+		{
+			label: __( 'Your fonts', 'pressprimer-certificate' ),
+			options: custom.map( toOption ),
+		},
+		{
+			label: __( 'Bundled', 'pressprimer-certificate' ),
+			options: bundled.map( toOption ),
+		},
+	];
+}
+
+/**
  * The section.
  *
  * @param {Object} props         Props.
@@ -203,10 +244,7 @@ export default function TextSection( { element } ) {
 					onChange={ onFamilyChange }
 					popupMatchSelectWidth={ false }
 					data-ppcert-prop="font_family"
-					options={ Object.keys( fonts ).map( ( slug ) => ( {
-						value: slug,
-						label: fonts[ slug ].label || slug,
-					} ) ) }
+					options={ buildFontOptions( fonts ) }
 					// Menu entries render in their actual face (the
 					// designer inlines every bundled @font-face), like
 					// the Appearance tab's Default font field; the

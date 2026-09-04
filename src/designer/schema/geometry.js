@@ -20,6 +20,12 @@ export const SNAP_TOLERANCE_PT = 4;
 export const SAFE_MARGIN_PT = 24;
 export const MAX_ELEMENTS = 100;
 
+// Mirrors the PHP validator's DEFAULT_FONT: the family every unknown or
+// deleted font substitutes to, on canvas AND in the PDF (Feature
+// 2.0-006 font contract - the substitution must be identical on both
+// sides or parity breaks).
+export const DEFAULT_FONT = 'playfair-display';
+
 /**
  * Round to the designer's 0.1pt storage precision.
  *

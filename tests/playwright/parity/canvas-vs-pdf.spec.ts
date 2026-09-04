@@ -100,14 +100,22 @@ function sampleQr(): unknown {
  * @param page
  * @param layout
  * @param qr
+ * @param extraCss
  */
 async function bootCanvas(
 	page: Page,
 	layout: unknown,
-	qr: unknown
+	qr: unknown,
+	extraCss = ''
 ): Promise< void > {
 	await page.goto( HARNESS_URL );
 	await page.waitForSelector( '[data-ppcert-canvas-scale]' );
+
+	// Addon-font fixtures inject their @font-face before the layout
+	// mounts, exactly as the free enqueue inlines Educator faces.
+	if ( extraCss ) {
+		await page.addStyleTag( { content: extraCss } );
+	}
 
 	const samples = JSON.parse( fs.readFileSync( SAMPLES_PATH, 'utf8' ) );
 
@@ -199,13 +207,20 @@ const INLINE_TOKEN_FIXTURES = [
  * @param opts
  * @param opts.pdfPage
  * @param opts.canvasLayout
+ * @param opts.renderArgs
+ * @param opts.extraCss
  */
 async function runParityCase(
 	page: Page,
 	layout: any,
 	layoutPath: string,
 	dir: string,
-	opts: { pdfPage?: number; canvasLayout?: any } = {}
+	opts: {
+		pdfPage?: number;
+		canvasLayout?: any;
+		renderArgs?: Record< string, unknown >;
+		extraCss?: string;
+	} = {}
 ): Promise< void > {
 	const canvasLayout = opts.canvasLayout ?? layout;
 	const pageArg = opts.pdfPage ? { page: opts.pdfPage } : {};
@@ -215,12 +230,18 @@ async function runParityCase(
 	renderPng(
 		layoutPath,
 		SAMPLES_PATH,
-		{ context: 'parity', dpi: DPI, credential_id: CREDENTIAL, ...pageArg },
+		{
+			context: 'parity',
+			dpi: DPI,
+			credential_id: CREDENTIAL,
+			...pageArg,
+			...( opts.renderArgs || {} ),
+		},
 		pdfPng
 	);
 
 	// Canvas side.
-	await bootCanvas( page, canvasLayout, sampleQr() );
+	await bootCanvas( page, canvasLayout, sampleQr(), opts.extraCss || '' );
 
 	const canvasPng = path.join( dir, 'canvas.png' );
 	await page
@@ -363,3 +384,57 @@ for ( let pageNumber = 1; pageNumber <= MULTIPAGE_PAGES; pageNumber++ ) {
 		} );
 	} );
 }
+
+/**
+ * Addon font contract fixtures (2.0, Feature 2.0-006 / Educator E-001).
+ *
+ * 'Uploaded': a custom-slug family registered exactly as an Educator
+ * upload (absolute tcpdf_file/ttf_file via the fonts filter, aliasing
+ * bundled Quicksand) must render pixel-identically on canvas and PDF.
+ *
+ * 'Deleted': the same layout with a family nobody registers - the
+ * renderer substitutes the default font with a warning, and the canvas
+ * fallback stack must land on the identical face.
+ */
+test.describe( 'addon font contract', () => {
+	test( 'parity: filter-registered custom font', async ( { page } ) => {
+		const dir = tmpDir();
+		const { layout, layoutPath } = fixtureLayout(
+			'parity-custom-font',
+			dir
+		);
+
+		const ttfUrl =
+			'file://' +
+			path.join(
+				PATHS.root,
+				'fonts',
+				'quicksand',
+				'Quicksand-Regular.ttf'
+			);
+
+		await runParityCase( page, layout, layoutPath, dir, {
+			renderArgs: {
+				custom_fonts: { 'parity-custom-font': 'quicksand' },
+			},
+			extraCss: `@font-face{font-family:"parity-custom-font";src:url("${ ttfUrl }") format("truetype");font-weight:400;font-style:normal;font-display:block;}`,
+		} );
+	} );
+
+	test( 'parity: deleted-font default substitution', async ( { page } ) => {
+		const dir = tmpDir();
+		const { layout } = fixtureLayout( 'parity-custom-font', dir );
+
+		// Nobody registers this family on either side.
+		const deleted = JSON.parse(
+			JSON.stringify( layout ).replace(
+				/parity-custom-font/g,
+				'parity-deleted-font'
+			)
+		);
+		const layoutPath = path.join( dir, 'parity-deleted-font.json' );
+		fs.writeFileSync( layoutPath, JSON.stringify( deleted ) );
+
+		await runParityCase( page, deleted, layoutPath, dir );
+	} );
+} );

@@ -11,6 +11,7 @@
 import { useDesignerView } from '../view-context';
 import { useTextFit } from './useTextFit';
 import { baselineCompensation } from './baseline';
+import { DEFAULT_FONT } from '../schema/geometry';
 
 /**
  * The element.
@@ -44,7 +45,9 @@ export default function MergeFieldElement( { element, box } ) {
 				width: box.w,
 				height: box.h,
 				color: p.color,
-				fontFamily: `"${ p.font_family }"`,
+				// Deleted/unknown families fall back to the default face,
+				// matching the renderer's substitution (parity contract).
+				fontFamily: `"${ p.font_family }", "${ DEFAULT_FONT }"`,
 				fontSize: fitted.size,
 				lineHeight: p.line_height,
 				fontWeight: p.bold ? 700 : 400,

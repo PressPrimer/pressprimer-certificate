@@ -11,6 +11,8 @@
 
 import { getBoot } from '../boot';
 
+import { DEFAULT_FONT } from '../schema/geometry';
+
 let ctx = null;
 const cache = new Map();
 
@@ -78,7 +80,7 @@ export function baselineCompensation( props, size ) {
 		// whole pixels, so per-em values need a large measuring size.
 		ctx.font = `${ props.italic ? 'italic ' : '' }${
 			props.bold ? 700 : 400
-		} 1000px "${ props.font_family }"`;
+		} 1000px "${ props.font_family }", "${ DEFAULT_FONT }"`;
 
 		const metrics = ctx.measureText( 'Hg' );
 
