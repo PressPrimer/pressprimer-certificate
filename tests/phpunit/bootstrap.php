@@ -386,6 +386,22 @@ if ( ! function_exists( 'wp_attachment_is_image' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_get_attachment_image_url' ) ) {
+	/**
+	 * Stub: Resolve an attachment id to a URL.
+	 *
+	 * Tests register URLs in $GLOBALS['ppcert_test_attachment_urls'][id].
+	 *
+	 * @param int    $attachment_id Attachment id.
+	 * @param string $size          Image size (ignored).
+	 * @return string|false
+	 */
+	function wp_get_attachment_image_url( $attachment_id, $size = 'thumbnail' ) {
+		$urls = isset( $GLOBALS['ppcert_test_attachment_urls'] ) ? $GLOBALS['ppcert_test_attachment_urls'] : [];
+		return isset( $urls[ (int) $attachment_id ] ) ? $urls[ (int) $attachment_id ] : false;
+	}
+}
+
 // In-memory $wpdb fake supporting the plugin's query shapes - lets the
 // issuance pipeline and models run in CI without a database. Real-DB
 // behavior is additionally verified live on the dev site per prompt.
