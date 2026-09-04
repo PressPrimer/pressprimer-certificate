@@ -575,6 +575,39 @@ class PressPrimer_Certificate_Template {
 			}
 		}
 
+		// Expiry reminder settings (2.0, Educator E-005 - premium-written
+		// keys sanitized here per the Decision 005 precedent, like
+		// email_template_id above). reminders_enabled is a plain flag;
+		// reminder_offsets is a bounded list of whole days before
+		// expiry (1-365, unique, largest first, at most five). An
+		// enabled template with no offsets list uses the addon's
+		// configured defaults at scan time.
+		if ( ! empty( $settings['reminders_enabled'] ) ) {
+			$clean['reminders_enabled'] = true;
+		}
+
+		if ( isset( $settings['reminder_offsets'] ) && is_array( $settings['reminder_offsets'] ) ) {
+			$offsets = [];
+
+			foreach ( $settings['reminder_offsets'] as $offset ) {
+				if ( is_numeric( $offset ) ) {
+					$days = absint( $offset );
+
+					if ( $days >= 1 && $days <= 365 ) {
+						$offsets[] = $days;
+					}
+				}
+			}
+
+			$offsets = array_values( array_unique( $offsets ) );
+			rsort( $offsets );
+			$offsets = array_slice( $offsets, 0, 5 );
+
+			if ( ! empty( $offsets ) ) {
+				$clean['reminder_offsets'] = $offsets;
+			}
+		}
+
 		return $clean;
 	}
 }

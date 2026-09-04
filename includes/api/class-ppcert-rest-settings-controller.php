@@ -55,6 +55,64 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 				],
 			]
 		);
+
+		register_rest_route(
+			'ppcert/v1',
+			'/settings/test-email',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'send_test_email' ],
+				'permission_callback' => [ $this, 'can_manage' ],
+			]
+		);
+	}
+
+	/**
+	 * POST /settings/test-email - send the current user the site-wide
+	 * default issuance email with sample values (2.0; the template
+	 * test-email pattern applied to the Settings > Email page)
+	 *
+	 * Shares the template test's per-user throttle bucket so the two
+	 * buttons cannot multiply the send rate.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function send_test_email() {
+		if ( ! PressPrimer_Certificate_Rate_Limiter::allow(
+			'ppcert_testmail_' . get_current_user_id(),
+			PressPrimer_Certificate_REST_Templates_Controller::TEST_EMAIL_RATE_LIMIT,
+			PressPrimer_Certificate_REST_Templates_Controller::TEST_EMAIL_RATE_WINDOW
+		) ) {
+			return new WP_Error(
+				'ppcert_test_email_throttled',
+				__( 'Too many test emails. Please wait a minute and try again.', 'pressprimer-certificate' ),
+				[ 'status' => 429 ]
+			);
+		}
+
+		$result = PressPrimer_Certificate_Email_Service::send_test( null );
+
+		if ( is_wp_error( $result ) ) {
+			$result->add_data( [ 'status' => 500 ] );
+
+			return $result;
+		}
+
+		$user = wp_get_current_user();
+
+		return new WP_REST_Response(
+			[
+				'success' => true,
+				'message' => sprintf(
+					/* translators: %s: the current user's email address */
+					__( 'Test email sent to %s.', 'pressprimer-certificate' ),
+					(string) $user->user_email
+				),
+			],
+			200
+		);
 	}
 
 	/**

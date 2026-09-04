@@ -101,7 +101,19 @@ export default function ExtensionBridge() {
 			setSelection: ( ids ) => dispatch( { type: 'SET_SELECTION', ids } ),
 
 			/**
-			 * Subscribe to state changes ({ layout, selection, dirty }).
+			 * Replace the template settings through the standard
+			 * EDIT_SETTINGS path (persists with the next save; not an
+			 * undoable canvas operation - E-005 addon sections edit
+			 * their settings_json keys here).
+			 *
+			 * @param {Object} settings Next full settings object.
+			 */
+			editSettings: ( settings ) =>
+				dispatch( { type: 'EDIT_SETTINGS', settings } ),
+
+			/**
+			 * Subscribe to state changes
+			 * ({ layout, selection, dirty, template }).
 			 *
 			 * @param {Function} callback Change listener.
 			 * @return {Function} Unsubscribe.
@@ -126,9 +138,10 @@ export default function ExtensionBridge() {
 				layout: state.layout,
 				selection: state.selection,
 				dirty: state.dirty,
+				template: state.template,
 			} )
 		);
-	}, [ state.layout, state.selection, state.dirty ] );
+	}, [ state.layout, state.selection, state.dirty, state.template ] );
 
 	return null;
 }

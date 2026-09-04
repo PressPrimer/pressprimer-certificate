@@ -226,6 +226,54 @@ class PressPrimer_Certificate_Email_Service {
 	}
 
 	/**
+	 * Build a recipient email for a certificate from caller-supplied
+	 * subject/body templates (2.0, the shared builder addons send
+	 * through - Educator's expiry reminders are the first consumer)
+	 *
+	 * The production token map and substitution - both token syntaxes,
+	 * snapshot-first values, the configured From header - applied to
+	 * ANY subject/body pair. The caller owns enablement, the
+	 * ppcert_email_content filter, and the actual wp_mail().
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int    $certificate_id   Certificate row id.
+	 * @param string $subject_template Subject with tokens.
+	 * @param string $body_template    Body with tokens.
+	 * @return array|null Content array (to, subject, body, headers,
+	 *                    attachments), or null when the certificate or
+	 *                    its recipient cannot be resolved.
+	 */
+	public static function build_recipient_email( $certificate_id, $subject_template, $body_template ) {
+		$certificate = PressPrimer_Certificate_Certificate::get( absint( $certificate_id ) );
+
+		if ( ! $certificate ) {
+			return null;
+		}
+
+		$recipient = get_userdata( (int) $certificate->recipient_id );
+
+		if ( ! $recipient || '' === (string) $recipient->user_email ) {
+			return null;
+		}
+
+		$template = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
+		$tokens   = self::tokens( $certificate, $recipient, $template );
+		$merge    = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
+		$settings = self::settings();
+
+		return [
+			'to'          => (string) $recipient->user_email,
+			'subject'     => self::substitute( (string) $subject_template, $tokens, $merge ),
+			'body'        => self::substitute( (string) $body_template, $tokens, $merge ),
+			'headers'     => [
+				'From: ' . $settings['email_from_name'] . ' <' . $settings['email_from_address'] . '>',
+			],
+			'attachments' => [],
+		];
+	}
+
+	/**
 	 * The one email assembly (2.0, Feature 2.0-003 TR-002)
 	 *
 	 * Production issuance and the test send share this builder: the
@@ -279,6 +327,11 @@ class PressPrimer_Certificate_Email_Service {
 	 * @since 2.0.0
 	 *
 	 * @param object $template Template row (hydrated).
+	 * @since 2.0.0 $template accepts null: the Settings > Email page's
+	 *              test of the site-wide default (no template mapping,
+	 *              the settings subject/body, template_id 0 in the
+	 *              filter context).
+	 *
 	 * @return true|WP_Error True when the mail was accepted; WP_Error
 	 *                       carrying the mailer's reason otherwise.
 	 */
@@ -296,7 +349,7 @@ class PressPrimer_Certificate_Email_Service {
 
 		$tokens = [
 			'{recipient_name}'   => (string) $user->display_name,
-			'{subject}'          => isset( $samples['certificate.title'] ) ? (string) $samples['certificate.title'] : (string) $template->title,
+			'{subject}'          => isset( $samples['certificate.title'] ) ? (string) $samples['certificate.title'] : ( $template && isset( $template->title ) ? (string) $template->title : '' ),
 			'{credential_id}'    => isset( $samples['certificate.credential_id'] ) ? (string) $samples['certificate.credential_id'] : '',
 			'{verification_url}' => ppcert_verification_page_url(),
 			'{issuer_name}'      => (string) get_bloginfo( 'name' ),
@@ -316,7 +369,8 @@ class PressPrimer_Certificate_Email_Service {
 			$content,
 			'test',
 			[
-				'template_id' => (int) $template->id,
+				// 0 = the settings-page test (no template context, 2.0).
+				'template_id' => $template && isset( $template->id ) ? (int) $template->id : 0,
 				'test'        => true,
 			]
 		);
@@ -385,8 +439,8 @@ class PressPrimer_Certificate_Email_Service {
 
 		$samples['certificate.title'] = PressPrimer_Certificate_Merge_Field_Registry::resolve_title(
 			[
-				'template_settings' => isset( $template->settings ) && is_array( $template->settings ) ? $template->settings : [],
-				'template_title'    => (string) $template->title,
+				'template_settings' => $template && isset( $template->settings ) && is_array( $template->settings ) ? $template->settings : [],
+				'template_title'    => $template && isset( $template->title ) ? (string) $template->title : (string) get_bloginfo( 'name' ),
 			],
 			$samples
 		);

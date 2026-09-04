@@ -11,8 +11,11 @@
  * @since 1.0.0
  */
 
+import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { Form, Input, message, Switch, Typography } from 'antd';
+import apiFetch from '@wordpress/api-fetch';
+import { Button, Form, Input, message, Space, Switch, Typography } from 'antd';
+import { SendOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -91,6 +94,30 @@ const EmailTab = ( { settings, updateSetting, settingsData } ) => {
 	const enabled =
 		settings.email_issued_enabled === undefined ||
 		!! Number( settings.email_issued_enabled );
+
+	const [ testing, setTesting ] = useState( false );
+
+	const sendTest = async () => {
+		setTesting( true );
+
+		try {
+			const response = await apiFetch( {
+				path: '/ppcert/v1/settings/test-email',
+				method: 'POST',
+			} );
+			message.success( response.message );
+		} catch ( error ) {
+			message.error(
+				error.message ||
+					__(
+						'The test email could not be sent.',
+						'pressprimer-certificate'
+					)
+			);
+		} finally {
+			setTesting( false );
+		}
+	};
 
 	return (
 		<div>
@@ -293,7 +320,37 @@ const EmailTab = ( { settings, updateSetting, settingsData } ) => {
 						/>
 					</div>
 				</div>
+
+				<div className="ppcert-settings-field">
+					<Space align="center">
+						<Button
+							icon={ <SendOutlined /> }
+							onClick={ sendTest }
+							loading={ testing }
+						>
+							{ __(
+								'Send Test Email',
+								'pressprimer-certificate'
+							) }
+						</Button>
+						<Text type="secondary">
+							{ __(
+								'Sends this email to your own address with sample values. The test uses the last saved settings.',
+								'pressprimer-certificate'
+							) }
+						</Text>
+					</Space>
+				</div>
 			</div>
+
+			{ /* Addon extension slot (2.0, Feature 2.0-006 applied to
+			     settings): addon email sections (Educator's E-005
+			     reminder email) mount their own React root here;
+			     :empty CSS keeps it invisible until an extension does. */ }
+			<div
+				id="ppcert-settings-email-extension"
+				className="ppcert-settings-email-extension"
+			/>
 		</div>
 	);
 };

@@ -214,6 +214,7 @@
 	border-radius: 6px;
 	padding: 12px 16px;
 	margin-top: 8px;
+	margin-bottom: 24px;
 }
 
 .ppcert-token-list code {
@@ -458,4 +459,9 @@
 	font-size: 0.65em;
 	color: #6b7280;
 	margin-top: 4px;
+}
+
+/* Addon email-section slot (2.0): invisible until an addon mounts. */
+.ppcert-settings-email-extension:empty {
+	display: none;
 }

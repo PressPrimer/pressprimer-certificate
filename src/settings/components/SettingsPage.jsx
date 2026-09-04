@@ -23,6 +23,8 @@ import {
 	SkinOutlined,
 	AuditOutlined,
 	ClearOutlined,
+	FormatPainterOutlined,
+	KeyOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -33,12 +35,16 @@ import AdvancedTab from './AdvancedTab';
 
 /**
  * Icon map for addon tabs (same feature => same icon across the
- * PressPrimer suites).
+ * PressPrimer suites; every settings page gets a UNIQUE icon - see
+ * CLAUDE.md "Admin UI Development"). Suite alignment: 'license' is
+ * KeyOutlined in Quiz and Assignment.
  */
 const ADDON_ICONS = {
 	'white-label': <SkinOutlined />,
 	'audit-log': <AuditOutlined />,
 	'data-cleanup': <ClearOutlined />,
+	branding: <FormatPainterOutlined />,
+	license: <KeyOutlined />,
 	default: <SettingOutlined />,
 };
 
@@ -165,6 +171,22 @@ const SettingsPage = ( { settingsData = {} } ) => {
 		setHasChanges( true );
 	}, [] );
 
+	// Addon sections mounted into core-tab slots (2.0, Feature 2.0-006
+	// applied to settings) participate in the page's ONE Save button:
+	// they announce edits with the dirty event (enabling Save) and
+	// perform their own persistence when the save event fires.
+	useEffect( () => {
+		const markDirty = () => setHasChanges( true );
+
+		window.addEventListener( 'ppcert-settings-addon-dirty', markDirty );
+
+		return () =>
+			window.removeEventListener(
+				'ppcert-settings-addon-dirty',
+				markDirty
+			);
+	}, [] );
+
 	const handleSave = async () => {
 		try {
 			setSaving( true );
@@ -181,6 +203,12 @@ const SettingsPage = ( { settingsData = {} } ) => {
 				);
 				setSettings( response.settings || settings );
 				setHasChanges( false );
+
+				// Addon sections persist their own stores now; failures
+				// surface through their own error toasts.
+				window.dispatchEvent(
+					new CustomEvent( 'ppcert-settings-save' )
+				);
 			} else {
 				message.error(
 					__(

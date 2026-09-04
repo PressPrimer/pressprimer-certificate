@@ -1440,6 +1440,15 @@ export default function TriggerPanel() {
 
 			<TestEmailSection state={ state } />
 
+			{ /* Addon extension slot (2.0, Feature 2.0-006): addon
+			     template-settings sections (Educator's E-005 reminders)
+			     mount their own React root here; :empty CSS keeps it
+			     invisible until an extension does. */ }
+			<div
+				id="ppcert-designer-award-extension"
+				className="ppcert-designer__award-extension"
+			/>
+
 			<TriggerModal
 				open={ modalOpen }
 				types={ types || [] }

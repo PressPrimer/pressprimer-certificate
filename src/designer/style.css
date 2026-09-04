@@ -711,3 +711,13 @@
 .ppcert-designer__extension-rail:empty {
 	display: none;
 }
+
+/* Addon template-settings slot in the Award tab (2.0, E-005): same
+   contract as the canvas rail - invisible until an addon mounts. */
+.ppcert-designer__award-extension {
+	margin-top: 16px;
+}
+
+.ppcert-designer__award-extension:empty {
+	display: none;
+}
