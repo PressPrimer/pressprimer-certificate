@@ -206,6 +206,9 @@ class PressPrimer_Certificate_View_Page {
 			'dl'     => [ 'class' => true ],
 			'dt'     => [],
 			'dd'     => [],
+			// The preview wrapper: without it, kses strips the figure
+			// and the preview loses its class (and its spacing below).
+			'figure' => [ 'class' => true ],
 			'img'    => [
 				'src'   => true,
 				'alt'   => true,
