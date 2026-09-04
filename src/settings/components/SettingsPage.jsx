@@ -25,6 +25,7 @@ import {
 	ClearOutlined,
 	FormatPainterOutlined,
 	KeyOutlined,
+	ShareAltOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -44,6 +45,7 @@ const ADDON_ICONS = {
 	'audit-log': <AuditOutlined />,
 	'data-cleanup': <ClearOutlined />,
 	branding: <FormatPainterOutlined />,
+	sharing: <ShareAltOutlined />,
 	license: <KeyOutlined />,
 	default: <SettingOutlined />,
 };
