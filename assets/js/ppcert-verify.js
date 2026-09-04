@@ -90,7 +90,11 @@
 		}
 
 		const heading = document.createElement( 'p' );
-		heading.className = 'ppcert-verify__status';
+		// The state modifier mirrors the server-side no-JS renderer
+		// (ppcert-verify__status--valid etc.) so the semantic status
+		// colors apply identically on both paths.
+		heading.className =
+			'ppcert-verify__status ppcert-verify__status--' + state;
 		heading.textContent = i18n[ state ] || i18n.error;
 		region.appendChild( heading );
 
