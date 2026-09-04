@@ -558,12 +558,13 @@ class Test_PDF_Renderer extends TestCase {
 	}
 
 	/**
-	 * The hand-authored two-page v3 fixture renders a two-page PDF; the
+	 * The hand-authored v3 fixture (three pages since Educator Prompt
+	 * 2.4 - QR on page 3) renders one PDF page per pages[] entry; the
 	 * single-page sample keeps rendering one (guards the counter too).
 	 *
 	 * @return void
 	 */
-	public function test_v3_two_page_fixture_renders_two_pages() {
+	public function test_v3_multipage_fixture_renders_every_page() {
 		$renderer = new PressPrimer_Certificate_PDF_Renderer();
 
 		$two_page = $renderer->render_pdf(
@@ -579,7 +580,7 @@ class Test_PDF_Renderer extends TestCase {
 
 		$bytes = (string) file_get_contents( $two_page );
 		$this->assertStringStartsWith( '%PDF-', $bytes );
-		$this->assertSame( 2, $this->pdf_page_count( $bytes ) );
+		$this->assertSame( 3, $this->pdf_page_count( $bytes ) );
 
 		unlink( $two_page );
 
@@ -658,19 +659,22 @@ class Test_PDF_Renderer extends TestCase {
 			'credential_id' => '7Q4MK9P2XT3A',
 		];
 
-		$page_one = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 1 ] ) );
-		$page_two = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 2 ] ) );
-		$clamped  = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 99 ] ) );
+		$page_one  = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 1 ] ) );
+		$page_two  = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 2 ] ) );
+		$page_last = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 3 ] ) );
+		$clamped   = $renderer->render_png( $fixture, $merge_data, array_merge( $args, [ 'page' => 99 ] ) );
 
 		$this->assertIsString( $page_one );
 		$this->assertIsString( $page_two );
+		$this->assertIsString( $page_last );
 		$this->assertIsString( $clamped );
 
-		$this->assertNotSame( md5_file( $page_one ), md5_file( $page_two ), 'The two pages render distinct content.' );
-		$this->assertSame( md5_file( $page_two ), md5_file( $clamped ), 'An out-of-range page clamps to the last page.' );
+		$this->assertNotSame( md5_file( $page_one ), md5_file( $page_two ), 'Pages render distinct content.' );
+		$this->assertSame( md5_file( $page_last ), md5_file( $clamped ), 'An out-of-range page clamps to the last page.' );
 
 		unlink( $page_one );
 		unlink( $page_two );
+		unlink( $page_last );
 		unlink( $clamped );
 	}
 

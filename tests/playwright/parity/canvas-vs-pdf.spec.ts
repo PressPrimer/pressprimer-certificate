@@ -351,13 +351,14 @@ for ( const slug of INLINE_TOKEN_FIXTURES ) {
 	} );
 }
 
-// The v3 multi-page fixture (schema v3, Feature 2.0-006 FR-002): every
-// page of the document is captured individually from the rendered PDF
-// and compared against the canvas rendering that page's elements as a
-// v2 single-page document. One test per page so a failure names the
-// page that drifted.
+// The v3 multi-page fixture (schema v3, Feature 2.0-006 FR-002; grown
+// to three pages with the QR on page 3 at Educator Prompt 2.4 - E-002's
+// permanent fixture): every page of the document is captured
+// individually from the rendered PDF and compared against the canvas
+// rendering that page's elements as a v2 single-page document. One test
+// per page so a failure names the page that drifted.
 const MULTIPAGE_SLUG = 'parity-multipage';
-const MULTIPAGE_PAGES = 2;
+const MULTIPAGE_PAGES = 3;
 
 for ( let pageNumber = 1; pageNumber <= MULTIPAGE_PAGES; pageNumber++ ) {
 	test( `${ MULTIPAGE_SLUG } page ${ pageNumber }: matches the PDF raster within parity thresholds`, async ( {
