@@ -2301,6 +2301,10 @@ if ( ! defined( 'YEAR_IN_SECONDS' ) ) {
 	define( 'YEAR_IN_SECONDS', 31536000 );
 }
 
+if ( ! defined( 'MINUTE_IN_SECONDS' ) ) {
+	define( 'MINUTE_IN_SECONDS', 60 );
+}
+
 if ( ! defined( 'DAY_IN_SECONDS' ) ) {
 	define( 'DAY_IN_SECONDS', 86400 );
 }
@@ -2326,6 +2330,39 @@ if ( ! function_exists( 'is_email' ) ) {
 	 */
 	function is_email( $email ) {
 		return false !== filter_var( (string) $email, FILTER_VALIDATE_EMAIL ) ? (string) $email : false;
+	}
+}
+
+if ( ! function_exists( 'wp_timezone' ) ) {
+	/**
+	 * Stub: The site timezone object.
+	 *
+	 * Tests set $GLOBALS['ppcert_test_timezone'] (an IANA string) to
+	 * simulate a site timezone; defaults to UTC.
+	 *
+	 * @return DateTimeZone
+	 */
+	function wp_timezone() {
+		return new DateTimeZone( isset( $GLOBALS['ppcert_test_timezone'] ) ? $GLOBALS['ppcert_test_timezone'] : 'UTC' );
+	}
+}
+
+if ( ! function_exists( 'wp_schedule_single_event' ) ) {
+	/**
+	 * Stub: Record one-off cron events.
+	 *
+	 * @param int    $timestamp When to run.
+	 * @param string $hook      Hook name.
+	 * @param array  $args      Hook args.
+	 * @return bool
+	 */
+	function wp_schedule_single_event( $timestamp, $hook, $args = [] ) {
+		$GLOBALS['ppcert_test_single_events'][] = [
+			'timestamp' => $timestamp,
+			'hook'      => $hook,
+			'args'      => $args,
+		];
+		return true;
 	}
 }
 
