@@ -379,21 +379,33 @@ class PressPrimer_Certificate_Admin {
 	 * @param string $hook_suffix Current admin page hook.
 	 */
 	public function enqueue_assets( $hook_suffix ) {
+		// Global WP-admin / Ant Design conflict overrides (Select focus
+		// reset, modal close button) on EVERY suite admin page - free and
+		// addon submenus alike (ecosystem pattern - see the
+		// Quiz/Assignment admin.css twins). Addon slugs all start with
+		// "ppcert" (Decision 003), so match the page slug, with the hook
+		// suffix as a fallback for filtered menu titles.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check for conditional asset loading.
+		$current_page   = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+		$is_ppcert_page = 0 === strpos( $current_page, 'ppcert' )
+			|| 0 === strpos( $current_page, 'pressprimer-certificate' )
+			|| false !== strpos( (string) $hook_suffix, 'ppcert' )
+			|| false !== strpos( (string) $hook_suffix, 'pressprimer-certificate' );
+
+		if ( $is_ppcert_page ) {
+			wp_enqueue_style(
+				'ppcert-admin',
+				PPCERT_PLUGIN_URL . 'assets/css/ppcert-admin.css',
+				[],
+				PPCERT_VERSION
+			);
+		}
+
 		$is_dashboard = '' !== $this->dashboard_hook && $hook_suffix === $this->dashboard_hook;
 
 		if ( ! $is_dashboard && $hook_suffix !== $this->templates_hook ) {
 			return;
 		}
-
-		// Global WP-admin / Ant Design conflict overrides on every plugin
-		// admin page (ecosystem pattern - see the Quiz/Assignment
-		// admin.css twins).
-		wp_enqueue_style(
-			'ppcert-admin',
-			PPCERT_PLUGIN_URL . 'assets/css/ppcert-admin.css',
-			[],
-			PPCERT_VERSION
-		);
 
 		if ( $is_dashboard ) {
 			$this->dashboard->enqueue();
