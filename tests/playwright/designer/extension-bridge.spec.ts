@@ -172,4 +172,3 @@ test.describe( 'extension bridge', () => {
 		).toBe( false );
 	} );
 } );
-
