@@ -1491,6 +1491,67 @@ if ( ! function_exists( 'update_option' ) ) {
 	}
 }
 
+if ( ! function_exists( 'size_format' ) ) {
+	/**
+	 * Stub: Human-readable byte size (MB/KB only - test inputs).
+	 *
+	 * @param int $bytes Byte count.
+	 * @return string
+	 */
+	function size_format( $bytes ) {
+		if ( $bytes >= 1048576 ) {
+			return round( $bytes / 1048576, 1 ) . ' MB';
+		}
+
+		return round( $bytes / 1024 ) . ' KB';
+	}
+}
+
+if ( ! function_exists( 'sanitize_file_name' ) ) {
+	/**
+	 * Stub: Strip path and special characters from a file name.
+	 *
+	 * @param string $filename Raw name.
+	 * @return string
+	 */
+	function sanitize_file_name( $filename ) {
+		$filename = basename( str_replace( '\\', '/', (string) $filename ) );
+
+		return preg_replace( '/[^A-Za-z0-9._\-]/', '-', $filename );
+	}
+}
+
+if ( ! function_exists( '_n' ) ) {
+	/**
+	 * Stub: Singular/plural selection (no translation).
+	 *
+	 * @param string $single Singular form.
+	 * @param string $plural Plural form.
+	 * @param int    $number Count.
+	 * @param string $domain Domain.
+	 * @return string
+	 */
+	function _n( $single, $plural, $number, $domain = 'default' ) { // phpcs:ignore WordPress.WP.I18n
+		return 1 === (int) $number ? $single : $plural;
+	}
+}
+
+if ( ! function_exists( 'rest_sanitize_boolean' ) ) {
+	/**
+	 * Stub: REST boolean coercion.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return bool
+	 */
+	function rest_sanitize_boolean( $value ) {
+		if ( is_string( $value ) ) {
+			return in_array( strtolower( $value ), [ '1', 'true', 'yes' ], true );
+		}
+
+		return (bool) $value;
+	}
+}
+
 if ( ! function_exists( 'delete_option' ) ) {
 	/**
 	 * Stub: Remove an option.
