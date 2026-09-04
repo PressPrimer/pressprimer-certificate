@@ -184,7 +184,8 @@ function ppcert_remove_options() {
 
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+			'DELETE FROM %i WHERE option_name LIKE %s',
+			$wpdb->options,
 			$wpdb->esc_like( 'ppcert_' ) . '%'
 		)
 	);
@@ -200,7 +201,8 @@ function ppcert_remove_post_meta() {
 
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
+			'DELETE FROM %i WHERE meta_key LIKE %s',
+			$wpdb->postmeta,
 			$wpdb->esc_like( 'ppcert_' ) . '%'
 		)
 	);
@@ -243,7 +245,8 @@ function ppcert_clear_transients() {
 
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+			'DELETE FROM %i WHERE option_name LIKE %s OR option_name LIKE %s',
+			$wpdb->options,
 			$wpdb->esc_like( '_transient_ppcert_' ) . '%',
 			$wpdb->esc_like( '_transient_timeout_ppcert_' ) . '%'
 		)
@@ -262,7 +265,8 @@ function ppcert_remove_user_meta() {
 
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
+			'DELETE FROM %i WHERE meta_key LIKE %s',
+			$wpdb->usermeta,
 			$wpdb->esc_like( 'ppcert_' ) . '%'
 		)
 	);
@@ -279,7 +283,8 @@ function ppcert_remove_network_options() {
 	// Network-wide site options.
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s",
+			'DELETE FROM %i WHERE meta_key LIKE %s',
+			$wpdb->sitemeta,
 			$wpdb->esc_like( 'ppcert_' ) . '%'
 		)
 	);
@@ -287,7 +292,8 @@ function ppcert_remove_network_options() {
 	// Network site transients.
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s OR meta_key LIKE %s",
+			'DELETE FROM %i WHERE meta_key LIKE %s OR meta_key LIKE %s',
+			$wpdb->sitemeta,
 			$wpdb->esc_like( '_site_transient_ppcert_' ) . '%',
 			$wpdb->esc_like( '_site_transient_timeout_ppcert_' ) . '%'
 		)
