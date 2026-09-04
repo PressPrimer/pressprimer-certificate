@@ -461,6 +461,39 @@ class Test_Email_Service extends TestCase {
 	}
 
 	/**
+	 * send_test accepts null (2.0, the Settings > Email page's test of
+	 * the site-wide default): settings subject/body, sample values,
+	 * template_id 0 in the filter context, nothing fatals.
+	 *
+	 * @return void
+	 */
+	public function test_send_test_without_template() {
+		$GLOBALS['ppcert_test_current_user'] = 7;
+
+		$contexts = [];
+		add_filter(
+			'ppcert_email_content',
+			static function ( $content, $email_type, $context ) use ( &$contexts ) {
+				$contexts[] = [ $email_type, $context['template_id'] ];
+				return $content;
+			},
+			10,
+			3
+		);
+
+		$result = PressPrimer_Certificate_Email_Service::send_test( null );
+
+		$this->assertTrue( $result );
+		$this->assertCount( 1, $GLOBALS['ppcert_test_mail'] );
+
+		$mail = $GLOBALS['ppcert_test_mail'][0];
+		$this->assertSame( 'dana@example.test', $mail['to'] );
+		$this->assertStringStartsWith( '[Test] ', $mail['subject'] );
+		$this->assertStringNotContainsString( '{', $mail['subject'], 'Tokens resolve without a template' );
+		$this->assertSame( [ [ 'test', 0 ] ], $contexts, 'template_id 0 marks the settings-page test' );
+	}
+
+	/**
 	 * send_test honors the Decision 005 resolution chain: a mapped
 	 * active email-template row's subject is what the test sends -
 	 * exactly what a real send would use.
@@ -541,6 +574,35 @@ class Test_Email_Service extends TestCase {
 			[ 'site.name' ],
 			PressPrimer_Certificate_Email_Service::template_tokens( PressPrimer_Certificate_Template::get( 40 ) ),
 			'Archived mapping: token collection follows the fallback.'
+		);
+	}
+
+	/**
+	 * build_recipient_email (2.0, the shared builder addons send
+	 * through): production token map and From header over
+	 * caller-supplied subject/body; null for unresolvable inputs.
+	 *
+	 * @return void
+	 */
+	public function test_build_recipient_email() {
+		$content = PressPrimer_Certificate_Email_Service::build_recipient_email(
+			$this->certificate_id,
+			'About {subject}, {recipient_name}',
+			'Verify at {verification_url} ({credential_id}) - {issuer_name}'
+		);
+
+		$this->assertSame( 'dana@example.test', $content['to'] );
+		$this->assertStringContainsString( 'Advanced Botany Certification', $content['subject'] );
+		$this->assertStringContainsString( 'Dana Whitfield', $content['subject'] );
+		$this->assertStringContainsString( '7Q4M', $content['body'] );
+		$this->assertStringContainsString( 'Sunrise Training Academy', $content['body'] );
+		$this->assertStringNotContainsString( '{', $content['body'], 'Every token resolved' );
+		$this->assertStringStartsWith( 'From: ', $content['headers'][0] );
+		$this->assertSame( [], $content['attachments'], 'The caller owns attachments' );
+
+		$this->assertNull(
+			PressPrimer_Certificate_Email_Service::build_recipient_email( 999999, 'S', 'B' ),
+			'A missing certificate builds nothing'
 		);
 	}
 }

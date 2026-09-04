@@ -34,6 +34,7 @@ test.describe( 'extension bridge', () => {
 		expect( surface ).toEqual(
 			[
 				'applyLayout',
+				'editSettings',
 				'getBoot',
 				'getLayout',
 				'getSelection',
@@ -44,6 +45,47 @@ test.describe( 'extension bridge', () => {
 				'subscribe',
 			].sort()
 		);
+	} );
+
+	test( 'editSettings replaces template settings, marks dirty, and notifies subscribers with the template', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		const result = await page.evaluate( () => {
+			const api = ( window as any ).ppcert_designer_api;
+			( window as any ).__settingsEvents = [];
+			api.subscribe( ( change: any ) =>
+				( window as any ).__settingsEvents.push(
+					change.template?.settings?.reminders_enabled
+				)
+			);
+
+			const settings = {
+				...( api.getTemplate()?.settings || {} ),
+				reminders_enabled: true,
+				reminder_offsets: [ 30, 7 ],
+			};
+			api.editSettings( settings );
+
+			return {
+				stored: api.getTemplate().settings,
+				dirty: api.isDirty(),
+			};
+		} );
+
+		expect( result.stored.reminders_enabled ).toBe( true );
+		expect( result.stored.reminder_offsets ).toEqual( [ 30, 7 ] );
+		expect( result.dirty ).toBe( true );
+
+		// Subscriber notifications flush with React's commit.
+		await expect
+			.poll( () =>
+				page.evaluate( () =>
+					( window as any ).__settingsEvents.includes( true )
+				)
+			)
+			.toBe( true );
 	} );
 
 	test( 'applyLayout mutates through the standard path: canvas, dirty state, and subscribers all see it', async ( {

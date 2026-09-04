@@ -1432,6 +1432,77 @@ class PPCert_Fake_WPDB {
 			return $matches;
 		}
 
+		// Educator Reminder_Service scan: keyset-paginated batch of
+		// issued certificates expiring inside the horizon window.
+		if ( false !== strpos( $query, 'expires_at IS NOT NULL AND expires_at > %s AND expires_at <= %s AND id > %d ORDER BY id ASC LIMIT %d' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					$expires = isset( $row['expires_at'] ) ? (string) $row['expires_at'] : '';
+
+					return (string) ( isset( $row['status'] ) ? $row['status'] : '' ) === (string) $args[1]
+						&& '' !== $expires
+						&& $expires > (string) $args[2]
+						&& $expires <= (string) $args[3]
+						&& (int) $row['id'] > (int) $args[4];
+				}
+			);
+
+			return array_map(
+				static function ( $row ) {
+					return [
+						'id'          => $row['id'],
+						'template_id' => isset( $row['template_id'] ) ? $row['template_id'] : 0,
+						'expires_at'  => isset( $row['expires_at'] ) ? $row['expires_at'] : '',
+					];
+				},
+				array_slice( $matches, 0, (int) $args[5] )
+			);
+		}
+
+		// Educator Reminder_Service dedupe ledger: event meta rows for
+		// one certificate and event type.
+		if ( false !== strpos( $query, 'WHERE certificate_id = %d AND event_type = %s' ) ) {
+			return array_map(
+				static function ( $row ) {
+					return [ 'meta_json' => isset( $row['meta_json'] ) ? $row['meta_json'] : null ];
+				},
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return (int) ( isset( $row['certificate_id'] ) ? $row['certificate_id'] : 0 ) === (int) $args[1]
+							&& (string) ( isset( $row['event_type'] ) ? $row['event_type'] : '' ) === (string) $args[2];
+					}
+				)
+			);
+		}
+
+		// Educator reminder content: the single reminder-context email
+		// template row (with or without the status filter).
+		if ( false !== strpos( $query, 'WHERE context = %s' ) && false !== strpos( $query, 'ORDER BY id ASC LIMIT 1' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args, $query ) {
+					if ( (string) ( isset( $row['context'] ) ? $row['context'] : '' ) !== (string) $args[1] ) {
+						return false;
+					}
+
+					if ( ! empty( $row['deleted_at'] ) ) {
+						return false;
+					}
+
+					if ( false !== strpos( $query, 'AND status = %s' )
+						&& (string) ( isset( $row['status'] ) ? $row['status'] : '' ) !== (string) $args[2] ) {
+						return false;
+					}
+
+					return true;
+				}
+			);
+
+			return array_slice( $matches, 0, 1 );
+		}
+
 		throw new RuntimeException( 'PPCert_Fake_WPDB: unsupported query shape: ' . $query );
 	}
 

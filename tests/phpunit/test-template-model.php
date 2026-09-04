@@ -698,4 +698,33 @@ class Test_Template_List_And_Duplicate extends TestCase {
 			);
 		}
 	}
+
+	/**
+	 * Reminder keys (2.0, Educator E-005 - premium-written, sanitized
+	 * here): the enabled flag survives only when truthy; offsets clean
+	 * to whole days 1-365, unique, largest first, at most five.
+	 *
+	 * @return void
+	 */
+	public function test_settings_sanitize_reminder_keys() {
+		$clean = PressPrimer_Certificate_Template::sanitize_settings(
+			[
+				'reminders_enabled' => true,
+				'reminder_offsets'  => [ 7, '30', 7, 0, -3, 400, 'junk', 14, 90, 60, 45 ],
+			]
+		);
+
+		$this->assertTrue( $clean['reminders_enabled'] );
+		$this->assertSame( [ 90, 60, 45, 30, 14 ], $clean['reminder_offsets'], 'Unique, bounded, largest first, capped at five' );
+
+		$clean = PressPrimer_Certificate_Template::sanitize_settings(
+			[
+				'reminders_enabled' => false,
+				'reminder_offsets'  => [ 'junk', 0 ],
+			]
+		);
+
+		$this->assertArrayNotHasKey( 'reminders_enabled', $clean, 'A false flag stores nothing' );
+		$this->assertArrayNotHasKey( 'reminder_offsets', $clean, 'No valid offsets stores nothing' );
+	}
 }
