@@ -39,6 +39,7 @@ test.describe( 'extension bridge', () => {
 				'getSelection',
 				'getTemplate',
 				'isDirty',
+				'replaceLayout',
 				'setSelection',
 				'subscribe',
 			].sort()
@@ -123,4 +124,52 @@ test.describe( 'extension bridge', () => {
 			ELEMENT_COUNT
 		);
 	} );
+
+	test( 'replaceLayout swaps without history: undo cannot resurrect the old page', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		const result = await page.evaluate( () => {
+			const api = ( window as any ).ppcert_designer_api;
+
+			// An edit first (history entry exists), then a page-style
+			// replace, then undo: history was reset by the replace, so
+			// undo has nothing to act on and the new page stays.
+			const edited = JSON.parse( JSON.stringify( api.getLayout() ) );
+			edited.elements = edited.elements.slice( 0, 4 );
+			api.applyLayout( edited );
+
+			const other = JSON.parse( JSON.stringify( api.getLayout() ) );
+			other.elements = [];
+			api.replaceLayout( other );
+
+			const dirtyAfterReplace = api.isDirty();
+
+			( window as any ).__ppcertHarness.dispatch( { type: 'UNDO' } );
+
+			return {
+				after: api.getLayout().elements.length,
+				dirtyAfterReplace,
+			};
+		} );
+
+		expect( result.after ).toBe( 0 );
+		expect( result.dirtyAfterReplace ).toBe( true );
+
+		// Explicit dirty override.
+		await page.evaluate( () => {
+			const api = ( window as any ).ppcert_designer_api;
+			api.replaceLayout(
+				JSON.parse( JSON.stringify( api.getLayout() ) ),
+				false
+			);
+		} );
+		expect(
+			await page.evaluate( () =>
+				( window as any ).ppcert_designer_api.isDirty()
+			)
+		).toBe( false );
+	} );
 } );
+

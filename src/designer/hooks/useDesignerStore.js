@@ -70,6 +70,24 @@ export function designerReducer( state, action ) {
 				dirty: true,
 			};
 
+		case 'REPLACE_LAYOUT':
+			// Extension page switching (Feature 2.0-006 / Educator E-002):
+			// swaps the working document WITHOUT a history push - a page
+			// switch is navigation, not an edit, so undo stays scoped to
+			// the current page. Selection clears (it referenced the old
+			// page's elements); dirty is the caller's call (page
+			// structure changes are edits, plain switches are not).
+			return {
+				...state,
+				layout: action.layout,
+				selection: [],
+				history: { past: [], future: [] },
+				dirty:
+					'boolean' === typeof action.dirty
+						? action.dirty
+						: state.dirty,
+			};
+
 		case 'SET_SELECTION':
 			return { ...state, selection: action.ids };
 

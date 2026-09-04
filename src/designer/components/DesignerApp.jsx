@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { applyFilters } from '@wordpress/hooks';
 import {
 	Layout,
 	Segmented,
@@ -116,18 +117,25 @@ export default function DesignerApp( { boot } ) {
 		setSaving( true );
 
 		saveTemplate( state.template.id, {
-			layout: state.layout,
+			// Extensions assemble the full stored document here
+			// (Educator reassembles v3 from its pages; free-only
+			// installs save the working document unchanged).
+			layout: applyFilters( 'ppcert.designer.saveLayout', state.layout ),
 			title: state.template.title,
 			settings: state.template.settings || {},
 			expected_updated_at: state.template.updated_at,
 			...extra,
 		} )
 			.then( ( template ) => {
-				// Adopt the validator's rebuilt document (FR-007).
+				// Adopt the validator's rebuilt document (FR-007);
+				// extensions re-project their working page from it.
 				dispatch( {
 					type: 'ADOPT_SAVED',
 					template,
-					layout: template.layout,
+					layout: applyFilters(
+						'ppcert.designer.adoptSavedLayout',
+						template.layout
+					),
 				} );
 
 				// Triggers persist alongside the layout (FR-007): the
@@ -218,7 +226,10 @@ export default function DesignerApp( { boot } ) {
 		const tab = window.open( 'about:blank', '_blank' );
 		setPreviewing( true );
 
-		previewTemplate( state.template.id, state.layout )
+		previewTemplate(
+			state.template.id,
+			applyFilters( 'ppcert.designer.saveLayout', state.layout )
+		)
 			.then( ( { url } ) => {
 				if ( tab ) {
 					tab.location = url;
@@ -360,7 +371,19 @@ export default function DesignerApp( { boot } ) {
 							10
 						) || 0;
 
-					if ( version > CURRENT_SCHEMA_VERSION ) {
+					/**
+					 * Extensions declaring they can open a newer schema
+					 * version (Educator's page rail opens v3) flip this;
+					 * free-only installs keep the decline unchanged.
+					 * (Feature 2.0-006 / E-002 extension contract.)
+					 */
+					const canOpen = applyFilters(
+						'ppcert.designer.canOpenVersion',
+						version <= CURRENT_SCHEMA_VERSION,
+						version
+					);
+
+					if ( ! canOpen ) {
 						setLoadError(
 							__(
 								'This design uses multi-page features from PressPrimer Certificate Educator, so it cannot be opened in the single-page designer. Certificates still award and download from it normally.',
@@ -373,7 +396,14 @@ export default function DesignerApp( { boot } ) {
 					dispatch( {
 						type: 'LOAD_TEMPLATE',
 						template,
-						layout: template.layout,
+						// Extensions project multi-page documents into
+						// the working page here (and keep the full
+						// document their own concern).
+						layout: applyFilters(
+							'ppcert.designer.loadLayout',
+							template.layout,
+							template
+						),
 					} );
 				} )
 				.catch( ( error ) => {

@@ -82,6 +82,18 @@ export default function ExtensionBridge() {
 				dispatch( { type: 'APPLY_LAYOUT', layout } ),
 
 			/**
+			 * Replace the working document without a history push
+			 * (extension page switching - undo stays scoped to the
+			 * current page; selection clears).
+			 *
+			 * @param {Object}  layout Next working document.
+			 * @param {boolean} dirty  Optional dirty override; omitted
+			 *                         keeps the current flag.
+			 */
+			replaceLayout: ( layout, dirty ) =>
+				dispatch( { type: 'REPLACE_LAYOUT', layout, dirty } ),
+
+			/**
 			 * Set the canvas selection.
 			 *
 			 * @param {Array} ids Element ids.
