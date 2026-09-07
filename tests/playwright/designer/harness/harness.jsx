@@ -225,6 +225,13 @@ function Harness() {
 		seedAttachment: seedAttachmentUrl,
 		seedQr: seedSampleQr,
 		seedSamples: ( data ) => seedMergeFields( data ),
+		// Register an addon-shaped font into the boot list, exactly as a
+		// production filter registration reaches the designer - the
+		// canvas substitutes any family NOT in this list (parity
+		// contract), so fixtures with custom fonts must seed theirs.
+		seedFont: ( slug, family ) => {
+			window.ppcert_designer_data.fonts[ slug ] = family;
+		},
 		// Parity mode: strip designer chrome (safe margin, rulers) so the
 		// page screenshot is comparable to render_png() output.
 		setParity: ( on ) => {

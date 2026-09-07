@@ -19,8 +19,7 @@
 import { useDesignerView } from '../view-context';
 import { interpolateTokens } from '../schema/interpolate';
 import { useTextFit } from './useTextFit';
-import { baselineCompensation } from './baseline';
-import { DEFAULT_FONT } from '../schema/geometry';
+import { baselineCompensation, resolveFontFamily } from './baseline';
 
 /**
  * The element.
@@ -48,9 +47,9 @@ export default function TextElement( { element, box } ) {
 				width: box.w,
 				height: box.h,
 				color: p.color,
-				// Deleted/unknown families fall back to the default face,
-				// matching the renderer's substitution (parity contract).
-				fontFamily: `"${ p.font_family }", "${ DEFAULT_FONT }"`,
+				// Deleted/unknown families substitute the default face in
+				// data (never a CSS fallback list - parity contract).
+				fontFamily: `"${ resolveFontFamily( p.font_family ) }"`,
 				fontSize: fitted.size,
 				lineHeight: p.line_height,
 				fontWeight: p.bold ? 700 : 400,

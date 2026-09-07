@@ -101,12 +101,14 @@ function sampleQr(): unknown {
  * @param layout
  * @param qr
  * @param extraCss
+ * @param extraFonts
  */
 async function bootCanvas(
 	page: Page,
 	layout: unknown,
 	qr: unknown,
-	extraCss = ''
+	extraCss = '',
+	extraFonts: Record< string, unknown > = {}
 ): Promise< void > {
 	await page.goto( HARNESS_URL );
 	await page.waitForSelector( '[data-ppcert-canvas-scale]' );
@@ -122,6 +124,14 @@ async function bootCanvas(
 	await page.evaluate(
 		( args: any ) => {
 			const bridge = ( window as any ).__ppcertHarness;
+
+			// Addon fonts join the boot list before the layout mounts -
+			// the canvas substitutes any family NOT registered there
+			// (the renderer's rule), so production-registered fonts must
+			// be registered here too.
+			for ( const slug of Object.keys( args.extraFonts || {} ) ) {
+				bridge.seedFont( slug, args.extraFonts[ slug ] );
+			}
 
 			bridge.seedQr( args.qr );
 			bridge.seedSamples( {
@@ -143,7 +153,7 @@ async function bootCanvas(
 			bridge.setZoom( 1 );
 			bridge.setParity( true );
 		},
-		{ layout, qr, samples }
+		{ layout, qr, samples, extraFonts }
 	);
 
 	await page.waitForSelector( '[data-ppcert-canvas-scale="1"]' );
@@ -209,6 +219,7 @@ const INLINE_TOKEN_FIXTURES = [
  * @param opts.canvasLayout
  * @param opts.renderArgs
  * @param opts.extraCss
+ * @param opts.extraFonts
  */
 async function runParityCase(
 	page: Page,
@@ -220,6 +231,7 @@ async function runParityCase(
 		canvasLayout?: any;
 		renderArgs?: Record< string, unknown >;
 		extraCss?: string;
+		extraFonts?: Record< string, unknown >;
 	} = {}
 ): Promise< void > {
 	const canvasLayout = opts.canvasLayout ?? layout;
@@ -241,7 +253,13 @@ async function runParityCase(
 	);
 
 	// Canvas side.
-	await bootCanvas( page, canvasLayout, sampleQr(), opts.extraCss || '' );
+	await bootCanvas(
+		page,
+		canvasLayout,
+		sampleQr(),
+		opts.extraCss || '',
+		opts.extraFonts || {}
+	);
 
 	const canvasPng = path.join( dir, 'canvas.png' );
 	await page
@@ -419,6 +437,26 @@ test.describe( 'addon font contract', () => {
 				custom_fonts: { 'parity-custom-font': 'quicksand' },
 			},
 			extraCss: `@font-face{font-family:"parity-custom-font";src:url("${ ttfUrl }") format("truetype");font-weight:400;font-style:normal;font-display:block;}`,
+			// A production filter registration reaches the designer's
+			// boot font list; without it the canvas substitutes the
+			// family (the renderer's rule for unregistered fonts).
+			extraFonts: {
+				'parity-custom-font': {
+					label: 'Parity Custom Font',
+					variants: {
+						regular: {
+							tcpdf_font: 'quicksand',
+							ttf: 'quicksand/Quicksand-Regular.ttf',
+							metrics: {
+								ascent: 1000,
+								descent: -250,
+								cap_height: 700,
+								units: 'per-1000-em',
+							},
+						},
+					},
+				},
+			},
 		} );
 	} );
 

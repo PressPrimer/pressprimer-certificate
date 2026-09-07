@@ -17,6 +17,23 @@ let ctx = null;
 const cache = new Map();
 
 /**
+ * The family the canvas actually renders and measures.
+ *
+ * Unknown or deleted families substitute the default face - the PDF
+ * renderer's rule (parity contract). The decision resolves HERE, in
+ * data, to a single family: a CSS fallback list would change how the
+ * browser matches and measures loaded faces too, drifting known-font
+ * baselines away from the PDF (the 2.0 playful-starter parity
+ * regression).
+ *
+ * @param {string} family Font family slug from the layout.
+ * @return {string} The family to render and measure.
+ */
+export function resolveFontFamily( family ) {
+	return getBoot().fonts[ family ] ? family : DEFAULT_FONT;
+}
+
+/**
  * Manifest ascent (per-1000-em) for a family + style.
  *
  * @param {string}  family Font family slug.
@@ -55,7 +72,12 @@ function manifestAscent( family, bold, italic ) {
  * @return {number} Translate-Y in points (0 when unknowable).
  */
 export function baselineCompensation( props, size ) {
-	const key = `${ props.font_family }|${ props.bold ? 1 : 0 }|${
+	// The resolved family drives measurement AND the manifest lookup,
+	// so a substituted font compensates with ITS metrics - exactly what
+	// the PDF renderer does after substituting.
+	const family = resolveFontFamily( props.font_family );
+
+	const key = `${ family }|${ props.bold ? 1 : 0 }|${
 		props.italic ? 1 : 0
 	}|${ size }|${ props.line_height }`;
 
@@ -63,11 +85,7 @@ export function baselineCompensation( props, size ) {
 		return cache.get( key );
 	}
 
-	const ascent = manifestAscent(
-		props.font_family,
-		!! props.bold,
-		!! props.italic
-	);
+	const ascent = manifestAscent( family, !! props.bold, !! props.italic );
 
 	let dy = 0;
 
@@ -80,7 +98,7 @@ export function baselineCompensation( props, size ) {
 		// whole pixels, so per-em values need a large measuring size.
 		ctx.font = `${ props.italic ? 'italic ' : '' }${
 			props.bold ? 700 : 400
-		} 1000px "${ props.font_family }", "${ DEFAULT_FONT }"`;
+		} 1000px "${ family }"`;
 
 		const metrics = ctx.measureText( 'Hg' );
 
