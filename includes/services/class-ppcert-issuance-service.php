@@ -341,14 +341,17 @@ class PressPrimer_Certificate_Issuance_Service {
 			}
 
 			// Step 7: insert with snapshots. The layout snapshot is the
-			// template's raw JSON string, byte for byte.
+			// template's raw JSON string, byte for byte. The issuer of
+			// record is stamped from the template at issue time (School
+			// 2.0 contract) - reassigning the template later never
+			// rewrites issued certificates.
 			$inserted = $wpdb->insert(
 				PressPrimer_Certificate_Certificate::table(),
 				[
 					'uuid'                  => wp_generate_uuid4(),
 					'credential_id'         => $credential_id,
 					'template_id'           => (int) $template->id,
-					'issuer_id'             => null,
+					'issuer_id'             => ! empty( $template->issuer_id ) ? (int) $template->issuer_id : null,
 					'recipient_id'          => (int) $context['recipient_id'],
 					'issued_by'             => (int) $context['issued_by'],
 					'source_type'           => $context['source_type'],

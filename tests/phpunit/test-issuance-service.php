@@ -739,4 +739,35 @@ class Test_Issuance_Service extends TestCase {
 		$this->assertArrayHasKey( 'certificate.issuer_name', $certificate->merge_data );
 		$this->assertNotSame( '', $certificate->merge_data['certificate.issuer_name'] );
 	}
+
+	/**
+	 * The issuer of record is stamped from the template at issue time
+	 * (School 2.0 contract), and reassigning the template afterward never
+	 * rewrites issued certificates. A template with no issuer stamps NULL.
+	 *
+	 * @return void
+	 */
+	public function test_issuer_stamped_from_template_and_immutable() {
+		$id = PressPrimer_Certificate_Issuance_Service::issue( $this->args() );
+		$this->assertIsInt( $id );
+
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$this->assertNull( $rows[0]['issuer_id'], 'No template issuer: NULL, never 0' );
+
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Template::table(), $this->template_id, [ 'issuer_id' => 12 ] );
+
+		$stamped = PressPrimer_Certificate_Issuance_Service::issue( $this->args( [ 'source_ref' => '90' ] ) );
+		$this->assertIsInt( $stamped );
+
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$this->assertSame( 12, $rows[1]['issuer_id'] );
+
+		// Reassignment: the first certificate keeps its original (lack of
+		// an) issuer; the stamp is issue-time truth, not a live join.
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Template::table(), $this->template_id, [ 'issuer_id' => 44 ] );
+
+		$rows = $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() );
+		$this->assertNull( $rows[0]['issuer_id'] );
+		$this->assertSame( 12, $rows[1]['issuer_id'] );
+	}
 }

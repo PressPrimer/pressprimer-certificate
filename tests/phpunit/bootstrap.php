@@ -371,6 +371,25 @@ if ( ! function_exists( 'sanitize_textarea_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'sanitize_title' ) ) {
+	/**
+	 * Stub: Slug sanitizer - lowercase, spaces/underscores to dashes,
+	 * strip everything else, collapse and trim dashes. A close-enough
+	 * stand-in for WP's; slug edge cases are additionally verified live.
+	 *
+	 * @param string $title Raw title.
+	 * @return string
+	 */
+	function sanitize_title( $title ) {
+		$slug = strtolower( wp_strip_all_tags( (string) $title, true ) );
+		$slug = preg_replace( '/[\s_]+/', '-', $slug );
+		$slug = preg_replace( '/[^a-z0-9-]/', '', $slug );
+		$slug = preg_replace( '/-+/', '-', $slug );
+
+		return trim( $slug, '-' );
+	}
+}
+
 if ( ! function_exists( 'wp_attachment_is_image' ) ) {
 	/**
 	 * Stub: Whether an attachment id is a known image.

@@ -640,6 +640,87 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Issuer::get_by_slug (School 2.0 issuer models).
+		if ( preg_match( '/WHERE slug = %s\s*$/', $query ) ) {
+			return $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return isset( $row['slug'] ) && (string) $row['slug'] === (string) $args[1];
+				}
+			);
+		}
+
+		// Issuer::get_all - optionally status-filtered, name order.
+		if ( preg_match( '/(WHERE status = %s )?ORDER BY name ASC\s*$/', $query, $m ) && false !== strpos( $query, 'ORDER BY name ASC' ) ) {
+			$matches = empty( $m[1] )
+				? $rows
+				: $this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return isset( $row['status'] ) && (string) $row['status'] === (string) $args[1];
+					}
+				);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return strcasecmp( (string) $a['name'], (string) $b['name'] );
+				}
+			);
+
+			return $matches;
+		}
+
+		// Issuer_Member::get - one membership row.
+		if ( preg_match( '/WHERE issuer_id = %d AND user_id = %d\s*$/', $query ) ) {
+			return $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['issuer_id'] === (int) $args[1] && (int) $row['user_id'] === (int) $args[2];
+				}
+			);
+		}
+
+		// Issuer_Member::get_for_issuer - roster in added order.
+		if ( false !== strpos( $query, 'WHERE issuer_id = %d ORDER BY added_at ASC, user_id ASC' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['issuer_id'] === (int) $args[1];
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					$by_time = strcmp( (string) $a['added_at'], (string) $b['added_at'] );
+
+					return 0 !== $by_time ? $by_time : ( (int) $a['user_id'] <=> (int) $b['user_id'] );
+				}
+			);
+
+			return $matches;
+		}
+
+		// Issuer_Member::get_for_user - a user's memberships.
+		if ( false !== strpos( $query, 'WHERE user_id = %d ORDER BY issuer_id ASC' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['user_id'] === (int) $args[1];
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return (int) $a['issuer_id'] <=> (int) $b['issuer_id'];
+				}
+			);
+
+			return $matches;
+		}
+
 		// Certificate::get_for_verification - joined single lookup.
 		if ( false !== strpos( $query, 'LEFT JOIN' ) && false !== strpos( $query, 'WHERE c.credential_id = %s' ) ) {
 			$templates = $this->rows( (string) $args[1] );
