@@ -270,6 +270,38 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 		$force        = (bool) $request->get_param( 'force' );
 		$earned_date  = sanitize_text_field( (string) $request->get_param( 'earned_date' ) );
 
+		/**
+		 * Filters whether the current user may award from this template.
+		 *
+		 * The free capability has already passed; addons narrow awarding
+		 * per template (School: issuer templates require awarding rights
+		 * on that issuer). Applies to every acting-user award path -
+		 * manual issue here, Educator bulk award, School retroactive.
+		 * Automatic trigger-driven issuance never asks (no acting user).
+		 * Return a WP_Error for a refusal message naming the issuer.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param bool|WP_Error $can         Whether awarding is allowed.
+		 * @param int           $template_id Template row id.
+		 * @param int           $user_id     Acting user id.
+		 */
+		$can_award = apply_filters( 'ppcert_user_can_issue_from_template', true, $template_id, get_current_user_id() );
+
+		if ( is_wp_error( $can_award ) ) {
+			$can_award->add_data( [ 'status' => 403 ] );
+
+			return $can_award;
+		}
+
+		if ( true !== $can_award ) {
+			return new WP_Error(
+				'ppcert_award_denied',
+				__( 'You are not allowed to award certificates from this template.', 'pressprimer-certificate' ),
+				[ 'status' => 403 ]
+			);
+		}
+
 		// Earned date (Phase 5B item 6): a Y-m-d site-local date. Today
 		// stamps the exact current moment; a backdate stores that date
 		// at local noon, converted to UTC (never a future date).

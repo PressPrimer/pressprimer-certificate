@@ -394,17 +394,32 @@ class PressPrimer_Certificate_Admin_Certificates {
 		foreach ( PressPrimer_Certificate_Template::get_all() as $template ) {
 			if ( 'published' === (string) $template->status ) {
 				$templates[] = [
-					'id'    => (int) $template->id,
-					'title' => (string) $template->title,
+					'id'        => (int) $template->id,
+					'title'     => (string) $template->title,
+					'issuer_id' => ! empty( $template->issuer_id ) ? (int) $template->issuer_id : 0,
 				];
 			}
 		}
+
+		/**
+		 * Filters the issue modal's template choices.
+		 *
+		 * The addon scoping surface (2.0, School contract): School keeps
+		 * only the templates the current user may award from, so the
+		 * picker matches what the award endpoint will accept.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $templates Template choices (id, title, issuer_id).
+		 * @param int   $user_id   Current user id.
+		 */
+		$templates = apply_filters( 'ppcert_issue_templates', $templates, get_current_user_id() );
 
 		wp_localize_script(
 			'ppcert-issue',
 			'ppcert_issue_data',
 			[
-				'templates' => $templates,
+				'templates' => array_values( $templates ),
 			]
 		);
 	}

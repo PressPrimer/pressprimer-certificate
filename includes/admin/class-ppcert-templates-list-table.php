@@ -78,13 +78,27 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 	 * @return array
 	 */
 	public function get_columns() {
-		return [
-			'title'      => __( 'Title', 'pressprimer-certificate' ),
-			'status'     => __( 'Status', 'pressprimer-certificate' ),
-			'trigger'    => __( 'Trigger', 'pressprimer-certificate' ),
-			'page'       => __( 'Page', 'pressprimer-certificate' ),
-			'updated_at' => __( 'Last Updated', 'pressprimer-certificate' ),
-		];
+		/**
+		 * Filters the Templates list columns.
+		 *
+		 * The addon list-extension surface (2.0, School contract item 7):
+		 * addons add their columns here and render them through the
+		 * ppcert_template_list_column action.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $columns Column key => heading.
+		 */
+		return apply_filters(
+			'ppcert_template_list_columns',
+			[
+				'title'      => __( 'Title', 'pressprimer-certificate' ),
+				'status'     => __( 'Status', 'pressprimer-certificate' ),
+				'trigger'    => __( 'Trigger', 'pressprimer-certificate' ),
+				'page'       => __( 'Page', 'pressprimer-certificate' ),
+				'updated_at' => __( 'Last Updated', 'pressprimer-certificate' ),
+			]
+		);
 	}
 
 	/**
@@ -115,7 +129,20 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 		$integration = $this->filter_param( 'integration' );
 		$map         = PressPrimer_Certificate_Plugin::get_integration_map();
 
-		$result = PressPrimer_Certificate_Template::query(
+		/**
+		 * Filters the Templates list query arguments.
+		 *
+		 * The addon list-extension surface (2.0, School contract item 7):
+		 * addons read their own request parameters and add Template::query
+		 * constraints here (e.g. School's issuer filter and member
+		 * scoping).
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $query_args Template::query() arguments.
+		 */
+		$query_args = apply_filters(
+			'ppcert_template_list_query_args',
 			[
 				'status'        => sanitize_key( $this->filter_param( 'status' ) ),
 				'search'        => $this->filter_param( 's' ),
@@ -124,6 +151,8 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 				'per_page'      => self::PER_PAGE,
 			]
 		);
+
+		$result = PressPrimer_Certificate_Template::query( $query_args );
 
 		$this->items        = $result['items'];
 		$this->type_details = PressPrimer_Certificate_Plugin::get_trigger_type_details();
@@ -204,6 +233,17 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 
 			echo '</select>';
 		}
+
+		/**
+		 * Fires after the core Templates list filter controls.
+		 *
+		 * The addon list-extension surface (2.0, School contract item 7):
+		 * addon selects rendered here join the same GET form, so their
+		 * parameters combine with core search and filters.
+		 *
+		 * @since 2.0.0
+		 */
+		do_action( 'ppcert_template_list_filters' );
 
 		submit_button( __( 'Filter', 'pressprimer-certificate' ), '', 'filter_action', false );
 
@@ -304,6 +344,20 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 				);
 
 			default:
+				/**
+				 * Fires for unknown Templates list columns.
+				 *
+				 * The addon list-extension surface (2.0, School contract
+				 * item 7): the addon that registered the column echoes its
+				 * escaped cell content here (the Quiz banks-list pattern).
+				 *
+				 * @since 2.0.0
+				 *
+				 * @param string $column_name Column key.
+				 * @param object $item        Template row.
+				 */
+				do_action( 'ppcert_template_list_column', $column_name, $item );
+
 				return '';
 		}
 	}

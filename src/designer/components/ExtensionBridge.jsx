@@ -112,6 +112,17 @@ export default function ExtensionBridge() {
 				dispatch( { type: 'EDIT_SETTINGS', settings } ),
 
 			/**
+			 * Set the template's issuer assignment (2.0, School
+			 * contract). A top-level column, not a settings key: it
+			 * persists with the next save, and the server's assignment
+			 * filter has the final say.
+			 *
+			 * @param {number} issuerId Issuer id (0 = site template).
+			 */
+			editIssuer: ( issuerId ) =>
+				dispatch( { type: 'EDIT_ISSUER', issuerId } ),
+
+			/**
 			 * Subscribe to state changes
 			 * ({ layout, selection, dirty, template }).
 			 *

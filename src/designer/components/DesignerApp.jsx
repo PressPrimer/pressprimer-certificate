@@ -123,6 +123,10 @@ export default function DesignerApp( { boot } ) {
 			layout: applyFilters( 'ppcert.designer.saveLayout', state.layout ),
 			title: state.template.title,
 			settings: state.template.settings || {},
+			// The issuer of record for future issues (2.0, School
+			// contract): 0 = site template. Unchanged values are a
+			// no-op server-side.
+			issuer_id: parseInt( state.template.issuer_id, 10 ) || 0,
 			expected_updated_at: state.template.updated_at,
 			...extra,
 		} )

@@ -100,6 +100,11 @@ class PressPrimer_Certificate_Admin {
 
 		check_admin_referer( 'ppcert_duplicate_template_' . $template_id );
 
+		/** This filter is documented in includes/api/class-ppcert-rest-templates-controller.php */
+		if ( ! apply_filters( 'ppcert_user_can_edit_template', true, $template_id, get_current_user_id() ) ) {
+			wp_die( esc_html__( 'You are not allowed to duplicate this template.', 'pressprimer-certificate' ) );
+		}
+
 		$result     = PressPrimer_Certificate_Template::duplicate( $template_id, get_current_user_id() );
 		$duplicated = ! is_wp_error( $result ) ? 1 : 0;
 
@@ -141,6 +146,11 @@ class PressPrimer_Certificate_Admin {
 		$template_id = isset( $_GET['template_id'] ) ? absint( wp_unslash( $_GET['template_id'] ) ) : 0;
 
 		check_admin_referer( 'ppcert_trash_template_' . $template_id );
+
+		/** This filter is documented in includes/api/class-ppcert-rest-templates-controller.php */
+		if ( ! apply_filters( 'ppcert_user_can_edit_template', true, $template_id, get_current_user_id() ) ) {
+			wp_die( esc_html__( 'You are not allowed to trash this template.', 'pressprimer-certificate' ) );
+		}
 
 		$result  = PressPrimer_Certificate_Template::trash( $template_id );
 		$trashed = ! is_wp_error( $result ) ? 1 : 0;

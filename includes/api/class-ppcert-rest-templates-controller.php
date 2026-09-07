@@ -76,17 +76,17 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 				[
 					'methods'             => 'GET',
 					'callback'            => [ $this, 'get_template' ],
-					'permission_callback' => [ $this, 'can_manage' ],
+					'permission_callback' => [ $this, 'can_manage_template' ],
 				],
 				[
 					'methods'             => 'PUT',
 					'callback'            => [ $this, 'update_template' ],
-					'permission_callback' => [ $this, 'can_manage' ],
+					'permission_callback' => [ $this, 'can_manage_template' ],
 				],
 				[
 					'methods'             => 'DELETE',
 					'callback'            => [ $this, 'trash_template' ],
-					'permission_callback' => [ $this, 'can_manage' ],
+					'permission_callback' => [ $this, 'can_manage_template' ],
 				],
 			]
 		);
@@ -97,7 +97,7 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'preview_template' ],
-				'permission_callback' => [ $this, 'can_manage' ],
+				'permission_callback' => [ $this, 'can_manage_template' ],
 			]
 		);
 
@@ -111,8 +111,46 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'send_test_email' ],
-				'permission_callback' => [ $this, 'can_manage' ],
+				'permission_callback' => [ $this, 'can_manage_template' ],
 			]
+		);
+	}
+
+	/**
+	 * Capability check for one template's routes (designer open, save,
+	 * trash, preview, test email)
+	 *
+	 * The capability gate plus the addon layer: School scopes template
+	 * management to issuer members through the filter (2.0 contract).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param WP_REST_Request $request The request.
+	 * @return bool
+	 */
+	public function can_manage_template( $request ) {
+		if ( ! $this->can_manage() ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether the current user may manage one template.
+		 *
+		 * The free capability has already passed; addons narrow access
+		 * per template (School: issuer members manage only their
+		 * issuer's templates; site templates stay capability-gated).
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param bool $can         Whether management is allowed.
+		 * @param int  $template_id Template row id.
+		 * @param int  $user_id     Current user id.
+		 */
+		return (bool) apply_filters(
+			'ppcert_user_can_edit_template',
+			true,
+			absint( $request->get_param( 'id' ) ),
+			get_current_user_id()
 		);
 	}
 
@@ -214,7 +252,21 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			$items[] = self::summary( $row );
 		}
 
-		return new WP_REST_Response( $items, 200 );
+		/**
+		 * Filters the REST template list items.
+		 *
+		 * The addon scoping surface (2.0, School contract): School
+		 * removes other issuers' templates from member views here, so
+		 * every picker fed by this route matches the admin list's scope.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $items   Template summaries.
+		 * @param int   $user_id Current user id.
+		 */
+		$items = apply_filters( 'ppcert_rest_template_summaries', $items, get_current_user_id() );
+
+		return new WP_REST_Response( array_values( $items ), 200 );
 	}
 
 	/**
@@ -425,11 +477,72 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			$args['settings'] = $settings;
 		}
 
+		// Issuer assignment (2.0, School contract): 0 clears back to a
+		// site template. Existing certificates keep their issue-time
+		// stamp regardless.
+		$issuer_id = $request->get_param( 'issuer_id' );
+		if ( null !== $issuer_id ) {
+			$issuer_id = absint( $issuer_id );
+
+			/**
+			 * Filters whether the current user may assign this template
+			 * to this issuer.
+			 *
+			 * School enforces its assignment rules here (admins and the
+			 * target issuer's owners). Return a WP_Error for a named
+			 * refusal message.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param bool|WP_Error $allowed     Whether assignment is allowed.
+			 * @param int           $issuer_id   Target issuer id (0 = site template).
+			 * @param int           $template_id Template row id.
+			 * @param int           $user_id     Current user id.
+			 */
+			$allowed = apply_filters( 'ppcert_template_issuer_assignment_allowed', true, $issuer_id, (int) $row->id, get_current_user_id() );
+
+			if ( is_wp_error( $allowed ) ) {
+				$allowed->add_data( [ 'status' => 403 ] );
+
+				return $allowed;
+			}
+
+			if ( true !== $allowed ) {
+				return new WP_Error(
+					'ppcert_issuer_assignment_denied',
+					__( 'You are not allowed to assign this template to that issuer.', 'pressprimer-certificate' ),
+					[ 'status' => 403 ]
+				);
+			}
+
+			$args['issuer_id'] = $issuer_id;
+		}
+
 		$updated = PressPrimer_Certificate_Template::update( (int) $row->id, $args );
 
 		if ( is_wp_error( $updated ) ) {
 			$updated->add_data( [ 'status' => 500 ] );
 			return $updated;
+		}
+
+		$previous_issuer = ! empty( $row->issuer_id ) ? (int) $row->issuer_id : 0;
+		$current_issuer  = ! empty( $updated->issuer_id ) ? (int) $updated->issuer_id : 0;
+
+		if ( array_key_exists( 'issuer_id', $args ) && $previous_issuer !== $current_issuer ) {
+			/**
+			 * Fires when a template's issuer assignment changes.
+			 *
+			 * Already-issued certificates keep their issue-time stamp;
+			 * this is about future issues (School relays it to its own
+			 * hook surface).
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param int $template_id Template row id.
+			 * @param int $issuer_id   New issuer id (0 = site template).
+			 * @param int $previous    Previous issuer id (0 = site template).
+			 */
+			do_action( 'ppcert_template_issuer_changed', (int) $row->id, $current_issuer, $previous_issuer );
 		}
 
 		return new WP_REST_Response( self::full( $updated ), 200 );
@@ -618,6 +731,9 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			'status'      => (string) $row->status,
 			'page_size'   => (string) $row->page_size,
 			'orientation' => (string) $row->orientation,
+			// The issuer of record for future issues (2.0, School
+			// contract): 0 = site template.
+			'issuer_id'   => ! empty( $row->issuer_id ) ? (int) $row->issuer_id : 0,
 			'updated_at'  => str_replace( ' ', 'T', (string) $row->updated_at ) . 'Z',
 		];
 	}

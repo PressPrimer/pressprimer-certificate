@@ -793,18 +793,24 @@ class PPCert_Fake_WPDB {
 		}
 
 		// Template::query - the templates admin list (sentinel filters +
-		// EXISTS trigger-type subquery). args: [templates_table, status x2,
-		// search x2, types_csv, triggers_table, types_csv, (limit, offset)].
+		// EXISTS trigger-type subquery + issuer filter/scope since 2.0).
+		// args: [templates_table, status x2, search x2, types_csv,
+		// triggers_table, types_csv, issuer x2, scoped, scope_csv,
+		// (limit, offset)].
 		if ( false !== strpos( $query, 'FROM %i t WHERE t.deleted_at IS NULL' ) ) {
 			$status    = (string) $args[1];
 			$needle    = $this->like_to_substring( (string) $args[3] );
 			$types_csv = (string) $args[5];
 			$types     = '' !== $types_csv ? explode( ',', $types_csv ) : [];
 			$trigger_rows = $this->rows( (string) $args[6] );
+			$issuer    = (string) $args[8];
+			$scoped    = (int) $args[10];
+			$scope_csv = (string) $args[11];
+			$scope_ids = '' !== $scope_csv ? array_map( 'intval', explode( ',', $scope_csv ) ) : [];
 
 			$matches = $this->filter_rows(
 				$rows,
-				static function ( $row ) use ( $status, $needle, $types, $trigger_rows ) {
+				static function ( $row ) use ( $status, $needle, $types, $trigger_rows, $issuer, $scoped, $scope_ids ) {
 					if ( ! empty( $row['deleted_at'] ) ) {
 						return false;
 					}
@@ -833,6 +839,18 @@ class PPCert_Fake_WPDB {
 						}
 					}
 
+					$row_issuer = ! empty( $row['issuer_id'] ) ? (int) $row['issuer_id'] : 0;
+
+					// Issuer filter: '' all, '0' site, 'N' issuer N.
+					if ( '' !== $issuer && (string) $row_issuer !== $issuer ) {
+						return false;
+					}
+
+					// Member scope: site templates always pass.
+					if ( $scoped && $row_issuer > 0 && ! in_array( $row_issuer, $scope_ids, true ) ) {
+						return false;
+					}
+
 					return true;
 				}
 			);
@@ -848,7 +866,7 @@ class PPCert_Fake_WPDB {
 				return [ [ 'count' => count( $matches ) ] ];
 			}
 
-			return array_slice( $matches, (int) $args[9], (int) $args[8] );
+			return array_slice( $matches, (int) $args[13], (int) $args[12] );
 		}
 
 		// Certificate::get_list_for_recipient - the My Certificates

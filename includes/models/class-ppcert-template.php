@@ -71,11 +71,19 @@ class PressPrimer_Certificate_Template {
 	 * @since 1.0.0
 	 *
 	 * @param array $args {
-	 *     @type string   $status        Status filter ('' = all).
-	 *     @type string   $search        Title search ('' = none).
-	 *     @type string[] $trigger_types Trigger type ids ([] = all).
-	 *     @type int      $page          1-based page.
-	 *     @type int      $per_page      Page size (default 20).
+	 *     @type string     $status        Status filter ('' = all).
+	 *     @type string     $search        Title search ('' = none).
+	 *     @type string[]   $trigger_types Trigger type ids ([] = all).
+	 *     @type string     $issuer        Issuer filter ('' = all, '0' =
+	 *                                     site templates, 'N' = issuer N).
+	 *                                     Since 2.0 (School contract).
+	 *     @type int[]|null $issuer_scope  Visible issuer ids for scoped
+	 *                                     callers (null = unscoped; [] =
+	 *                                     site templates only). Site
+	 *                                     templates always pass the scope.
+	 *                                     Since 2.0 (School contract).
+	 *     @type int        $page          1-based page.
+	 *     @type int        $per_page     Page size (default 20).
 	 * }
 	 * @return array { items: object[], total: int }
 	 */
@@ -89,11 +97,22 @@ class PressPrimer_Certificate_Template {
 		$per_page  = isset( $args['per_page'] ) && absint( $args['per_page'] ) > 0 ? min( 100, absint( $args['per_page'] ) ) : 20;
 		$page      = isset( $args['page'] ) && absint( $args['page'] ) > 0 ? absint( $args['page'] ) : 1;
 
+		// Issuer filter: '' = all, '0' = site templates (NULL), 'N' =
+		// issuer N. Compared against COALESCE so the shape stays fixed.
+		$issuer = isset( $args['issuer'] ) && '' !== (string) $args['issuer']
+			? (string) absint( $args['issuer'] )
+			: '';
+
+		// Member scoping (School): null = unscoped; an id list restricts
+		// issuer templates to those issuers. Site templates always pass.
+		$scoped    = isset( $args['issuer_scope'] ) && is_array( $args['issuer_scope'] ) ? 1 : 0;
+		$scope_csv = $scoped ? implode( ',', array_map( 'absint', $args['issuer_scope'] ) ) : '';
+
 		$search_like = '' !== $search ? '%' . $wpdb->esc_like( $search ) . '%' : '';
 
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) )",
+				"SELECT COUNT(*) FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) ) AND ( %s = '' OR CAST( COALESCE( t.issuer_id, 0 ) AS CHAR ) = %s ) AND ( %d = 0 OR t.issuer_id IS NULL OR FIND_IN_SET( t.issuer_id, %s ) )",
 				self::table(),
 				$status,
 				$status,
@@ -101,13 +120,17 @@ class PressPrimer_Certificate_Template {
 				$search_like,
 				$types_csv,
 				PressPrimer_Certificate_Trigger::table(),
-				$types_csv
+				$types_csv,
+				$issuer,
+				$issuer,
+				$scoped,
+				$scope_csv
 			)
 		);
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT t.* FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) ) ORDER BY t.updated_at DESC LIMIT %d OFFSET %d",
+				"SELECT t.* FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) ) AND ( %s = '' OR CAST( COALESCE( t.issuer_id, 0 ) AS CHAR ) = %s ) AND ( %d = 0 OR t.issuer_id IS NULL OR FIND_IN_SET( t.issuer_id, %s ) ) ORDER BY t.updated_at DESC LIMIT %d OFFSET %d",
 				self::table(),
 				$status,
 				$status,
@@ -116,6 +139,10 @@ class PressPrimer_Certificate_Template {
 				$types_csv,
 				PressPrimer_Certificate_Trigger::table(),
 				$types_csv,
+				$issuer,
+				$issuer,
+				$scoped,
+				$scope_csv,
 				$per_page,
 				( $page - 1 ) * $per_page
 			)
@@ -244,9 +271,13 @@ class PressPrimer_Certificate_Template {
 	 *
 	 * @param int   $id   Template row id.
 	 * @param array $args {
-	 *     @type array  $layout Validator-clean layout document.
-	 *     @type string $title  Template title.
-	 *     @type string $status 'draft' | 'published' | 'archived'.
+	 *     @type array    $layout    Validator-clean layout document.
+	 *     @type string   $title     Template title.
+	 *     @type string   $status    'draft' | 'published' | 'archived'.
+	 *     @type int|null $issuer_id Issuer of record for future issues
+	 *                               (0/null = site template). Since 2.0
+	 *                               (School contract); already-issued
+	 *                               certificates keep their stamp.
 	 * }
 	 * @return object|WP_Error The updated, hydrated row.
 	 */
@@ -291,6 +322,12 @@ class PressPrimer_Certificate_Template {
 			$settings              = self::sanitize_settings( $args['settings'] );
 			$data['settings_json'] = empty( $settings ) ? null : wp_json_encode( $settings );
 			$format[]              = '%s';
+		}
+
+		if ( array_key_exists( 'issuer_id', $args ) ) {
+			$issuer_id         = absint( $args['issuer_id'] );
+			$data['issuer_id'] = $issuer_id > 0 ? $issuer_id : null;
+			$format[]          = '%d';
 		}
 
 		$data['updated_at'] = current_time( 'mysql', true );

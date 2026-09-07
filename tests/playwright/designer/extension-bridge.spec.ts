@@ -34,6 +34,7 @@ test.describe( 'extension bridge', () => {
 		expect( surface ).toEqual(
 			[
 				'applyLayout',
+				'editIssuer',
 				'editSettings',
 				'getBoot',
 				'getLayout',
@@ -45,6 +46,40 @@ test.describe( 'extension bridge', () => {
 				'subscribe',
 			].sort()
 		);
+	} );
+
+	test( 'editIssuer sets the template issuer, marks dirty, and notifies subscribers', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		const result = await page.evaluate( () => {
+			const api = ( window as any ).ppcert_designer_api;
+			( window as any ).__issuerEvents = [];
+			api.subscribe( ( change: any ) =>
+				( window as any ).__issuerEvents.push(
+					change.template?.issuer_id
+				)
+			);
+
+			api.editIssuer( 12 );
+
+			return {
+				stored: api.getTemplate().issuer_id,
+				dirty: api.isDirty(),
+			};
+		} );
+
+		expect( result.stored ).toBe( 12 );
+		expect( result.dirty ).toBe( true );
+
+		await expect
+			.poll( () =>
+				page.evaluate( () =>
+					( window as any ).__issuerEvents.includes( 12 )
+				)
+			)
+			.toBe( true );
 	} );
 
 	test( 'editSettings replaces template settings, marks dirty, and notifies subscribers with the template', async ( {

@@ -109,6 +109,18 @@ export function designerReducer( state, action ) {
 				dirty: true,
 			};
 
+		case 'EDIT_ISSUER':
+			// Issuer assignment (2.0, School contract): a top-level
+			// template column, persisted with the next save like renames.
+			return {
+				...state,
+				template: {
+					...state.template,
+					issuer_id: parseInt( action.issuerId, 10 ) || 0,
+				},
+				dirty: true,
+			};
+
 		case 'SET_TRIGGERS':
 			// Server truth (load or post-save adoption): not dirty.
 			return {
