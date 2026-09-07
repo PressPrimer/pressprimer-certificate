@@ -640,6 +640,20 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Registry_Service::earner_count (School 2.0) - issued
+		// certificates per template.
+		if ( false !== strpos( $query, 'SELECT COUNT(*) FROM %i WHERE template_id = %d AND status = %s' ) ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['template_id'] === (int) $args[1]
+						&& (string) ( isset( $row['status'] ) ? $row['status'] : '' ) === (string) $args[2];
+				}
+			);
+
+			return [ [ 'count' => count( $matches ) ] ];
+		}
+
 		// Issuer::get_by_slug (School 2.0 issuer models).
 		if ( preg_match( '/WHERE slug = %s\s*$/', $query ) ) {
 			return $this->filter_rows(

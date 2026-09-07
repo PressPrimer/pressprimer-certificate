@@ -371,6 +371,32 @@ if ( ! function_exists( 'sanitize_textarea_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'number_format_i18n' ) ) {
+	/**
+	 * Stub: Locale-free number formatting.
+	 *
+	 * @param float $number   Number.
+	 * @param int   $decimals Decimal places.
+	 * @return string
+	 */
+	function number_format_i18n( $number, $decimals = 0 ) {
+		return number_format( (float) $number, (int) $decimals );
+	}
+}
+
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	/**
+	 * Stub: parse_url wrapper, like the real thing.
+	 *
+	 * @param string $url       URL.
+	 * @param int    $component Component constant.
+	 * @return mixed
+	 */
+	function wp_parse_url( $url, $component = -1 ) {
+		return parse_url( (string) $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- The stub IS the alternative.
+	}
+}
+
 if ( ! function_exists( 'get_avatar_url' ) ) {
 	/**
 	 * Stub: Deterministic avatar URL per user id.

@@ -473,6 +473,28 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 				);
 			}
 
+			/**
+			 * Filters whether the submitted settings may be saved.
+			 *
+			 * The addon validation surface (2.0, School contract):
+			 * cross-record rules a per-field sanitizer cannot express
+			 * (e.g. School's unique program slugs) veto the save here
+			 * with a WP_Error carrying the friendly message.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param bool|WP_Error $valid       Whether the settings may save.
+			 * @param array         $settings    Raw submitted settings.
+			 * @param int           $template_id Template row id.
+			 */
+			$valid = apply_filters( 'ppcert_template_settings_validation', true, $settings, (int) $row->id );
+
+			if ( is_wp_error( $valid ) ) {
+				$valid->add_data( [ 'status' => 400 ] );
+
+				return $valid;
+			}
+
 			// Sanitized field by field in the model (validity_months).
 			$args['settings'] = $settings;
 		}
@@ -544,6 +566,21 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			 */
 			do_action( 'ppcert_template_issuer_changed', (int) $row->id, $current_issuer, $previous_issuer );
 		}
+
+		/**
+		 * Fires after a template saves through the REST update path.
+		 *
+		 * Addons react to committed changes here (e.g. School records a
+		 * program-slug change for its 301 map) with both the previous
+		 * and the updated hydrated rows in hand.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int    $template_id Template row id.
+		 * @param object $updated     The updated, hydrated row.
+		 * @param object $previous    The row as it was before this save.
+		 */
+		do_action( 'ppcert_template_updated', (int) $row->id, $updated, $row );
 
 		return new WP_REST_Response( self::full( $updated ), 200 );
 	}

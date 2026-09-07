@@ -645,6 +645,19 @@ class PressPrimer_Certificate_Template {
 			}
 		}
 
-		return $clean;
+		/**
+		 * Filters the sanitized template settings.
+		 *
+		 * The addon settings registration surface (2.0, School contract
+		 * item 4): addons read their own keys from the RAW submitted
+		 * settings, sanitize each one type-appropriately, and add them to
+		 * the clean array. Keys nobody claims never reach storage.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $clean    Sanitized settings.
+		 * @param array $settings Raw submitted settings.
+		 */
+		return (array) apply_filters( 'ppcert_template_sanitize_settings', $clean, $settings );
 	}
 }
