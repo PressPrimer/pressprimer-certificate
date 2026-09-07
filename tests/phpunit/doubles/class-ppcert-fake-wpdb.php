@@ -702,6 +702,40 @@ class PPCert_Fake_WPDB {
 			return $matches;
 		}
 
+		// Issuer_Member::count_for_issuers / Issuer::template_counts -
+		// batched per-issuer counts for the Issuers list columns. The
+		// templates variant excludes soft-deleted rows.
+		if ( false !== strpos( $query, 'SELECT issuer_id, COUNT(*) AS total FROM %i WHERE FIND_IN_SET( issuer_id, %s )' ) ) {
+			$ids           = array_map( 'intval', explode( ',', (string) $args[1] ) );
+			$skip_deleted  = false !== strpos( $query, 'deleted_at IS NULL' );
+			$counts        = [];
+
+			foreach ( $rows as $row ) {
+				$issuer_id = isset( $row['issuer_id'] ) ? (int) $row['issuer_id'] : 0;
+
+				if ( ! in_array( $issuer_id, $ids, true ) ) {
+					continue;
+				}
+
+				if ( $skip_deleted && ! empty( $row['deleted_at'] ) ) {
+					continue;
+				}
+
+				$counts[ $issuer_id ] = ( isset( $counts[ $issuer_id ] ) ? $counts[ $issuer_id ] : 0 ) + 1;
+			}
+
+			$result = [];
+
+			foreach ( $counts as $issuer_id => $total ) {
+				$result[] = [
+					'issuer_id' => $issuer_id,
+					'total'     => $total,
+				];
+			}
+
+			return $result;
+		}
+
 		// Issuer_Member::get_for_user - a user's memberships.
 		if ( false !== strpos( $query, 'WHERE user_id = %d ORDER BY issuer_id ASC' ) ) {
 			$matches = $this->filter_rows(

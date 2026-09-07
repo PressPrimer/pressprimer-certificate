@@ -371,6 +371,19 @@ if ( ! function_exists( 'sanitize_textarea_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_avatar_url' ) ) {
+	/**
+	 * Stub: Deterministic avatar URL per user id.
+	 *
+	 * @param mixed $id_or_email User id, email, or object.
+	 * @param array $args        Optional args (ignored).
+	 * @return string
+	 */
+	function get_avatar_url( $id_or_email, $args = [] ) {
+		return 'https://avatars.example.test/' . ( is_numeric( $id_or_email ) ? (int) $id_or_email : 'unknown' ) . '.png';
+	}
+}
+
 if ( ! function_exists( 'sanitize_title' ) ) {
 	/**
 	 * Stub: Slug sanitizer - lowercase, spaces/underscores to dashes,
