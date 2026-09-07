@@ -414,6 +414,21 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 				. '>' . esc_html__( 'Delete', 'pressprimer-certificate' ) . '</a>';
 		}
 
+		/**
+		 * Filters the Certificates list's row actions.
+		 *
+		 * The addon list-extension surface (2.0, School contract):
+		 * addons append their pre-escaped action links here (School's
+		 * per-certificate directory visibility control). Entries are
+		 * complete anchor markup, escaped by their builder.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array  $actions Map of action id => anchor markup.
+		 * @param object $item    Certificate row.
+		 */
+		$actions = apply_filters( 'ppcert_certificate_list_row_actions', $actions, $item );
+
 		return '<strong>' . esc_html( $display ) . '</strong>' . $this->row_actions( $actions );
 	}
 

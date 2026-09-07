@@ -371,6 +371,47 @@ if ( ! function_exists( 'sanitize_textarea_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'shortcode_atts' ) ) {
+	/**
+	 * Stub: Merge user shortcode attributes over the defaults.
+	 *
+	 * @param array  $defaults  Supported attributes with defaults.
+	 * @param array  $atts      User attributes.
+	 * @param string $shortcode Shortcode name (unused).
+	 * @return array
+	 */
+	function shortcode_atts( $defaults, $atts, $shortcode = '' ) {
+		$atts = (array) $atts;
+		$out  = [];
+
+		foreach ( $defaults as $name => $default ) {
+			$out[ $name ] = array_key_exists( $name, $atts ) ? $atts[ $name ] : $default;
+		}
+
+		return $out;
+	}
+}
+
+if ( ! function_exists( '_doing_it_wrong' ) ) {
+	/**
+	 * Stub: Records misuse notices for assertions.
+	 *
+	 * Tests read $GLOBALS['ppcert_test_doing_it_wrong'].
+	 *
+	 * @param string $function_name The function used wrongly.
+	 * @param string $message       Explanation.
+	 * @param string $version       Version introduced.
+	 * @return void
+	 */
+	function _doing_it_wrong( $function_name, $message, $version ) {
+		$GLOBALS['ppcert_test_doing_it_wrong'][] = [
+			'function' => (string) $function_name,
+			'message'  => (string) $message,
+			'version'  => (string) $version,
+		];
+	}
+}
+
 if ( ! function_exists( 'number_format_i18n' ) ) {
 	/**
 	 * Stub: Locale-free number formatting.

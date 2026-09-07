@@ -166,6 +166,7 @@ class PressPrimer_Certificate_Schema {
 			source_ref VARCHAR(191) DEFAULT NULL,
 			status ENUM('issued','revoked','expired') NOT NULL DEFAULT 'issued',
 			title VARCHAR(200) DEFAULT NULL,
+			directory_visibility TINYINT(1) DEFAULT NULL,
 			layout_schema_version SMALLINT UNSIGNED NOT NULL DEFAULT 1,
 			layout_snapshot_json LONGTEXT NOT NULL,
 			merge_data_json LONGTEXT NOT NULL,
@@ -183,7 +184,8 @@ class PressPrimer_Certificate_Schema {
 			KEY issuer_id (issuer_id),
 			KEY status (status),
 			KEY source (source_type,source_ref),
-			KEY title (title(60))
+			KEY title (title(60)),
+			KEY directory_visibility (directory_visibility)
 		) $charset_collate;\n";
 	}
 

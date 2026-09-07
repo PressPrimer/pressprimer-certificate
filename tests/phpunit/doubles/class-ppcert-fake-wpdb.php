@@ -640,6 +640,74 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Directory_Service::search (School 2.0) - the consent-aware
+		// listing. args: [table, now, policy, issuer x2, template x2,
+		// has_search, recipient_csv, (limit, offset)].
+		if ( false !== strpos( $query, 'directory_visibility = 1 OR ( directory_visibility IS NULL AND %d = 1 )' ) ) {
+			$now           = (string) $args[1];
+			$policy        = (int) $args[2];
+			$issuer_id     = (int) $args[3];
+			$template_id   = (int) $args[5];
+			$has_search    = (int) $args[7];
+			$recipient_ids = '' !== (string) $args[8] ? array_map( 'intval', explode( ',', (string) $args[8] ) ) : [];
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $now, $policy, $issuer_id, $template_id, $has_search, $recipient_ids ) {
+					if ( 'issued' !== (string) ( isset( $row['status'] ) ? $row['status'] : '' ) ) {
+						return false;
+					}
+
+					$expires = isset( $row['expires_at'] ) ? (string) $row['expires_at'] : '';
+
+					if ( '' !== $expires && $expires <= $now ) {
+						return false;
+					}
+
+					$visibility = isset( $row['directory_visibility'] ) ? $row['directory_visibility'] : null;
+
+					if ( null === $visibility ) {
+						if ( 1 !== $policy ) {
+							return false;
+						}
+					} elseif ( 1 !== (int) $visibility ) {
+						return false;
+					}
+
+					$row_issuer = ! empty( $row['issuer_id'] ) ? (int) $row['issuer_id'] : 0;
+
+					if ( $issuer_id && $row_issuer !== $issuer_id ) {
+						return false;
+					}
+
+					if ( $template_id && (int) $row['template_id'] !== $template_id ) {
+						return false;
+					}
+
+					if ( $has_search && ! in_array( (int) $row['recipient_id'], $recipient_ids, true ) ) {
+						return false;
+					}
+
+					return true;
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					$by_time = strcmp( (string) ( $b['issued_at'] ?? '' ), (string) ( $a['issued_at'] ?? '' ) );
+
+					return 0 !== $by_time ? $by_time : ( (int) $b['id'] <=> (int) $a['id'] );
+				}
+			);
+
+			if ( false !== strpos( $query, 'SELECT COUNT(*)' ) ) {
+				return [ [ 'count' => count( $matches ) ] ];
+			}
+
+			return array_slice( $matches, (int) $args[10], (int) $args[9] );
+		}
+
 		// Registry_Service::earner_count (School 2.0) - issued
 		// certificates per template.
 		if ( false !== strpos( $query, 'SELECT COUNT(*) FROM %i WHERE template_id = %d AND status = %s' ) ) {

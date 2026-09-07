@@ -26,6 +26,7 @@ import {
 	FormatPainterOutlined,
 	KeyOutlined,
 	ShareAltOutlined,
+	TeamOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -47,6 +48,7 @@ const ADDON_ICONS = {
 	branding: <FormatPainterOutlined />,
 	sharing: <ShareAltOutlined />,
 	license: <KeyOutlined />,
+	directory: <TeamOutlined />,
 	default: <SettingOutlined />,
 };
 

@@ -128,13 +128,16 @@ class PressPrimer_Certificate_Migrator {
 			],
 			// 2.0.0: the email templates table (Decision 005, schema only)
 			// and the search-only title column on certificates (Feature
-			// 2.0-002 TR-002), backfilled from each row's snapshot.
+			// 2.0-002 TR-002), backfilled from each row's snapshot; plus
+			// directory_visibility, the School directory's consent flag
+			// (contract item 6: NULL = site policy, 1 = listed,
+			// 0 = unlisted).
 			[
 				'version'  => '2.0.0',
 				'callback' => [ __CLASS__, 'migrate_to_2_0_0' ],
 				'targets'  => [
 					'ppcert_email_templates' => [],
-					'ppcert_certificates'    => [ 'title' ],
+					'ppcert_certificates'    => [ 'title', 'directory_visibility' ],
 				],
 			],
 		];

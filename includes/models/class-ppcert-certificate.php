@@ -480,6 +480,50 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * Set a certificate's directory visibility (School contract item 6)
+	 *
+	 * NULL = follow the site policy, 1 = listed, 0 = unlisted. The
+	 * consent semantics, policy resolution, and all directory behavior
+	 * live in the School addon; the free plugin only owns the column.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int      $id         Certificate row id.
+	 * @param int|null $visibility NULL, 0, or 1.
+	 * @return true|WP_Error
+	 */
+	public static function set_directory_visibility( $id, $visibility ) {
+		global $wpdb;
+
+		if ( ! self::get( $id ) ) {
+			return new WP_Error(
+				'ppcert_invalid_certificate',
+				__( 'Certificate not found.', 'pressprimer-certificate' )
+			);
+		}
+
+		$updated = $wpdb->update(
+			self::table(),
+			[
+				'directory_visibility' => null === $visibility ? null : ( $visibility ? 1 : 0 ),
+				'updated_at'           => current_time( 'mysql', true ),
+			],
+			[ 'id' => absint( $id ) ],
+			[ '%d', '%s' ],
+			[ '%d' ]
+		);
+
+		if ( false === $updated ) {
+			return new WP_Error(
+				'ppcert_visibility_update_failed',
+				__( 'The directory visibility could not be saved.', 'pressprimer-certificate' )
+			);
+		}
+
+		return true;
+	}
+
+	/**
 	 * The acting user for lifecycle event rows
 	 *
 	 * Lifecycle transitions run in authenticated admin contexts; system
