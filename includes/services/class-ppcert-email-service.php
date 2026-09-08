@@ -94,6 +94,19 @@ class PressPrimer_Certificate_Email_Service {
 			$content['attachments'][] = $attachment_path;
 		}
 
+		// The content filter's context always carries the certificate,
+		// template, and recipient ids (2.0, S-007): resends and other
+		// thin callers pass none of them, but filter consumers (School's
+		// copy headers) need them. Caller keys win on conflict.
+		$context = array_merge(
+			[
+				'certificate_id' => (int) $certificate->id,
+				'template_id'    => (int) $certificate->template_id,
+				'recipient_id'   => (int) $certificate->recipient_id,
+			],
+			(array) $context
+		);
+
 		/** This filter is documented in docs/architecture/HOOKS.md */
 		$content = apply_filters( 'ppcert_email_content', $content, 'issued', $context );
 
