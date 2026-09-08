@@ -302,6 +302,21 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 			'trash'     => '<a href="' . esc_url( $trash_url ) . '" class="submitdelete">' . esc_html__( 'Trash', 'pressprimer-certificate' ) . '</a>',
 		];
 
+		/**
+		 * Filters the Templates list's row actions.
+		 *
+		 * The addon list-extension surface (2.0, School contract):
+		 * addons append their pre-escaped action links here (School's
+		 * Award past completions entry). Entries are complete anchor
+		 * markup, escaped by their builder.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array  $actions Map of action id => anchor markup.
+		 * @param object $item    Template row.
+		 */
+		$actions = apply_filters( 'ppcert_template_list_row_actions', $actions, $item );
+
 		return '<strong><a href="' . esc_url( $edit_url ) . '">' . esc_html( $title ) . '</a></strong>'
 			. $this->row_actions( $actions );
 	}
