@@ -48,6 +48,13 @@ class PPCert_Fake_WPDB {
 	public $comments = 'wp_comments';
 
 	/**
+	 * Core posts table name (the School directory-page lookup reads it).
+	 *
+	 * @var string
+	 */
+	public $posts = 'wp_posts';
+
+	/**
 	 * Last auto-increment id from insert().
 	 *
 	 * @var int
@@ -638,6 +645,33 @@ class PPCert_Fake_WPDB {
 					return (int) $row['id'] === (int) $args[1];
 				}
 			);
+		}
+
+		// Directory::page_url (School 2.0) - the published page hosting
+		// the directory shortcode/block.
+		if ( false !== strpos( $query, "post_type = 'page' AND post_status = 'publish'" ) ) {
+			$needles = [ trim( (string) $args[1], '%' ), trim( (string) $args[2], '%' ) ];
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $needles ) {
+					$content = isset( $row['post_content'] ) ? (string) $row['post_content'] : '';
+
+					if ( 'page' !== ( $row['post_type'] ?? '' ) || 'publish' !== ( $row['post_status'] ?? '' ) ) {
+						return false;
+					}
+
+					foreach ( $needles as $needle ) {
+						if ( '' !== $needle && false !== strpos( $content, stripslashes( $needle ) ) ) {
+							return true;
+						}
+					}
+
+					return false;
+				}
+			);
+
+			return array_slice( $matches, 0, 1 );
 		}
 
 		// Directory_Service::search (School 2.0) - the consent-aware

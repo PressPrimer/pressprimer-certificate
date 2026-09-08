@@ -714,6 +714,13 @@
 
 /* Addon template-settings slot in the Award tab (2.0, E-005): same
    contract as the canvas rail - invisible until an addon mounts. */
+/* Addon sidebar tabs (2.0 extension surface): the mount container an
+   addon roots into. The sidebar's own gutter applies; the bottom pad
+   keeps the last section off the viewport edge. */
+.ppcert-designer__extension-tab {
+	padding: 4px 0 24px;
+}
+
 .ppcert-designer__award-extension {
 	margin-top: 16px;
 }

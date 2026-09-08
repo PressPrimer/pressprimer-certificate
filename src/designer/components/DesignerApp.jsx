@@ -753,6 +753,25 @@ export default function DesignerApp( { boot } ) {
 									),
 									children: <TriggerPanel />,
 								},
+								// Addon sidebar tabs (2.0 extension
+								// surface): each registered tab gets a
+								// mount container the addon roots into
+								// (School's Organization tab). Panes
+								// keep their DOM once activated, so the
+								// slot-mount pattern applies unchanged.
+								...applyFilters(
+									'ppcert.designer.tabs',
+									[]
+								).map( ( tab ) => ( {
+									key: String( tab.key ),
+									label: String( tab.label ),
+									children: (
+										<div
+											id={ `ppcert-designer-tab-${ tab.key }` }
+											className="ppcert-designer__extension-tab"
+										/>
+									),
+								} ) ),
 							] }
 						/>
 					</Sider>
