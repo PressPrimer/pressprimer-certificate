@@ -76,10 +76,17 @@
 
 		// Branding display data (2.0, ppcert_verification_display): logo,
 		// intro, and footer render when an addon supplied them, mirroring
-		// the server-side no-JS renderer exactly. accent_color is data
-		// for the branding addon's own CSS. All values land through
+		// the server-side no-JS renderer exactly. All values land through
 		// textContent/setAttribute - never innerHTML.
 		const display = data && data.display ? data.display : null;
+
+		// The accent paints per RESULT here (per-issuer branding changes
+		// it lookup to lookup): the frame, and the valid status below -
+		// never revoked/expired/error, the E-006 guardrail. The value is
+		// server-sanitized hex; an empty accent resets to the ambient
+		// site-level CSS.
+		region.style.borderColor =
+			display && display.accent_color ? display.accent_color : '';
 
 		if ( display && display.logo_url ) {
 			const logo = document.createElement( 'img' );
@@ -96,6 +103,13 @@
 		heading.className =
 			'ppcert-verify__status ppcert-verify__status--' + state;
 		heading.textContent = i18n[ state ] || i18n.error;
+
+		// Valid results may wear the accent; every other state keeps its
+		// semantic color under any brand.
+		if ( state === 'valid' && display && display.accent_color ) {
+			heading.style.color = display.accent_color;
+		}
+
 		region.appendChild( heading );
 
 		if ( display && display.intro ) {
