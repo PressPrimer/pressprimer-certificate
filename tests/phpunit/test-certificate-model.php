@@ -404,4 +404,36 @@ class Test_Certificate_Model extends TestCase {
 			$model::display_title( (object) [ 'template_title' => null ], '(deleted template)' )
 		);
 	}
+
+	/**
+	 * get_latest_for_recipient (2.0-008): guards, filters, ordering.
+	 *
+	 * @return void
+	 */
+	public function test_get_latest_for_recipient() {
+		$this->wpdb->seed_row( PressPrimer_Certificate_Template::table(), [ 'id' => 1, 'title' => 'T1' ] );
+
+		$this->seed_certificate( [ 'recipient_id' => 7, 'template_id' => 1, 'source_type' => 'lms_a', 'source_ref' => '42', 'issued_at' => '2026-01-01 00:00:00' ] );
+		$this->seed_certificate( [ 'recipient_id' => 7, 'template_id' => 1, 'source_type' => 'lms_a', 'source_ref' => '42', 'issued_at' => '2026-03-01 00:00:00' ] );
+		$this->seed_certificate( [ 'recipient_id' => 7, 'template_id' => 1, 'source_type' => 'lms_a', 'source_ref' => '42', 'issued_at' => '2026-05-01 00:00:00', 'status' => 'revoked' ] );
+		$this->seed_certificate( [ 'recipient_id' => 7, 'template_id' => 2, 'source_type' => 'lms_b', 'source_ref' => '42', 'issued_at' => '2026-06-01 00:00:00' ] );
+		$this->seed_certificate( [ 'recipient_id' => 8, 'template_id' => 1, 'source_type' => 'lms_a', 'source_ref' => '42', 'issued_at' => '2026-07-01 00:00:00' ] );
+
+		$this->assertNull( PressPrimer_Certificate_Certificate::get_latest_for_recipient( 7, [] ), 'No scope at all never queries' );
+		$this->assertSame( 0, $this->wpdb->read_queries );
+		$this->assertNull( PressPrimer_Certificate_Certificate::get_latest_for_recipient( 7, [ 'source_ref' => '42' ] ), 'A ref without a type list is refused' );
+		$this->assertNull( PressPrimer_Certificate_Certificate::get_latest_for_recipient( 0, [ 'template_id' => 1 ] ) );
+
+		$row = PressPrimer_Certificate_Certificate::get_latest_for_recipient( 7, [ 'source_ref' => '42', 'source_types' => [ 'lms_a' ] ] );
+		$this->assertSame( '2026-03-01 00:00:00', $row->issued_at, 'Newest non-revoked of the family' );
+
+		$row = PressPrimer_Certificate_Certificate::get_latest_for_recipient( 7, [ 'source_ref' => '42', 'source_types' => [ 'lms_a', 'lms_b' ] ] );
+		$this->assertSame( '2026-06-01 00:00:00', $row->issued_at, 'Type list widens the family' );
+
+		$row = PressPrimer_Certificate_Certificate::get_latest_for_recipient( 7, [ 'template_id' => 1 ] );
+		$this->assertSame( '2026-03-01 00:00:00', $row->issued_at, 'Template alone' );
+
+		$this->assertNull( PressPrimer_Certificate_Certificate::get_latest_for_recipient( 7, [ 'template_id' => 2, 'source_ref' => '42', 'source_types' => [ 'lms_a' ] ] ), 'Both filters must match' );
+		$this->assertNull( PressPrimer_Certificate_Certificate::get_latest_for_recipient( 9, [ 'template_id' => 1 ] ) );
+	}
 }

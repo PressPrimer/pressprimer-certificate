@@ -667,6 +667,68 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * The recipient's most recent non-revoked certificate for a source
+	 * and/or template (Feature 2.0-008, the certificate link)
+	 *
+	 * One prepared statement with sentinel-style optional filters (the
+	 * query() pattern - no placeholder assembly): template_id when set,
+	 * source_ref plus a FIND_IN_SET type list when scoped to a source.
+	 * Callers pass at least one of the two; with neither the method
+	 * returns null without querying, so the link never falls back to
+	 * "any certificate at all". Revoked rows are excluded in SQL; the
+	 * newest issuance wins (re-certification produces newer rows).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int   $recipient_id Recipient user id.
+	 * @param array $args {
+	 *     @type int      $template_id  Template id, 0 for any.
+	 *     @type string   $source_ref   Source ref, '' for any.
+	 *     @type string[] $source_types Trigger type ids the ref must
+	 *                                  belong to (required with a ref).
+	 * }
+	 * @return object|null Hydrated row, or null.
+	 */
+	public static function get_latest_for_recipient( $recipient_id, array $args = [] ) {
+		global $wpdb;
+
+		$recipient_id = absint( $recipient_id );
+		$template_id  = isset( $args['template_id'] ) ? absint( $args['template_id'] ) : 0;
+		$source_ref   = isset( $args['source_ref'] ) ? (string) $args['source_ref'] : '';
+		$types        = isset( $args['source_types'] ) && is_array( $args['source_types'] )
+			? array_values( array_filter( array_map( 'sanitize_key', $args['source_types'] ) ) )
+			: [];
+
+		// A source scope needs both halves: a ref without a type list
+		// could match a same-numbered object of another family.
+		if ( '' !== $source_ref && empty( $types ) ) {
+			return null;
+		}
+
+		if ( $recipient_id < 1 || ( 0 === $template_id && '' === $source_ref ) ) {
+			return null;
+		}
+
+		$types_csv = implode( ',', $types );
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM %i WHERE recipient_id = %d AND status != 'revoked' AND ( %d = 0 OR template_id = %d ) AND ( %s = '' OR source_ref = %s ) AND ( %s = '' OR FIND_IN_SET( source_type, %s ) ) ORDER BY issued_at DESC, id DESC LIMIT 1",
+				self::table(),
+				$recipient_id,
+				$template_id,
+				$template_id,
+				$source_ref,
+				$source_ref,
+				$types_csv,
+				$types_csv
+			)
+		);
+
+		return $row ? self::hydrate( $row ) : null;
+	}
+
+	/**
 	 * The certificate's display name (Feature 1.1-006)
 	 *
 	 * The name stored in the snapshot at issuance (`certificate.title`

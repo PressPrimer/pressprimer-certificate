@@ -413,13 +413,7 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 	 * @return bool
 	 */
 	private function is_source_post_type( $post_type ) {
-		foreach ( PressPrimer_Certificate_Trigger_Registry::get_types() as $type ) {
-			if ( in_array( $post_type, $type['source_post_types'], true ) ) {
-				return true;
-			}
-		}
-
-		return false;
+		return [] !== PressPrimer_Certificate_Trigger_Registry::get_types_for_post_type( $post_type );
 	}
 
 	/**

@@ -350,11 +350,20 @@
 	font-weight: 600;
 }
 
-.ppcert-view__actions {
+.ppcert-view__actions,
+.ppcert-verify__actions {
 	display: flex;
 	gap: var(--ppcert-space-md);
 	flex-wrap: wrap;
 	align-items: center;
+}
+
+.ppcert-verify__actions {
+	margin-top: var(--ppcert-space-md);
+}
+
+.ppcert-certificate-link {
+	display: inline-block;
 }
 
 /* ------------------------------------------------------------------ *
@@ -556,6 +565,8 @@
 @media print {
 
 	.ppcert-view__actions,
+	.ppcert-verify__actions,
+	.ppcert-certificate-link,
 	.ppcert-verify__form,
 	.ppcert-my-certificates__controls,
 	.ppcert-my-certificates__links,

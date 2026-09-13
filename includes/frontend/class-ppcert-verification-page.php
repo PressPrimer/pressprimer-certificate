@@ -297,6 +297,17 @@ class PressPrimer_Certificate_Verification_Page {
 
 		$output .= '</dl>';
 
+		// Action links (2.0, Feature 2.0-009): the lookup path supplies
+		// the filtered list; free adds Download PDF for valid and expired
+		// results. Same renderer as the view page and My Certificates.
+		if ( ! empty( $result['actions'] ) && is_array( $result['actions'] ) ) {
+			$links = PressPrimer_Certificate_View_Page::render_action_links( $result['actions'] );
+
+			if ( '' !== $links ) {
+				$output .= '<p class="ppcert-verify__actions">' . $links . '</p>';
+			}
+		}
+
 		return $output . self::render_display_footer( $display );
 	}
 

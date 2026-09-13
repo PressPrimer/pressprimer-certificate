@@ -131,14 +131,14 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 		// for typos" UX runs client-side in the shortcode, never here -
 		// no oracle).
 		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_well_formed( $raw ) ) {
-			return self::with_display( self::not_found_result(), null );
+			return self::with_actions( self::with_display( self::not_found_result(), null ), null, 'not_found' );
 		}
 
 		// The single prepared, indexed lookup.
 		$certificate = PressPrimer_Certificate_Certificate::get_for_verification( $raw );
 
 		if ( ! $certificate ) {
-			return self::with_display( self::not_found_result(), null );
+			return self::with_actions( self::with_display( self::not_found_result(), null ), null, 'not_found' );
 		}
 
 		// Authoritative status.
@@ -172,6 +172,11 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 		// assembled and filtered on this single path so REST and the
 		// no-JS page always agree. Neutral defaults in free.
 		$filtered = self::with_display( $filtered, $certificate );
+
+		// Action links (2.0, Feature 2.0-009): appended AFTER the verdict
+		// re-assertion so no filter can attach a download to a revoked
+		// result; both render paths draw from this one array.
+		$filtered = self::with_actions( $filtered, $certificate, $status );
 
 		// Privacy-minimal verified event (no IP, no user agent; actor
 		// only when a logged-in user performed the lookup). Site admins
@@ -210,6 +215,85 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 		);
 
 		return $filtered;
+	}
+
+	/**
+	 * Attach the action links to a lookup result
+	 *
+	 * Free supplies one entry, `download` (the public PDF route), for
+	 * valid and expired results. Revoked and not-found results carry an
+	 * empty list and the filter does not run for them - the PDF route
+	 * returns 410 for revoked certificates and the page must never offer
+	 * what the route refuses. Entries use the house action shape
+	 * (label, url, class, new_tab); malformed entries drop.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array       $result      Lookup result (post re-assertion).
+	 * @param object|null $certificate Resolved certificate, or null.
+	 * @param string      $status      Effective status.
+	 * @return array The result with `actions` attached.
+	 */
+	private static function with_actions( array $result, $certificate, $status ) {
+		$result['actions'] = self::build_actions( $certificate, $status );
+
+		return $result;
+	}
+
+	/**
+	 * Build the filtered action list for a resolved certificate
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param object|null $certificate Resolved certificate, or null.
+	 * @param string      $status      Effective status.
+	 * @return array List of [ label, url, class, new_tab ] entries.
+	 */
+	public static function build_actions( $certificate, $status ) {
+		if ( ! $certificate || ! in_array( $status, [ 'valid', 'expired' ], true ) ) {
+			return [];
+		}
+
+		$actions = [
+			'download' => [
+				'label'   => __( 'Download PDF', 'pressprimer-certificate' ),
+				'url'     => PressPrimer_Certificate_View_Page::pdf_url( (string) $certificate->credential_id ),
+				'class'   => 'ppcert-button-primary',
+				'new_tab' => false,
+			],
+		];
+
+		/**
+		 * Filters the verification result's action links (2.0, Feature
+		 * 2.0-009). Same entry shape and escaping rules as
+		 * ppcert_view_page_actions and ppcert_my_certificates_row_actions;
+		 * runs only for valid and expired results - revoked and not-found
+		 * results never carry actions.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array  $actions     Map of action id => link definition.
+		 * @param object $certificate Resolved certificate row.
+		 * @param string $status      Effective status (valid|expired).
+		 */
+		$actions = apply_filters( 'ppcert_verification_actions', $actions, $certificate, $status );
+
+		$clean = [];
+
+		foreach ( is_array( $actions ) ? $actions : [] as $action ) {
+			if ( ! is_array( $action ) || empty( $action['label'] ) || empty( $action['url'] ) ) {
+				continue;
+			}
+
+			$clean[] = [
+				'label'   => sanitize_text_field( (string) $action['label'] ),
+				'url'     => esc_url_raw( (string) $action['url'] ),
+				'class'   => sanitize_text_field( isset( $action['class'] ) ? (string) $action['class'] : '' ),
+				'new_tab' => ! empty( $action['new_tab'] ),
+			];
+		}
+
+		return $clean;
 	}
 
 	/**

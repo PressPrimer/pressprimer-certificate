@@ -1752,6 +1752,56 @@ class PPCert_Fake_WPDB {
 			return array_slice( $matches, 0, 1 );
 		}
 
+		// Certificate::get_latest_for_recipient (2.0-008): newest
+		// non-revoked row for a recipient under optional template /
+		// source-ref + FIND_IN_SET type filters. args: [table, recipient,
+		// template x2, ref x2, types_csv x2].
+		if ( false !== strpos( $query, "AND ( %s = '' OR FIND_IN_SET( source_type, %s ) ) ORDER BY issued_at DESC, id DESC LIMIT 1" ) ) {
+			$recipient = (int) $args[1];
+			$template  = (int) $args[2];
+			$ref       = (string) $args[4];
+			$types_csv = (string) $args[6];
+			$types     = '' !== $types_csv ? explode( ',', $types_csv ) : [];
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $recipient, $template, $ref, $types ) {
+					if ( (int) $row['recipient_id'] !== $recipient ) {
+						return false;
+					}
+
+					if ( 'revoked' === ( isset( $row['status'] ) ? $row['status'] : '' ) ) {
+						return false;
+					}
+
+					if ( $template > 0 && (int) $row['template_id'] !== $template ) {
+						return false;
+					}
+
+					if ( '' !== $ref && (string) ( isset( $row['source_ref'] ) ? $row['source_ref'] : '' ) !== $ref ) {
+						return false;
+					}
+
+					if ( ! empty( $types ) && ! in_array( (string) ( isset( $row['source_type'] ) ? $row['source_type'] : '' ), $types, true ) ) {
+						return false;
+					}
+
+					return true;
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					$cmp = strcmp( (string) $b['issued_at'], (string) $a['issued_at'] );
+
+					return 0 !== $cmp ? $cmp : $b['id'] <=> $a['id'];
+				}
+			);
+
+			return array_slice( $matches, 0, 1 );
+		}
+
 		throw new RuntimeException( 'PPCert_Fake_WPDB: unsupported query shape: ' . $query );
 	}
 

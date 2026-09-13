@@ -316,4 +316,85 @@ class Test_Verification_Page extends TestCase {
 		$this->assertArrayHasKey( 'prefill', $captured[0][0] );
 		$this->assertNotEmpty( $html );
 	}
+
+	/**
+	 * The server-rendered result prints the lookup's action links after
+	 * the details (2.0, Feature 2.0-009): Download PDF for valid, nothing
+	 * for revoked, and every label escaped.
+	 *
+	 * @return void
+	 */
+	public function test_result_renders_actions() {
+		$result = [
+			'status'         => 'valid',
+			'recipient_name' => 'Dana Whitfield',
+			'subject'        => 'Advanced Botany Certification',
+			'issued_at'      => '2026-07-18T14:30:00Z',
+			'expires_at'     => null,
+			'actions'        => [
+				[
+					'label'   => 'Download PDF',
+					'url'     => 'https://test.example/wp-json/ppcert/v1/certificates/ABCD/pdf',
+					'class'   => 'ppcert-button-primary',
+					'new_tab' => false,
+				],
+				[
+					'label'   => 'Share <b>it</b>',
+					'url'     => 'https://share.example/ABCD',
+					'class'   => 'ppcert-button-secondary',
+					'new_tab' => true,
+				],
+			],
+		];
+
+		$html = PressPrimer_Certificate_Verification_Page::render_result( $result );
+
+		$this->assertStringContainsString( '</dl><p class="ppcert-verify__actions">', $html, 'Actions follow the details list' );
+		$this->assertStringContainsString( '<a class="ppcert-button-primary" href="https://test.example/wp-json/ppcert/v1/certificates/ABCD/pdf">Download PDF</a>', $html );
+		$this->assertStringContainsString( 'target="_blank" rel="noopener">Share &lt;b&gt;it&lt;/b&gt;', $html, 'Labels escape' );
+
+		$result['actions'] = [];
+		$this->assertStringNotContainsString( 'ppcert-verify__actions', PressPrimer_Certificate_Verification_Page::render_result( $result ) );
+
+		$result['status']  = 'revoked';
+		$result['actions'] = [ [ 'label' => 'Download PDF', 'url' => 'https://x.example/' ] ];
+		$this->assertStringNotContainsString( 'ppcert-verify__actions', PressPrimer_Certificate_Verification_Page::render_result( $result ), 'Revoked results stop before the details and actions' );
+	}
+
+	/**
+	 * End to end through the shared lookup path: a direct link to a valid
+	 * certificate renders the Download PDF button server-side.
+	 *
+	 * @return void
+	 */
+	public function test_direct_link_includes_download() {
+		global $wpdb;
+
+		$credential = PressPrimer_Certificate_Credential_ID_Service::generate();
+
+		$wpdb->seed_row( PressPrimer_Certificate_Template::table(), [ 'id' => 40, 'title' => 'Advanced Botany Certification' ] );
+		$wpdb->seed_row(
+			PressPrimer_Certificate_Certificate::table(),
+			[
+				'credential_id'        => $credential,
+				'template_id'          => 40,
+				'recipient_id'         => 7,
+				'issued_by'            => 1,
+				'source_type'          => 'manual',
+				'status'               => 'issued',
+				'layout_snapshot_json' => '{}',
+				'merge_data_json'      => '{}',
+				'issued_at'            => '2026-07-18 14:30:00',
+				'expires_at'           => null,
+			]
+		);
+
+		$_GET['ppcert_id'] = $credential;
+
+		$html = PressPrimer_Certificate_Verification_Page::render_shortcode();
+
+		$this->assertStringContainsString( 'class="ppcert-verify__actions"', $html );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( $credential ), $html );
+		$this->assertStringContainsString( '>Download PDF</a>', $html );
+	}
 }

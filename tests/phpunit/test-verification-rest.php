@@ -35,6 +35,7 @@ class Test_Verification_REST extends TestCase {
 		'issued_at',
 		'expires_at',
 		'display',
+		'actions',
 	];
 
 	/**
@@ -562,5 +563,85 @@ class Test_Verification_REST extends TestCase {
 
 		$events = $this->wpdb->rows( PressPrimer_Certificate_Certificate::events_table() );
 		$this->assertSame( [], $events, 'Admin lookups never write verified event rows' );
+	}
+
+	/**
+	 * Actions (2.0, Feature 2.0-009): valid and expired results carry the
+	 * Download PDF entry pointing at the public PDF route; revoked and
+	 * not-found carry an empty list.
+	 *
+	 * @return void
+	 */
+	public function test_actions_for_each_status() {
+		$data = $this->call( $this->credential )->get_data();
+
+		$this->assertSame(
+			[
+				[
+					'label'   => 'Download PDF',
+					'url'     => PressPrimer_Certificate_View_Page::pdf_url( $this->credential ),
+					'class'   => 'ppcert-button-primary',
+					'new_tab' => false,
+				],
+			],
+			$data['actions']
+		);
+
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Certificate::table(), 1, [ 'expires_at' => '2020-01-01 00:00:00' ] );
+		$expired = $this->call( $this->credential )->get_data();
+		$this->assertSame( 'expired', $expired['status'] );
+		$this->assertCount( 1, $expired['actions'], 'Expired certificates still download' );
+
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Certificate::table(), 1, [ 'status' => 'revoked' ] );
+		$revoked = $this->call( $this->credential )->get_data();
+		$this->assertSame( 'revoked', $revoked['status'] );
+		$this->assertSame( [], $revoked['actions'] );
+
+		$missing = $this->call( PressPrimer_Certificate_Credential_ID_Service::generate() )->get_data();
+		$this->assertSame( 'not_found', $missing['status'] );
+		$this->assertSame( [], $missing['actions'] );
+	}
+
+	/**
+	 * The ppcert_verification_actions filter adds entries in the house
+	 * shape, malformed entries drop, and it never runs for revoked
+	 * results (a filter cannot attach a download to one).
+	 *
+	 * @return void
+	 */
+	public function test_actions_filter_shape_and_revoked_guard() {
+		$calls = 0;
+
+		add_filter(
+			'ppcert_verification_actions',
+			static function ( $actions, $certificate, $status ) use ( &$calls ) {
+				$calls++;
+				$actions['share']  = [
+					'label'   => 'Share <b>this</b>',
+					'url'     => 'https://share.example/' . $certificate->credential_id . '?s=' . $status,
+					'class'   => 'ppcert-button-secondary',
+					'new_tab' => 1,
+				];
+				$actions['broken'] = [ 'label' => 'No URL' ];
+				$actions['junk']   = 'not-an-array';
+
+				return $actions;
+			},
+			10,
+			3
+		);
+
+		$data = $this->call( $this->credential )->get_data();
+
+		$this->assertCount( 2, $data['actions'], 'Malformed entries drop' );
+		$this->assertSame( 'Share this', $data['actions'][1]['label'], 'Labels are sanitized at the data level' );
+		$this->assertSame( 'https://share.example/' . $this->credential . '?s=valid', $data['actions'][1]['url'] );
+		$this->assertTrue( $data['actions'][1]['new_tab'] );
+		$this->assertSame( 1, $calls );
+
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Certificate::table(), 1, [ 'status' => 'revoked' ] );
+		$revoked = $this->call( $this->credential )->get_data();
+		$this->assertSame( [], $revoked['actions'] );
+		$this->assertSame( 1, $calls, 'The filter never runs for a revoked result' );
 	}
 }

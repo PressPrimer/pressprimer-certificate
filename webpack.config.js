@@ -32,6 +32,12 @@ module.exports = {
 			'my-certificates',
 			'index.js'
 		),
+		'blocks/certificate-link/index': path.resolve(
+			process.cwd(),
+			'blocks',
+			'certificate-link',
+			'index.js'
+		),
 	},
 	output: {
 		path: path.resolve( process.cwd(), 'build' ),

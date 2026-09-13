@@ -11,7 +11,10 @@
  * 1.0 registers two blocks: pressprimer-certificate/verify
  * ([ppcert_verify]) and pressprimer-certificate/my-certificates
  * ([ppcert_my_certificates] - restored to free 1.0 on 2026-07-26;
- * the Educator "wallet" means wallet-SIZED printable variants).
+ * the Educator "wallet" means wallet-SIZED printable variants). 2.0
+ * adds pressprimer-certificate/certificate-link
+ * ([ppcert_certificate_link], Feature 2.0-008) - the first block with
+ * attributes, each mirroring a shortcode attribute.
  *
  * @package PressPrimer_Certificate
  * @subpackage Blocks
@@ -76,6 +79,7 @@ class PressPrimer_Certificate_Blocks {
 
 		$this->register_verify_block();
 		$this->register_my_certificates_block();
+		$this->register_certificate_link_block();
 	}
 
 	/**
@@ -197,5 +201,139 @@ class PressPrimer_Certificate_Blocks {
 		return '<div class="wp-block-pressprimer-certificate-my-certificates">'
 			. PressPrimer_Certificate_My_Certificates::render_shortcode()
 			. '</div>';
+	}
+
+	/**
+	 * Register the Certificate Link block
+	 *
+	 * The [ppcert_certificate_link] equivalent (Feature 2.0-008). Every
+	 * attribute here maps to a shortcode attribute: `source` +
+	 * `sourceId` fold into the shortcode's `source` (current / a post id
+	 * / none); `newTab` is nullable so the per-action default applies
+	 * until an author decides. The templates select is localized from
+	 * ppcert_get_templates() - a small list, no REST call and no
+	 * capability mismatch for editors.
+	 *
+	 * @since 2.0.0
+	 */
+	private function register_certificate_link_block() {
+		$asset_file = PPCERT_PLUGIN_DIR . 'build/blocks/certificate-link/index.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		wp_register_script(
+			'ppcert-certificate-link-block-editor',
+			PPCERT_PLUGIN_URL . 'build/blocks/certificate-link/index.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_localize_script(
+			'ppcert-certificate-link-block-editor',
+			'ppcert_certificate_link_block_data',
+			[
+				'templates' => function_exists( 'ppcert_get_templates' ) ? ppcert_get_templates( [ 'status' => 'published' ] ) : [],
+			]
+		);
+
+		register_block_type(
+			'pressprimer-certificate/certificate-link',
+			[
+				'api_version'     => 3,
+				'title'           => __( 'Certificate Link', 'pressprimer-certificate' ),
+				'description'     => __( "A button to the logged-in learner's certificate for this course, lesson, or quiz. Shows only once it is earned.", 'pressprimer-certificate' ),
+				'category'        => 'pressprimer-certificate',
+				'icon'            => 'admin-links',
+				'supports'        => [
+					'html'  => false,
+					'align' => true,
+				],
+				'attributes'      => [
+					'source'     => [
+						'type'    => 'string',
+						'default' => 'current',
+					],
+					'sourceId'   => [
+						'type'    => 'integer',
+						'default' => 0,
+					],
+					'sourceType' => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'template'   => [
+						'type'    => 'integer',
+						'default' => 0,
+					],
+					'action'     => [
+						'type'    => 'string',
+						'default' => 'view',
+					],
+					'text'       => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'style'      => [
+						'type'    => 'string',
+						'default' => 'button',
+					],
+					'newTab'     => [
+						'type'    => [ 'boolean', 'null' ],
+						'default' => null,
+					],
+				],
+				'editor_script'   => 'ppcert-certificate-link-block-editor',
+				'render_callback' => [ $this, 'render_certificate_link_block' ],
+			]
+		);
+	}
+
+	/**
+	 * Render the Certificate Link block
+	 *
+	 * Maps block attributes onto the shortcode attributes and wraps the
+	 * shortcode handler. An empty shortcode result stays empty - the
+	 * block adds no wrapper when there is nothing to show (FR-002).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $attributes Block attributes.
+	 * @return string Rendered block HTML, or ''.
+	 */
+	public function render_certificate_link_block( $attributes = [] ) {
+		$attributes = is_array( $attributes ) ? $attributes : [];
+
+		$source = isset( $attributes['source'] ) ? sanitize_key( (string) $attributes['source'] ) : 'current';
+
+		if ( 'specific' === $source ) {
+			$source = isset( $attributes['sourceId'] ) ? (string) absint( $attributes['sourceId'] ) : '0';
+		} elseif ( ! in_array( $source, [ 'current', 'none' ], true ) ) {
+			$source = 'current';
+		}
+
+		$atts = [
+			'source'      => $source,
+			'source_type' => isset( $attributes['sourceType'] ) ? (string) $attributes['sourceType'] : '',
+			'template'    => isset( $attributes['template'] ) ? absint( $attributes['template'] ) : 0,
+			'action'      => isset( $attributes['action'] ) ? (string) $attributes['action'] : 'view',
+			'text'        => isset( $attributes['text'] ) ? (string) $attributes['text'] : '',
+			'style'       => isset( $attributes['style'] ) ? (string) $attributes['style'] : 'button',
+			'new_tab'     => array_key_exists( 'newTab', $attributes ) && null !== $attributes['newTab']
+				? ( $attributes['newTab'] ? '1' : '0' )
+				: null,
+		];
+
+		$inner = PressPrimer_Certificate_Certificate_Link::render_shortcode( $atts );
+
+		if ( '' === $inner ) {
+			return '';
+		}
+
+		return '<div class="wp-block-pressprimer-certificate-certificate-link">' . $inner . '</div>';
 	}
 }

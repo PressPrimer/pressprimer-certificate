@@ -1,0 +1,317 @@
+/**
+ * Certificate Link block
+ *
+ * The [ppcert_certificate_link] equivalent (shortcode/block parity
+ * rule, Feature 2.0-008): a dynamic block whose server render wraps the
+ * shortcode handler. Every inspector control here mirrors a shortcode
+ * attribute; the editor preview is static because the real output
+ * depends on the viewing learner (hidden until they earn the
+ * certificate).
+ *
+ * @package
+ * @since 2.0.0
+ */
+
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import {
+	PanelBody,
+	RadioControl,
+	SelectControl,
+	TextControl,
+	ToggleControl,
+	Notice,
+} from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
+
+/**
+ * Award-with-link icon
+ */
+const linkIcon = (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		width="24"
+		height="24"
+	>
+		<path
+			fill="currentColor"
+			d="M9 4a5 5 0 0 0-2.83 9.12V20l2.83-1.5L11.83 20v-6.88A5 5 0 0 0 9 4zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm7.5 3a1 1 0 0 0 0 2H18a2 2 0 0 1 0 4h-1.5a1 1 0 1 0 0 2H18a4 4 0 0 0 0-8h-1.5zm-3 2a1 1 0 0 0 0 2h4a1 1 0 1 0 0-2h-4z"
+		/>
+	</svg>
+);
+
+/**
+ * Default label per action (mirrors the PHP renderer).
+ *
+ * @param {string} action view | download | verify.
+ * @return {string} Label.
+ */
+function defaultLabel( action ) {
+	if ( action === 'download' ) {
+		return __( 'Download your certificate', 'pressprimer-certificate' );
+	}
+	if ( action === 'verify' ) {
+		return __( 'Verify your certificate', 'pressprimer-certificate' );
+	}
+	return __( 'View your certificate', 'pressprimer-certificate' );
+}
+
+/**
+ * Published templates localized at registration.
+ *
+ * @return {Array} Select options.
+ */
+function templateOptions() {
+	const data = window.ppcert_certificate_link_block_data || {};
+	const templates = Array.isArray( data.templates ) ? data.templates : [];
+
+	return [
+		{
+			value: 0,
+			label: __( 'Any template', 'pressprimer-certificate' ),
+		},
+		...templates.map( ( template ) => ( {
+			value: template.id,
+			label: template.title,
+		} ) ),
+	];
+}
+
+/**
+ * Edit component: inspector controls plus a static preview.
+ *
+ * @param {Object}   props               Block props.
+ * @param {Object}   props.attributes    Attributes.
+ * @param {Function} props.setAttributes Setter.
+ * @return {JSX.Element} Block edit component.
+ */
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps();
+	const {
+		source,
+		sourceId,
+		sourceType,
+		template,
+		action,
+		text,
+		style,
+		newTab,
+	} = attributes;
+
+	const effectiveNewTab =
+		newTab === null || newTab === undefined ? action === 'verify' : newTab;
+	const label = text || defaultLabel( action );
+	let buttonClass = 'components-button is-primary';
+	if ( style === 'link' ) {
+		buttonClass = '';
+	} else if ( action === 'verify' ) {
+		buttonClass = 'components-button is-secondary';
+	}
+
+	return (
+		<>
+			<InspectorControls>
+				<PanelBody
+					title={ __(
+						'Which certificate',
+						'pressprimer-certificate'
+					) }
+				>
+					<RadioControl
+						label={ __( 'Source', 'pressprimer-certificate' ) }
+						help={ __(
+							'The course, lesson, topic, or quiz the certificate was earned for.',
+							'pressprimer-certificate'
+						) }
+						selected={ source }
+						options={ [
+							{
+								label: __(
+									'This post',
+									'pressprimer-certificate'
+								),
+								value: 'current',
+							},
+							{
+								label: __(
+									'A specific post',
+									'pressprimer-certificate'
+								),
+								value: 'specific',
+							},
+							{
+								label: __(
+									'Not scoped to a post (use the template)',
+									'pressprimer-certificate'
+								),
+								value: 'none',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { source: value } )
+						}
+					/>
+					{ source === 'specific' && (
+						<TextControl
+							label={ __( 'Post ID', 'pressprimer-certificate' ) }
+							type="number"
+							min={ 1 }
+							value={ sourceId || '' }
+							onChange={ ( value ) =>
+								setAttributes( {
+									sourceId: parseInt( value, 10 ) || 0,
+								} )
+							}
+						/>
+					) }
+					<SelectControl
+						label={ __( 'Template', 'pressprimer-certificate' ) }
+						help={
+							source === 'none'
+								? __(
+										'Required when not scoped to a post.',
+										'pressprimer-certificate'
+								  )
+								: __(
+										'Optional. Narrows to certificates from one template.',
+										'pressprimer-certificate'
+								  )
+						}
+						value={ template }
+						options={ templateOptions() }
+						onChange={ ( value ) =>
+							setAttributes( {
+								template: parseInt( value, 10 ) || 0,
+							} )
+						}
+					/>
+					<TextControl
+						label={ __(
+							'Source type (advanced)',
+							'pressprimer-certificate'
+						) }
+						help={ __(
+							'Leave blank to detect from the post type. Set for PressPrimer Quiz or Assignment sources, for example ppq_quiz.',
+							'pressprimer-certificate'
+						) }
+						value={ sourceType }
+						onChange={ ( value ) =>
+							setAttributes( { sourceType: value } )
+						}
+					/>
+				</PanelBody>
+				<PanelBody title={ __( 'Link', 'pressprimer-certificate' ) }>
+					<RadioControl
+						label={ __( 'Action', 'pressprimer-certificate' ) }
+						selected={ action }
+						options={ [
+							{
+								label: __(
+									'Open the certificate page',
+									'pressprimer-certificate'
+								),
+								value: 'view',
+							},
+							{
+								label: __(
+									'Download the PDF',
+									'pressprimer-certificate'
+								),
+								value: 'download',
+							},
+							{
+								label: __(
+									'Open the verification page',
+									'pressprimer-certificate'
+								),
+								value: 'verify',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { action: value } )
+						}
+					/>
+					<TextControl
+						label={ __( 'Label', 'pressprimer-certificate' ) }
+						placeholder={ defaultLabel( action ) }
+						value={ text }
+						onChange={ ( value ) =>
+							setAttributes( { text: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __(
+							'Show as a button',
+							'pressprimer-certificate'
+						) }
+						checked={ style !== 'link' }
+						onChange={ ( checked ) =>
+							setAttributes( {
+								style: checked ? 'button' : 'link',
+							} )
+						}
+					/>
+					<ToggleControl
+						label={ __(
+							'Open in a new tab',
+							'pressprimer-certificate'
+						) }
+						checked={ effectiveNewTab }
+						onChange={ ( checked ) =>
+							setAttributes( { newTab: checked } )
+						}
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<div { ...blockProps }>
+				{ style === 'link' ? (
+					<a
+						href="#preview"
+						onClick={ ( event ) => event.preventDefault() }
+					>
+						{ label }
+					</a>
+				) : (
+					<button type="button" disabled className={ buttonClass }>
+						{ label }
+					</button>
+				) }
+				<Notice status="info" isDismissible={ false }>
+					{ __(
+						'Shows only to learners who have earned this certificate. Everyone else sees nothing.',
+						'pressprimer-certificate'
+					) }
+				</Notice>
+			</div>
+		</>
+	);
+}
+
+registerBlockType( 'pressprimer-certificate/certificate-link', {
+	apiVersion: 3,
+	title: __( 'Certificate Link', 'pressprimer-certificate' ),
+	description: __(
+		"A button to the logged-in learner's certificate for this course, lesson, or quiz. Shows only once it is earned.",
+		'pressprimer-certificate'
+	),
+	category: 'pressprimer-certificate',
+	icon: linkIcon,
+	supports: {
+		html: false,
+		align: true,
+	},
+	attributes: {
+		source: { type: 'string', default: 'current' },
+		sourceId: { type: 'integer', default: 0 },
+		sourceType: { type: 'string', default: '' },
+		template: { type: 'integer', default: 0 },
+		action: { type: 'string', default: 'view' },
+		text: { type: 'string', default: '' },
+		style: { type: 'string', default: 'button' },
+		newTab: { type: [ 'boolean', 'null' ], default: null },
+	},
+	edit: Edit,
+	// Dynamic block: output comes from the server render callback.
+	save: () => null,
+} );

@@ -158,7 +158,47 @@
 
 		region.appendChild( list );
 
+		appendActions( region, data.actions );
 		appendDisplayFooter( region, display );
+	}
+
+	/**
+	 * Append the action links the lookup supplied (Download PDF for
+	 * valid and expired results; addons may add more). Mirrors the
+	 * server-side renderer: anchors built from attributes and text
+	 * nodes only, never innerHTML.
+	 *
+	 * @param {Element} region  Result region.
+	 * @param {Array}   actions Action entries from the response.
+	 */
+	function appendActions( region, actions ) {
+		if ( ! Array.isArray( actions ) || ! actions.length ) {
+			return;
+		}
+
+		const paragraph = document.createElement( 'p' );
+		paragraph.className = 'ppcert-verify__actions';
+
+		actions.forEach( function ( action ) {
+			if ( ! action || ! action.label || ! action.url ) {
+				return;
+			}
+
+			const link = document.createElement( 'a' );
+			link.className = action.class || '';
+			link.setAttribute( 'href', action.url );
+
+			if ( action.new_tab ) {
+				link.setAttribute( 'target', '_blank' );
+				link.setAttribute( 'rel', 'noopener' );
+			}
+
+			link.textContent = action.label;
+			paragraph.appendChild( link );
+			paragraph.appendChild( document.createTextNode( ' ' ) );
+		} );
+
+		region.appendChild( paragraph );
 	}
 
 	/**

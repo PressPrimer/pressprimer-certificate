@@ -2048,6 +2048,42 @@ if ( ! function_exists( 'get_post' ) ) {
 	}
 }
 
+if ( ! function_exists( 'is_singular' ) ) {
+	/**
+	 * Stub: Singular main query from the test queried-object global.
+	 *
+	 * @return bool
+	 */
+	function is_singular() {
+		return ! empty( $GLOBALS['ppcert_test_queried_object_id'] );
+	}
+}
+
+if ( ! function_exists( 'get_queried_object_id' ) ) {
+	/**
+	 * Stub: The queried post id ($GLOBALS['ppcert_test_queried_object_id']).
+	 *
+	 * @return int
+	 */
+	function get_queried_object_id() {
+		return isset( $GLOBALS['ppcert_test_queried_object_id'] ) ? (int) $GLOBALS['ppcert_test_queried_object_id'] : 0;
+	}
+}
+
+if ( ! function_exists( 'get_post_type' ) ) {
+	/**
+	 * Stub: Post type of a test post.
+	 *
+	 * @param int $post_id Post id.
+	 * @return string|false
+	 */
+	function get_post_type( $post_id ) {
+		$post = get_post( $post_id );
+
+		return $post && isset( $post->post_type ) ? (string) $post->post_type : false;
+	}
+}
+
 if ( ! function_exists( 'get_permalink' ) ) {
 	/**
 	 * Stub: Permalink for a test post.

@@ -150,6 +150,38 @@ class PressPrimer_Certificate_Trigger_Registry {
 	}
 
 	/**
+	 * Registered trigger type ids whose sources live in a post type
+	 *
+	 * The source_post_types walk shared by the post-meta picker and the
+	 * certificate link (Feature 2.0-008): a LearnDash course post maps
+	 * to the course trigger type, a quiz post to the quiz type, so a
+	 * numeric ref is only ever matched within its own family. Types
+	 * without post-based sources (PressPrimer Quiz and Assignment)
+	 * never match here.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $post_type Post type slug.
+	 * @return string[] Trigger type ids (possibly empty).
+	 */
+	public static function get_types_for_post_type( $post_type ) {
+		$post_type = sanitize_key( (string) $post_type );
+		$ids       = [];
+
+		if ( '' === $post_type ) {
+			return $ids;
+		}
+
+		foreach ( self::get_types() as $id => $type ) {
+			if ( in_array( $post_type, $type['source_post_types'], true ) ) {
+				$ids[] = $id;
+			}
+		}
+
+		return $ids;
+	}
+
+	/**
 	 * Sanitize a conditions object against its trigger type's schema
 	 *
 	 * Walks the registered conditions_schema (Feature 004 TR-002): the

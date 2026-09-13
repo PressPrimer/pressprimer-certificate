@@ -445,4 +445,30 @@ class Test_Hook_Contract extends TestCase {
 			}
 		}
 	}
+
+	/**
+	 * Trigger_Registry::get_types_for_post_type (2.0-008): the ids of
+	 * every type declaring the post type, in registration order; unknown
+	 * or empty post types resolve to nothing.
+	 *
+	 * @return void
+	 */
+	public function test_get_types_for_post_type() {
+		add_filter(
+			'ppcert_register_trigger_types',
+			static function ( $types ) {
+				$types[] = [ 'id' => 'lms_x_course', 'label' => 'X course', 'source_post_types' => [ 'x-course' ] ];
+				$types[] = [ 'id' => 'lms_x_quiz', 'label' => 'X quiz', 'source_post_types' => [ 'x-quiz' ] ];
+				$types[] = [ 'id' => 'lms_y_course', 'label' => 'Y course', 'source_post_types' => [ 'x-course', 'y-course' ] ];
+				$types[] = [ 'id' => 'ppq_quiz', 'label' => 'PPQ quiz' ];
+
+				return $types;
+			}
+		);
+
+		$this->assertSame( [ 'lms_x_course', 'lms_y_course' ], PressPrimer_Certificate_Trigger_Registry::get_types_for_post_type( 'x-course' ) );
+		$this->assertSame( [ 'lms_x_quiz' ], PressPrimer_Certificate_Trigger_Registry::get_types_for_post_type( 'x-quiz' ) );
+		$this->assertSame( [], PressPrimer_Certificate_Trigger_Registry::get_types_for_post_type( 'page' ) );
+		$this->assertSame( [], PressPrimer_Certificate_Trigger_Registry::get_types_for_post_type( '' ) );
+	}
 }

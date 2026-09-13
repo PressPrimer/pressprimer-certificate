@@ -208,6 +208,10 @@ class PressPrimer_Certificate_Plugin {
 		PressPrimer_Certificate_Verification_Page::init();
 		PressPrimer_Certificate_My_Certificates::init();
 
+		// The certificate link: one learner's certificate for the current
+		// course/lesson/quiz page, hidden until earned (Feature 2.0-008).
+		PressPrimer_Certificate_Certificate_Link::init();
+
 		// The public certificate view page: /certificate/{credential_id}/.
 		PressPrimer_Certificate_View_Page::init();
 
