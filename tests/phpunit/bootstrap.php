@@ -826,6 +826,8 @@ if ( ! function_exists( 'wp_check_filetype' ) ) {
 			'jpeg' => 'image/jpeg',
 			'png'  => 'image/png',
 			'gif'  => 'image/gif',
+			'webp' => 'image/webp',
+			'avif' => 'image/avif',
 			'pdf'  => 'application/pdf',
 		];
 		$ext = strtolower( (string) pathinfo( (string) $filename, PATHINFO_EXTENSION ) );

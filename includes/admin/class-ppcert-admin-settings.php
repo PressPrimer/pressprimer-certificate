@@ -286,6 +286,9 @@ class PressPrimer_Certificate_Admin_Settings {
 		}
 
 		$manifest_families = PressPrimer_Certificate_Layout_Validator::get_registered_fonts();
+		// The renderer's own allowlist (Feature 2.0-010): what the admin
+		// sees here is exactly what the PDF and preview paths accept.
+		$image_mimes = PressPrimer_Certificate_PDF_Renderer::renderable_image_mimes();
 
 		return [
 			'pluginVersion'      => PPCERT_VERSION,
@@ -305,6 +308,8 @@ class PressPrimer_Certificate_Admin_Settings {
 				'gd'          => extension_loaded( 'gd' ),
 				'imagick'     => extension_loaded( 'imagick' ),
 				'imagick_pdf' => $imagick_pdf,
+				'webp'        => in_array( 'image/webp', $image_mimes, true ),
+				'avif'        => in_array( 'image/avif', $image_mimes, true ),
 				'fonts'       => count( $manifest_families ),
 			],
 			'statistics'         => $this->statistics(),

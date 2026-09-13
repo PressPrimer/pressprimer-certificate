@@ -209,6 +209,12 @@ const StatusTab = ( { settingsData } ) => {
 				caps.imagick_pdf ? 'Available' : 'Not Available'
 			}`
 		);
+		lines.push(
+			`WebP Images: ${ caps.webp ? 'Available' : 'Not Available' }`
+		);
+		lines.push(
+			`AVIF Images: ${ caps.avif ? 'Available' : 'Not Available' }`
+		);
 		lines.push( `Bundled Fonts: ${ caps.fonts ?? 0 }` );
 		lines.push( '' );
 
@@ -636,6 +642,24 @@ const StatusTab = ( { settingsData } ) => {
 								) }
 							</th>
 							<td>{ renderCapabilityTag( caps.imagick_pdf ) }</td>
+						</tr>
+						<tr>
+							<th>
+								{ __(
+									'WebP Images',
+									'pressprimer-certificate'
+								) }
+							</th>
+							<td>{ renderCapabilityTag( caps.webp ) }</td>
+						</tr>
+						<tr>
+							<th>
+								{ __(
+									'AVIF Images',
+									'pressprimer-certificate'
+								) }
+							</th>
+							<td>{ renderCapabilityTag( caps.avif ) }</td>
 						</tr>
 						<tr>
 							<th>

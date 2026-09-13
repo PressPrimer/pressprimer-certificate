@@ -768,4 +768,223 @@ class Test_PDF_Renderer extends TestCase {
 		$warnings2 = array_column( $renderer2->get_last_render_warnings(), 'warning' );
 		$this->assertContains( 'font_family_fallback', $warnings2 );
 	}
+
+	/**
+	 * Build a 40x40 test image: left half fully transparent, right half
+	 * opaque red. Saved in the requested format next to the PNG source of
+	 * truth.
+	 *
+	 * @param string $format png | webp | avif.
+	 * @return string File path.
+	 */
+	private function make_half_transparent_image( $format ) {
+		$image = imagecreatetruecolor( 40, 40 );
+		imagealphablending( $image, false );
+		imagesavealpha( $image, true );
+
+		$transparent = imagecolorallocatealpha( $image, 0, 0, 0, 127 );
+		$red         = imagecolorallocate( $image, 255, 0, 0 );
+
+		imagefilledrectangle( $image, 0, 0, 19, 39, $transparent );
+		imagefilledrectangle( $image, 20, 0, 39, 39, $red );
+
+		$path = tempnam( sys_get_temp_dir(), 'ppcert-fixture' ) . '.' . $format;
+
+		if ( 'webp' === $format ) {
+			// Lossless where GD offers it (PHP 8.1+); otherwise quality 100,
+			// which still converts through YUV - the assertions tolerate a
+			// few units per channel for that reason.
+			imagewebp( $image, $path, defined( 'IMG_WEBP_LOSSLESS' ) ? IMG_WEBP_LOSSLESS : 100 );
+		} elseif ( 'avif' === $format ) {
+			imageavif( $image, $path, 100 );
+		} else {
+			imagepng( $image, $path );
+		}
+
+		return $path;
+	}
+
+	/**
+	 * A layout placing attachment $attachment_id contain-fitted into a
+	 * 200x200 box at (100,100) over a blue page.
+	 *
+	 * @param int $attachment_id Attachment id.
+	 * @return array
+	 */
+	private function image_over_blue_layout( $attachment_id ) {
+		return [
+			'layout_schema_version' => 1,
+			'page'                  => [
+				'size'        => 'a4',
+				'orientation' => 'landscape',
+				'width'       => 842,
+				'height'      => 595,
+			],
+			'background'            => [
+				'color'         => '#0000ff',
+				'attachment_id' => 0,
+			],
+			'elements'              => [
+				[
+					'id'    => 'el_modernimg',
+					'type'  => 'image',
+					'x'     => 100,
+					'y'     => 100,
+					'w'     => 200,
+					'h'     => 200,
+					'z'     => 1,
+					'props' => [
+						'attachment_id' => $attachment_id,
+						'fit'           => 'contain',
+						'opacity'       => 1.0,
+					],
+				],
+			],
+		];
+	}
+
+	/**
+	 * The renderable allowlist reflects this server's GD decoders (2.0,
+	 * Feature 2.0-010): the three classic types always, WebP and AVIF
+	 * only when the decoder function exists.
+	 *
+	 * @return void
+	 */
+	public function test_renderable_image_mimes_reflect_gd() {
+		$mimes = PressPrimer_Certificate_PDF_Renderer::renderable_image_mimes();
+
+		$this->assertSame( [ 'image/jpeg', 'image/png', 'image/gif' ], array_slice( $mimes, 0, 3 ) );
+		$this->assertSame( function_exists( 'imagecreatefromwebp' ), in_array( 'image/webp', $mimes, true ) );
+		$this->assertSame( function_exists( 'imagecreatefromavif' ), in_array( 'image/avif', $mimes, true ) );
+	}
+
+	/**
+	 * WebP (and AVIF where GD can write it) render into the PDF without
+	 * warnings, the transcode temp file is removed after the render, and
+	 * the preview raster is pixel-identical to the PNG twin - transparency
+	 * intact over the page color (2.0, Feature 2.0-010).
+	 *
+	 * @return void
+	 */
+	public function test_webp_and_avif_render_like_their_png_twin() {
+		if ( ! function_exists( 'imagewebp' ) || ! function_exists( 'imagecreatefromwebp' ) ) {
+			$this->markTestSkipped( 'GD without WebP support.' );
+		}
+
+		$formats = [ 'png', 'webp' ];
+
+		if ( function_exists( 'imageavif' ) && function_exists( 'imagecreatefromavif' ) ) {
+			$formats[] = 'avif';
+		}
+
+		$files   = [];
+		$rasters = [];
+		$id      = 700;
+
+		foreach ( $formats as $format ) {
+			$id++;
+			$files[ $format ] = $this->make_half_transparent_image( $format );
+
+			$GLOBALS['ppcert_test_attachment_files'][ $id ] = $files[ $format ];
+
+			$layout = $this->image_over_blue_layout( $id );
+
+			// PDF path: renders, no image warnings, and the only new temp
+			// file left behind is the PDF itself (the transcoded PNG is
+			// cleaned up).
+			$before   = glob( sys_get_temp_dir() . '/ppcert*' );
+			$renderer = new PressPrimer_Certificate_PDF_Renderer();
+			$pdf      = $renderer->render_pdf( $layout, [], [ 'context' => 'preview' ] );
+
+			$this->assertIsString( $pdf, $format . ': PDF renders' );
+			$this->assertFileExists( $pdf );
+
+			$warnings = array_column( $renderer->get_last_render_warnings(), 'warning' );
+			$this->assertNotContains( 'attachment_not_image', $warnings, $format . ' is renderable' );
+			$this->assertNotContains( 'attachment_unreadable', $warnings, $format . ' decodes' );
+			$this->assertNotContains( 'attachment_missing', $warnings );
+
+			// Compare basenames: macOS reports the temp dir as /var/... and
+			// tempnam() as /private/var/..., the same directory.
+			$after = array_diff( array_map( 'basename', glob( sys_get_temp_dir() . '/ppcert*' ) ), array_map( 'basename', $before ) );
+			$this->assertSame( [ basename( $pdf ) ], array_values( $after ), $format . ': no transcode temp file survives the render' );
+			unlink( $pdf );
+
+			// Preview path at 72 dpi (1 px per pt): the same box math.
+			$png = $renderer->render_png( $layout, [], [ 'dpi' => 72 ] );
+			$this->assertIsString( $png, $format . ': preview renders' );
+
+			$rasters[ $format ] = $png;
+		}
+
+		// Transparency: the image's left half shows the blue page exactly
+		// (the page color is painted by the canvas, never decoded), the
+		// right half is red within codec tolerance - in every format.
+		foreach ( $rasters as $format => $png ) {
+			$canvas = imagecreatefrompng( $png );
+			$left   = imagecolorsforindex( $canvas, imagecolorat( $canvas, 150, 150 ) );
+			$right  = imagecolorsforindex( $canvas, imagecolorat( $canvas, 250, 150 ) );
+
+			$this->assertSame( [ 0, 0, 255 ], [ $left['red'], $left['green'], $left['blue'] ], $format . ': transparent half shows the page color' );
+			$this->assertGreaterThanOrEqual( 250, $right['red'], $format . ': opaque half is red' );
+			$this->assertLessThanOrEqual( 5, $right['green'] + $right['blue'], $format . ': opaque half is red' );
+		}
+
+		// Placement parity: every pixel of the WebP (and AVIF) raster is
+		// within a few units of the PNG twin across the whole page - the
+		// same box math placed the same pixels; only codec noise differs.
+		$reference = imagecreatefrompng( $rasters['png'] );
+
+		foreach ( $rasters as $format => $png ) {
+			if ( 'png' === $format ) {
+				continue;
+			}
+
+			$candidate = imagecreatefrompng( $png );
+			$max_delta = 0;
+
+			for ( $y = 90; $y < 310; $y += 2 ) {
+				for ( $x = 90; $x < 310; $x += 2 ) {
+					$a = imagecolorsforindex( $reference, imagecolorat( $reference, $x, $y ) );
+					$b = imagecolorsforindex( $candidate, imagecolorat( $candidate, $x, $y ) );
+
+					$max_delta = max( $max_delta, abs( $a['red'] - $b['red'] ), abs( $a['green'] - $b['green'] ), abs( $a['blue'] - $b['blue'] ) );
+				}
+			}
+
+			$this->assertLessThanOrEqual( 8, $max_delta, $format . ': raster matches the PNG twin within codec tolerance across the image box and its surroundings' );
+		}
+
+		foreach ( $rasters as $png ) {
+			unlink( $png );
+		}
+
+		foreach ( $files as $file ) {
+			unlink( $file );
+		}
+	}
+
+	/**
+	 * A WebP attachment on a server without the decoder is skipped with
+	 * the same warning as any non-image (the 1.1 behavior) - proven by
+	 * the allowlist gate rather than by disabling GD: a file whose
+	 * extension says WebP but whose bytes are not an image fails the
+	 * getimagesize re-check.
+	 *
+	 * @return void
+	 */
+	public function test_undecodable_modern_image_warns_never_fatal() {
+		$path = tempnam( sys_get_temp_dir(), 'ppcert-fixture' ) . '.webp';
+		file_put_contents( $path, 'not an image' );
+		$GLOBALS['ppcert_test_attachment_files'][777] = $path;
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$pdf      = $renderer->render_pdf( $this->image_over_blue_layout( 777 ), [], [ 'context' => 'preview' ] );
+
+		$this->assertIsString( $pdf );
+		$this->assertContains( 'attachment_not_image', array_column( $renderer->get_last_render_warnings(), 'warning' ) );
+
+		unlink( $pdf );
+		unlink( $path );
+	}
 }

@@ -49,6 +49,16 @@ class PressPrimer_Certificate_PDF_Renderer {
 	private $warnings = [];
 
 	/**
+	 * Temporary files created during the current PDF render (transcoded
+	 * WebP/AVIF images, Feature 2.0-010), deleted when the render ends -
+	 * on success or failure.
+	 *
+	 * @since 2.0.0
+	 * @var string[]
+	 */
+	private $temp_files = [];
+
+	/**
 	 * Cached font manifest
 	 *
 	 * @since 1.0.0
@@ -139,7 +149,10 @@ class PressPrimer_Certificate_PDF_Renderer {
 			}
 
 			$pdf->Output( $temp_path, 'F' );
+			$this->cleanup_temp_files();
 		} catch ( \Throwable $e ) {
+			$this->cleanup_temp_files();
+
 			if ( file_exists( $temp_path ) ) {
 				wp_delete_file( $temp_path );
 			}
@@ -689,11 +702,25 @@ class PressPrimer_Certificate_PDF_Renderer {
 		$filetype = wp_check_filetype( $file );
 		$size     = @getimagesize( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Non-image files return false; handled below.
 
-		$allowed = [ 'image/jpeg', 'image/png', 'image/gif' ];
+		$allowed = self::renderable_image_mimes();
 
 		if ( false === $size || empty( $filetype['type'] ) || ! in_array( $filetype['type'], $allowed, true ) ) {
 			$this->warn( $element_id, 'attachment_not_image' );
 			return;
+		}
+
+		// WebP and AVIF (2.0, Feature 2.0-010): transcode to a temporary
+		// PNG with alpha preserved and hand THAT to TCPDF. TCPDF's own
+		// fallback for unknown types goes through JPEG and flattens
+		// transparency - logos and signatures are exactly the files that
+		// need it kept.
+		if ( in_array( $filetype['type'], [ 'image/webp', 'image/avif' ], true ) ) {
+			$file = $this->transcode_to_png( $file, $filetype['type'] );
+
+			if ( ! $file ) {
+				$this->warn( $element_id, 'attachment_unreadable' );
+				return;
+			}
 		}
 
 		$placement = self::fit_box( (float) $size[0], (float) $size[1], $box_w, $box_h, $fit );
@@ -729,6 +756,118 @@ class PressPrimer_Certificate_PDF_Renderer {
 		if ( $opacity < 1 ) {
 			$pdf->SetAlpha( 1 );
 		}
+	}
+
+	/**
+	 * Image MIME types this server can place in a PDF and a preview
+	 *
+	 * JPEG, PNG, and GIF always; WebP and AVIF only when GD exposes the
+	 * decoder (Feature 2.0-010). One list for the PDF path, the GD
+	 * preview path, and the Status tab, so what the admin sees is what
+	 * the renderer does.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return string[] MIME types.
+	 */
+	public static function renderable_image_mimes() {
+		$mimes = [ 'image/jpeg', 'image/png', 'image/gif' ];
+
+		if ( function_exists( 'imagecreatefromwebp' ) ) {
+			$mimes[] = 'image/webp';
+		}
+
+		if ( function_exists( 'imagecreatefromavif' ) ) {
+			$mimes[] = 'image/avif';
+		}
+
+		return $mimes;
+	}
+
+	/**
+	 * Decode a WebP/AVIF file with GD and preserve its alpha channel
+	 *
+	 * Shared by the PDF transcode and the GD preview path.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $file Image path.
+	 * @param string $mime image/webp or image/avif.
+	 * @return resource|GdImage|false
+	 */
+	private static function decode_modern_image( $file, $mime ) {
+		$image = false;
+
+		if ( 'image/webp' === $mime && function_exists( 'imagecreatefromwebp' ) ) {
+			$image = @imagecreatefromwebp( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Corrupt files return false; handled by the caller.
+		} elseif ( 'image/avif' === $mime && function_exists( 'imagecreatefromavif' ) ) {
+			$image = @imagecreatefromavif( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Corrupt files return false; handled by the caller.
+		}
+
+		if ( false === $image ) {
+			return false;
+		}
+
+		imagealphablending( $image, false );
+		imagesavealpha( $image, true );
+
+		return $image;
+	}
+
+	/**
+	 * Transcode a WebP/AVIF attachment to a temporary PNG for TCPDF
+	 *
+	 * The temp file is tracked and removed when the render ends.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $file Attachment path.
+	 * @param string $mime image/webp or image/avif.
+	 * @return string|false Temp PNG path, or false when undecodable.
+	 */
+	private function transcode_to_png( $file, $mime ) {
+		$image = self::decode_modern_image( $file, $mime );
+
+		if ( false === $image ) {
+			return false;
+		}
+
+		if ( ! function_exists( 'wp_tempnam' ) && defined( 'ABSPATH' ) && file_exists( ABSPATH . 'wp-admin/includes/file.php' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+
+		$png_path = wp_tempnam( 'ppcert-image' );
+
+		if ( ! $png_path ) {
+			return false;
+		}
+
+		$this->temp_files[] = $png_path;
+
+		if ( ! imagepng( $image, $png_path ) ) {
+			return false;
+		}
+
+		if ( PHP_VERSION_ID < 80000 ) {
+			imagedestroy( $image ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Guarded: needed on PHP 7.x, no-op 8.0+, deprecated 8.5.
+		}
+
+		return $png_path;
+	}
+
+	/**
+	 * Delete the temp files of the current render
+	 *
+	 * @since 2.0.0
+	 */
+	private function cleanup_temp_files() {
+		foreach ( $this->temp_files as $path ) {
+			if ( file_exists( $path ) ) {
+				wp_delete_file( $path );
+			}
+		}
+
+		$this->temp_files = [];
 	}
 
 	/**
@@ -1467,6 +1606,17 @@ class PressPrimer_Certificate_PDF_Renderer {
 				break;
 			case 'image/gif':
 				$source = imagecreatefromgif( $file );
+				break;
+			case 'image/webp':
+			case 'image/avif':
+				// Feature 2.0-010: only when GD has the decoder (the same
+				// allowlist as the PDF path).
+				if ( ! in_array( $info['mime'], self::renderable_image_mimes(), true ) ) {
+					$this->warn( $element_id, 'attachment_not_image' );
+					return;
+				}
+
+				$source = self::decode_modern_image( $file, $info['mime'] );
 				break;
 			default:
 				$this->warn( $element_id, 'attachment_not_image' );
