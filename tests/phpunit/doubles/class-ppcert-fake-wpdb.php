@@ -1889,6 +1889,150 @@ class PPCert_Fake_WPDB {
 			);
 		}
 
+		// Enterprise Audit_Log_Service::query()/count() - the merged
+		// UNION ALL over the audit and events stores. args: [audit_table,
+		// audit_on, type x2, object_type x2, object_id x2, actor x2,
+		// has_from+from, has_to+to, category_like x2, search x4,
+		// events_table, events_on, ev_type x2, object_id x2, actor x2,
+		// has_from+from, has_to+to, search x3, (limit, offset)].
+		if ( false !== strpos( $query, "UNION ALL SELECT 'events' AS source, id, CONCAT( 'certificate.', event_type ) AS event_type" ) ) {
+			$audit_on    = (int) $args[1];
+			$type        = (string) $args[2];
+			$object_type = (string) $args[4];
+			$object_id   = (int) $args[6];
+			$actor       = (int) $args[8];
+			$from        = (int) $args[10] ? (string) $args[11] : '';
+			$to          = (int) $args[12] ? (string) $args[13] : '';
+			$prefix      = $this->like_to_substring( (string) $args[14] );
+			$needle      = $this->like_to_substring( (string) $args[17] );
+			$events_tbl  = (string) $args[20];
+			$events_on   = (int) $args[21];
+			$ev_type     = (string) $args[22];
+
+			$merged = [];
+
+			if ( $audit_on ) {
+				foreach ( $this->rows( $table ) as $row ) {
+					if ( '' !== $type && (string) $row['event_type'] !== $type ) {
+						continue;
+					}
+					if ( '' !== $object_type && (string) ( isset( $row['object_type'] ) ? $row['object_type'] : '' ) !== $object_type ) {
+						continue;
+					}
+					if ( $object_id > 0 && (int) ( isset( $row['object_id'] ) ? $row['object_id'] : 0 ) !== $object_id ) {
+						continue;
+					}
+					if ( $actor > 0 && (int) ( isset( $row['actor_id'] ) ? $row['actor_id'] : 0 ) !== $actor ) {
+						continue;
+					}
+					if ( '' !== $from && (string) $row['created_at'] < $from ) {
+						continue;
+					}
+					if ( '' !== $to && (string) $row['created_at'] > $to ) {
+						continue;
+					}
+					if ( '' !== $prefix && 0 !== strpos( (string) $row['event_type'], $prefix ) ) {
+						continue;
+					}
+					if ( '' !== $needle ) {
+						$haystack = (string) $row['event_type'] . ' ' . (string) ( isset( $row['object_type'] ) ? $row['object_type'] : '' ) . ' ' . (string) ( isset( $row['meta_json'] ) ? $row['meta_json'] : '' );
+						if ( false === stripos( $haystack, $needle ) ) {
+							continue;
+						}
+					}
+
+					$merged[] = [
+						'source'      => 'audit',
+						'id'          => (int) $row['id'],
+						'event_type'  => (string) $row['event_type'],
+						'object_type' => isset( $row['object_type'] ) ? $row['object_type'] : null,
+						'object_id'   => isset( $row['object_id'] ) ? $row['object_id'] : null,
+						'actor_id'    => isset( $row['actor_id'] ) ? $row['actor_id'] : null,
+						'meta_json'   => isset( $row['meta_json'] ) ? $row['meta_json'] : null,
+						'created_at'  => (string) $row['created_at'],
+					];
+				}
+			}
+
+			if ( $events_on ) {
+				foreach ( $this->rows( $events_tbl ) as $row ) {
+					if ( '' !== $ev_type && (string) $row['event_type'] !== $ev_type ) {
+						continue;
+					}
+					if ( $object_id > 0 && (int) $row['certificate_id'] !== $object_id ) {
+						continue;
+					}
+					if ( $actor > 0 && (int) ( isset( $row['actor_id'] ) ? $row['actor_id'] : 0 ) !== $actor ) {
+						continue;
+					}
+					if ( '' !== $from && (string) $row['created_at'] < $from ) {
+						continue;
+					}
+					if ( '' !== $to && (string) $row['created_at'] > $to ) {
+						continue;
+					}
+					if ( '' !== $needle ) {
+						$haystack = (string) $row['event_type'] . ' ' . (string) ( isset( $row['meta_json'] ) ? $row['meta_json'] : '' );
+						if ( false === stripos( $haystack, $needle ) ) {
+							continue;
+						}
+					}
+
+					$merged[] = [
+						'source'      => 'events',
+						'id'          => (int) $row['id'],
+						'event_type'  => 'certificate.' . (string) $row['event_type'],
+						'object_type' => 'certificate',
+						'object_id'   => (int) $row['certificate_id'],
+						'actor_id'    => isset( $row['actor_id'] ) ? $row['actor_id'] : null,
+						'meta_json'   => isset( $row['meta_json'] ) ? $row['meta_json'] : null,
+						'created_at'  => (string) $row['created_at'],
+					];
+				}
+			}
+
+			if ( 0 === strpos( $query, 'SELECT COUNT(*)' ) ) {
+				return [ [ 'count' => count( $merged ) ] ];
+			}
+
+			// The hardcoded ORDER BY branches: a primary key, then
+			// created_at, source ASC, id.
+			$primary = 'created_at';
+			if ( false !== strpos( $query, 'ORDER BY event_type' ) ) {
+				$primary = 'event_type';
+			} elseif ( false !== strpos( $query, 'ORDER BY actor_id' ) ) {
+				$primary = 'actor_id';
+			}
+			$desc = false !== strpos( $query, 'ORDER BY ' . $primary . ' DESC' );
+
+			usort(
+				$merged,
+				static function ( $a, $b ) use ( $primary, $desc ) {
+					$cmp = 'actor_id' === $primary
+						? ( (int) $a['actor_id'] <=> (int) $b['actor_id'] )
+						: strcmp( (string) $a[ $primary ], (string) $b[ $primary ] );
+					if ( 0 === $cmp && 'created_at' !== $primary ) {
+						$cmp = strcmp( $a['created_at'], $b['created_at'] );
+					}
+					if ( 0 === $cmp ) {
+						// source ASC is always ascending, even in DESC branches.
+						$src = strcmp( $a['source'], $b['source'] );
+						if ( 0 !== $src ) {
+							return $src;
+						}
+						$cmp = $a['id'] <=> $b['id'];
+					}
+
+					return $desc ? -$cmp : $cmp;
+				}
+			);
+
+			$limit  = (int) $args[ count( $args ) - 2 ];
+			$offset = (int) $args[ count( $args ) - 1 ];
+
+			return array_slice( $merged, $offset, $limit );
+		}
+
 		// Enterprise Audit_Service::get_events / count: sentinel filters
 		// (event_type, object_type, object_id, actor_id, date range,
 		// category prefix LIKE, LIKE search), fixed-direction ORDER BY,
