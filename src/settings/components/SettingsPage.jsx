@@ -337,6 +337,28 @@ const SettingsPage = ( { settingsData = {} } ) => {
 								} }
 							/>
 						) ) }
+
+					{ /* Addon tabs that joined the one-save contract (dirty
+					     event in, save event out) get the same Save button;
+					     the core settings post unchanged and the save event
+					     tells the addon section to persist its own store. */ }
+					{ isAddonTab && (
+						<div className="ppcert-settings-footer">
+							<Button
+								type="primary"
+								size="large"
+								icon={ <SaveOutlined /> }
+								onClick={ handleSave }
+								loading={ saving }
+								disabled={ ! hasChanges }
+							>
+								{ __(
+									'Save Settings',
+									'pressprimer-certificate'
+								) }
+							</Button>
+						</div>
+					) }
 				</div>
 			</div>
 		</div>
