@@ -334,7 +334,7 @@ class PressPrimer_Certificate_Onboarding {
 	 */
 	public function get_js_data() {
 		/** This filter is documented in includes/admin/class-ppcert-admin.php */
-		$plugin_name = apply_filters( 'ppcert_plugin_name', __( 'PressPrimer Certificate', 'pressprimer-certificate' ) );
+		$plugin_name = apply_filters( 'ppcert_plugin_name', PressPrimer_Certificate_Admin::branding()['name'] );
 
 		return [
 			'state'          => $this->get_onboarding_state(),

@@ -145,6 +145,16 @@ class PPCert_Fake_WPDB {
 	 * @param string $table Full table name.
 	 * @return string[] Column names; empty when unregistered.
 	 */
+	/**
+	 * Forget a table's schema and rows (tests simulating a dropped table).
+	 *
+	 * @param string $table Full table name.
+	 * @return void
+	 */
+	public function drop_table( $table ) {
+		unset( $this->schemas[ $table ], $this->tables[ $table ] );
+	}
+
 	public function table_columns( $table ) {
 		return isset( $this->schemas[ $table ] ) ? $this->schemas[ $table ] : [];
 	}

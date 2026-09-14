@@ -605,6 +605,102 @@ class Test_Email_Service extends TestCase {
 			'A missing certificate builds nothing'
 		);
 	}
+
+	/**
+	 * ppcert_email_from and ppcert_email_footer (2.0, Enterprise contract
+	 * item 9) apply on every send path: the issuance send, the test
+	 * send, and the shared recipient builder - with the email type and
+	 * a context that names the certificate. Invalid results fall back
+	 * field by field; an empty footer leaves the body untouched.
+	 *
+	 * @return void
+	 */
+	public function test_from_and_footer_filters_cover_every_send_path() {
+		$seen = [];
+
+		add_filter(
+			'ppcert_email_from',
+			static function ( $from, $email_type, $context ) use ( &$seen ) {
+				$seen[] = [ 'from', $email_type, $context ];
+				$from['name']    = 'Acme <b>Academy</b>';
+				$from['address'] = 'certificates@acme.example';
+
+				return $from;
+			},
+			10,
+			3
+		);
+		add_filter(
+			'ppcert_email_footer',
+			static function ( $footer, $email_type, $context ) use ( &$seen ) {
+				$seen[] = [ 'footer', $email_type, $context ];
+
+				return "Acme Academy\n123 Main St";
+			},
+			10,
+			3
+		);
+
+		$certificate_id = $this->certificate_id;
+
+		// Issuance path.
+		PressPrimer_Certificate_Email_Service::send_issued( $certificate_id, [ 'trigger_type' => 'manual' ] );
+		$mail = end( $GLOBALS['ppcert_test_mail'] );
+		$this->assertSame( 'From: Acme Academy <certificates@acme.example>', $mail['headers'][0], 'Filtered identity, markup stripped from the name' );
+		$this->assertStringEndsWith( "\n\nAcme Academy\n123 Main St", $mail['body'], 'Footer is the last thing in the body' );
+		$this->assertSame( 'issued', $seen[0][1] );
+		$this->assertSame( $certificate_id, $seen[0][2]['certificate_id'], 'Context names the certificate before assembly' );
+
+		// Shared builder (Educator reminders and other addon callers).
+		$content = PressPrimer_Certificate_Email_Service::build_recipient_email( $certificate_id, 'Reminder {subject}', 'Body', 'expiry_reminder', [ 'offset' => 30 ] );
+		$this->assertSame( 'From: Acme Academy <certificates@acme.example>', $content['headers'][0] );
+		$this->assertSame( "Body\n\nAcme Academy\n123 Main St", $content['body'] );
+		$last = end( $seen );
+		$this->assertSame( 'expiry_reminder', $last[1] );
+		$this->assertSame( 30, $last[2]['offset'] );
+		$this->assertSame( $certificate_id, $last[2]['certificate_id'] );
+
+		// Test send: type 'test', footer before the test note.
+		$GLOBALS['ppcert_test_current_user'] = 7;
+		$this->assertTrue( PressPrimer_Certificate_Email_Service::send_test( null ) );
+		$mail = end( $GLOBALS['ppcert_test_mail'] );
+		$this->assertSame( 'From: Acme Academy <certificates@acme.example>', $mail['headers'][0] );
+		$this->assertStringEndsWith( "\n\nAcme Academy\n123 Main St", $mail['body'], 'Footer is the last line of the test email too, after the test note' );
+		$this->assertStringContainsString( 'This is a test', $mail['body'] );
+		$types = array_column( $seen, 1 );
+		$this->assertContains( 'test', $types );
+	}
+
+	/**
+	 * Fallbacks: an invalid address or empty name keeps the settings
+	 * value; a non-string footer is ignored; no filters means the
+	 * settings From and an untouched body.
+	 *
+	 * @return void
+	 */
+	public function test_from_and_footer_fallbacks() {
+		$this->assertSame( 'From: Sunrise Training Academy <admin@sunrise.example>', PressPrimer_Certificate_Email_Service::from_header( 'issued' ) );
+		$this->assertSame( 'Hello', PressPrimer_Certificate_Email_Service::apply_footer( 'Hello', 'issued' ) );
+
+		add_filter(
+			'ppcert_email_from',
+			static function ( $from ) {
+				return [
+					'name'    => '',
+					'address' => 'not-an-email',
+				];
+			}
+		);
+		add_filter(
+			'ppcert_email_footer',
+			static function () {
+				return [ 'not', 'a', 'string' ];
+			}
+		);
+
+		$this->assertSame( 'From: Sunrise Training Academy <admin@sunrise.example>', PressPrimer_Certificate_Email_Service::from_header( 'issued' ), 'Invalid results fall back to settings' );
+		$this->assertSame( 'Hello', PressPrimer_Certificate_Email_Service::apply_footer( 'Hello', 'issued' ) );
+	}
 }
 
 /**

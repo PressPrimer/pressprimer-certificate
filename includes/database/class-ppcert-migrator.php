@@ -39,6 +39,15 @@ class PressPrimer_Certificate_Migrator {
 	const DB_VERSION_OPTION = 'ppcert_db_version';
 
 	/**
+	 * Transient recording that the head step's targets were verified
+	 * present for the current DB version (heal_head_step()).
+	 *
+	 * @since 2.0.0
+	 * @var string
+	 */
+	const HEAD_VERIFIED_TRANSIENT = 'ppcert_db_head_verified';
+
+	/**
 	 * Maybe run migrations
 	 *
 	 * Checks if the database needs to be updated and runs migrations if
@@ -52,10 +61,57 @@ class PressPrimer_Certificate_Migrator {
 		$current_version = get_option( self::DB_VERSION_OPTION, '0' );
 
 		if ( version_compare( $current_version, PPCERT_DB_VERSION, '>=' ) ) {
+			self::heal_head_step();
 			return;
 		}
 
 		self::run_migrations( $current_version );
+	}
+
+	/**
+	 * Re-run the chain's head step when its targets are missing
+	 *
+	 * The stored version says the site is current, but a target the
+	 * head step produces is absent: a table dropped by hand, a partial
+	 * failure that somehow advanced, or - the case that motivated this -
+	 * a site that ran an unreleased version of the head step before the
+	 * step gained a target (the audit table joined 2.0.0 after dev
+	 * sites had already migrated to 2.0.0). Steps are idempotent
+	 * (dbDelta), so re-running the head step is always safe; the
+	 * version is not touched. Cheap when healthy: one SHOW TABLES per
+	 * target table on each load, same as verify_targets() always cost
+	 * during a migration.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool Whether the head step was re-run.
+	 */
+	private static function heal_head_step() {
+		// One verification per day per site, not per request: the
+		// targets are a handful of SHOW TABLES / SHOW COLUMNS queries.
+		if ( PPCERT_DB_VERSION === get_transient( self::HEAD_VERIFIED_TRANSIENT ) ) {
+			return false;
+		}
+
+		$steps = self::get_migration_steps();
+		$head  = end( $steps );
+
+		if ( ! is_array( $head ) || version_compare( (string) $head['version'], PPCERT_DB_VERSION, '!=' ) ) {
+			return false;
+		}
+
+		$healed = false;
+
+		if ( ! empty( self::verify_targets( $head['targets'] ) ) ) {
+			call_user_func( $head['callback'] );
+			$healed = true;
+		}
+
+		if ( empty( self::verify_targets( $head['targets'] ) ) ) {
+			set_transient( self::HEAD_VERIFIED_TRANSIENT, PPCERT_DB_VERSION, DAY_IN_SECONDS );
+		}
+
+		return $healed;
 	}
 
 	/**
@@ -95,6 +151,12 @@ class PressPrimer_Certificate_Migrator {
 			$current = $step['version'];
 			update_option( self::DB_VERSION_OPTION, $current );
 		}
+
+		// The chain reached the head with its targets just verified:
+		// stamp the daily head check so the next load skips it.
+		if ( version_compare( $current, PPCERT_DB_VERSION, '>=' ) ) {
+			set_transient( self::HEAD_VERIFIED_TRANSIENT, PPCERT_DB_VERSION, DAY_IN_SECONDS );
+		}
 	}
 
 	/**
@@ -126,7 +188,8 @@ class PressPrimer_Certificate_Migrator {
 				'callback' => [ __CLASS__, 'migrate_to_1_0_1' ],
 				'targets'  => [ 'ppcert_templates' => [ 'settings_json' ] ],
 			],
-			// 2.0.0: the email templates table (Decision 005, schema only)
+			// 2.0.0: the email templates table (Decision 005, schema only),
+			// the audit table (Enterprise contract item 8, schema only),
 			// and the search-only title column on certificates (Feature
 			// 2.0-002 TR-002), backfilled from each row's snapshot; plus
 			// directory_visibility, the School directory's consent flag
@@ -137,6 +200,7 @@ class PressPrimer_Certificate_Migrator {
 				'callback' => [ __CLASS__, 'migrate_to_2_0_0' ],
 				'targets'  => [
 					'ppcert_email_templates' => [],
+					'ppcert_audit'           => [],
 					'ppcert_certificates'    => [ 'title', 'directory_visibility' ],
 				],
 			],

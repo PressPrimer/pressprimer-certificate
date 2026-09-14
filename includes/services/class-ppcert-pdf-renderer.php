@@ -315,12 +315,56 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		$pdf = new TCPDF( $orientation, 'pt', [ $width, $height ], true, 'UTF-8', false );
 
-		// Document metadata (FR-006).
+		// Document metadata (FR-006), filterable (2.0, Enterprise contract
+		// item 10 - white-label PDF metadata). Producer is TCPDF's own
+		// and has no setter in 6.11; the four keys below are the whole
+		// filterable surface. Metadata never touches the raster, so
+		// parity is unaffected.
 		$title     = isset( $args['title'] ) ? (string) $args['title'] : __( 'Certificate', 'pressprimer-certificate' );
 		$recipient = isset( $args['recipient_name'] ) ? (string) $args['recipient_name'] : '';
 
-		$pdf->SetCreator( 'PressPrimer Certificate' );
-		$pdf->SetTitle( '' !== $recipient ? $title . ' - ' . $recipient : $title );
+		$metadata = [
+			'title'    => '' !== $recipient ? $title . ' - ' . $recipient : $title,
+			'author'   => '',
+			'subject'  => '',
+			'keywords' => '',
+			'creator'  => 'PressPrimer Certificate',
+		];
+
+		/**
+		 * Filters the PDF document metadata (2.0, Enterprise contract
+		 * item 10). Keys: title, author, subject, keywords, creator -
+		 * plain strings, sanitized after the filter. The document's
+		 * Producer is TCPDF's and is not filterable.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $metadata Metadata map.
+		 * @param array $args     Render arguments (title, recipient_name, context, ...).
+		 * @param array $layout   Layout document.
+		 */
+		$filtered = apply_filters( 'ppcert_pdf_metadata', $metadata, $args, $layout );
+
+		foreach ( $metadata as $key => $default_value ) {
+			$metadata[ $key ] = is_array( $filtered ) && isset( $filtered[ $key ] ) && is_scalar( $filtered[ $key ] )
+				? sanitize_text_field( (string) $filtered[ $key ] )
+				: $default_value;
+		}
+
+		$pdf->SetCreator( '' !== $metadata['creator'] ? $metadata['creator'] : 'PressPrimer Certificate' );
+		$pdf->SetTitle( $metadata['title'] );
+
+		if ( '' !== $metadata['author'] ) {
+			$pdf->SetAuthor( $metadata['author'] );
+		}
+
+		if ( '' !== $metadata['subject'] ) {
+			$pdf->SetSubject( $metadata['subject'] );
+		}
+
+		if ( '' !== $metadata['keywords'] ) {
+			$pdf->SetKeywords( $metadata['keywords'] );
+		}
 
 		// Editing is denied in PDF viewers (2026-07-24): the empty user
 		// password keeps the file readable everywhere, while a discarded

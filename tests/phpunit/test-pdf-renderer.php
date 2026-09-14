@@ -987,4 +987,61 @@ class Test_PDF_Renderer extends TestCase {
 		unlink( $pdf );
 		unlink( $path );
 	}
+
+	/**
+	 * ppcert_pdf_metadata (2.0, Enterprise contract item 10): the
+	 * document's title, author, subject, keywords, and creator are
+	 * filterable; values are sanitized; the defaults name PressPrimer
+	 * as creator and compose the title from the render args. The XMP
+	 * packet is cleartext even in the protected file, so it proves what
+	 * the filter set.
+	 *
+	 * @return void
+	 */
+	public function test_pdf_metadata_filter() {
+		$layout = $this->image_over_blue_layout( 0 );
+		$layout['elements'] = [];
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$default  = $renderer->render_pdf( $layout, [], [ 'context' => 'preview', 'title' => 'Botany 101', 'recipient_name' => 'Dana Whitfield' ] );
+		$bytes    = (string) file_get_contents( $default );
+		unlink( $default );
+
+		$this->assertStringContainsString( 'Botany 101 - Dana Whitfield', $bytes, 'Default title composes title and recipient' );
+		$this->assertStringContainsString( '<xmp:CreatorTool>PressPrimer Certificate</xmp:CreatorTool>', $bytes );
+
+		$received = null;
+		add_filter(
+			'ppcert_pdf_metadata',
+			static function ( $metadata, $args, $layout ) use ( &$received ) {
+				$received = [ $metadata, $args, $layout ];
+
+				return [
+					'title'    => 'Acme <Academy> Certificate',
+					'author'   => 'Acme Academy',
+					'subject'  => 'Completion',
+					'keywords' => 'acme, botany',
+					'creator'  => 'Acme Credentials',
+				];
+			},
+			10,
+			3
+		);
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$path     = $renderer->render_pdf( $layout, [], [ 'context' => 'preview', 'title' => 'Botany 101', 'recipient_name' => 'Dana Whitfield' ] );
+		$bytes    = (string) file_get_contents( $path );
+		unlink( $path );
+
+		$this->assertSame( 'Botany 101 - Dana Whitfield', $received[0]['title'], 'The filter receives the composed default' );
+		$this->assertSame( 'PressPrimer Certificate', $received[0]['creator'] );
+		$this->assertSame( 'preview', $received[1]['context'] );
+		$this->assertArrayHasKey( 'page', $received[2] );
+
+		$this->assertStringContainsString( 'Acme Certificate', $bytes, 'Title applied; the tag was stripped by sanitization' );
+		$this->assertStringContainsString( '<xmp:CreatorTool>Acme Credentials</xmp:CreatorTool>', $bytes );
+		$this->assertStringContainsString( 'Acme Academy', $bytes, 'Author in dc:creator' );
+		$this->assertStringContainsString( 'Completion', $bytes, 'Subject in dc:description' );
+		$this->assertStringContainsString( '<pdf:Keywords>acme, botany</pdf:Keywords>', $bytes );
+	}
 }

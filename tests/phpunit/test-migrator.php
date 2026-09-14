@@ -125,7 +125,38 @@ class Test_Migrator extends TestCase {
 
 		$this->assertContains( 'title', $this->wpdb->table_columns( 'wp_ppcert_certificates' ) );
 		$this->assertContains( 'context', $this->wpdb->table_columns( 'wp_ppcert_email_templates' ) );
+		$this->assertContains( 'event_type', $this->wpdb->table_columns( 'wp_ppcert_audit' ), 'The audit table (Enterprise contract item 8) ships schema-only in 2.0.0' );
+		$this->assertContains( 'object_type', $this->wpdb->table_columns( 'wp_ppcert_audit' ) );
 		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ) );
+	}
+
+	/**
+	 * A site already at the head version whose head-step targets are
+	 * missing (the audit table joined 2.0.0 after pre-release sites had
+	 * migrated) heals on the next load: the step re-runs, the table
+	 * appears, the version is untouched. A healthy head site runs no
+	 * migration callback.
+	 *
+	 * @return void
+	 */
+	public function test_head_step_heals_missing_targets() {
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ) );
+
+		// Simulate the pre-release site: at 2.0.0 without the audit table.
+		$this->wpdb->drop_table( 'wp_ppcert_audit' );
+		$this->assertEmpty( $this->wpdb->table_columns( 'wp_ppcert_audit' ) );
+
+		// Verified today: no re-check yet (one verification per day).
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+		$this->assertEmpty( $this->wpdb->table_columns( 'wp_ppcert_audit' ), 'A same-day load trusts the daily verification' );
+
+		// The next day.
+		ppcert_tests_reset_transients();
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertContains( 'event_type', $this->wpdb->table_columns( 'wp_ppcert_audit' ), 'The head step re-ran and produced its missing target' );
+		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ), 'Healing never changes the stored version' );
 	}
 
 	/**

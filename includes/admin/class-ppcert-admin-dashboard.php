@@ -94,23 +94,23 @@ class PressPrimer_Certificate_Admin_Dashboard {
 	 * @return array
 	 */
 	public function boot_data() {
+		$branding = PressPrimer_Certificate_Admin::branding();
+
 		/** This filter is documented in includes/admin/class-ppcert-admin.php */
-		$plugin_name = apply_filters( 'ppcert_plugin_name', __( 'PressPrimer Certificate', 'pressprimer-certificate' ) );
+		$plugin_name = apply_filters( 'ppcert_plugin_name', $branding['name'] );
 
 		/**
 		 * Filters the dashboard header logo URL.
 		 *
 		 * Used by the Enterprise addon for white-label branding (sibling
-		 * parity with pressprimer_assignment_dashboard_logo).
+		 * parity with pressprimer_assignment_dashboard_logo). Since 2.0
+		 * the incoming value is the ppcert_admin_branding logo_url.
 		 *
 		 * @since 1.0.0
 		 *
 		 * @param string $logo_url Default logo URL.
 		 */
-		$dashboard_logo = apply_filters(
-			'ppcert_dashboard_logo',
-			PPCERT_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg'
-		);
+		$dashboard_logo = apply_filters( 'ppcert_dashboard_logo', $branding['logo_url'] );
 
 		/**
 		 * Filters the dashboard welcome text.

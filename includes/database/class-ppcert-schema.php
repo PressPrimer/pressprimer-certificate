@@ -70,6 +70,7 @@ class PressPrimer_Certificate_Schema {
 			'ppcert_credits',
 			'ppcert_events',
 			'ppcert_email_templates',
+			'ppcert_audit',
 		];
 	}
 
@@ -98,6 +99,7 @@ class PressPrimer_Certificate_Schema {
 			$wpdb->prefix . 'ppcert_credits'         => self::get_credits_table( $charset_collate ),
 			$wpdb->prefix . 'ppcert_events'          => self::get_events_table( $charset_collate ),
 			$wpdb->prefix . 'ppcert_email_templates' => self::get_email_templates_table( $charset_collate ),
+			$wpdb->prefix . 'ppcert_audit'           => self::get_audit_table( $charset_collate ),
 		];
 	}
 
@@ -374,6 +376,41 @@ class PressPrimer_Certificate_Schema {
 			KEY context (context),
 			KEY status (status),
 			KEY author_id (author_id)
+		) $charset_collate;\n";
+	}
+
+	/**
+	 * Get audit table schema (schema only in 2.0; Enterprise owns the behavior)
+	 *
+	 * Administrative actions around the credential system (template,
+	 * settings, issuer, membership, font, key, and license events),
+	 * dot-namespaced by event_type (object.verb). Certificate lifecycle
+	 * events stay in wp_ppcert_events. Free ships the table so the
+	 * Enterprise addon lands without a migration (the issuers and
+	 * email-templates pattern); no free code writes to it. Privacy rule
+	 * inherited: no IP addresses, user agents, or secrets in meta_json.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $charset_collate Charset and collation clause.
+	 * @return string CREATE TABLE statement.
+	 */
+	private static function get_audit_table( $charset_collate ) {
+		global $wpdb;
+
+		return "CREATE TABLE {$wpdb->prefix}ppcert_audit (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			event_type VARCHAR(64) NOT NULL,
+			object_type VARCHAR(32) NOT NULL,
+			object_id BIGINT UNSIGNED DEFAULT NULL,
+			actor_id BIGINT UNSIGNED DEFAULT NULL,
+			meta_json LONGTEXT DEFAULT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY  (id),
+			KEY event_type (event_type),
+			KEY object (object_type, object_id),
+			KEY actor_id (actor_id),
+			KEY created_at (created_at)
 		) $charset_collate;\n";
 	}
 

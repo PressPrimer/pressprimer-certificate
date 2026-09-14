@@ -259,22 +259,98 @@ class PressPrimer_Certificate_Admin {
 	}
 
 	/**
+	 * The suite's admin branding (2.0, Enterprise contract item 11)
+	 *
+	 * One structured, filterable map read by every surface that names or
+	 * marks the plugin: the top-level menu label and icon, the dashboard
+	 * heading and logo, and the onboarding tour copy. The legacy
+	 * single-value filters (ppcert_plugin_name, ppcert_dashboard_logo)
+	 * run AFTER this map at each surface with the map's value as their
+	 * input, so existing callbacks keep winning. Sanitized after the
+	 * filter; empty values fall back to the defaults.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param bool $refresh Recompute instead of returning the per-request cache.
+	 * @return array { name, menu_label, logo_url, menu_icon }.
+	 */
+	public static function branding( $refresh = false ) {
+		static $cache = null;
+
+		if ( null !== $cache && ! $refresh ) {
+			return $cache;
+		}
+
+		$defaults = [
+			'name'       => __( 'PressPrimer Certificate', 'pressprimer-certificate' ),
+			'menu_label' => __( 'Certificates', 'pressprimer-certificate' ),
+			'logo_url'   => PPCERT_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg',
+			'menu_icon'  => self::default_menu_icon(),
+		];
+
+		/**
+		 * Filters the suite's admin naming and marks (2.0, Enterprise
+		 * contract item 11 - white-label admin branding).
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $branding {
+		 *     @type string $name       Product name (dashboard heading, tour copy).
+		 *     @type string $menu_label Top-level admin menu label.
+		 *     @type string $logo_url   Dashboard header logo URL.
+		 *     @type string $menu_icon  Admin menu icon (dashicon slug or data URI).
+		 * }
+		 */
+		$filtered = apply_filters( 'ppcert_admin_branding', $defaults );
+		$filtered = is_array( $filtered ) ? $filtered : [];
+
+		$branding = [];
+
+		foreach ( $defaults as $key => $default_value ) {
+			$value = isset( $filtered[ $key ] ) && is_scalar( $filtered[ $key ] ) ? (string) $filtered[ $key ] : '';
+
+			if ( 'logo_url' === $key ) {
+				// http(s) or a site-relative path only: a logo URL is
+				// printed into an img src on every admin page.
+				$scheme = strtolower( (string) wp_parse_url( $value, PHP_URL_SCHEME ) );
+				$value  = in_array( $scheme, [ 'http', 'https' ], true ) || 0 === strpos( $value, '/' )
+					? esc_url_raw( $value )
+					: '';
+			} elseif ( 'menu_icon' === $key ) {
+				$value = 0 === strpos( $value, 'data:image/' ) ? $value : sanitize_text_field( $value );
+			} else {
+				$value = sanitize_text_field( $value );
+			}
+
+			$branding[ $key ] = '' !== $value ? $value : $default_value;
+		}
+
+		$cache = $branding;
+
+		return $branding;
+	}
+
+	/**
 	 * Register the admin menu
 	 *
 	 * @since 1.0.0
 	 */
 	public function register_menus() {
+		$branding = self::branding();
+
 		/**
 		 * Filters the plugin name displayed in the admin menu.
 		 *
 		 * Used by the Enterprise addon for white-label branding (sibling
-		 * parity with pressprimer_quiz_plugin_name).
+		 * parity with pressprimer_quiz_plugin_name). Since 2.0 the
+		 * incoming value is the ppcert_admin_branding menu_label, so
+		 * callbacks on this legacy filter still win.
 		 *
 		 * @since 1.0.0
 		 *
 		 * @param string $name Default menu label.
 		 */
-		$menu_label = apply_filters( 'ppcert_plugin_name', __( 'Certificates', 'pressprimer-certificate' ) );
+		$menu_label = apply_filters( 'ppcert_plugin_name', $branding['menu_label'] );
 
 		// The top-level slug renders the Dashboard; viewing certificates
 		// is the broadest gate (Templates/Settings submenus keep their
@@ -285,7 +361,7 @@ class PressPrimer_Certificate_Admin {
 			PressPrimer_Certificate_Capabilities::CAP_VIEW_CERTIFICATES,
 			'pressprimer-certificate',
 			[ $this->dashboard, 'render_page' ],
-			$this->get_menu_icon(),
+			$branding['menu_icon'],
 			32 // Beneath PressPrimer Quiz (30) and Assignments (31).
 		);
 
@@ -625,7 +701,7 @@ class PressPrimer_Certificate_Admin {
 	 *
 	 * @return string
 	 */
-	private function get_menu_icon() {
+	private static function default_menu_icon() {
 		$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#a7aaad">'
 			. '<path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6.5l-1.5 3-1.5-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm1 4v1.5h14V8H5zm0 3.5V13h9v-1.5H5z"/>'
 			. '<path d="M15.75 14.5a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5zm0 1.5a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5z"/>'

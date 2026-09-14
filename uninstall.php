@@ -166,6 +166,7 @@ function ppcert_drop_tables() {
 		'ppcert_credits',
 		'ppcert_events',
 		'ppcert_email_templates',
+		'ppcert_audit',
 	);
 
 	foreach ( $table_names as $table_name ) {

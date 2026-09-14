@@ -83,7 +83,21 @@ class PressPrimer_Certificate_Email_Service {
 		$tokens   = self::tokens( $certificate, $recipient, $template );
 		$merge    = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
 
-		$content = self::assemble( $template, $tokens, $merge, (string) $recipient->user_email );
+		// The context always carries the certificate, template, and
+		// recipient ids (2.0, S-007): resends and other thin callers pass
+		// none of them, but filter consumers (School's copy headers,
+		// Enterprise's white-label From/footer) need them. Caller keys
+		// win on conflict.
+		$context = array_merge(
+			[
+				'certificate_id' => (int) $certificate->id,
+				'template_id'    => (int) $certificate->template_id,
+				'recipient_id'   => (int) $certificate->recipient_id,
+			],
+			(array) $context
+		);
+
+		$content = self::assemble( $template, $tokens, $merge, (string) $recipient->user_email, 'issued', $context );
 
 		// The PDF always attaches when rendering succeeds; the temp
 		// file is deleted after sending (Feature 007 FR-006 - nothing
@@ -94,18 +108,9 @@ class PressPrimer_Certificate_Email_Service {
 			$content['attachments'][] = $attachment_path;
 		}
 
-		// The content filter's context always carries the certificate,
-		// template, and recipient ids (2.0, S-007): resends and other
-		// thin callers pass none of them, but filter consumers (School's
-		// copy headers) need them. Caller keys win on conflict.
-		$context = array_merge(
-			[
-				'certificate_id' => (int) $certificate->id,
-				'template_id'    => (int) $certificate->template_id,
-				'recipient_id'   => (int) $certificate->recipient_id,
-			],
-			(array) $context
-		);
+		// The footer is the body's last line, after any attachment
+		// fallback note (ppcert_email_footer, 2.0).
+		$content['body'] = self::apply_footer( $content['body'], 'issued', $context );
 
 		/** This filter is documented in docs/architecture/HOOKS.md */
 		$content = apply_filters( 'ppcert_email_content', $content, 'issued', $context );
@@ -253,11 +258,17 @@ class PressPrimer_Certificate_Email_Service {
 	 * @param int    $certificate_id   Certificate row id.
 	 * @param string $subject_template Subject with tokens.
 	 * @param string $body_template    Body with tokens.
+	 * @param string $email_type       Email type for the From/footer filters
+	 *                                 (Educator reminders pass 'expiry_reminder').
+	 *                                 Default 'recipient'.
+	 * @param array  $context          Extra send context for the filters; the
+	 *                                 certificate, template, and recipient ids
+	 *                                 are always added.
 	 * @return array|null Content array (to, subject, body, headers,
 	 *                    attachments), or null when the certificate or
 	 *                    its recipient cannot be resolved.
 	 */
-	public static function build_recipient_email( $certificate_id, $subject_template, $body_template ) {
+	public static function build_recipient_email( $certificate_id, $subject_template, $body_template, $email_type = 'recipient', array $context = [] ) {
 		$certificate = PressPrimer_Certificate_Certificate::get( absint( $certificate_id ) );
 
 		if ( ! $certificate ) {
@@ -270,20 +281,114 @@ class PressPrimer_Certificate_Email_Service {
 			return null;
 		}
 
-		$template = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
-		$tokens   = self::tokens( $certificate, $recipient, $template );
-		$merge    = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
-		$settings = self::settings();
+		$template   = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
+		$tokens     = self::tokens( $certificate, $recipient, $template );
+		$merge      = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
+		$email_type = sanitize_key( (string) $email_type );
+		$context    = array_merge(
+			[
+				'certificate_id' => (int) $certificate->id,
+				'template_id'    => (int) $certificate->template_id,
+				'recipient_id'   => (int) $certificate->recipient_id,
+			],
+			$context
+		);
 
 		return [
 			'to'          => (string) $recipient->user_email,
 			'subject'     => self::substitute( (string) $subject_template, $tokens, $merge ),
-			'body'        => self::substitute( (string) $body_template, $tokens, $merge ),
-			'headers'     => [
-				'From: ' . $settings['email_from_name'] . ' <' . $settings['email_from_address'] . '>',
-			],
+			'body'        => self::apply_footer( self::substitute( (string) $body_template, $tokens, $merge ), $email_type, $context ),
+			'headers'     => [ self::from_header( $email_type, $context ) ],
 			'attachments' => [],
 		];
+	}
+
+	/**
+	 * The From header for one send, through the ppcert_email_from filter
+	 * (2.0, Enterprise contract item 9)
+	 *
+	 * Every send path builds its From here - issuance, resend, the test
+	 * send, the shared recipient builder (Educator reminders, School and
+	 * Enterprise callers) - so a white-label identity applies once. The
+	 * default is the Settings > Email from name and address; the filter
+	 * receives that pair with the email type and context, and invalid
+	 * results fall back field by field.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $email_type Email type (issued, test, expiry_reminder, ...).
+	 * @param array  $context    Send context (certificate/template/recipient ids where known).
+	 * @return string The From header line.
+	 */
+	public static function from_header( $email_type, array $context = [] ) {
+		$settings = self::settings();
+		$default  = [
+			'name'    => (string) $settings['email_from_name'],
+			'address' => (string) $settings['email_from_address'],
+		];
+
+		/**
+		 * Filters the sender identity of every email the suite sends
+		 * (2.0, Enterprise contract item 9 - white-label email identity).
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array  $from       { name: string, address: string } - the Settings > Email values.
+		 * @param string $email_type Email type (issued, test, expiry_reminder, recipient, ...).
+		 * @param array  $context    Send context.
+		 */
+		$from = apply_filters( 'ppcert_email_from', $default, (string) $email_type, $context );
+
+		$name    = is_array( $from ) && isset( $from['name'] ) ? sanitize_text_field( (string) $from['name'] ) : '';
+		$address = is_array( $from ) && isset( $from['address'] ) ? sanitize_email( (string) $from['address'] ) : '';
+
+		if ( '' === $name ) {
+			$name = $default['name'];
+		}
+
+		if ( '' === $address || ! is_email( $address ) ) {
+			$address = $default['address'];
+		}
+
+		return 'From: ' . $name . ' <' . $address . '>';
+	}
+
+	/**
+	 * Append the filtered footer to an email body (2.0, Enterprise
+	 * contract item 9)
+	 *
+	 * Plain text, appended after a blank line as the body's LAST line;
+	 * an empty footer (the default) leaves the body untouched. Applied
+	 * by every send path as its final body step (after attachment
+	 * fallback notes and test notes) and by build_recipient_email().
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $body       Email body.
+	 * @param string $email_type Email type.
+	 * @param array  $context    Send context.
+	 * @return string
+	 */
+	public static function apply_footer( $body, $email_type, array $context = [] ) {
+		/**
+		 * Filters the footer appended to every email the suite sends
+		 * (2.0, Enterprise contract item 9). Plain text; empty means no
+		 * footer.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $footer     Footer text. Default ''.
+		 * @param string $email_type Email type.
+		 * @param array  $context    Send context.
+		 */
+		$footer = apply_filters( 'ppcert_email_footer', '', (string) $email_type, $context );
+		$footer = is_string( $footer ) ? trim( sanitize_textarea_field( $footer ) ) : '';
+
+		if ( '' === $footer ) {
+			return (string) $body;
+		}
+
+		return rtrim( (string) $body ) . "\n\n" . $footer;
 	}
 
 	/**
@@ -298,13 +403,15 @@ class PressPrimer_Certificate_Email_Service {
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param object|null $template Template row (hydrated), or null.
-	 * @param array       $tokens   Legacy single-brace token map.
-	 * @param array       $merge    Merge value map ({{group.field}}).
-	 * @param string      $to       Recipient address.
+	 * @param object|null $template   Template row (hydrated), or null.
+	 * @param array       $tokens     Legacy single-brace token map.
+	 * @param array       $merge      Merge value map ({{group.field}}).
+	 * @param string      $to         Recipient address.
+	 * @param string      $email_type Email type for the From filter. Default 'issued'.
+	 * @param array       $context    Send context for the From filter.
 	 * @return array to / subject / body / headers / attachments.
 	 */
-	private static function assemble( $template, array $tokens, array $merge, $to ) {
+	private static function assemble( $template, array $tokens, array $merge, $to, $email_type = 'issued', array $context = [] ) {
 		$settings = self::settings();
 
 		// Decision 005 resolution chain: the template's mapped active
@@ -318,9 +425,7 @@ class PressPrimer_Certificate_Email_Service {
 			'to'          => $to,
 			'subject'     => self::substitute( $subject, $tokens, $merge ),
 			'body'        => self::substitute( $body, $tokens, $merge ),
-			'headers'     => [
-				'From: ' . $settings['email_from_name'] . ' <' . $settings['email_from_address'] . '>',
-			],
+			'headers'     => [ self::from_header( $email_type, $context ) ],
 			'attachments' => [],
 		];
 	}
@@ -369,24 +474,23 @@ class PressPrimer_Certificate_Email_Service {
 			'{site_name}'        => (string) get_bloginfo( 'name' ),
 		];
 
-		$content = self::assemble( $template, $tokens, $samples, (string) $user->user_email );
+		$test_context = [
+			// 0 = the settings-page test (no template context, 2.0).
+			'template_id' => $template && isset( $template->id ) ? (int) $template->id : 0,
+			'test'        => true,
+		];
+
+		$content = self::assemble( $template, $tokens, $samples, (string) $user->user_email, 'test', $test_context );
 
 		/* translators: prefix marking a test email's subject line */
 		$content['subject'] = __( '[Test]', 'pressprimer-certificate' ) . ' ' . $content['subject'];
 
 		$content['body'] .= "\n\n" . __( 'This is a test of the award email, sent with sample values and without the PDF attachment. Real award emails include the certificate PDF.', 'pressprimer-certificate' );
 
+		$content['body'] = self::apply_footer( $content['body'], 'test', $test_context );
+
 		/** This filter is documented in docs/architecture/HOOKS.md */
-		$content = apply_filters(
-			'ppcert_email_content',
-			$content,
-			'test',
-			[
-				// 0 = the settings-page test (no template context, 2.0).
-				'template_id' => $template && isset( $template->id ) ? (int) $template->id : 0,
-				'test'        => true,
-			]
-		);
+		$content = apply_filters( 'ppcert_email_content', $content, 'test', $test_context );
 
 		if ( ! is_array( $content ) || empty( $content['to'] ) ) {
 			return new WP_Error(
