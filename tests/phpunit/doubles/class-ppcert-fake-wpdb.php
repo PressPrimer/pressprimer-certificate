@@ -276,6 +276,11 @@ class PPCert_Fake_WPDB {
 	 * @return string Encoded routing payload.
 	 */
 	public function prepare( $query, ...$args ) {
+		// Like the real thing: a single array argument is the arg list.
+		if ( 1 === count( $args ) && is_array( $args[0] ) ) {
+			$args = array_values( $args[0] );
+		}
+
 		return wp_json_encode(
 			[
 				'q'    => $query,
@@ -401,6 +406,65 @@ class PPCert_Fake_WPDB {
 
 				if ( in_array( $row['event_type'], [ 'verified', 'viewed' ], true )
 					&& isset( $row['created_at'] ) && $row['created_at'] < $cutoff ) {
+					unset( $this->tables[ $table ][ $row['id'] ] );
+					++$deleted;
+				}
+			}
+
+			return $deleted;
+		}
+
+		// Enterprise audit pruning: one category prefix, or the rows whose
+		// prefix is not any known category (a fixed list of NOT LIKE
+		// placeholders), older than the cutoff, batched.
+		if ( 'DELETE FROM %i WHERE event_type LIKE %s AND created_at < %s LIMIT %d' === $query
+			|| ( 0 === strpos( $query, 'DELETE FROM %i WHERE created_at < %s' ) && false !== strpos( $query, 'event_type NOT LIKE %s' ) ) ) {
+			$by_prefix = 0 === strpos( $query, 'DELETE FROM %i WHERE event_type LIKE %s' );
+			$cutoff    = $by_prefix ? (string) $args[2] : (string) $args[1];
+			$limit     = (int) $args[ count( $args ) - 1 ];
+			$prefix    = $by_prefix ? $this->like_to_substring( (string) $args[1] ) : '';
+			$excluded  = $by_prefix ? [] : array_map( [ $this, 'like_to_substring' ], array_slice( $args, 2, count( $args ) - 3 ) );
+			$deleted   = 0;
+
+			foreach ( $this->rows( $table ) as $row ) {
+				if ( $deleted >= $limit ) {
+					break;
+				}
+
+				if ( (string) $row['created_at'] >= $cutoff ) {
+					continue;
+				}
+
+				$type = (string) $row['event_type'];
+
+				if ( $by_prefix ) {
+					$match = 0 === strpos( $type, $prefix );
+				} else {
+					$match = true;
+					foreach ( $excluded as $ex ) {
+						if ( 0 === strpos( $type, $ex ) ) {
+							$match = false;
+							break;
+						}
+					}
+				}
+
+				if ( $match ) {
+					unset( $this->tables[ $table ][ $row['id'] ] );
+					++$deleted;
+				}
+			}
+
+			return $deleted;
+		}
+
+		// Enterprise audit purge: everything before the purge row.
+		if ( 'DELETE FROM %i WHERE id < %d' === $query ) {
+			$before  = (int) $args[1];
+			$deleted = 0;
+
+			foreach ( $this->rows( $table ) as $row ) {
+				if ( (int) $row['id'] < $before ) {
 					unset( $this->tables[ $table ][ $row['id'] ] );
 					++$deleted;
 				}
@@ -1810,6 +1874,143 @@ class PPCert_Fake_WPDB {
 			);
 
 			return array_slice( $matches, 0, 1 );
+		}
+
+		// Generic by-id read (Enterprise Audit_Service::get_event and
+		// any model reading one row by primary key).
+		if ( 'SELECT * FROM %i WHERE id = %d' === $query ) {
+			$id = (int) $args[1];
+
+			return $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $id ) {
+					return (int) $row['id'] === $id;
+				}
+			);
+		}
+
+		// Enterprise Audit_Service::get_events / count: sentinel filters
+		// (event_type, object_type, object_id, actor_id, date range,
+		// category prefix LIKE, LIKE search), fixed-direction ORDER BY,
+		// LIMIT/OFFSET. args: [table, type x2, object_type x2,
+		// object_id x2, actor x2, has_from+from, has_to+to,
+		// category_like x2, search x4, (limit, offset)].
+		if ( false !== strpos( $query, "AND ( %s = '' OR event_type LIKE %s ) AND ( %s = '' OR event_type LIKE %s OR object_type LIKE %s OR meta_json LIKE %s )" ) ) {
+			$type        = (string) $args[1];
+			$object_type = (string) $args[3];
+			$object_id   = (int) $args[5];
+			$actor       = (int) $args[7];
+			$from        = (int) $args[9] ? (string) $args[10] : '';
+			$to          = (int) $args[11] ? (string) $args[12] : '';
+			$prefix      = $this->like_to_substring( (string) $args[13] );
+			$needle      = $this->like_to_substring( (string) $args[16] );
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $type, $object_type, $object_id, $actor, $from, $to, $prefix, $needle ) {
+					if ( '' !== $type && (string) $row['event_type'] !== $type ) {
+						return false;
+					}
+					if ( '' !== $object_type && (string) ( isset( $row['object_type'] ) ? $row['object_type'] : '' ) !== $object_type ) {
+						return false;
+					}
+					if ( $object_id > 0 && (int) ( isset( $row['object_id'] ) ? $row['object_id'] : 0 ) !== $object_id ) {
+						return false;
+					}
+					if ( $actor > 0 && (int) ( isset( $row['actor_id'] ) ? $row['actor_id'] : 0 ) !== $actor ) {
+						return false;
+					}
+					if ( '' !== $from && (string) $row['created_at'] < $from ) {
+						return false;
+					}
+					if ( '' !== $to && (string) $row['created_at'] > $to ) {
+						return false;
+					}
+					if ( '' !== $prefix && 0 !== strpos( (string) $row['event_type'], $prefix ) ) {
+						return false;
+					}
+					if ( '' !== $needle ) {
+						$haystack = (string) $row['event_type'] . ' ' . (string) ( isset( $row['object_type'] ) ? $row['object_type'] : '' ) . ' ' . (string) ( isset( $row['meta_json'] ) ? $row['meta_json'] : '' );
+						if ( false === stripos( $haystack, $needle ) ) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			);
+
+			if ( 0 === strpos( $query, 'SELECT COUNT(*)' ) ) {
+				return [ [ 'count' => count( $matches ) ] ];
+			}
+
+			$desc = false !== strpos( $query, 'ORDER BY created_at DESC, id DESC' );
+			usort(
+				$matches,
+				static function ( $a, $b ) use ( $desc ) {
+					$cmp = strcmp( (string) $a['created_at'], (string) $b['created_at'] );
+					if ( 0 === $cmp ) {
+						$cmp = $a['id'] <=> $b['id'];
+					}
+
+					return $desc ? -$cmp : $cmp;
+				}
+			);
+
+			$limit  = (int) $args[ count( $args ) - 2 ];
+			$offset = (int) $args[ count( $args ) - 1 ];
+
+			return array_slice( $matches, $offset, $limit );
+		}
+
+		// Enterprise audit stats / previews.
+		if ( 'SELECT MAX(id) FROM %i' === $query ) {
+			$max = 0;
+			foreach ( $rows as $row ) {
+				$max = max( $max, (int) $row['id'] );
+			}
+
+			return [ [ 'max' => $max ] ];
+		}
+
+		if ( 'SELECT MIN(created_at) FROM %i' === $query || 'SELECT MAX(created_at) FROM %i' === $query ) {
+			$dates = array_map(
+				static function ( $row ) {
+					return (string) $row['created_at'];
+				},
+				$rows
+			);
+			sort( $dates );
+
+			if ( empty( $dates ) ) {
+				return [ [ 'value' => null ] ];
+			}
+
+			return [ [ 'value' => 0 === strpos( $query, 'SELECT MIN' ) ? $dates[0] : end( $dates ) ] ];
+		}
+
+		if ( 'SELECT COUNT(*) FROM %i WHERE created_at < %s' === $query || 'SELECT MIN(created_at) FROM %i WHERE created_at < %s' === $query ) {
+			$cutoff = (string) $args[1];
+			$older  = array_filter(
+				$rows,
+				static function ( $row ) use ( $cutoff ) {
+					return (string) $row['created_at'] < $cutoff;
+				}
+			);
+
+			if ( 0 === strpos( $query, 'SELECT COUNT' ) ) {
+				return [ [ 'count' => count( $older ) ] ];
+			}
+
+			$dates = array_map(
+				static function ( $row ) {
+					return (string) $row['created_at'];
+				},
+				$older
+			);
+			sort( $dates );
+
+			return [ [ 'value' => empty( $dates ) ? null : $dates[0] ] ];
 		}
 
 		throw new RuntimeException( 'PPCert_Fake_WPDB: unsupported query shape: ' . $query );

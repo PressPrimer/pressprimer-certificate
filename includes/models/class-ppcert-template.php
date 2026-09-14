@@ -178,7 +178,7 @@ class PressPrimer_Certificate_Template {
 			);
 		}
 
-		return self::create(
+		$new_id = self::create(
 			[
 				/* translators: %s: source template title */
 				'title'     => substr( sprintf( __( '%s (Copy)', 'pressprimer-certificate' ), (string) $source->title ), 0, 200 ),
@@ -187,6 +187,20 @@ class PressPrimer_Certificate_Template {
 				'status'    => 'draft',
 			]
 		);
+
+		if ( ! is_wp_error( $new_id ) ) {
+			/**
+			 * Fires after a template is duplicated (2.0, audit contract).
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param int $new_id    The new template id.
+			 * @param int $source_id The template it was copied from.
+			 */
+			do_action( 'ppcert_template_duplicated', (int) $new_id, absint( $id ) );
+		}
+
+		return $new_id;
 	}
 
 	/**
@@ -257,7 +271,20 @@ class PressPrimer_Certificate_Template {
 			);
 		}
 
-		return (int) $wpdb->insert_id;
+		$template_id = (int) $wpdb->insert_id;
+
+		/**
+		 * Fires after a template row is created (2.0, audit contract).
+		 * Duplication fires this and then ppcert_template_duplicated.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int   $template_id New template id.
+		 * @param array $args        Creation arguments (title, status, author_id, layout, settings).
+		 */
+		do_action( 'ppcert_template_created', $template_id, $args );
+
+		return $template_id;
 	}
 
 	/**
@@ -389,6 +416,15 @@ class PressPrimer_Certificate_Template {
 				__( 'The template could not be moved to the trash.', 'pressprimer-certificate' )
 			);
 		}
+
+		/**
+		 * Fires after a template is moved to the trash (2.0, audit contract).
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int $template_id Template id.
+		 */
+		do_action( 'ppcert_template_trashed', absint( $id ) );
 
 		return true;
 	}
