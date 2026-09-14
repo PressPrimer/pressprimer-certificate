@@ -143,4 +143,80 @@ class Test_Admin_Branding extends TestCase {
 		$this->assertSame( 'Legacy Acme Credentials', $data['pluginName'], 'The legacy filter receives the branding value and wins' );
 		$this->assertSame( '', $data['dashboardLogo'] );
 	}
+
+	/**
+	 * The branding map is cached per request: recompute it with the
+	 * hooks cleared so a branded run never leaks into later tests.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		ppcert_tests_reset_hooks();
+		PressPrimer_Certificate_Admin::branding( true );
+		parent::tearDown();
+	}
+
+	/**
+	 * The free surfaces that name the product in another form read the
+	 * branding map: as shipped by default, the brand when one is set
+	 * (2.0, the Enterprise white-label ride-along).
+	 *
+	 * @return void
+	 */
+	public function test_branded_surfaces() {
+		$GLOBALS['ppcert_test_options']      = [ 'ppcert_verification_page_id' => 0 ];
+		$GLOBALS['ppcert_test_current_user'] = 1;
+
+		$this->assertSame( 'PressPrimer Certificates', PressPrimer_Certificate_Admin::branded_name( 'PressPrimer Certificates' ) );
+		$this->assertSame( 'PressPrimer Certificate', ( new PressPrimer_Certificate_Blocks() )->register_category( [ [ 'slug' => 'text' ] ] )[0]['title'] );
+
+		$onboarding = PressPrimer_Certificate_Onboarding::get_instance();
+		$data       = $onboarding->get_js_data();
+		$this->assertStringEndsWith( 'assets/images/PressPrimer-Logo.svg', $data['logoUrl'] );
+		$this->assertFalse( $data['logoBranded'] );
+
+		$boot = ( new PressPrimer_Certificate_Admin_Dashboard() )->boot_data();
+		$this->assertSame( 'PressPrimer Certificate', $boot['pluginName'] );
+		$this->assertStringEndsWith( 'assets/images/PressPrimer-Logo-White.svg', $boot['dashboardLogo'] );
+
+		// A brand name alone: the PressPrimer wordmarks step aside
+		// (text heading on the dashboard, no logo in the modal).
+		$name_only = static function ( $branding ) {
+			$branding['name'] = 'Acme Credentials';
+
+			return $branding;
+		};
+		add_filter( 'ppcert_admin_branding', $name_only );
+		PressPrimer_Certificate_Admin::branding( true );
+
+		$boot = ( new PressPrimer_Certificate_Admin_Dashboard() )->boot_data();
+		$this->assertSame( 'Acme Credentials', $boot['pluginName'] );
+		$this->assertSame( '', $boot['dashboardLogo'], 'No brand logo: the header shows the name as text' );
+		$this->assertSame( '', $onboarding->get_js_data()['logoUrl'] );
+		$this->assertFalse( $onboarding->get_js_data()['logoBranded'] );
+
+		remove_filter( 'ppcert_admin_branding', $name_only );
+		add_filter(
+			'ppcert_admin_branding',
+			static function ( $branding ) {
+				$branding['name']     = 'Acme Credentials';
+				$branding['logo_url'] = 'https://test.example/uploads/acme.png';
+
+				return $branding;
+			}
+		);
+		PressPrimer_Certificate_Admin::branding( true );
+
+		$boot = ( new PressPrimer_Certificate_Admin_Dashboard() )->boot_data();
+		$this->assertSame( 'https://test.example/uploads/acme.png', $boot['dashboardLogo'] );
+
+		$this->assertSame( 'Acme Credentials', PressPrimer_Certificate_Admin::branded_name( 'PressPrimer Certificates' ) );
+		$this->assertSame( 'Acme Credentials', ( new PressPrimer_Certificate_Blocks() )->register_category( [] )[0]['title'] );
+		$this->assertSame( 'pressprimer-certificate', ( new PressPrimer_Certificate_Blocks() )->register_category( [] )[0]['slug'], 'The slug is an identifier and never changes' );
+
+		$data = $onboarding->get_js_data();
+		$this->assertSame( 'https://test.example/uploads/acme.png', $data['logoUrl'] );
+		$this->assertTrue( $data['logoBranded'] );
+		$this->assertSame( 'Acme Credentials', $data['i18n']['pluginName'] );
+	}
 }

@@ -152,7 +152,7 @@ class PressPrimer_Certificate_Admin_User_Profile {
 			'expired' => __( 'Expired', 'pressprimer-certificate' ),
 		];
 
-		$output  = '<h2 id="ppcert-user-certificates">' . esc_html__( 'PressPrimer Certificates', 'pressprimer-certificate' ) . '</h2>';
+		$output  = '<h2 id="ppcert-user-certificates">' . esc_html( PressPrimer_Certificate_Admin::branded_name( __( 'PressPrimer Certificates', 'pressprimer-certificate' ) ) ) . '</h2>';
 		$output .= '<table class="widefat striped" style="max-width:800px">';
 		$output .= '<thead><tr>';
 		$output .= '<th scope="col">' . esc_html__( 'Credential ID', 'pressprimer-certificate' ) . '</th>';

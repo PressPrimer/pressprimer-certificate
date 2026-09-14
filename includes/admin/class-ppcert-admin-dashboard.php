@@ -132,9 +132,15 @@ class PressPrimer_Certificate_Admin_Dashboard {
 			$plugin_name
 		);
 
+		// A branded admin without a brand logo shows the brand name as
+		// text rather than the PressPrimer wordmark (2.0, white-label).
+		$default_logo   = PPCERT_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg';
+		$name_branded   = __( 'PressPrimer Certificate', 'pressprimer-certificate' ) !== $plugin_name;
+		$dashboard_logo = $name_branded && $default_logo === $dashboard_logo ? '' : $dashboard_logo;
+
 		return [
 			'pluginName'    => $plugin_name,
-			'dashboardLogo' => esc_url( $dashboard_logo ),
+			'dashboardLogo' => '' !== $dashboard_logo ? esc_url( $dashboard_logo ) : '',
 			'welcomeText'   => $welcome_text,
 			'urls'          => [
 				'create_template' => add_query_arg(

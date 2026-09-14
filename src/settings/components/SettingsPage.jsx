@@ -237,9 +237,12 @@ const SettingsPage = ( { settingsData = {} } ) => {
 	const ActiveTabComponent = activeTabConfig?.component || null;
 
 	const pluginUrl = settingsData.pluginUrl || '';
+	// An explicit empty mascot URL means "no image" (a white-labeled
+	// admin without a brand logo); only a missing key falls back.
 	const settingsMascot =
-		settingsData.settingsMascot ||
-		`${ pluginUrl }assets/images/construction-mascot.png`;
+		settingsData.settingsMascot !== undefined
+			? settingsData.settingsMascot
+			: `${ pluginUrl }assets/images/construction-mascot.png`;
 
 	return (
 		<div className="ppcert-settings-container">

@@ -390,7 +390,13 @@ class PressPrimer_Certificate_Verification_Page {
 		}
 
 		echo '<div class="notice notice-warning"><p>';
-		echo esc_html__( 'The PressPrimer Certificates verification page has been deleted. Certificate QR codes and links will not resolve until you assign a new page in the plugin settings.', 'pressprimer-certificate' );
+		echo esc_html(
+			sprintf(
+				/* translators: %s: the product or brand name */
+				__( 'The %s verification page has been deleted. Certificate QR codes and links will not resolve until you assign a new page in the plugin settings.', 'pressprimer-certificate' ),
+				PressPrimer_Certificate_Admin::branded_name( __( 'PressPrimer Certificates', 'pressprimer-certificate' ) )
+			)
+		);
 		echo '</p></div>';
 	}
 

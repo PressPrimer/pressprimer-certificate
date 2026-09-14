@@ -333,11 +333,31 @@ class PressPrimer_Certificate_Onboarding {
 	 * @return array Data passed via wp_localize_script().
 	 */
 	public function get_js_data() {
+		$branding = PressPrimer_Certificate_Admin::branding();
+
 		/** This filter is documented in includes/admin/class-ppcert-admin.php */
-		$plugin_name = apply_filters( 'ppcert_plugin_name', PressPrimer_Certificate_Admin::branding()['name'] );
+		$plugin_name = apply_filters( 'ppcert_plugin_name', $branding['name'] );
+
+		// The welcome modal's mark: the bundled dark wordmark on a plain
+		// install; the branding map's logo when a brand supplies one
+		// (2.0, Enterprise white-label), shown on a dark badge because
+		// brand logos are supplied for the dark admin headers.
+		$branded_logo = PPCERT_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg' !== $branding['logo_url'];
+		$branded_name = __( 'PressPrimer Certificate', 'pressprimer-certificate' ) !== $plugin_name;
+
+		if ( $branded_logo ) {
+			$logo_url = $branding['logo_url'];
+		} elseif ( $branded_name ) {
+			// A brand without a logo: no PressPrimer wordmark either.
+			$logo_url = '';
+		} else {
+			$logo_url = PPCERT_PLUGIN_URL . 'assets/images/PressPrimer-Logo.svg';
+		}
 
 		return [
 			'state'          => $this->get_onboarding_state(),
+			'logoUrl'        => $logo_url,
+			'logoBranded'    => $branded_logo,
 			'nonce'          => wp_create_nonce( 'ppcert_onboarding' ),
 			'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
 			'relaunchUrl'    => self::get_relaunch_url(),

@@ -60,7 +60,8 @@ class PressPrimer_Certificate_Blocks {
 			[
 				[
 					'slug'  => 'pressprimer-certificate',
-					'title' => __( 'PressPrimer Certificate', 'pressprimer-certificate' ),
+					// The branding map's name (2.0, Enterprise white-label).
+					'title' => PressPrimer_Certificate_Admin::branding()['name'],
 				],
 			],
 			(array) $categories

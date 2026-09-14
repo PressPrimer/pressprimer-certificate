@@ -331,6 +331,26 @@ class PressPrimer_Certificate_Admin {
 	}
 
 	/**
+	 * A shipped product string, or the brand name when the admin is
+	 * branded (2.0, Enterprise white-label)
+	 *
+	 * Free copy that names the product in a form other than the plain
+	 * product name (the plural section heading, a sentence) passes its
+	 * shipped text here: it stays as shipped until the branding map's
+	 * name differs from the default, then reads as the brand.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $shipped The shipped, translated text.
+	 * @return string
+	 */
+	public static function branded_name( $shipped ) {
+		$name = self::branding()['name'];
+
+		return __( 'PressPrimer Certificate', 'pressprimer-certificate' ) === $name ? (string) $shipped : $name;
+	}
+
+	/**
 	 * Register the admin menu
 	 *
 	 * @since 1.0.0

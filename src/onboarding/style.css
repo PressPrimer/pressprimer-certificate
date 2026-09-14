@@ -88,6 +88,15 @@
 	width: auto;
 }
 
+/* Brand logos are supplied for the dark admin headers (2.0,
+   white-label); give them the same ground here. */
+.ppcert-onboarding-modal__logo--branded {
+	width: fit-content;
+	padding: 12px 20px;
+	background: #334155;
+	border-radius: 8px;
+}
+
 .ppcert-onboarding-modal__title {
 	font-size: 28px;
 	font-weight: 700;

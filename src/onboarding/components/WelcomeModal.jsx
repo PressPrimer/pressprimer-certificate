@@ -25,9 +25,14 @@ const WelcomeModal = ( { title, content, onStart, onSkip } ) => {
 	const data = window.ppcert_onboarding_data || {};
 	const startBtnRef = useRef( null );
 
-	const logoUrl = data.pluginUrl
-		? data.pluginUrl + 'assets/images/PressPrimer-Logo.svg'
-		: '';
+	// The branding map's logo when a brand supplies one (2.0), else
+	// the bundled wordmark.
+	const logoUrl =
+		data.logoUrl ||
+		( data.pluginUrl
+			? data.pluginUrl + 'assets/images/PressPrimer-Logo.svg'
+			: '' );
+	const logoBranded = !! data.logoBranded;
 
 	/**
 	 * Focus the start button on mount and lock body scroll
@@ -79,10 +84,20 @@ const WelcomeModal = ( { title, content, onStart, onSkip } ) => {
 		>
 			<div className="ppcert-onboarding-modal ppcert-onboarding-modal--welcome">
 				{ logoUrl && (
-					<div className="ppcert-onboarding-modal__logo">
+					<div
+						className={ `ppcert-onboarding-modal__logo${
+							logoBranded
+								? ' ppcert-onboarding-modal__logo--branded'
+								: ''
+						}` }
+					>
 						<img
 							src={ logoUrl }
-							alt="PressPrimer"
+							alt={
+								logoBranded
+									? data.i18n?.pluginName || ''
+									: 'PressPrimer'
+							}
 							className="ppcert-onboarding-modal__logo-img"
 						/>
 					</div>
