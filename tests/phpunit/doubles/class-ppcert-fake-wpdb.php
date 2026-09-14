@@ -392,6 +392,21 @@ class PPCert_Fake_WPDB {
 		$args  = $payload['args'];
 		$table = isset( $args[0] ) ? (string) $args[0] : '';
 
+		// Enterprise Audit_Service::update_event_meta.
+		if ( 'UPDATE %i SET meta_json = %s WHERE id = %d' === $query ) {
+			$id = (int) $args[2];
+
+			foreach ( $this->rows( $table ) as $row ) {
+				if ( (int) $row['id'] === $id ) {
+					$this->mutate_row( $table, $id, [ 'meta_json' => $args[1] ] );
+
+					return 1;
+				}
+			}
+
+			return 0;
+		}
+
 		// Event pruner: DELETE prunable rows older than the cutoff.
 		if ( false !== strpos( $query, "DELETE FROM %i WHERE event_type IN ( 'verified', 'viewed' ) AND created_at < %s LIMIT %d" ) ) {
 			$cutoff  = (string) $args[1];
@@ -2105,6 +2120,39 @@ class PPCert_Fake_WPDB {
 			$offset = (int) $args[ count( $args ) - 1 ];
 
 			return array_slice( $matches, $offset, $limit );
+		}
+
+		// Enterprise Audit_Service::find_daily_summary - today's row for
+		// a type and object (null object = keyless).
+		if ( false !== strpos( $query, "AND ( ( %d = 0 AND object_id IS NULL ) OR ( %d <> 0 AND object_id = %d ) ) AND created_at >= %s AND created_at < %s ORDER BY id DESC LIMIT 1" ) ) {
+			$type   = (string) $args[1];
+			$object = (int) $args[2];
+			$start  = (string) $args[5];
+			$end    = (string) $args[6];
+
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $type, $object, $start, $end ) {
+					if ( (string) $row['event_type'] !== $type ) {
+						return false;
+					}
+					$row_object = isset( $row['object_id'] ) ? $row['object_id'] : null;
+					if ( 0 === $object ? null !== $row_object : (int) $row_object !== $object ) {
+						return false;
+					}
+
+					return (string) $row['created_at'] >= $start && (string) $row['created_at'] < $end;
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return $b['id'] <=> $a['id'];
+				}
+			);
+
+			return array_slice( $matches, 0, 1 );
 		}
 
 		// Enterprise audit stats / previews.

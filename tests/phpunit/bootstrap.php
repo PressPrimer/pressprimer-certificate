@@ -1261,6 +1261,36 @@ if ( ! class_exists( 'WP_REST_Request' ) ) {
 		}
 
 		/**
+		 * Request headers (normalized names).
+		 *
+		 * @var array
+		 */
+		private $headers = [];
+
+		/**
+		 * Set a request header.
+		 *
+		 * @param string $name  Header name.
+		 * @param string $value Value.
+		 * @return void
+		 */
+		public function set_header( $name, $value ) {
+			$this->headers[ strtolower( str_replace( '-', '_', $name ) ) ] = (string) $value;
+		}
+
+		/**
+		 * Get a request header (case-insensitive, - or _).
+		 *
+		 * @param string $name Header name.
+		 * @return string|null
+		 */
+		public function get_header( $name ) {
+			$key = strtolower( str_replace( '-', '_', $name ) );
+
+			return isset( $this->headers[ $key ] ) ? $this->headers[ $key ] : null;
+		}
+
+		/**
 		 * Uploaded files.
 		 *
 		 * @var array
