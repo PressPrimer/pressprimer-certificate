@@ -100,7 +100,7 @@ class Test_Upgrade_Page extends TestCase {
 			$this->assertNotSame( '', (string) $tier['tagline'] );
 			$this->assertNotSame( '', (string) $tier['description'] );
 			$this->assertNotEmpty( $tier['highlights'] );
-			$this->assertStringStartsWith( 'https://pressprimer.com/', $tier['url'] );
+			$this->assertSame( PressPrimer_Certificate_Upgrade_Page::PRICING_URL, $tier['url'], 'Every tier links to the pricing page (Ryan, 2026-09-15).' );
 		}
 
 		// Stacking statement lives in the copy: the first highlight of

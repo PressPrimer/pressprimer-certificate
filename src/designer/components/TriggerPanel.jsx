@@ -50,6 +50,8 @@ import {
 import { useDesignerStore } from '../hooks/useDesignerStore';
 import InsertFieldButton, { useFieldGroups } from './InsertFieldButton';
 import { ADMIN_DATE_FORMAT } from '../../shared/date-formats';
+import UpsellPrompt from '../../shared/components/UpsellPrompt';
+import { getBoot } from '../boot';
 import {
 	getTriggerTypes,
 	getTriggerSources,
@@ -1079,6 +1081,9 @@ function TestEmailSection( { state } ) {
 
 export default function TriggerPanel() {
 	const { state, dispatch } = useDesignerStore();
+	// Premium touchpoints for this surface, resolved server-side by the
+	// touchpoint registry (empty for non-admins or when the tier is active).
+	const touchpoints = getBoot().touchpoints || {};
 	const [ types, setTypes ] = useState( null );
 	const [ modalOpen, setModalOpen ] = useState( false );
 	const [ editIndex, setEditIndex ] = useState( null );
@@ -1439,6 +1444,17 @@ export default function TriggerPanel() {
 			) }
 
 			<TestEmailSection state={ state } />
+
+			{ /* Expiry reminders touchpoint (2.0, Feature 2.0-005):
+			     renders where Educator's reminder schedule section mounts
+			     once active. Server-gated; a sibling of the slot, never
+			     inside it, so the addon's React root owns the slot. */ }
+			{ touchpoints[ 'award-tab' ] && (
+				<UpsellPrompt
+					touchpoint={ touchpoints[ 'award-tab' ] }
+					style={ { marginTop: 16 } }
+				/>
+			) }
 
 			{ /* Addon extension slot (2.0, Feature 2.0-006): addon
 			     template-settings sections (Educator's E-005 reminders)

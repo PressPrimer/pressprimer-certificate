@@ -559,6 +559,19 @@ class PressPrimer_Certificate_Admin {
 			wp_add_inline_style( 'ppcert-designer', self::build_font_face_css( $fonts ) );
 		}
 
+		// wp-scripts emits a SECOND CSS file per entry - designer.css -
+		// for styles imported by components outside the entry's own
+		// style.css (the shared UpsellPrompt.css). Without it those
+		// components render unstyled.
+		if ( file_exists( PPCERT_PLUGIN_DIR . 'build/designer.css' ) ) {
+			wp_enqueue_style(
+				'ppcert-designer-components',
+				PPCERT_PLUGIN_URL . 'build/designer.css',
+				[],
+				$asset['version']
+			);
+		}
+
 		// Read-only routing context; capability enforcement happens on
 		// every REST route, never from request parameters.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -610,6 +623,12 @@ class PressPrimer_Certificate_Admin {
 						'portrait'  => [ 612, 792 ],
 					],
 				],
+				// Upsell touchpoints this user may see in the designer
+				// (2.0, Feature 2.0-005): resolved server-side, empty
+				// for non-admins and for active tiers.
+				'touchpoints'   => class_exists( 'PressPrimer_Certificate_Touchpoints' )
+					? PressPrimer_Certificate_Touchpoints::get_eligible_for_surface( PressPrimer_Certificate_Touchpoints::SURFACE_DESIGNER )
+					: [],
 			]
 		);
 

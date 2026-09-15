@@ -183,6 +183,12 @@ class PressPrimer_Certificate_Plugin {
 			$upgrade_page->init();
 		}
 
+		// The upsell touchpoint defaults (2.0, Feature 2.0-005).
+		if ( class_exists( 'PressPrimer_Certificate_Touchpoints' ) ) {
+			$touchpoints = new PressPrimer_Certificate_Touchpoints();
+			$touchpoints->init();
+		}
+
 		// The guided setup tour (Phase 5B item 2).
 		if ( class_exists( 'PressPrimer_Certificate_Onboarding' ) ) {
 			PressPrimer_Certificate_Onboarding::get_instance();

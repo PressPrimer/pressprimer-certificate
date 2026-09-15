@@ -18,6 +18,7 @@ const DEFAULTS = {
 	fitting: { shrink_step_pt: 0.5, min_scale: 0.6 },
 	// Sample QR matrix from the PHP encoder (one encoder, ADR-004).
 	sample_qr: null,
+	touchpoints: {},
 };
 
 /**

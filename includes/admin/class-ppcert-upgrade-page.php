@@ -84,10 +84,12 @@ class PressPrimer_Certificate_Upgrade_Page {
 	 * Register the free plugin's tier definitions (FR-002)
 	 *
 	 * Positioning lines and feature lists for the three tiers. Content
-	 * reflects the shipped 2.0 tier scope; the one roadmap item present
-	 * (Educator premium template pack) appears only in the comparison
-	 * table, marked as coming. Copy guardrails apply: "free on
-	 * WordPress.org", award/send/issue verbs, no prices.
+	 * reflects the shipped 2.0 tier scope only; roadmap items are not
+	 * advertised (Ryan, 2026-09-15). Every tier's `url` is the pricing
+	 * page (Ryan, 2026-09-15) - there are no per-tier product pages -
+	 * so every upgrade link in the plugin lands on one page. Copy
+	 * guardrails apply: "free on WordPress.org", award/send/issue verbs,
+	 * no prices.
 	 *
 	 * @since 2.0.0
 	 *
@@ -110,7 +112,7 @@ class PressPrimer_Certificate_Upgrade_Page {
 					__( 'Expiry reminder emails', 'pressprimer-certificate' ),
 					__( 'Branded verification page', 'pressprimer-certificate' ),
 				],
-				'url'         => 'https://pressprimer.com/pressprimer-certificate-educator/',
+				'url'         => self::PRICING_URL,
 			],
 			'school'     => [
 				'name'        => __( 'School', 'pressprimer-certificate' ),
@@ -124,7 +126,7 @@ class PressPrimer_Certificate_Upgrade_Page {
 					__( 'Award certificates for past completions', 'pressprimer-certificate' ),
 					__( 'CC and BCC on certificate emails', 'pressprimer-certificate' ),
 				],
-				'url'         => 'https://pressprimer.com/pressprimer-certificate-school/',
+				'url'         => self::PRICING_URL,
 			],
 			'enterprise' => [
 				'name'        => __( 'Enterprise', 'pressprimer-certificate' ),
@@ -137,7 +139,7 @@ class PressPrimer_Certificate_Upgrade_Page {
 					__( 'Verification API for your other systems', 'pressprimer-certificate' ),
 					__( 'Show live certificate checks on any website', 'pressprimer-certificate' ),
 				],
-				'url'         => 'https://pressprimer.com/pressprimer-certificate-enterprise/',
+				'url'         => self::PRICING_URL,
 			],
 		];
 
@@ -442,8 +444,8 @@ class PressPrimer_Certificate_Upgrade_Page {
 	/**
 	 * Curated comparison table contents.
 	 *
-	 * Every row reflects the shipped 2.0 tier scope (FR-003); the one
-	 * roadmap item ("Premium template pack") is marked as coming. Rows
+	 * Every row reflects the shipped 2.0 tier scope (FR-003); roadmap
+	 * items are not listed until they ship (Ryan, 2026-09-15). Rows
 	 * are updated by code change as part of each release - when a tier
 	 * boundary changes for any feature, update this array in the same
 	 * release that ships the change.
@@ -455,7 +457,7 @@ class PressPrimer_Certificate_Upgrade_Page {
 	 * Each row's tier value is:
 	 *   - true   : feature included in that tier
 	 *   - false  : not included
-	 *   - string : included with a caveat (e.g., "1 site", "Coming soon")
+	 *   - string : included with a caveat (e.g., "1 site", "Per issuer")
 	 *
 	 * Tiers are cumulative (School includes Educator; Enterprise includes
 	 * School), so a feature available at a tier is true for every higher
@@ -470,7 +472,6 @@ class PressPrimer_Certificate_Upgrade_Page {
 		$awarding     = __( 'Awarding & Delivery', 'pressprimer-certificate' );
 		$sharing      = __( 'Sharing & Verification', 'pressprimer-certificate' );
 		$organization = __( 'Organization & Compliance', 'pressprimer-certificate' );
-		$coming       = __( 'Coming soon', 'pressprimer-certificate' );
 
 		return [
 			// Design & Templates.
@@ -513,14 +514,6 @@ class PressPrimer_Certificate_Upgrade_Page {
 				'educator'   => true,
 				'school'     => true,
 				'enterprise' => true,
-			],
-			[
-				'category'   => $design,
-				'feature'    => __( 'Premium template pack', 'pressprimer-certificate' ),
-				'free'       => false,
-				'educator'   => $coming,
-				'school'     => $coming,
-				'enterprise' => $coming,
 			],
 
 			// Awarding & Delivery.

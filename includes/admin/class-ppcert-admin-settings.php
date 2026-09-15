@@ -222,6 +222,12 @@ class PressPrimer_Certificate_Admin_Settings {
 			'nonces'         => [
 				'repairTables' => wp_create_nonce( 'ppcert_repair_tables' ),
 			],
+			// Upsell touchpoints this user may see on this surface
+			// (2.0, Feature 2.0-005): resolved server-side, empty for
+			// non-admins and for active tiers.
+			'touchpoints'    => class_exists( 'PressPrimer_Certificate_Touchpoints' )
+				? PressPrimer_Certificate_Touchpoints::get_eligible_for_surface( PressPrimer_Certificate_Touchpoints::SURFACE_SETTINGS )
+				: [],
 		];
 	}
 

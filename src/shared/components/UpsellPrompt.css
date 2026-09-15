@@ -1,0 +1,45 @@
+/**
+ * UpsellPrompt - inline premium touchpoint styles.
+ *
+ * Quiet info-blue tint, the ecosystem touchpoint treatment (Assignment
+ * 2.2): contextual, ignorable, never blocking. Colors follow the admin
+ * palette (info background #e6f7ff, secondary text #50575e, muted icon
+ * #8c8c8c).
+ */
+
+.ppcert-upsell-prompt {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 10px 12px;
+	background: #e6f7ff;
+	border: 1px solid #91d5ff;
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.ppcert-upsell-prompt--compact {
+	padding: 5px 10px;
+	border-radius: 4px;
+	font-size: 12px;
+}
+
+.ppcert-upsell-prompt__icon {
+	color: #8c8c8c;
+	font-size: 13px;
+	align-self: center;
+	flex-shrink: 0;
+}
+
+.ppcert-upsell-prompt .ppcert-upsell-prompt__copy {
+	color: #50575e;
+	font-size: inherit;
+}
+
+.ppcert-upsell-prompt__link {
+	font-weight: 500;
+	white-space: nowrap;
+	text-decoration: none;
+}

@@ -715,6 +715,14 @@
 /* Addon template-settings slot in the Award tab (2.0, E-005): same
    contract as the canvas rail - invisible until an addon mounts. */
 
+/* Locked sidebar tab (2.0, Feature 2.0-005): the label of a touchpoint
+   tab carries a lock glyph before the feature name. */
+.ppcert-designer__locked-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
 /* Addon sidebar tabs (2.0 extension surface): the mount container an
    addon roots into. The sidebar's own gutter applies; the bottom pad
    keeps the last section off the viewport edge. */

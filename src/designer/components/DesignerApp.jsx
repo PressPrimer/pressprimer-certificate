@@ -32,6 +32,7 @@ import {
 	CheckOutlined,
 	EditOutlined,
 	EyeOutlined,
+	LockOutlined,
 	RedoOutlined,
 	SaveOutlined,
 	UndoOutlined,
@@ -54,6 +55,7 @@ import AlignToolbar from './AlignToolbar';
 import ElementPalette from './ElementPalette';
 import PropertiesPanel from './PropertiesPanel';
 import TriggerPanel from './TriggerPanel';
+import UpsellPrompt from '../../shared/components/UpsellPrompt';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -83,6 +85,9 @@ const ZOOM_OPTIONS = [
  */
 export default function DesignerApp( { boot } ) {
 	const { state, dispatch } = useDesignerStore();
+	// Premium touchpoints for this surface, resolved server-side by the
+	// touchpoint registry (empty for non-admins or when the tier is active).
+	const touchpoints = ( boot && boot.touchpoints ) || {};
 	const [ loading, setLoading ] = useState( boot.template_id > 0 );
 	const [ loadError, setLoadError ] = useState( '' );
 	const [ zoom, setZoom ] = useState( 'fit' );
@@ -714,6 +719,18 @@ export default function DesignerApp( { boot } ) {
 					</Sider>
 
 					<Content className="ppcert-designer__canvas-region">
+						{ /* Multi-page touchpoint (2.0, Feature 2.0-005):
+						     renders where Educator's page rail mounts once
+						     active. Server-gated; a sibling of the slot,
+						     never inside it, so the addon's React root
+						     owns the slot. */ }
+						{ touchpoints[ 'canvas-rail' ] && (
+							<UpsellPrompt
+								touchpoint={ touchpoints[ 'canvas-rail' ] }
+								compact
+								style={ { marginBottom: 16 } }
+							/>
+						) }
 						{ /* Addon extension slot (Feature 2.0-006): the
 						     Educator page rail mounts its own React root
 						     here; :empty CSS keeps it invisible until an
@@ -772,6 +789,40 @@ export default function DesignerApp( { boot } ) {
 										/>
 									),
 								} ) ),
+								// Locked sidebar tab (2.0, Feature 2.0-005):
+								// the Organization touchpoint renders as a
+								// tab where School's tab appears once
+								// active. Server-gated: the payload is
+								// absent for non-admins and active tiers.
+								...( touchpoints[ 'sidebar-tab' ]
+									? [
+											{
+												key: 'ppcert-touchpoint-sidebar-tab',
+												label: (
+													<span className="ppcert-designer__locked-tab">
+														<LockOutlined aria-hidden="true" />
+														{ touchpoints[
+															'sidebar-tab'
+														].label ||
+															touchpoints[
+																'sidebar-tab'
+															].linkText }
+													</span>
+												),
+												children: (
+													<div className="ppcert-designer__extension-tab">
+														<UpsellPrompt
+															touchpoint={
+																touchpoints[
+																	'sidebar-tab'
+																]
+															}
+														/>
+													</div>
+												),
+											},
+									  ]
+									: [] ),
 							] }
 						/>
 					</Sider>

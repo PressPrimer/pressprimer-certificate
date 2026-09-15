@@ -16,6 +16,7 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { Button, Form, Input, message, Space, Switch, Typography } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
+import UpsellPrompt from '../../shared/components/UpsellPrompt';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -91,6 +92,9 @@ const TokenItem = ( { token, description } ) => {
  */
 const EmailTab = ( { settings, updateSetting, settingsData } ) => {
 	const defaults = settingsData.emailDefaults || {};
+	// Premium touchpoints for this surface, resolved server-side by the
+	// touchpoint registry (empty for non-admins or when the tier is active).
+	const touchpoints = settingsData.touchpoints || {};
 	const enabled =
 		settings.email_issued_enabled === undefined ||
 		!! Number( settings.email_issued_enabled );
@@ -342,6 +346,17 @@ const EmailTab = ( { settings, updateSetting, settingsData } ) => {
 					</Space>
 				</div>
 			</div>
+
+			{ /* Expiry reminders touchpoint (2.0, Feature 2.0-005):
+			     renders where Educator's reminder email section mounts
+			     once active. Server-gated; a sibling of the slot, never
+			     inside it, so the addon's React root owns the slot. */ }
+			{ touchpoints[ 'email-tab' ] && (
+				<UpsellPrompt
+					touchpoint={ touchpoints[ 'email-tab' ] }
+					style={ { marginTop: 24 } }
+				/>
+			) }
 
 			{ /* Addon extension slot (2.0, Feature 2.0-006 applied to
 			     settings): addon email sections (Educator's E-005
