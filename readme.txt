@@ -34,7 +34,8 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 **Certificate Designer**
 
 * Interactive WYSIWYG canvas with drag, resize, keyboard nudging, undo/redo, and zoom
-* Six starter designs, each in Letter and A4, plus a blank option
+* Eight starter designs - Formal, Modern, Playful, and Geometric, each in portrait and landscape - every one in Letter and A4, plus a blank option
+* Image, logo, signature, and background elements accept PNG, JPEG, and GIF, plus WebP and AVIF where your server supports them
 * Six bundled open-license fonts (SIL OFL) with real bold and italic faces
 * Text, merge field, image, signature, line/shape, QR code, and background elements
 * Merge fields for recipient, certificate, site, quiz, assignment, and course data, including custom user and post meta
@@ -56,6 +57,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Validity periods: set how long certificates from a template stay valid (days, months, or years), pick an exact expiry date, or let them last forever
 * Per-trigger control over repeat completions: suppress duplicates or issue a fresh certificate every time (for compliance and recertification courses)
 * Revoke certificates and reinstate them if revoked by mistake
+* Send yourself a template's award email with sample values before it goes live
 
 **Credentials & Verification**
 
@@ -64,6 +66,8 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Optional QR code on every certificate linking to its verification page
 * The QR code and credential ID on issued PDFs are clickable, so an emailed certificate verifies in one click
 * A shareable certificate view page with PDF download
+* Download PDF on the verification page for valid and expired certificates, so a verifier can keep a copy
+* Certificate Link block and shortcode: one button on a course, lesson, topic, or quiz page that opens the logged-in learner's own certificate for that item, hidden until it is earned
 * My Certificates list (shortcode and block) so logged-in learners can see, verify, and download everything they have earned, with status filters and sorting by date, name, or upcoming expiry
 * PDFs are protected against editing: Acrobat and other viewers refuse to modify the text, while printing and copying stay available
 
@@ -71,7 +75,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 
 * Dashboard with certificate statistics, an awarded-over-time chart, quick actions, and recent certificates
 * A guided setup tour that walks you from a starter template to your first issued certificate in five minutes
-* Certificates screen with template, status, and source filters
+* Certificates screen with search by recipient, certificate name, or exact credential ID, and template, status, source, and issue-date filters
 * Resend a certificate's email with one click
 * Certificate merge fields in the email subject and body, so the email can name the exact course or quiz that was completed
 * Earned certificates listed on each user's profile page with verify and download links
@@ -84,6 +88,34 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * WordPress Privacy API integration (Tools > Export/Erase Personal Data)
 * Clean uninstall with optional complete data removal
 * Keyboard navigation, screen reader support, and reduced motion preferences
+
+= Premium Add-ons =
+
+Everything above is free on WordPress.org. Optional add-ons from [pressprimer.com](https://pressprimer.com/pressprimer-certificate-pricing/) extend the plugin in three tiers, each building on the one below it:
+
+**Educator**
+
+* **Custom Fonts** – Upload your brand's TTF fonts; they appear in every designer font control and render identically on screen and in the PDF.
+* **Multi-Page Certificates** – Add, duplicate, and reorder pages in the designer; every page renders in the PDF.
+* **Bulk Awarding** – Award a certificate to many recipients at once from a user list or a CSV, with a full per-row preview before anything sends.
+* **Expiry Reminder Emails** – Remind recipients before their certificate expires, on a schedule you control, with an editable message and a test send.
+* **Branded Verification Page** – Your logo, accent color, intro line, and footer on the public verification page, with a live preview.
+* **Social Sharing** – One-click LinkedIn add-to-profile, share composers for LinkedIn, X, and Facebook, copy link, and link previews that show the certificate itself.
+
+**School** *(everything in Educator, plus)*
+
+* **Issuing Organizations** – Issuer profiles with their own name, logo, and web address; members as owners or issuers; templates assigned per organization so members see and award only their own.
+* **Public Registry** – An issuer profile page and per-credential program pages with a sample certificate image and earner count.
+* **Credential Directory** – A searchable public directory of credential holders, listed according to your site policy and per-certificate consent.
+* **Organization-Branded Verification** – The verification page carries the issuing organization's logo, accent color, intro, and footer.
+* **Award Past Completions** – Find everyone who completed a course, lesson, quiz, or assignment before the trigger existed, preview every row, and award them in one run.
+* **Email Copies** – Per-template CC and BCC on award emails, plus optional copies to LearnDash Group Leaders and PressPrimer Teachers.
+
+**Enterprise** *(everything in School, plus)*
+
+* **Audit Log** – A single, filterable record of who did what and when across the suite, with per-category retention controls and CSV export.
+* **White Label** – Run the certificate system under your own brand across the admin, every email, new PDFs, and the public verification page.
+* **Verification API and Embeddable Widget** – A key-authenticated JSON endpoint that answers what the verification page shows, and a drop-in widget partners paste into their own pages.
 
 = Perfect For =
 
@@ -120,7 +152,6 @@ All integrations are bundled in the free version, and the plugin is still fully 
 * Filter-based registries for custom trigger types (including value-only "threshold" triggers) and merge fields
 * REST API support
 * Custom database tables with automatic schema migration
-* [Developer Reference](https://pressprimer.com/knowledge-base/pressprimer-certificate/developer-reference/) - the supported hooks and API surface
 
 = Documentation & Support =
 
@@ -188,7 +219,7 @@ The bundled fonts are all licensed under the SIL Open Font License 1.1, with lic
 
 = Is this really free, or is it a limited trial? =
 
-It's genuinely free and not locked down. PressPrimer Certificate includes unlimited templates, unlimited certificates, the full designer, plugin integrations, public verification, and email delivery in the free version.
+It's genuinely free and not locked down. PressPrimer Certificate includes unlimited templates, unlimited certificates, the full designer, plugin integrations, public verification, and email delivery in the free version. Optional Educator, School, and Enterprise add-ons add features such as custom fonts, bulk awarding, issuing organizations, and an audit log; the Upgrade page under Certificates compares them, and the free plugin never loses a feature.
 
 = Does this plugin require an LMS? =
 
@@ -205,6 +236,14 @@ Every certificate can include a unique credential ID and/or a QR code. Scanning 
 = How do learners see the certificates they have earned? =
 
 Three ways. Each certificate is emailed as a PDF the moment it is issued. Learners can also visit a My Certificates page you create with the included block or `[ppcert_my_certificates]` shortcode, which lists everything they have earned with verify and download links, status filters, and sorting. And every certificate has its own shareable view page with the certificate image and a PDF download.
+
+= Can I put a link to a learner's certificate on the course page itself? =
+
+Yes. Add the Certificate Link block (or the `[ppcert_certificate_link]` shortcode) to a course, lesson, topic, or quiz page. Each logged-in learner sees one button that opens their own certificate for that item, and nothing at all until they have earned it. Point it at a specific template with the `template` attribute when the page is not the source itself.
+
+= Can a verifier download the PDF from the verification page? =
+
+Yes. Valid and expired certificates show a Download PDF button on the verification page, so an employer or registrar can keep a copy. Revoked certificates do not offer a download.
 
 = What happens if I edit a template after certificates have been issued? =
 
@@ -242,12 +281,23 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Added: Four Geometric starter templates - a modern design family drawn from your brand colors, in portrait and landscape for both A4 and Letter sizes.
 * Added: Multi-page certificate rendering. Certificates designed with multiple pages (created with the Educator addon) download, email, and verify as complete multi-page PDFs.
 * Added: An Upgrade page under the Certificates menu comparing the free plugin with the new Educator, School, and Enterprise tiers.
+* Added: Certificate Link block and shortcode. Drop one button on a course, lesson, topic, or quiz page (or point it at a template) and each logged-in learner sees a link to their own certificate for that item, hidden until they earn it.
+* Added: Download PDF button on the public verification page for valid and expired certificates, so a verifier can keep a copy without an account.
+* Added: WebP and AVIF images in certificate designs render in PDFs and previews on servers whose image library supports them. When a server cannot render a chosen image's format, the designer says so under the image picker and Preview PDF reports the skipped image.
+* Added: Short upgrade notes for administrators on the Settings Email tab and in the designer, pointing to the Educator and School features that would appear in those spots. They disappear once the addon is active and are never shown to other users.
 * Added: Public developer API. New `ppcert_*()` functions let other plugins issue certificates, render PDFs, look up a learner's certificate, and build view and download links through a supported, stable surface.
 * Added: Value-only award triggers. Integrations can register triggers with no source object - points thresholds, membership tenure, credits earned - and they configure in the Award tab like any other trigger.
 * Added: Third-party certificate integrations now appear with their proper names everywhere the built-in integrations do, including while their plugin is deactivated.
 * Added: A duplicate-suppression scoping filter for integrations whose completion events carry per-occurrence references.
+* Added: The extension points the Educator, School, and Enterprise addons build on - template settings and issuer assignment, designer sidebar tabs and slots, list columns and row actions, email sender and footer filters, PDF metadata, admin branding, template lifecycle actions, and the certificate title and directory-visibility columns. Existing data is untouched.
 * Improved: Designer sidebar labels and help icons render at higher contrast.
 * Fixed: Custom merge-field groups registered with a sub-field named "label", "key", or "resolver" no longer disappear from the designer palette.
+* Fixed: The certificate view page's preview image keeps its layout wrapper instead of rendering flush against the details panel.
+* Fixed: The verification result's status colors appear on the JavaScript-enhanced page as well as the no-JavaScript page.
+* Fixed: Admin styling loads on every suite screen, including addon pages, so dropdowns keep their intended focus style.
+* Fixed: The Settings page shows its Save button on addon tabs.
+* Fixed: When a design uses a font that is unavailable, the designer canvas substitutes the same face the PDF uses, keeping the two identical.
+* Fixed: Temporary PDF files are removed through the WordPress file API, and uninstall cleanup queries use identifier placeholders throughout.
 
 = 1.1.0 =
 * Added: Merge fields now work inside text elements. 
@@ -264,7 +314,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 == Upgrade Notice ==
 
 = 2.0.0 =
-Certificate search and filters, test award emails, Geometric starter templates, multi-page rendering, a public developer API, and the new Educator, School, and Enterprise premium tiers. Existing certificates and templates are unchanged.
+Certificate search and filters, test award emails, Geometric starter templates, a Certificate Link block, PDF download on the verification page, multi-page rendering, a public developer API, and the new Educator, School, and Enterprise premium tiers. Existing certificates and templates are unchanged.
 
 = 1.1.0 =
 Merge fields inside text, "Any" award triggers, certificate names from merge fields, clickable PDF credentials, designer alignment tools, and email merge fields. Existing certificates and templates are unchanged.

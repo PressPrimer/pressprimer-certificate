@@ -95,6 +95,10 @@ function ppcert_site_wants_removal() {
  * @since 1.0.0
  */
 function ppcert_remove_site_data() {
+	// The daily retention cron is cleared on deactivation; clear it
+	// again here so a site that skipped deactivation leaves nothing.
+	wp_clear_scheduled_hook( 'ppcert_prune_events' );
+
 	ppcert_drop_tables();
 	ppcert_remove_options();
 	ppcert_remove_post_meta();
