@@ -191,6 +191,13 @@ const SettingsPage = ( { settingsData = {} } ) => {
 			);
 	}, [] );
 
+	/**
+	 * Save every tab's settings.
+	 *
+	 * @return {Promise<boolean>} True when the save succeeded (tabs that
+	 *                            save before another action, like the
+	 *                            Email tab's test send, check this).
+	 */
 	const handleSave = async () => {
 		try {
 			setSaving( true );
@@ -213,14 +220,16 @@ const SettingsPage = ( { settingsData = {} } ) => {
 				window.dispatchEvent(
 					new CustomEvent( 'ppcert-settings-save' )
 				);
-			} else {
-				message.error(
-					__(
-						'The settings could not be saved.',
-						'pressprimer-certificate'
-					)
-				);
+
+				return true;
 			}
+
+			message.error(
+				__(
+					'The settings could not be saved.',
+					'pressprimer-certificate'
+				)
+			);
 		} catch ( error ) {
 			message.error(
 				error.message ||
@@ -232,6 +241,8 @@ const SettingsPage = ( { settingsData = {} } ) => {
 		} finally {
 			setSaving( false );
 		}
+
+		return false;
 	};
 
 	const ActiveTabComponent = activeTabConfig?.component || null;
@@ -307,6 +318,8 @@ const SettingsPage = ( { settingsData = {} } ) => {
 								settings={ settings }
 								updateSetting={ updateSetting }
 								settingsData={ settingsData }
+								hasChanges={ hasChanges }
+								onSave={ handleSave }
 							/>
 
 							<div className="ppcert-settings-footer">

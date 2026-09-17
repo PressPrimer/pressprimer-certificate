@@ -89,8 +89,16 @@ const TokenItem = ( { token, description } ) => {
  * @param {Object}   props.settings      Current settings.
  * @param {Function} props.updateSetting Update a setting.
  * @param {Object}   props.settingsData  Full localized data.
+ * @param {boolean}  props.hasChanges    Whether the page has unsaved changes.
+ * @param {Function} props.onSave        Save every tab's settings; resolves true on success.
  */
-const EmailTab = ( { settings, updateSetting, settingsData } ) => {
+const EmailTab = ( {
+	settings,
+	updateSetting,
+	settingsData,
+	hasChanges = false,
+	onSave = null,
+} ) => {
 	const defaults = settingsData.emailDefaults || {};
 	// Premium touchpoints for this surface, resolved server-side by the
 	// touchpoint registry (empty for non-admins or when the tier is active).
@@ -105,6 +113,17 @@ const EmailTab = ( { settings, updateSetting, settingsData } ) => {
 		setTesting( true );
 
 		try {
+			// The test sends the SAVED settings, so unsaved edits on this
+			// page are saved first (Ryan, 2026-09-17); a failed save
+			// already toasted its own error, so stop quietly.
+			if ( hasChanges && onSave ) {
+				const saved = await onSave();
+
+				if ( ! saved ) {
+					return;
+				}
+			}
+
 			const response = await apiFetch( {
 				path: '/ppcert/v1/settings/test-email',
 				method: 'POST',
@@ -339,7 +358,7 @@ const EmailTab = ( { settings, updateSetting, settingsData } ) => {
 						</Button>
 						<Text type="secondary">
 							{ __(
-								'Sends this email to your own address with sample values. The test uses the last saved settings.',
+								'Sends this email to your own address with sample values. Unsaved changes on this page are saved first.',
 								'pressprimer-certificate'
 							) }
 						</Text>

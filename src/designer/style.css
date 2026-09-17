@@ -72,6 +72,19 @@
 	gap: 6px;
 }
 
+/* Valid for: the number keeps room for two digits beside its spinner
+   (Ant's handlers overlay the right 22px), and the unit select sizes
+   to its longest option instead of the shared 110px minimum. */
+.ppcert-designer__validity-period .ant-input-number {
+	flex: 0 0 84px;
+	width: 84px;
+}
+
+.ppcert-designer__validity-period .ant-select {
+	flex: 0 0 auto;
+	min-width: 0;
+}
+
 .ppcert-designer__palette-item {
 	display: flex;
 	align-items: center;

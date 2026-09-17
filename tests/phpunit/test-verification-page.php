@@ -49,6 +49,7 @@ class Test_Verification_Page extends TestCase {
 		$html = PressPrimer_Certificate_Verification_Page::render_shortcode();
 
 		$this->assertStringContainsString( 'class="ppcert-verify__form"', $html );
+		$this->assertStringContainsString( 'class="ppcert-verify__submit ppcert-button-primary"', $html, 'The Verify button uses the shared primary button treatment.' );
 		$this->assertStringContainsString( 'name="ppcert_id"', $html );
 		$this->assertStringContainsString( 'aria-live="polite"', $html );
 		$this->assertStringContainsString( 'role="status"', $html );

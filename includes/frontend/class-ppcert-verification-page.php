@@ -140,7 +140,7 @@ class PressPrimer_Certificate_Verification_Page {
 		$output .= '<input type="text" id="ppcert-verify-input" class="ppcert-verify__input" name="ppcert_id" '
 			. 'value="' . esc_attr( isset( $data['prefill'] ) ? $data['prefill'] : '' ) . '" '
 			. 'placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" required /> ';
-		$output .= '<button type="submit" class="ppcert-verify__submit">'
+		$output .= '<button type="submit" class="ppcert-verify__submit ppcert-button-primary">'
 			. esc_html__( 'Verify', 'pressprimer-certificate' ) . '</button>';
 		$output .= '</form>';
 		$output .= '<div class="ppcert-verify__result" role="status" aria-live="polite">'

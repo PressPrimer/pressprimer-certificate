@@ -457,7 +457,15 @@ export default function DesignerApp( { boot } ) {
 		dispatch( {
 			type: 'LOAD_TEMPLATE',
 			template,
-			layout: template.layout,
+			// Same projection as the load path: extensions (Educator's
+			// page rail) initialize from this filter, so a template
+			// created in this session must run it too - otherwise the
+			// rail only appears after a reload.
+			layout: applyFilters(
+				'ppcert.designer.loadLayout',
+				template.layout,
+				template
+			),
 		} );
 
 		// Reflect the new template in the URL without a reload.

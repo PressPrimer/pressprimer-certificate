@@ -196,7 +196,11 @@
 }
 
 .ppcert-verify__input {
-	flex: 1;
+
+	/* Sized for a credential ID (14 characters plus breathing room),
+	 * not the full row - the button sits right beside it. */
+	flex: 0 1 22ch;
+	max-width: 100%;
 	min-width: 16ch;
 	padding: var(--ppcert-space-sm) var(--ppcert-space-md);
 	border: 2px solid var(--ppcert-border);
@@ -211,6 +215,13 @@
 .ppcert-verify__input:focus {
 	border-color: var(--ppcert-primary);
 	outline: 2px solid var(--ppcert-primary-light);
+}
+
+/* The Verify button is a real <button> carrying the shared primary
+ * class; buttons do not inherit a pointer cursor the way links do. */
+.ppcert-verify__submit {
+	cursor: pointer;
+	font-family: inherit;
 }
 
 .ppcert-verify__result:not(:empty) {

@@ -110,11 +110,12 @@ function ppcert_remove_site_data() {
 /**
  * Remove the current site's plugin data from the uploads directory.
  *
- * Three plugin-managed locations: ppcert-fonts (TTFs inflated from the
- * bundled .z files), ppcert/previews (view-page PNGs, which render
- * recipient names - personal data), and ppcert-previews (short-lived
- * designer preview PDFs). Everything here is either regenerable or
- * derived, and the readme promises a clean uninstall.
+ * Three suite-managed locations: ppcert-previews (short-lived designer
+ * preview PDFs), ppcert-educator-fonts (the Educator addon's uploaded
+ * TTFs), and ppcert-educator/og (Educator's link-preview PNGs, which
+ * render recipient names - personal data). Everything here is either
+ * regenerable, derived, or covered by the remove-data opt-in, and the
+ * readme promises a clean uninstall.
  *
  * @since 1.0.0
  */
@@ -127,7 +128,10 @@ function ppcert_remove_uploads_data() {
 
 	$base = trailingslashit( $uploads['basedir'] );
 
-	foreach ( array( 'ppcert-fonts', 'ppcert/previews', 'ppcert-previews' ) as $subdir ) {
+	// The free preview folder plus the Educator addon's uploaded fonts
+	// and link-preview image cache (the suite's upload folders as built;
+	// Educator's own uninstall handles them when only Educator goes).
+	foreach ( array( 'ppcert-previews', 'ppcert-educator-fonts', 'ppcert-educator/og' ) as $subdir ) {
 		$dir = $base . $subdir;
 
 		if ( ! is_dir( $dir ) ) {
@@ -143,9 +147,9 @@ function ppcert_remove_uploads_data() {
 	}
 
 	// The now-empty ppcert parent (previews' container), if removable.
-	if ( is_dir( $base . 'ppcert' ) ) {
+	if ( is_dir( $base . 'ppcert-educator' ) ) {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir,WordPress.PHP.NoSilencedErrors.Discouraged -- Removing the emptied plugin cache directory; @ because foreign files inside fail it harmlessly.
-		@rmdir( $base . 'ppcert' );
+		@rmdir( $base . 'ppcert-educator' );
 	}
 }
 

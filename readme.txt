@@ -291,6 +291,10 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Added: A duplicate-suppression scoping filter for integrations whose completion events carry per-occurrence references.
 * Added: The extension points the Educator, School, and Enterprise addons build on - template settings and issuer assignment, designer sidebar tabs and slots, list columns and row actions, email sender and footer filters, PDF metadata, admin branding, template lifecycle actions, and the certificate title and directory-visibility columns. Existing data is untouched.
 * Improved: Designer sidebar labels and help icons render at higher contrast.
+* Improved: Send Test Email on the Email settings tab saves your unsaved changes first, so the test always reflects what is on the page.
+* Fixed: The verification form's Verify button uses the same button style as the rest of the plugin, and the credential ID field is sized for a credential ID instead of stretching across the page.
+* Fixed: The Valid For controls in the designer's Award tab keep the number readable while its up and down controls are showing.
+* Fixed: Designer extensions such as the Educator page rail appear on a newly created template without reloading the page.
 * Fixed: Custom merge-field groups registered with a sub-field named "label", "key", or "resolver" no longer disappear from the designer palette.
 * Fixed: The certificate view page's preview image keeps its layout wrapper instead of rendering flush against the details panel.
 * Fixed: The verification result's status colors appear on the JavaScript-enhanced page as well as the no-JavaScript page.
