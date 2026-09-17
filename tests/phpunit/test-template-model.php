@@ -226,8 +226,9 @@ class Test_Template_Model extends TestCase {
 	}
 
 	/**
-	 * The Geometric starters (2.0, Feature 2.0-001) expose a default
-	 * certificate_name pattern from _meta; starters without one expose
+	 * Starters expose a certificate_name pattern from _meta when they ship
+	 * one - none of the bundled set does since 2026-09-17, when the
+	 * Geometric preset was dropped - so every starter exposes
 	 * an empty string; create() carries sanitized settings into
 	 * settings_json.
 	 *
@@ -236,14 +237,8 @@ class Test_Template_Model extends TestCase {
 	public function test_starter_certificate_name_and_create_settings() {
 		$starters = PressPrimer_Certificate_Template::get_starters();
 
-		$this->assertSame(
-			'{{source.course_title}} Certificate',
-			$starters['starter-geometric-landscape']['certificate_name']
-		);
-		$this->assertSame(
-			'{{source.course_title}} Certificate',
-			$starters['starter-geometric-portrait-letter']['certificate_name']
-		);
+		$this->assertSame( '', $starters['starter-geometric-landscape']['certificate_name'], 'Geometric ships no pattern since 2026-09-17.' );
+		$this->assertSame( '', $starters['starter-geometric-portrait-letter']['certificate_name'], 'Geometric ships no pattern since 2026-09-17.' );
 		$this->assertSame( '', $starters['starter-modern-landscape']['certificate_name'], 'The 1.0 set ships no pattern.' );
 
 		// create() with settings: sanitized and stored.

@@ -26,8 +26,7 @@
     "w": 170,
     "h": 55
    }
-  },
-  "certificate_name": "{{source.course_title}} Certificate"
+  }
  },
  "layout_schema_version": 2,
  "page": {
@@ -184,7 +183,7 @@
    "h": 84,
    "z": 9,
    "props": {
-    "content": "has successfully completed\n{{source.course_title}}\nwith dedication and excellence.",
+    "content": "has successfully completed the program\nwith dedication and excellence.",
     "font_family": "eb-garamond",
     "font_size": 18,
     "color": "#374151",

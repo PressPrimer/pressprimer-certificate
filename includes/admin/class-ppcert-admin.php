@@ -66,6 +66,11 @@ class PressPrimer_Certificate_Admin {
 		$this->dashboard = new PressPrimer_Certificate_Admin_Dashboard();
 
 		add_action( 'admin_menu', [ $this, 'register_menus' ] );
+		// The addon extension point fires after EVERY core submenu has
+		// registered (Certificates at 20, Settings at 30), so addon pages
+		// follow Settings instead of splitting Templates from Certificates
+		// - the Quiz and Assignment menu convention. Upgrade stays last (99).
+		add_action( 'admin_menu', [ $this, 'announce_menu_registered' ], 40 );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_init', [ $this, 'handle_trash_action' ] );
 		add_action( 'admin_init', [ $this, 'handle_duplicate_action' ] );
@@ -403,11 +408,25 @@ class PressPrimer_Certificate_Admin {
 			'ppcert-templates',
 			[ $this, 'render_templates_page' ]
 		);
+	}
 
+	/**
+	 * Announce the core menu to addons
+	 *
+	 * Runs on admin_menu at priority 40, after Dashboard and Templates
+	 * (10), Certificates (20), and Settings (30) have registered, and
+	 * before Upgrade (99), so addon submenus land between Settings and
+	 * Upgrade.
+	 *
+	 * @since 2.0.0
+	 */
+	public function announce_menu_registered() {
 		/**
 		 * Fires after the core admin menu items are registered.
 		 *
-		 * Premium addons append their submenus here.
+		 * Premium addons append their submenus here. Since 2.0.0 this
+		 * fires at admin_menu priority 40 - after Dashboard, Templates,
+		 * Certificates, and Settings - so addon pages follow Settings.
 		 *
 		 * @since 1.0.0
 		 *

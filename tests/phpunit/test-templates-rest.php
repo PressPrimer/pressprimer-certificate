@@ -302,13 +302,13 @@ class Test_Templates_REST extends TestCase {
 	}
 
 	/**
-	 * Creating from a Geometric starter clones its default
-	 * certificate_name into the new template's settings (2.0, Feature
-	 * 2.0-001 FR-002); 1.0 starters keep storing no settings.
+	 * Creating from a starter stores no settings (the Geometric default
+	 * certificate_name preset was dropped 2026-09-17); the 1.0 starters
+	 * never stored any.
 	 *
 	 * @return void
 	 */
-	public function test_create_from_starter_carries_certificate_name() {
+	public function test_create_from_starter_stores_no_settings() {
 		$response = $this->controller->create_template(
 			new WP_REST_Request( [ 'starter' => 'starter-geometric-landscape' ] )
 		);
@@ -319,10 +319,10 @@ class Test_Templates_REST extends TestCase {
 		$rows = $this->wpdb->rows( 'wp_ppcert_templates' );
 		$row  = end( $rows );
 
-		$this->assertSame(
-			[ 'certificate_name' => '{{source.course_title}} Certificate' ],
-			json_decode( (string) $row['settings_json'], true )
-		);
+		// Since 2026-09-17 the Geometric starters preset no display name
+		// (an unresolved course token titled manual issues just
+		// "Certificate"), so every starter stores no settings.
+		$this->assertArrayNotHasKey( 'settings_json', array_filter( $row, static fn( $v ) => null !== $v ), 'A Geometric starter presets no display name.' );
 
 		// A 1.0 starter (no pattern) stores no settings.
 		$this->controller->create_template(
