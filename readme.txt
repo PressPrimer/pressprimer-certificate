@@ -295,7 +295,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Fixed: The verification form's Verify button uses the same button style as the rest of the plugin, and the credential ID field is sized for a credential ID instead of stretching across the page.
 * Fixed: The Valid For controls in the designer's Award tab keep the number readable while its up and down controls are showing.
 * Fixed: Designer extensions such as the Educator page rail appear on a newly created template without reloading the page.
-* Fixed: Add-on menu items now follow Settings instead of separating Templates from Certificates.
+* Fixed: Add-on menu items now follow Certificates instead of separating it from Templates; Settings stays after them.
 * Improved: The Geometric starter designs no longer assume a course. Their body text reads "has successfully completed the program" instead of embedding a course title merge field that showed as a raw token until an award trigger was added, and they no longer preset a certificate display name, so a manually issued certificate keeps the template's name like the other starters.
 * Fixed: Custom merge-field groups registered with a sub-field named "label", "key", or "resolver" no longer disappear from the designer palette.
 * Fixed: The certificate view page's preview image keeps its layout wrapper instead of rendering flush against the details panel.

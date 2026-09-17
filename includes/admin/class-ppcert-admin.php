@@ -66,11 +66,12 @@ class PressPrimer_Certificate_Admin {
 		$this->dashboard = new PressPrimer_Certificate_Admin_Dashboard();
 
 		add_action( 'admin_menu', [ $this, 'register_menus' ] );
-		// The addon extension point fires after EVERY core submenu has
-		// registered (Certificates at 20, Settings at 30), so addon pages
-		// follow Settings instead of splitting Templates from Certificates
-		// - the Quiz and Assignment menu convention. Upgrade stays last (99).
-		add_action( 'admin_menu', [ $this, 'announce_menu_registered' ], 40 );
+		// The addon extension point fires after Certificates (20) and
+		// before Settings (30), so addon pages sit between Certificates
+		// and Settings instead of splitting Templates from Certificates;
+		// Settings stays at the end of the working items and Upgrade
+		// stays last (99). Ryan, 2026-09-17.
+		add_action( 'admin_menu', [ $this, 'announce_menu_registered' ], 25 );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_init', [ $this, 'handle_trash_action' ] );
 		add_action( 'admin_init', [ $this, 'handle_duplicate_action' ] );
@@ -413,10 +414,10 @@ class PressPrimer_Certificate_Admin {
 	/**
 	 * Announce the core menu to addons
 	 *
-	 * Runs on admin_menu at priority 40, after Dashboard and Templates
-	 * (10), Certificates (20), and Settings (30) have registered, and
-	 * before Upgrade (99), so addon submenus land between Settings and
-	 * Upgrade.
+	 * Runs on admin_menu at priority 25, after Dashboard and Templates
+	 * (10) and Certificates (20) have registered and before Settings
+	 * (30) and Upgrade (99), so addon submenus land between Certificates
+	 * and Settings.
 	 *
 	 * @since 2.0.0
 	 */
@@ -425,8 +426,9 @@ class PressPrimer_Certificate_Admin {
 		 * Fires after the core admin menu items are registered.
 		 *
 		 * Premium addons append their submenus here. Since 2.0.0 this
-		 * fires at admin_menu priority 40 - after Dashboard, Templates,
-		 * Certificates, and Settings - so addon pages follow Settings.
+		 * fires at admin_menu priority 25 - after Dashboard, Templates,
+		 * and Certificates, before Settings - so addon pages sit between
+		 * Certificates and Settings.
 		 *
 		 * @since 1.0.0
 		 *
