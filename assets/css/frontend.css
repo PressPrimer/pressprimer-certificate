@@ -387,6 +387,11 @@
 	border-radius: var(--ppcert-radius-lg);
 	padding: var(--ppcert-space-lg);
 	margin: 0 0 var(--ppcert-space-lg);
+
+	/* The card is not inside a plugin root (.ppcert-view and friends set
+	 * these), so it takes the plugin typeface and text color itself. */
+	font-family: var(--ppcert-font-sans);
+	color: var(--ppcert-text);
 }
 
 .ppcert-certificate-link__message {
