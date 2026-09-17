@@ -205,6 +205,41 @@ class PressPrimer_Certificate_Blocks {
 	}
 
 	/**
+	 * Trigger types the Certificate Link block offers as source types
+	 *
+	 * Registered types with selectable sources, as [ id, label ] with the
+	 * label "Integration · Short label" (or the plain label when the
+	 * two match). Value-only types have nothing a link could scope to.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return array<int, array{id: string, label: string}>
+	 */
+	public static function certificate_link_trigger_types() {
+		$options = [];
+
+		if ( ! class_exists( 'PressPrimer_Certificate_Trigger_Registry' ) ) {
+			return $options;
+		}
+
+		foreach ( PressPrimer_Certificate_Trigger_Registry::get_types() as $type ) {
+			if ( empty( $type['id'] ) || ( isset( $type['has_sources'] ) && false === $type['has_sources'] ) ) {
+				continue;
+			}
+
+			$integration = isset( $type['integration'] ) ? (string) $type['integration'] : '';
+			$short       = isset( $type['short_label'] ) ? (string) $type['short_label'] : ( isset( $type['label'] ) ? (string) $type['label'] : (string) $type['id'] );
+
+			$options[] = [
+				'id'    => (string) $type['id'],
+				'label' => '' !== $integration && $integration !== $short ? $integration . ' · ' . $short : $short,
+			];
+		}
+
+		return $options;
+	}
+
+	/**
 	 * Register the Certificate Link block
 	 *
 	 * The [ppcert_certificate_link] equivalent (Feature 2.0-008). Every
@@ -238,7 +273,11 @@ class PressPrimer_Certificate_Blocks {
 			'ppcert-certificate-link-block-editor',
 			'ppcert_certificate_link_block_data',
 			[
-				'templates' => function_exists( 'ppcert_get_templates' ) ? ppcert_get_templates( [ 'status' => 'published' ] ) : [],
+				'templates'    => function_exists( 'ppcert_get_templates' ) ? ppcert_get_templates( [ 'status' => 'published' ] ) : [],
+				// The Source type select: every registered trigger type
+				// that has sources, labeled by integration (the block's
+				// source_type is a trigger type id).
+				'triggerTypes' => self::certificate_link_trigger_types(),
 			]
 		);
 
@@ -247,7 +286,7 @@ class PressPrimer_Certificate_Blocks {
 			[
 				'api_version'     => 3,
 				'title'           => __( 'Certificate Link', 'pressprimer-certificate' ),
-				'description'     => __( "A button to the logged-in learner's certificate for this course, lesson, or quiz. Shows only once it is earned.", 'pressprimer-certificate' ),
+				'description'     => __( "A button to the logged-in learner's certificate for this course, lesson, quiz, or assignment. Shows only once it is earned.", 'pressprimer-certificate' ),
 				'category'        => 'pressprimer-certificate',
 				'icon'            => 'admin-links',
 				'supports'        => [

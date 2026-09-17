@@ -79,6 +79,27 @@ function templateOptions() {
 }
 
 /**
+ * Registered trigger types localized at registration, for the Source
+ * type select. '' means "detect from the page".
+ *
+ * @return {Array} Select options.
+ */
+function sourceTypeOptions() {
+	const data = window.ppcert_certificate_link_block_data || {};
+	const types = Array.isArray( data.triggerTypes ) ? data.triggerTypes : [];
+	return [
+		{
+			value: '',
+			label: __( 'Detect from the page', 'pressprimer-certificate' ),
+		},
+		...types.map( ( type ) => ( {
+			value: type.id,
+			label: type.label,
+		} ) ),
+	];
+}
+
+/**
  * Edit component: inspector controls plus a static preview.
  *
  * @param {Object}   props               Block props.
@@ -121,28 +142,28 @@ function Edit( { attributes, setAttributes } ) {
 					<RadioControl
 						label={ __( 'Source', 'pressprimer-certificate' ) }
 						help={ __(
-							'The course, lesson, topic, or quiz the certificate was earned for.',
+							'What the certificate was earned for. "This page" covers a course, lesson, topic, or quiz page, and any PressPrimer quiz or assignment placed on the page with its block or shortcode.',
 							'pressprimer-certificate'
 						) }
 						selected={ source }
 						options={ [
 							{
 								label: __(
-									'This post',
+									'This page',
 									'pressprimer-certificate'
 								),
 								value: 'current',
 							},
 							{
 								label: __(
-									'A specific post',
+									'A specific quiz, assignment, or post',
 									'pressprimer-certificate'
 								),
 								value: 'specific',
 							},
 							{
 								label: __(
-									'Not scoped to a post (use the template)',
+									'Not scoped to a page (use the template)',
 									'pressprimer-certificate'
 								),
 								value: 'none',
@@ -154,7 +175,14 @@ function Edit( { attributes, setAttributes } ) {
 					/>
 					{ source === 'specific' && (
 						<TextControl
-							label={ __( 'Post ID', 'pressprimer-certificate' ) }
+							label={ __(
+								'Quiz, assignment, or post ID',
+								'pressprimer-certificate'
+							) }
+							help={ __(
+								'For a PressPrimer quiz or assignment, the ID shown in its list in the admin. For a course, lesson, topic, or LMS quiz, the post ID.',
+								'pressprimer-certificate'
+							) }
 							type="number"
 							min={ 1 }
 							value={ sourceId || '' }
@@ -186,20 +214,29 @@ function Edit( { attributes, setAttributes } ) {
 							} )
 						}
 					/>
-					<TextControl
-						label={ __(
-							'Source type (advanced)',
+					{ source !== 'none' && (
+						<SelectControl
+							label={ __(
+								'Source type',
+								'pressprimer-certificate'
+							) }
+							help={ __(
+								'Leave on "Detect from the page" unless the same ID could belong to more than one kind of source. Choosing a type matches only certificates earned that way.',
+								'pressprimer-certificate'
+							) }
+							value={ sourceType }
+							options={ sourceTypeOptions() }
+							onChange={ ( value ) =>
+								setAttributes( { sourceType: value } )
+							}
+						/>
+					) }
+					<p className="components-base-control__help">
+						{ __(
+							'When the learner has earned this certificate more than once, the newest one is linked.',
 							'pressprimer-certificate'
 						) }
-						help={ __(
-							'Leave blank to detect from the post type. Set for PressPrimer Quiz or Assignment sources, for example ppq_quiz.',
-							'pressprimer-certificate'
-						) }
-						value={ sourceType }
-						onChange={ ( value ) =>
-							setAttributes( { sourceType: value } )
-						}
-					/>
+					</p>
 				</PanelBody>
 				<PanelBody title={ __( 'Link', 'pressprimer-certificate' ) }>
 					<RadioControl
@@ -292,7 +329,7 @@ registerBlockType( 'pressprimer-certificate/certificate-link', {
 	apiVersion: 3,
 	title: __( 'Certificate Link', 'pressprimer-certificate' ),
 	description: __(
-		"A button to the logged-in learner's certificate for this course, lesson, or quiz. Shows only once it is earned.",
+		"A button to the logged-in learner's certificate for this course, lesson, quiz, or assignment. Shows only once it is earned.",
 		'pressprimer-certificate'
 	),
 	category: 'pressprimer-certificate',

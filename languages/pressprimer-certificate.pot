@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-17T14:17:56+00:00\n"
+"POT-Creation-Date: 2026-09-17T20:14:01+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -341,7 +341,7 @@ msgid "Certificate Templates"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin.php:401
-#: src/designer/components/DesignerApp.jsx:546
+#: src/designer/components/DesignerApp.jsx:554
 #: src/settings/components/StatusTab.jsx:523
 msgid "Templates"
 msgstr ""
@@ -381,7 +381,7 @@ msgid "Recipient"
 msgstr ""
 
 #: includes/admin/class-ppcert-certificates-list-table.php:65
-#: blocks/certificate-link/index.js:169
+#: blocks/certificate-link/index.js:197
 #: src/issue/index.js:184
 msgid "Template"
 msgstr ""
@@ -390,7 +390,7 @@ msgstr ""
 #: includes/integrations/abstract-ppcert-lms-adapter.php:219
 #: includes/services/class-ppcert-merge-field-registry.php:170
 #: includes/utilities/class-ppcert-privacy.php:117
-#: blocks/certificate-link/index.js:122
+#: blocks/certificate-link/index.js:143
 #: src/designer/components/ElementPalette.jsx:251
 #: src/designer/components/TriggerPanel.jsx:883
 #: src/designer/components/TriggerPanel.jsx:1239
@@ -1183,14 +1183,14 @@ msgstr ""
 msgid "Lists the logged-in visitor's earned certificates with verification and download links."
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:249
-#: blocks/certificate-link/index.js:293
+#: includes/blocks/class-ppcert-blocks.php:288
+#: blocks/certificate-link/index.js:330
 msgid "Certificate Link"
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:250
-#: blocks/certificate-link/index.js:294
-msgid "A button to the logged-in learner's certificate for this course, lesson, or quiz. Shows only once it is earned."
+#: includes/blocks/class-ppcert-blocks.php:289
+#: blocks/certificate-link/index.js:331
+msgid "A button to the logged-in learner's certificate for this course, lesson, quiz, or assignment. Shows only once it is earned."
 msgstr ""
 
 #. translators: 1: addon name, 2: required core version
@@ -1199,17 +1199,17 @@ msgstr ""
 msgid "%1$s requires PressPrimer Certificate %2$s or newer and has been paused. Please update PressPrimer Certificate."
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:225
+#: includes/frontend/class-ppcert-certificate-link.php:333
 #: blocks/certificate-link/index.js:57
 msgid "View your certificate"
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:226
+#: includes/frontend/class-ppcert-certificate-link.php:334
 #: blocks/certificate-link/index.js:52
 msgid "Download your certificate"
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:227
+#: includes/frontend/class-ppcert-certificate-link.php:335
 #: blocks/certificate-link/index.js:55
 msgid "Verify your certificate"
 msgstr ""
@@ -1332,65 +1332,65 @@ msgstr ""
 msgid "This integration cannot list past completions."
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:562
+#: includes/integrations/abstract-ppcert-lms-adapter.php:662
 msgid "Course Title"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:563
+#: includes/integrations/abstract-ppcert-lms-adapter.php:663
 msgid "Introduction to Botany"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:568
+#: includes/integrations/abstract-ppcert-lms-adapter.php:668
 #: includes/integrations/class-ppcert-ppa-adapter.php:242
 msgid "Completion Date"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:569
-#: includes/integrations/abstract-ppcert-lms-adapter.php:665
+#: includes/integrations/abstract-ppcert-lms-adapter.php:669
+#: includes/integrations/abstract-ppcert-lms-adapter.php:765
 #: includes/integrations/class-ppcert-ppa-adapter.php:243
 #: includes/integrations/class-ppcert-ppq-adapter.php:245
 #: includes/services/class-ppcert-merge-field-registry.php:546
 msgid "June 12, 2026"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:574
+#: includes/integrations/abstract-ppcert-lms-adapter.php:674
 msgid "Instructor"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:575
+#: includes/integrations/abstract-ppcert-lms-adapter.php:675
 msgid "Prof. Marisol Vega"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:644
+#: includes/integrations/abstract-ppcert-lms-adapter.php:744
 #: includes/integrations/class-ppcert-ppq-adapter.php:221
 msgid "Quiz Title"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:645
+#: includes/integrations/abstract-ppcert-lms-adapter.php:745
 #: includes/integrations/class-ppcert-ppq-adapter.php:222
 msgid "Advanced Botany Quiz"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:650
+#: includes/integrations/abstract-ppcert-lms-adapter.php:750
 #: includes/integrations/class-ppcert-ppq-adapter.php:227
 msgid "Quiz Score"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:658
+#: includes/integrations/abstract-ppcert-lms-adapter.php:758
 #: includes/integrations/class-ppcert-ppa-adapter.php:236
 #: includes/integrations/class-ppcert-ppq-adapter.php:238
 msgid "Result"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:659
-#: includes/integrations/abstract-ppcert-lms-adapter.php:721
+#: includes/integrations/abstract-ppcert-lms-adapter.php:759
+#: includes/integrations/abstract-ppcert-lms-adapter.php:821
 #: includes/integrations/class-ppcert-ppa-adapter.php:237
 #: includes/integrations/class-ppcert-ppq-adapter.php:239
 #: includes/integrations/class-ppcert-ppq-adapter.php:309
 msgid "Passed"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:664
+#: includes/integrations/abstract-ppcert-lms-adapter.php:764
 #: includes/integrations/class-ppcert-ppq-adapter.php:244
 msgid "Pass Date"
 msgstr ""
@@ -2001,80 +2001,92 @@ msgstr ""
 msgid "Any template"
 msgstr ""
 
-#: blocks/certificate-link/index.js:116
-msgid "Which certificate"
-msgstr ""
-
-#: blocks/certificate-link/index.js:123
-msgid "The course, lesson, topic, or quiz the certificate was earned for."
-msgstr ""
-
-#: blocks/certificate-link/index.js:130
-msgid "This post"
+#: blocks/certificate-link/index.js:93
+msgid "Detect from the page"
 msgstr ""
 
 #: blocks/certificate-link/index.js:137
-msgid "A specific post"
+msgid "Which certificate"
 msgstr ""
 
 #: blocks/certificate-link/index.js:144
-msgid "Not scoped to a post (use the template)"
+msgid "What the certificate was earned for. \"This page\" covers a course, lesson, topic, or quiz page, and any PressPrimer quiz or assignment placed on the page with its block or shortcode."
 msgstr ""
 
-#: blocks/certificate-link/index.js:157
-msgid "Post ID"
+#: blocks/certificate-link/index.js:151
+msgid "This page"
 msgstr ""
 
-#: blocks/certificate-link/index.js:172
+#: blocks/certificate-link/index.js:158
+msgid "A specific quiz, assignment, or post"
+msgstr ""
+
+#: blocks/certificate-link/index.js:165
+msgid "Not scoped to a page (use the template)"
+msgstr ""
+
+#: blocks/certificate-link/index.js:178
+msgid "Quiz, assignment, or post ID"
+msgstr ""
+
+#: blocks/certificate-link/index.js:182
+msgid "For a PressPrimer quiz or assignment, the ID shown in its list in the admin. For a course, lesson, topic, or LMS quiz, the post ID."
+msgstr ""
+
+#: blocks/certificate-link/index.js:200
 msgid "Required when not scoped to a post."
 msgstr ""
 
-#: blocks/certificate-link/index.js:176
+#: blocks/certificate-link/index.js:204
 msgid "Optional. Narrows to certificates from one template."
 msgstr ""
 
-#: blocks/certificate-link/index.js:190
-msgid "Source type (advanced)"
+#: blocks/certificate-link/index.js:219
+msgid "Source type"
 msgstr ""
 
-#: blocks/certificate-link/index.js:194
-msgid "Leave blank to detect from the post type. Set for PressPrimer Quiz or Assignment sources, for example ppq_quiz."
+#: blocks/certificate-link/index.js:223
+msgid "Leave on \"Detect from the page\" unless the same ID could belong to more than one kind of source. Choosing a type matches only certificates earned that way."
 msgstr ""
 
-#: blocks/certificate-link/index.js:204
+#: blocks/certificate-link/index.js:235
+msgid "When the learner has earned this certificate more than once, the newest one is linked."
+msgstr ""
+
+#: blocks/certificate-link/index.js:241
 msgid "Link"
 msgstr ""
 
-#: blocks/certificate-link/index.js:206
+#: blocks/certificate-link/index.js:243
 msgid "Action"
 msgstr ""
 
-#: blocks/certificate-link/index.js:210
+#: blocks/certificate-link/index.js:247
 msgid "Open the certificate page"
 msgstr ""
 
-#: blocks/certificate-link/index.js:217
+#: blocks/certificate-link/index.js:254
 #: src/onboarding/components/CertificateModal.jsx:140
 msgid "Download the PDF"
 msgstr ""
 
-#: blocks/certificate-link/index.js:224
+#: blocks/certificate-link/index.js:261
 msgid "Open the verification page"
 msgstr ""
 
-#: blocks/certificate-link/index.js:236
+#: blocks/certificate-link/index.js:273
 msgid "Label"
 msgstr ""
 
-#: blocks/certificate-link/index.js:244
+#: blocks/certificate-link/index.js:281
 msgid "Show as a button"
 msgstr ""
 
-#: blocks/certificate-link/index.js:256
+#: blocks/certificate-link/index.js:293
 msgid "Open in a new tab"
 msgstr ""
 
-#: blocks/certificate-link/index.js:281
+#: blocks/certificate-link/index.js:318
 msgid "Shows only to learners who have earned this certificate. Everyone else sees nothing."
 msgstr ""
 
@@ -2314,86 +2326,86 @@ msgstr ""
 msgid "The template could not be loaded."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:470
+#: src/designer/components/DesignerApp.jsx:478
 msgid "Template created - happy designing!"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:501
+#: src/designer/components/DesignerApp.jsx:509
 msgid "Cannot open the designer"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:508
+#: src/designer/components/DesignerApp.jsx:516
 msgid "Back to Templates"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:534
+#: src/designer/components/DesignerApp.jsx:542
 msgid "You have unsaved changes. Leave without saving?"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:560
+#: src/designer/components/DesignerApp.jsx:568
 msgid "Template name"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:582
+#: src/designer/components/DesignerApp.jsx:590
 msgid "Save name"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:603
+#: src/designer/components/DesignerApp.jsx:611
 msgid "Rename template"
-msgstr ""
-
-#: src/designer/components/DesignerApp.jsx:633
-#: src/designer/components/DesignerApp.jsx:634
-msgid "Undo"
 msgstr ""
 
 #: src/designer/components/DesignerApp.jsx:641
 #: src/designer/components/DesignerApp.jsx:642
+msgid "Undo"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:649
+#: src/designer/components/DesignerApp.jsx:650
 msgid "Redo"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:651
-#: src/designer/components/DesignerApp.jsx:655
+#: src/designer/components/DesignerApp.jsx:659
+#: src/designer/components/DesignerApp.jsx:663
 msgid "Toggle rulers"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:665
+#: src/designer/components/DesignerApp.jsx:673
 msgid "Merge field display"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:672
+#: src/designer/components/DesignerApp.jsx:680
 msgid "Samples"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:679
+#: src/designer/components/DesignerApp.jsx:687
 msgid "Tokens"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:692
+#: src/designer/components/DesignerApp.jsx:700
 msgid "Zoom"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:701
+#: src/designer/components/DesignerApp.jsx:709
 msgid "Preview PDF"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:709
+#: src/designer/components/DesignerApp.jsx:717
 msgid "Switch to draft"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:720
+#: src/designer/components/DesignerApp.jsx:728
 msgid "Publish"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:733
+#: src/designer/components/DesignerApp.jsx:741
 msgid "Save"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:784
+#: src/designer/components/DesignerApp.jsx:792
 msgid "Design"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:792
+#: src/designer/components/DesignerApp.jsx:800
 msgid "Award"
 msgstr ""
 
@@ -2809,7 +2821,7 @@ msgid "Test email sent."
 msgstr ""
 
 #: src/designer/components/TriggerPanel.jsx:1030
-#: src/settings/components/EmailTab.jsx:116
+#: src/settings/components/EmailTab.jsx:135
 msgid "The test email could not be sent."
 msgstr ""
 
@@ -2823,7 +2835,7 @@ msgstr ""
 
 #: src/designer/components/TriggerPanel.jsx:1052
 #: src/designer/components/TriggerPanel.jsx:1063
-#: src/settings/components/EmailTab.jsx:335
+#: src/settings/components/EmailTab.jsx:354
 msgid "Send Test Email"
 msgstr ""
 
@@ -3226,88 +3238,88 @@ msgstr ""
 msgid "Click to copy"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:130
+#: src/settings/components/EmailTab.jsx:149
 msgid "Issuance Email"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:133
+#: src/settings/components/EmailTab.jsx:152
 msgid "Sent to the recipient when a certificate is issued, with the certificate PDF attached and a verification link in the body."
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:141
+#: src/settings/components/EmailTab.jsx:160
 msgid "Send issuance email"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:160
+#: src/settings/components/EmailTab.jsx:179
 msgid "From name"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:177
+#: src/settings/components/EmailTab.jsx:196
 msgid "From address"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:198
+#: src/settings/components/EmailTab.jsx:217
 msgid "Subject"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:218
+#: src/settings/components/EmailTab.jsx:237
 msgid "Body"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:239
+#: src/settings/components/EmailTab.jsx:258
 msgid "Available Tokens:"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:242
+#: src/settings/components/EmailTab.jsx:261
 msgid "(click to copy)"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:247
+#: src/settings/components/EmailTab.jsx:266
 msgid "The recipient's name as it appears on the certificate"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:254
+#: src/settings/components/EmailTab.jsx:273
 msgid "The certificate title (template name)"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:261
+#: src/settings/components/EmailTab.jsx:280
 msgid "The formatted credential ID, e.g. 7Q4M-K9P2-XT3A"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:268
+#: src/settings/components/EmailTab.jsx:287
 msgid "Link to verify the certificate on the public verification page"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:275
+#: src/settings/components/EmailTab.jsx:294
 msgid "The issuing site or organization name"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:282
+#: src/settings/components/EmailTab.jsx:301
 msgid "The site title from Settings → General"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:290
+#: src/settings/components/EmailTab.jsx:309
 msgid "Certificate merge fields:"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:299
+#: src/settings/components/EmailTab.jsx:318
 msgid "Any merge field from the certificate designer works here too, wrapped in double braces. The email uses the same values printed on the certificate. A few examples:"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:306
+#: src/settings/components/EmailTab.jsx:325
 msgid "The course that earned the certificate (quiz and assignment fields work the same way)"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:313
+#: src/settings/components/EmailTab.jsx:332
 msgid "The recipient's first name"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:320
+#: src/settings/components/EmailTab.jsx:339
 msgid "When the certificate expires, blank when it never does"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:341
-msgid "Sends this email to your own address with sample values. The test uses the last saved settings."
+#: src/settings/components/EmailTab.jsx:360
+msgid "Sends this email to your own address with sample values. Unsaved changes on this page are saved first."
 msgstr ""
 
 #: src/settings/components/GeneralTab.jsx:35
@@ -3338,29 +3350,29 @@ msgstr ""
 msgid "The page should contain the Certificate Verification block (or the [ppcert_verify] shortcode)."
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:206
+#: src/settings/components/SettingsPage.jsx:213
 msgid "Settings saved."
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:218
-#: src/settings/components/SettingsPage.jsx:227
+#: src/settings/components/SettingsPage.jsx:228
+#: src/settings/components/SettingsPage.jsx:236
 msgid "The settings could not be saved."
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:252
+#: src/settings/components/SettingsPage.jsx:263
 msgid "Certificate Settings"
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:258
+#: src/settings/components/SettingsPage.jsx:269
 msgid "Configure certificate defaults, appearance, email notifications, and data handling."
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:304
+#: src/settings/components/SettingsPage.jsx:315
 msgid "Saving…"
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:321
-#: src/settings/components/SettingsPage.jsx:358
+#: src/settings/components/SettingsPage.jsx:334
+#: src/settings/components/SettingsPage.jsx:371
 msgid "Save Settings"
 msgstr ""
 

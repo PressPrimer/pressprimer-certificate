@@ -267,6 +267,37 @@ class Test_PPA_Adapter extends TestCase { // phpcs:ignore Generic.Files.OneObjec
 	 *
 	 * @return void
 	 */
+	/**
+	 * The assignment block and the [pressprimer_assignment] shortcode are
+	 * recognized as embedded sources (Feature 2.0-008 embedded detection).
+	 *
+	 * @return void
+	 */
+	public function test_detect_embedded_sources() {
+		$adapter = new PressPrimer_Certificate_PPA_Adapter();
+
+		$post = (object) [
+			'ID'           => 91,
+			'post_type'    => 'page',
+			'post_content' => '<!-- wp:pressprimer-assignment/assignment {"assignmentId":5} /-->[pressprimer_assignment id="6" show_description="false"] [pressprimer_assignment_my_submissions]',
+		];
+
+		$this->assertSame(
+			[
+				[ 'type' => 'ppa_assignment', 'ref' => '5' ],
+				[ 'type' => 'ppa_assignment', 'ref' => '6' ],
+			],
+			$adapter->detect_embedded_sources( $post )
+		);
+
+		$this->assertSame( [], $adapter->detect_embedded_sources( (object) [ 'post_content' => 'Nothing embedded' ] ) );
+	}
+
+	/**
+	 * Registration and availability gating.
+	 *
+	 * @return void
+	 */
 	public function test_registration_and_availability_gating() {
 		$types = PressPrimer_Certificate_Trigger_Registry::get_types();
 

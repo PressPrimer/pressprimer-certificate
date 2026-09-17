@@ -211,6 +211,44 @@ class Test_PPQ_Adapter extends TestCase { // phpcs:ignore Generic.Files.OneObjec
 	 *
 	 * @return void
 	 */
+	/**
+	 * The quiz block (nested too) and the [pressprimer_quiz] shortcode are
+	 * recognized as embedded sources; sibling shortcodes are not
+	 * (Feature 2.0-008 embedded detection).
+	 *
+	 * @return void
+	 */
+	public function test_detect_embedded_sources() {
+		$adapter = new PressPrimer_Certificate_PPQ_Adapter();
+
+		$post = (object) [
+			'ID'           => 90,
+			'post_type'    => 'page',
+			'post_content' => '<!-- wp:paragraph --><p>Intro</p><!-- /wp:paragraph -->'
+				. '<!-- wp:pressprimer-quiz/quiz {"quizId":14} /-->'
+				. '<!-- wp:group --><!-- wp:pressprimer-quiz/quiz {"quizId":15,"showTitle":true} /--><!-- /wp:group -->'
+				. '[pressprimer_quiz id="16"] [pressprimer_quiz_dashboard] [pressprimer_quiz id=14]',
+		];
+
+		$this->assertSame(
+			[
+				[ 'type' => 'ppq_quiz', 'ref' => '14' ],
+				[ 'type' => 'ppq_quiz', 'ref' => '15' ],
+				[ 'type' => 'ppq_quiz', 'ref' => '16' ],
+			],
+			$adapter->detect_embedded_sources( $post ),
+			'Blocks first (nested included), then shortcodes, unique, in document order; the dashboard shortcode never matches.'
+		);
+
+		$this->assertSame( [], $adapter->detect_embedded_sources( (object) [ 'post_content' => 'No quiz here [pressprimer_quiz_my_attempts]' ] ) );
+		$this->assertSame( [], $adapter->detect_embedded_sources( (object) [ 'post_content' => '' ] ) );
+	}
+
+	/**
+	 * Registration and availability gating.
+	 *
+	 * @return void
+	 */
 	public function test_registration_and_availability_gating() {
 		$types = PressPrimer_Certificate_Trigger_Registry::get_types();
 

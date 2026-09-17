@@ -2082,6 +2082,66 @@ if ( ! function_exists( 'get_post' ) ) {
 	}
 }
 
+if ( ! function_exists( 'parse_blocks' ) ) {
+	/**
+	 * Stub: Flat list of every block comment in the content (self-closing
+	 * or opening), with its JSON attributes decoded. Nested blocks appear
+	 * at the top level - enough for embedded-source detection tests.
+	 *
+	 * @param string $content Post content.
+	 * @return array
+	 */
+	function parse_blocks( $content ) {
+		preg_match_all( '/<!--\s+wp:([a-z0-9-]+\/[a-z0-9-]+|[a-z0-9-]+)\s*(\{.*?\})?\s*\/?-->/s', (string) $content, $matches, PREG_SET_ORDER );
+
+		$blocks = [];
+
+		foreach ( $matches as $match ) {
+			$name  = false === strpos( $match[1], '/' ) ? 'core/' . $match[1] : $match[1];
+			$attrs = isset( $match[2] ) && '' !== $match[2] ? json_decode( $match[2], true ) : [];
+
+			$blocks[] = [
+				'blockName'    => $name,
+				'attrs'        => is_array( $attrs ) ? $attrs : [],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			];
+		}
+
+		return $blocks;
+	}
+}
+
+if ( ! function_exists( 'shortcode_parse_atts' ) ) {
+	/**
+	 * Stub: key="value" / key='value' / key=value attribute parsing.
+	 *
+	 * @param string $text Attribute text.
+	 * @return array
+	 */
+	function shortcode_parse_atts( $text ) {
+		$atts = [];
+
+		preg_match_all( '/([a-zA-Z0-9_-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s"\']+))/', (string) $text, $matches, PREG_SET_ORDER );
+
+		foreach ( $matches as $match ) {
+			$value = '';
+
+			foreach ( [ 2, 3, 4 ] as $group ) {
+				if ( isset( $match[ $group ] ) && '' !== $match[ $group ] ) {
+					$value = $match[ $group ];
+					break;
+				}
+			}
+
+			$atts[ strtolower( $match[1] ) ] = $value;
+		}
+
+		return $atts;
+	}
+}
+
 if ( ! function_exists( 'is_singular' ) ) {
 	/**
 	 * Stub: Singular main query from the test queried-object global.

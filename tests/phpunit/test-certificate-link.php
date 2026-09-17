@@ -189,6 +189,113 @@ class Test_Certificate_Link extends TestCase {
 	}
 
 	/**
+	 * A plain page carrying a PressPrimer quiz block links the learner's
+	 * certificate for that quiz with no configuration (Feature 2.0-008
+	 * embedded detection); a page with nothing embedded renders nothing.
+	 *
+	 * @return void
+	 */
+	public function test_embedded_quiz_on_a_plain_page_resolves() {
+		$GLOBALS['ppcert_test_posts'][44] = (object) [
+			'ID'           => 44,
+			'post_type'    => 'page',
+			'post_title'   => 'Ethics quiz',
+			'post_content' => '<!-- wp:paragraph --><p>Take the quiz.</p><!-- /wp:paragraph --><!-- wp:pressprimer-quiz/quiz {"quizId":14} /-->',
+		];
+		$GLOBALS['ppcert_test_posts'][45] = (object) [
+			'ID'           => 45,
+			'post_type'    => 'page',
+			'post_title'   => 'About',
+			'post_content' => '<!-- wp:paragraph --><p>Nothing embedded.</p><!-- /wp:paragraph -->',
+		];
+
+		$this->seed_certificate(
+			[
+				'source_type' => 'ppq_quiz',
+				'source_ref'  => '14',
+			]
+		);
+
+		$GLOBALS['ppcert_test_queried_object_id'] = 44;
+		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode();
+
+		$this->assertStringContainsString( 'class="ppcert-certificate-link ppcert-certificate-link--view"', $html );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 1 ) ), $html );
+
+		$GLOBALS['ppcert_test_queried_object_id'] = 45;
+		$this->assertSame( '', PressPrimer_Certificate_Certificate_Link::render_shortcode(), 'A page with nothing embedded resolves no scope.' );
+
+		// An explicit type still wins over detection.
+		$GLOBALS['ppcert_test_queried_object_id'] = 44;
+		$this->assertSame(
+			'',
+			PressPrimer_Certificate_Certificate_Link::render_shortcode( [ 'source_type' => 'learndash_course_completed' ] ),
+			'An explicit type disables detection and matches only that type.'
+		);
+	}
+
+	/**
+	 * The page's own source outranks what it embeds, and the
+	 * ppcert_certificate_link_embedded_sources filter lets integrations
+	 * add sources of their own.
+	 *
+	 * @return void
+	 */
+	public function test_embedded_sources_precedence_and_filter() {
+		// Course post 42 also embeds quiz 14; the learner holds both.
+		$GLOBALS['ppcert_test_posts'][42]->post_content = '<!-- wp:pressprimer-quiz/quiz {"quizId":14} /-->';
+
+		$this->seed_certificate(
+			[
+				'source_type' => 'ppq_quiz',
+				'source_ref'  => '14',
+			]
+		);
+		$this->seed_certificate();
+
+		$GLOBALS['ppcert_test_queried_object_id'] = 42;
+		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode();
+
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 2 ) ), $html, 'The course certificate wins on the course page.' );
+		$this->assertStringNotContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 1 ) ), $html );
+
+		// A third-party integration adds an embedded source through the filter.
+		$GLOBALS['ppcert_test_posts'][46] = (object) [
+			'ID'           => 46,
+			'post_type'    => 'page',
+			'post_title'   => 'Webinar',
+			'post_content' => '[acme_webinar id="77"]',
+		];
+
+		add_filter(
+			'ppcert_certificate_link_embedded_sources',
+			static function ( $sources, $post ) {
+				if ( false !== strpos( (string) $post->post_content, '[acme_webinar' ) ) {
+					$sources[] = [
+						'type' => 'acme_webinar',
+						'ref'  => '77',
+					];
+				}
+				$sources[] = [ 'type' => '', 'ref' => '1' ]; // Half-built entries are dropped.
+
+				return $sources;
+			},
+			10,
+			2
+		);
+
+		$this->seed_certificate(
+			[
+				'source_type' => 'acme_webinar',
+				'source_ref'  => '77',
+			]
+		);
+
+		$GLOBALS['ppcert_test_queried_object_id'] = 46;
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 3 ) ), PressPrimer_Certificate_Certificate_Link::render_shortcode() );
+	}
+
+	/**
 	 * A same-numbered object of another family never matches: the type
 	 * list comes from the post type. A quiz-type certificate with ref
 	 * 42 does not render on course post 42.
@@ -447,6 +554,7 @@ class Test_Certificate_Link extends TestCase {
 		);
 		$this->assertSame( [ $blocks, 'render_certificate_link_block' ], $registered['render_callback'] );
 		$this->assertArrayHasKey( 'ppcert_certificate_link_block_data', $GLOBALS['ppcert_test_localized'] );
+		$this->assertArrayHasKey( 'triggerTypes', $GLOBALS['ppcert_test_localized']['ppcert_certificate_link_block_data'], 'The Source type select is fed from the trigger registry.' );
 
 		$this->seed_certificate();
 		$GLOBALS['ppcert_test_queried_object_id'] = 42;

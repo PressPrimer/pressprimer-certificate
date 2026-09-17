@@ -89,22 +89,34 @@ class PressPrimer_Certificate_Certificate_Link {
 		}
 
 		$template_id = absint( $atts['template'] );
-		$scope       = self::resolve_scope( $atts, $template_id );
+		$scopes      = self::resolve_scopes( $atts, $template_id );
 
-		if ( null === $scope ) {
+		if ( empty( $scopes ) ) {
 			return '';
 		}
 
-		$certificate = PressPrimer_Certificate_Certificate::get_latest_for_recipient(
-			$user_id,
-			[
-				'template_id'  => $template_id,
-				'source_ref'   => $scope['ref'],
-				'source_types' => $scope['types'],
-			]
-		);
+		// Candidates in precedence order: the page's own source first,
+		// then anything embedded on it. The first with a live
+		// certificate wins; revoked matches are skipped, not shown.
+		$certificate = null;
 
-		if ( ! $certificate || 'revoked' === PressPrimer_Certificate_Certificate::effective_status( $certificate ) ) {
+		foreach ( $scopes as $scope ) {
+			$candidate = PressPrimer_Certificate_Certificate::get_latest_for_recipient(
+				$user_id,
+				[
+					'template_id'  => $template_id,
+					'source_ref'   => $scope['ref'],
+					'source_types' => $scope['types'],
+				]
+			);
+
+			if ( $candidate && 'revoked' !== PressPrimer_Certificate_Certificate::effective_status( $candidate ) ) {
+				$certificate = $candidate;
+				break;
+			}
+		}
+
+		if ( ! $certificate ) {
 			return '';
 		}
 
@@ -140,17 +152,25 @@ class PressPrimer_Certificate_Certificate_Link {
 	}
 
 	/**
-	 * Resolve the source scope from the attributes
+	 * Resolve the candidate source scopes from the attributes
+	 *
+	 * Each scope is [ 'ref' => string, 'types' => string[] ] with '' /
+	 * [] meaning "no source scope" (template mode). Order is precedence:
+	 * a post that is itself a source (a course, lesson, topic, or LMS
+	 * quiz) comes first, then every PressPrimer quiz or assignment
+	 * embedded in its content (Feature 2.0-008, embedded detection) -
+	 * so a plain page carrying a quiz block links that quiz's
+	 * certificate with no configuration. An explicit source_type
+	 * disables both inference and detection and matches that type
+	 * exactly. Empty means the scope cannot be resolved (render nothing).
 	 *
 	 * @since 2.0.0
 	 *
 	 * @param array $atts        Attributes (shortcode_atts output).
 	 * @param int   $template_id Sanitized template id.
-	 * @return array|null [ 'ref' => string, 'types' => string[] ] with
-	 *                    '' / [] meaning "no source scope", or null when
-	 *                    the scope cannot be resolved (renders nothing).
+	 * @return array<int, array{ref: string, types: string[]}>
 	 */
-	private static function resolve_scope( array $atts, $template_id ) {
+	private static function resolve_scopes( array $atts, $template_id ) {
 		$raw = $atts['source'];
 
 		if ( null === $raw || '' === $raw ) {
@@ -161,12 +181,14 @@ class PressPrimer_Certificate_Certificate_Link {
 
 		if ( 'none' === $raw ) {
 			if ( $template_id < 1 ) {
-				return null;
+				return [];
 			}
 
 			return [
-				'ref'   => '',
-				'types' => [],
+				[
+					'ref'   => '',
+					'types' => [],
+				],
 			];
 		}
 
@@ -177,29 +199,115 @@ class PressPrimer_Certificate_Certificate_Link {
 		}
 
 		if ( $post_id < 1 ) {
-			return null;
+			return [];
 		}
 
 		$explicit_type = sanitize_key( (string) $atts['source_type'] );
 
 		if ( '' !== $explicit_type ) {
 			return [
-				'ref'   => (string) $post_id,
-				'types' => [ $explicit_type ],
+				[
+					'ref'   => (string) $post_id,
+					'types' => [ $explicit_type ],
+				],
 			];
 		}
 
+		$scopes    = [];
 		$post_type = get_post_type( $post_id );
 		$types     = $post_type ? PressPrimer_Certificate_Trigger_Registry::get_types_for_post_type( $post_type ) : [];
 
-		if ( empty( $types ) ) {
-			return null;
+		if ( ! empty( $types ) ) {
+			$scopes[] = [
+				'ref'   => (string) $post_id,
+				'types' => $types,
+			];
 		}
 
-		return [
-			'ref'   => (string) $post_id,
-			'types' => $types,
-		];
+		foreach ( self::embedded_sources( $post_id ) as $source ) {
+			$scopes[] = [
+				'ref'   => $source['ref'],
+				'types' => [ $source['type'] ],
+			];
+		}
+
+		return $scopes;
+	}
+
+	/**
+	 * Sources embedded in a post's content
+	 *
+	 * Every bundled adapter is asked (detect_embedded_sources(); the
+	 * PressPrimer Quiz and Assignment adapters recognize their block and
+	 * shortcode), then the list runs through a filter so integrations
+	 * without an adapter class can add theirs. Adapters are constructed
+	 * for this even when their plugin is inactive - a deactivated quiz
+	 * plugin leaves the block markup in place and the learner's
+	 * certificate still exists.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $post_id Post id.
+	 * @return array<int, array{type: string, ref: string}>
+	 */
+	private static function embedded_sources( $post_id ) {
+		$post = get_post( $post_id );
+
+		if ( ! $post ) {
+			return [];
+		}
+
+		$sources = [];
+
+		if ( class_exists( 'PressPrimer_Certificate_Plugin' ) ) {
+			foreach ( PressPrimer_Certificate_Plugin::get_adapter_classes() as $adapter_class ) {
+				if ( ! class_exists( $adapter_class ) ) {
+					continue;
+				}
+
+				$adapter = new $adapter_class();
+
+				if ( ! method_exists( $adapter, 'detect_embedded_sources' ) ) {
+					continue;
+				}
+
+				foreach ( (array) $adapter->detect_embedded_sources( $post ) as $source ) {
+					$sources[] = $source;
+				}
+			}
+		}
+
+		/**
+		 * Filters the sources the Certificate Link detects in a post's content.
+		 *
+		 * Integrations without an adapter class add the quizzes,
+		 * assignments, or other sources their own blocks and shortcodes
+		 * embed, so a Certificate Link on that page links the learner's
+		 * certificate for them (Feature 2.0-008). Entries are
+		 * [ 'type' => trigger type id, 'ref' => source ref ], in
+		 * precedence order.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array   $sources Detected sources.
+		 * @param WP_Post $post    The post being rendered.
+		 */
+		$sources = apply_filters( 'ppcert_certificate_link_embedded_sources', $sources, $post );
+
+		$clean = [];
+
+		foreach ( (array) $sources as $source ) {
+			if ( ! is_array( $source ) || empty( $source['type'] ) || ! isset( $source['ref'] ) || '' === (string) $source['ref'] ) {
+				continue;
+			}
+
+			$clean[] = [
+				'type' => sanitize_key( (string) $source['type'] ),
+				'ref'  => sanitize_text_field( (string) $source['ref'] ),
+			];
+		}
+
+		return $clean;
 	}
 
 	/**

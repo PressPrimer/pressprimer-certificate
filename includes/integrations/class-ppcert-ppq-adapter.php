@@ -392,4 +392,26 @@ class PressPrimer_Certificate_PPQ_Adapter extends PressPrimer_Certificate_LMS_Ad
 
 		return $completions;
 	}
+
+	/**
+	 * PressPrimer quizzes embedded in a post: the pressprimer-quiz/quiz block and the
+	 * [pressprimer_quiz] shortcode (Feature 2.0-008 embedded detection).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param WP_Post|object $post Post object.
+	 * @return array<int, array{type: string, ref: string}>
+	 */
+	public function detect_embedded_sources( $post ): array {
+		$sources = [];
+
+		foreach ( $this->find_embedded_ids( $post, 'pressprimer-quiz/quiz', 'quizId', 'pressprimer_quiz' ) as $id ) {
+			$sources[] = [
+				'type' => self::TRIGGER_TYPE,
+				'ref'  => (string) $id,
+			];
+		}
+
+		return $sources;
+	}
 }

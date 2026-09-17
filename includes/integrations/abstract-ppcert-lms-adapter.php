@@ -332,6 +332,106 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Sources of this type embedded in a post's content
+	 *
+	 * The Certificate Link (Feature 2.0-008) asks every adapter this
+	 * when the page it sits on is not itself a source - a plain page
+	 * carrying a PressPrimer quiz block, for example. Return the sources
+	 * the adapter recognizes in document order, each as
+	 * [ 'type' => trigger type id, 'ref' => source ref ]. Concrete and
+	 * overridable - NOT part of the locked contract. The bundled LMS
+	 * adapters return [] (their sources are the posts themselves).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param WP_Post|object $post The post whose content to inspect.
+	 * @return array<int, array{type: string, ref: string}>
+	 */
+	public function detect_embedded_sources( $post ): array {
+		return [];
+	}
+
+	/**
+	 * Ids of one block or shortcode embedded in a post's content
+	 *
+	 * Shared plumbing for detect_embedded_sources(): walks the parsed
+	 * block tree (inner blocks included) for $block_name and reads its
+	 * $block_attribute, then scans the raw content for [$shortcode]
+	 * tags and reads $shortcode_attribute. Positive integers only,
+	 * unique, in document order with blocks first.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param WP_Post|object $post                Post object.
+	 * @param string         $block_name          Block name, e.g. 'pressprimer-quiz/quiz'.
+	 * @param string         $block_attribute     Block attribute holding the id.
+	 * @param string         $shortcode           Shortcode tag, e.g. 'pressprimer_quiz'.
+	 * @param string         $shortcode_attribute Shortcode attribute holding the id. Default 'id'.
+	 * @return int[]
+	 */
+	protected function find_embedded_ids( $post, string $block_name, string $block_attribute, string $shortcode, string $shortcode_attribute = 'id' ): array {
+		$content = is_object( $post ) && isset( $post->post_content ) ? (string) $post->post_content : '';
+
+		if ( '' === $content ) {
+			return [];
+		}
+
+		$ids = [];
+
+		if ( function_exists( 'parse_blocks' ) && false !== strpos( $content, '<!-- wp:' ) ) {
+			$this->collect_block_ids( parse_blocks( $content ), $block_name, $block_attribute, $ids );
+		}
+
+		if ( '' !== $shortcode && false !== strpos( $content, '[' . $shortcode ) ) {
+			// The tag must be followed by whitespace or the closing
+			// bracket, so [pressprimer_quiz] never matches
+			// [pressprimer_quiz_dashboard].
+			preg_match_all( '/\[' . preg_quote( $shortcode, '/' ) . '(\s[^\]]*)?\]/', $content, $matches );
+
+			foreach ( $matches[1] as $raw_atts ) {
+				$atts = shortcode_parse_atts( (string) $raw_atts );
+				$id   = is_array( $atts ) && isset( $atts[ $shortcode_attribute ] ) ? absint( $atts[ $shortcode_attribute ] ) : 0;
+
+				if ( $id > 0 ) {
+					$ids[] = $id;
+				}
+			}
+		}
+
+		return array_values( array_unique( $ids ) );
+	}
+
+	/**
+	 * Collect one block type's id attribute from a parsed block tree
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array  $blocks    parse_blocks() output (or inner blocks).
+	 * @param string $name      Block name.
+	 * @param string $attribute Attribute holding the id.
+	 * @param int[]  $ids       Collected ids (by reference).
+	 */
+	private function collect_block_ids( array $blocks, string $name, string $attribute, array &$ids ) {
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			if ( isset( $block['blockName'] ) && $name === $block['blockName'] ) {
+				$id = isset( $block['attrs'][ $attribute ] ) ? absint( $block['attrs'][ $attribute ] ) : 0;
+
+				if ( $id > 0 ) {
+					$ids[] = $id;
+				}
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$this->collect_block_ids( $block['innerBlocks'], $name, $attribute, $ids );
+			}
+		}
+	}
+
+	/**
 	 * Label for the "Any" source option ("Any quiz", "Any lesson in
 	 * this course")
 	 *
