@@ -682,6 +682,11 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			return $stored;
 		}
 
+		// The renderer's per-element warnings ride along (Feature 2.0-010
+		// FR-004) so the designer can say what the PDF skipped; the
+		// preview opens in a new tab, so the skip is otherwise invisible.
+		$stored['warnings'] = $renderer->get_last_render_warnings();
+
 		return new WP_REST_Response( $stored, 200 );
 	}
 

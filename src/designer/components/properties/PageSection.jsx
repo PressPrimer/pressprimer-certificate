@@ -14,6 +14,7 @@ import { isMediaAvailable, openImagePicker } from '../../media';
 import { getBoot } from '../../boot';
 import ColorField from './ColorField';
 import PropRow from './PropRow';
+import ImageFormatWarning from './ImageFormatWarning';
 
 const { Text } = Typography;
 
@@ -31,7 +32,7 @@ export default function PageSection() {
 	const { state, dispatch } = useDesignerStore();
 	const layout = state.layout;
 	const background = layout.background || {};
-	const { url } = useAttachmentUrl( background.attachment_id );
+	const { url, mime } = useAttachmentUrl( background.attachment_id );
 	const available = isMediaAvailable();
 
 	const patch = ( backgroundPatch ) => {
@@ -172,6 +173,10 @@ export default function PageSection() {
 					/>
 				) : null }
 			</PropRow>
+
+			{ background.attachment_id ? (
+				<ImageFormatWarning mime={ mime } />
+			) : null }
 		</div>
 	);
 }

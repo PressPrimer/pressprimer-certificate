@@ -19,6 +19,8 @@ const DEFAULTS = {
 	// Sample QR matrix from the PHP encoder (one encoder, ADR-004).
 	sample_qr: null,
 	touchpoints: {},
+	// null = the server sent no list (older boot data): never warn.
+	image_mimes: null,
 };
 
 /**

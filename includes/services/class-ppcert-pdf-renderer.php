@@ -747,8 +747,18 @@ class PressPrimer_Certificate_PDF_Renderer {
 		$size     = @getimagesize( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Non-image files return false; handled below.
 
 		$allowed = self::renderable_image_mimes();
+		$mime    = empty( $filetype['type'] ) ? '' : (string) $filetype['type'];
 
-		if ( false === $size || empty( $filetype['type'] ) || ! in_array( $filetype['type'], $allowed, true ) ) {
+		// An image WordPress accepted whose format this server cannot
+		// place (Feature 2.0-010 FR-004): its own slug, so the designer
+		// can name the cause. GD may not even size such a file (HEIC),
+		// so the type check comes first.
+		if ( self::is_unsupported_image_mime( $mime, $allowed ) ) {
+			$this->warn( $element_id, 'attachment_format_unsupported' );
+			return;
+		}
+
+		if ( false === $size || '' === $mime || ! in_array( $mime, $allowed, true ) ) {
 			$this->warn( $element_id, 'attachment_not_image' );
 			return;
 		}
@@ -800,6 +810,26 @@ class PressPrimer_Certificate_PDF_Renderer {
 		if ( $opacity < 1 ) {
 			$pdf->SetAlpha( 1 );
 		}
+	}
+
+	/**
+	 * Whether a MIME type is an image this server cannot render
+	 *
+	 * True for any `image/*` type outside the renderable allowlist:
+	 * WebP or AVIF without the GD decoder, HEIC, BMP, and so on. Empty
+	 * and non-image types are not "unsupported images"; they fall to the
+	 * generic not-an-image warning.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $mime    MIME type from wp_check_filetype().
+	 * @param array  $allowed Renderable allowlist.
+	 * @return bool
+	 */
+	public static function is_unsupported_image_mime( $mime, array $allowed ) {
+		$mime = (string) $mime;
+
+		return '' !== $mime && 0 === strpos( $mime, 'image/' ) && ! in_array( $mime, $allowed, true );
 	}
 
 	/**
@@ -1636,6 +1666,17 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		$info = @getimagesize( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Non-image files return false; handled below.
 
+		// Same classification as the PDF path (Feature 2.0-010 FR-004):
+		// an image in a format this server cannot render gets its own
+		// slug, whether GD could size the file or not.
+		$filetype = wp_check_filetype( $file );
+		$mime     = empty( $filetype['type'] ) ? '' : (string) $filetype['type'];
+
+		if ( self::is_unsupported_image_mime( $mime, self::renderable_image_mimes() ) ) {
+			$this->warn( $element_id, 'attachment_format_unsupported' );
+			return;
+		}
+
 		if ( false === $info ) {
 			$this->warn( $element_id, 'attachment_not_image' );
 			return;
@@ -1656,14 +1697,17 @@ class PressPrimer_Certificate_PDF_Renderer {
 				// Feature 2.0-010: only when GD has the decoder (the same
 				// allowlist as the PDF path).
 				if ( ! in_array( $info['mime'], self::renderable_image_mimes(), true ) ) {
-					$this->warn( $element_id, 'attachment_not_image' );
+					$this->warn( $element_id, 'attachment_format_unsupported' );
 					return;
 				}
 
 				$source = self::decode_modern_image( $file, $info['mime'] );
 				break;
 			default:
-				$this->warn( $element_id, 'attachment_not_image' );
+				$this->warn(
+					$element_id,
+					0 === strpos( (string) $info['mime'], 'image/' ) ? 'attachment_format_unsupported' : 'attachment_not_image'
+				);
 				return;
 		}
 

@@ -47,8 +47,10 @@ export function openImagePicker( { title, onSelect } ) {
 			attachment.url ||
 			'';
 
-		seedAttachmentUrl( attachment.id, url );
-		onSelect( { id: attachment.id, url } );
+		const mime = attachment.mime || '';
+
+		seedAttachmentUrl( attachment.id, url, mime );
+		onSelect( { id: attachment.id, url, mime } );
 	} );
 
 	frame.open();

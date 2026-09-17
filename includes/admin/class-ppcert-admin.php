@@ -607,6 +607,10 @@ class PressPrimer_Certificate_Admin {
 				'template_id'   => $template_id,
 				'list_url'      => add_query_arg( 'page', 'ppcert-templates', admin_url( 'admin.php' ) ),
 				'fonts'         => $fonts,
+				// Image formats this server can place in PDFs (Feature
+				// 2.0-010 FR-004): the image and background pickers warn
+				// when a chosen attachment falls outside the list.
+				'image_mimes'   => PressPrimer_Certificate_PDF_Renderer::renderable_image_mimes(),
 				'element_types' => PressPrimer_Certificate_Element_Types::get_types(),
 				// Appearance brand colors feed the ColorField presets.
 				'appearance'    => PressPrimer_Certificate_Appearance_Service::get(),

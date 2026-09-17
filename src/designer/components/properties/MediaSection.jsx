@@ -14,6 +14,7 @@ import { updateElementProps } from '../../schema/geometry';
 import { useAttachmentUrl } from '../../hooks/useAttachment';
 import { isMediaAvailable, openImagePicker } from '../../media';
 import PropRow from './PropRow';
+import ImageFormatWarning from './ImageFormatWarning';
 
 const { Text } = Typography;
 
@@ -27,7 +28,7 @@ const { Text } = Typography;
 export default function MediaSection( { element } ) {
 	const { state, dispatch } = useDesignerStore();
 	const p = element.props;
-	const { url } = useAttachmentUrl( p.attachment_id );
+	const { url, mime } = useAttachmentUrl( p.attachment_id );
 	const available = isMediaAvailable();
 
 	const patch = ( propsPatch ) => {
@@ -73,6 +74,8 @@ export default function MediaSection( { element } ) {
 					<img src={ url } alt="" />
 				</div>
 			) : null }
+
+			{ p.attachment_id ? <ImageFormatWarning mime={ mime } /> : null }
 
 			<PropRow label={ __( 'Media', 'pressprimer-certificate' ) }>
 				{ available ? (

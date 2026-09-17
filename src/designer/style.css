@@ -715,6 +715,17 @@
 /* Addon template-settings slot in the Award tab (2.0, E-005): same
    contract as the canvas rail - invisible until an addon mounts. */
 
+/* Image format warning (2.0, Feature 2.0-010 FR-004): sits under the
+   image, signature, and background pickers. */
+.ppcert-designer__format-warning {
+	margin: 8px 0 4px;
+}
+
+.ppcert-designer__format-warning .ant-alert-message {
+	font-size: 12px;
+	line-height: 1.4;
+}
+
 /* Locked sidebar tab (2.0, Feature 2.0-005): the label of a touchpoint
    tab carries a lock glyph before the feature name. */
 .ppcert-designer__locked-tab {

@@ -257,6 +257,113 @@ class Test_PDF_Renderer extends TestCase {
 	}
 
 	/**
+	 * An image WordPress accepts but this server cannot render records
+	 * the format warning, not the generic not-an-image one (Feature
+	 * 2.0-010 FR-004) - whether GD can size the file (BMP) or not (HEIC).
+	 *
+	 * @return void
+	 */
+	public function test_unsupported_image_format_records_its_own_warning() {
+		$dir = sys_get_temp_dir();
+
+		// A real BMP: GD sizes it, mime image/bmp, outside the allowlist.
+		$bmp   = $dir . '/ppcert-test-format.bmp';
+		$image = imagecreatetruecolor( 8, 8 );
+		imagefill( $image, 0, 0, imagecolorallocate( $image, 13, 148, 136 ) );
+		imagebmp( $image, $bmp );
+
+		// A HEIC by extension only: GD cannot size it at all.
+		$heic = $dir . '/ppcert-test-format.heic';
+		file_put_contents( $heic, 'not decodable by GD' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test fixture.
+
+		// A text file with an image-less extension: still not an image.
+		$txt = $dir . '/ppcert-test-format.txt';
+		file_put_contents( $txt, 'plain text' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test fixture.
+
+		$previous_images = isset( $GLOBALS['ppcert_test_image_attachments'] ) ? $GLOBALS['ppcert_test_image_attachments'] : null;
+		$previous_files  = isset( $GLOBALS['ppcert_test_attachment_files'] ) ? $GLOBALS['ppcert_test_attachment_files'] : null;
+
+		$GLOBALS['ppcert_test_image_attachments'] = [ 501, 502, 503 ];
+		$GLOBALS['ppcert_test_attachment_files']  = [
+			501 => $bmp,
+			502 => $heic,
+			503 => $txt,
+		];
+
+		$image_element = static function ( $id, $attachment_id ) {
+			return [
+				'id'    => $id,
+				'type'  => 'image',
+				'x'     => 10,
+				'y'     => 10,
+				'w'     => 100,
+				'h'     => 100,
+				'z'     => 1,
+				'props' => [
+					'attachment_id' => $attachment_id,
+					'fit'           => 'contain',
+					'opacity'       => 1.0,
+				],
+			];
+		};
+
+		$layout = [
+			'layout_schema_version' => 2,
+			'page'                  => [
+				'width'       => 792,
+				'height'      => 612,
+				'orientation' => 'landscape',
+			],
+			'background'            => [
+				'color'         => '#ffffff',
+				'attachment_id' => 0,
+			],
+			'elements'              => [
+				$image_element( 'img-bmp', 501 ),
+				$image_element( 'img-heic', 502 ),
+				$image_element( 'img-txt', 503 ),
+			],
+		];
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$path     = $renderer->render_pdf( $layout, [], [ 'context' => 'preview' ] );
+
+		$this->assertIsString( $path );
+
+		$by_element = [];
+
+		foreach ( $renderer->get_last_render_warnings() as $warning ) {
+			$by_element[ $warning['element'] ] = $warning['warning'];
+		}
+
+		$this->assertSame( 'attachment_format_unsupported', $by_element['img-bmp'], 'A sizable image outside the allowlist is a format problem.' );
+		$this->assertSame( 'attachment_format_unsupported', $by_element['img-heic'], 'An unsizable image WordPress calls image/* is a format problem.' );
+		$this->assertSame( 'attachment_not_image', $by_element['img-txt'], 'A non-image stays the generic warning.' );
+
+		$this->assertTrue( PressPrimer_Certificate_PDF_Renderer::is_unsupported_image_mime( 'image/bmp', [ 'image/png' ] ) );
+		$this->assertFalse( PressPrimer_Certificate_PDF_Renderer::is_unsupported_image_mime( 'image/png', [ 'image/png' ] ) );
+		$this->assertFalse( PressPrimer_Certificate_PDF_Renderer::is_unsupported_image_mime( 'application/pdf', [ 'image/png' ] ) );
+		$this->assertFalse( PressPrimer_Certificate_PDF_Renderer::is_unsupported_image_mime( '', [ 'image/png' ] ) );
+
+		unlink( $path );
+		unlink( $bmp );
+		unlink( $heic );
+		unlink( $txt );
+
+		if ( null === $previous_images ) {
+			unset( $GLOBALS['ppcert_test_image_attachments'] );
+		} else {
+			$GLOBALS['ppcert_test_image_attachments'] = $previous_images;
+		}
+
+		if ( null === $previous_files ) {
+			unset( $GLOBALS['ppcert_test_attachment_files'] );
+		} else {
+			$GLOBALS['ppcert_test_attachment_files'] = $previous_files;
+		}
+	}
+
+	/**
 	 * Long text in a small box records the truncation warning.
 	 *
 	 * @return void

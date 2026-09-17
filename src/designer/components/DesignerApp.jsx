@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { applyFilters } from '@wordpress/hooks';
 import {
@@ -239,9 +239,34 @@ export default function DesignerApp( { boot } ) {
 			state.template.id,
 			applyFilters( 'ppcert.designer.saveLayout', state.layout )
 		)
-			.then( ( { url } ) => {
+			.then( ( { url, warnings } ) => {
 				if ( tab ) {
 					tab.location = url;
+				}
+
+				// Feature 2.0-010 FR-004: the preview opens in another
+				// tab, so name what it skipped here.
+				const skipped = (
+					Array.isArray( warnings ) ? warnings : []
+				).filter(
+					( warning ) =>
+						warning &&
+						'attachment_format_unsupported' === warning.warning
+				).length;
+
+				if ( skipped > 0 ) {
+					message.warning(
+						sprintf(
+							/* translators: %d: number of images */
+							_n(
+								'%d image was skipped in the PDF because this server cannot render its format.',
+								'%d images were skipped in the PDF because this server cannot render their formats.',
+								skipped,
+								'pressprimer-certificate'
+							),
+							skipped
+						)
+					);
 				}
 			} )
 			.catch( ( error ) => {

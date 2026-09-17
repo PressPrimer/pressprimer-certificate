@@ -285,6 +285,11 @@ class Test_Templates_REST extends TestCase {
 		$url = $response->get_data()['url'];
 		$this->assertStringContainsString( 'ppcert-previews/preview-' . $template['id'] . '-', $url );
 
+		// Feature 2.0-010 FR-004: the renderer's warnings ride along so
+		// the designer can name what the PDF skipped.
+		$this->assertArrayHasKey( 'warnings', $response->get_data() );
+		$this->assertIsArray( $response->get_data()['warnings'] );
+
 		$file = $dir . '/' . basename( $url );
 		$this->assertFileExists( $file );
 
