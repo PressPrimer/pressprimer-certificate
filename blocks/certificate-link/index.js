@@ -19,6 +19,7 @@ import {
 	RadioControl,
 	SelectControl,
 	TextControl,
+	TextareaControl,
 	ToggleControl,
 	Notice,
 } from '@wordpress/components';
@@ -79,8 +80,9 @@ function templateOptions() {
 }
 
 /**
- * Registered trigger types localized at registration, for the Source
- * type select. '' means "detect from the page".
+ * Registered trigger types localized when the editor loads, for the
+ * Kind of ID select. '' means "detect from the ID" (post-type
+ * inference plus embedded detection).
  *
  * @return {Array} Select options.
  */
@@ -90,7 +92,7 @@ function sourceTypeOptions() {
 	return [
 		{
 			value: '',
-			label: __( 'Detect from the page', 'pressprimer-certificate' ),
+			label: __( 'Detect from the ID', 'pressprimer-certificate' ),
 		},
 		...types.map( ( type ) => ( {
 			value: type.id,
@@ -116,6 +118,7 @@ function Edit( { attributes, setAttributes } ) {
 		template,
 		action,
 		text,
+		message,
 		style,
 		newTab,
 	} = attributes;
@@ -123,6 +126,7 @@ function Edit( { attributes, setAttributes } ) {
 	const effectiveNewTab =
 		newTab === null || newTab === undefined ? action === 'verify' : newTab;
 	const label = text || defaultLabel( action );
+	const typeOptions = sourceTypeOptions();
 	let buttonClass = 'components-button is-primary';
 	if ( style === 'link' ) {
 		buttonClass = '';
@@ -185,6 +189,7 @@ function Edit( { attributes, setAttributes } ) {
 							) }
 							type="number"
 							min={ 1 }
+							autoComplete="off"
 							value={ sourceId || '' }
 							onChange={ ( value ) =>
 								setAttributes( {
@@ -214,18 +219,18 @@ function Edit( { attributes, setAttributes } ) {
 							} )
 						}
 					/>
-					{ source !== 'none' && (
+					{ source === 'specific' && typeOptions.length > 1 && (
 						<SelectControl
 							label={ __(
-								'Source type',
+								'Kind of ID',
 								'pressprimer-certificate'
 							) }
 							help={ __(
-								'Leave on "Detect from the page" unless the same ID could belong to more than one kind of source. Choosing a type matches only certificates earned that way.',
+								'A course, lesson, topic, or LMS quiz ID is a post ID and is detected on its own. A PressPrimer quiz or assignment ID is not a post, so choose its kind here.',
 								'pressprimer-certificate'
 							) }
 							value={ sourceType }
-							options={ sourceTypeOptions() }
+							options={ typeOptions }
 							onChange={ ( value ) =>
 								setAttributes( { sourceType: value } )
 							}
@@ -277,6 +282,21 @@ function Edit( { attributes, setAttributes } ) {
 							setAttributes( { text: value } )
 						}
 					/>
+					<TextareaControl
+						label={ __(
+							'Message shown with the button',
+							'pressprimer-certificate'
+						) }
+						help={ __(
+							'Optional. Appears in a panel above the button, and only when the button does, so it never shows to learners who have not earned the certificate yet. Example: Congratulations on completing the course! Download your certificate by clicking the button below.',
+							'pressprimer-certificate'
+						) }
+						value={ message }
+						rows={ 3 }
+						onChange={ ( value ) =>
+							setAttributes( { message: value } )
+						}
+					/>
 					<ToggleControl
 						label={ __(
 							'Show as a button',
@@ -302,6 +322,11 @@ function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
+				{ message ? (
+					<p className="ppcert-certificate-link__message">
+						{ message }
+					</p>
+				) : null }
 				{ style === 'link' ? (
 					<a
 						href="#preview"
@@ -345,6 +370,7 @@ registerBlockType( 'pressprimer-certificate/certificate-link', {
 		template: { type: 'integer', default: 0 },
 		action: { type: 'string', default: 'view' },
 		text: { type: 'string', default: '' },
+		message: { type: 'string', default: '' },
 		style: { type: 'string', default: 'button' },
 		newTab: { type: [ 'boolean', 'null' ], default: null },
 	},

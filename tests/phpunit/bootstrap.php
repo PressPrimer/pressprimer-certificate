@@ -2717,6 +2717,13 @@ if ( ! function_exists( 'wp_kses' ) ) {
 	 * @return string
 	 */
 	function wp_kses( $content, $allowed_html = [] ) {
+		// Approximation of core: tags outside the allowlist are stripped
+		// (their text stays, as in core); allowed tags keep their
+		// attributes unchecked. Enough for return-time allowlist tests.
+		if ( is_array( $allowed_html ) && ! empty( $allowed_html ) ) {
+			return strip_tags( (string) $content, array_keys( $allowed_html ) );
+		}
+
 		return (string) $content;
 	}
 }

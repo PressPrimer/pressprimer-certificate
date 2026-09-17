@@ -62,6 +62,7 @@ class PressPrimer_Certificate_Certificate_Link {
 			'template'    => 0,
 			'action'      => 'view',
 			'text'        => '',
+			'message'     => '',
 			'style'       => 'button',
 			'new_tab'     => null,
 		];
@@ -143,9 +144,23 @@ class PressPrimer_Certificate_Certificate_Link {
 
 		wp_enqueue_style( 'ppcert-frontend' );
 
-		$output = '<span class="ppcert-certificate-link ppcert-certificate-link--' . esc_attr( self::sanitize_action( $atts['action'] ) ) . '">'
-			. PressPrimer_Certificate_View_Page::render_action_links( [ $action ] )
-			. '</span>';
+		$action_slug = esc_attr( self::sanitize_action( $atts['action'] ) );
+		$link        = PressPrimer_Certificate_View_Page::render_action_links( [ $action ] );
+		$message     = self::sanitize_message( $atts['message'] );
+
+		// With a message the link becomes a small card: the text sets the
+		// context and the button follows. Because the whole thing renders
+		// only when the learner holds the certificate, the message can
+		// speak to that moment ("Congratulations on completing...")
+		// without ever stranding on a page for someone who has not.
+		if ( '' !== $message ) {
+			$output = '<div class="ppcert-certificate-link ppcert-certificate-link--card ppcert-certificate-link--' . $action_slug . '">'
+				. '<p class="ppcert-certificate-link__message">' . $message . '</p>'
+				. '<span class="ppcert-certificate-link__action">' . $link . '</span>'
+				. '</div>';
+		} else {
+			$output = '<span class="ppcert-certificate-link ppcert-certificate-link--' . $action_slug . '">' . $link . '</span>';
+		}
 
 		// Return-time allowlist pass, like every shortcode/block return.
 		return wp_kses( $output, self::allowed_output_tags() );
@@ -395,13 +410,49 @@ class PressPrimer_Certificate_Certificate_Link {
 	 */
 	private static function allowed_output_tags() {
 		return [
-			'span' => [ 'class' => true ],
-			'a'    => [
+			'div'    => [ 'class' => true ],
+			'p'      => [ 'class' => true ],
+			'span'   => [ 'class' => true ],
+			'strong' => [],
+			'em'     => [],
+			'b'      => [],
+			'i'      => [],
+			'br'     => [],
+			'a'      => [
 				'href'   => true,
 				'class'  => true,
 				'target' => true,
 				'rel'    => true,
 			],
 		];
+	}
+
+	/**
+	 * Sanitize the optional message shown with the link
+	 *
+	 * Plain text with light inline emphasis (strong, em, b, i, br);
+	 * anything else is stripped. Line breaks from the block's textarea
+	 * become <br>. Empty after cleaning means no card.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param mixed $raw Attribute value.
+	 * @return string Clean message markup, or ''.
+	 */
+	private static function sanitize_message( $raw ) {
+		$clean = trim(
+			wp_kses(
+				(string) $raw,
+				[
+					'strong' => [],
+					'em'     => [],
+					'b'      => [],
+					'i'      => [],
+					'br'     => [],
+				]
+			)
+		);
+
+		return '' === $clean ? '' : nl2br( $clean );
 	}
 }

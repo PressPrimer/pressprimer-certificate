@@ -240,6 +240,28 @@ class PressPrimer_Certificate_Blocks {
 	}
 
 	/**
+	 * Localize the Certificate Link editor data
+	 *
+	 * Runs on enqueue_block_editor_assets so the trigger registry is
+	 * complete (integrations register on ppcert_loaded, after block
+	 * registration). Published templates feed the Template select; the
+	 * trigger types feed the Source type select (the block's source_type
+	 * is a trigger type id).
+	 *
+	 * @since 2.0.0
+	 */
+	public function localize_certificate_link_block() {
+		wp_localize_script(
+			'ppcert-certificate-link-block-editor',
+			'ppcert_certificate_link_block_data',
+			[
+				'templates'    => function_exists( 'ppcert_get_templates' ) ? ppcert_get_templates( [ 'status' => 'published' ] ) : [],
+				'triggerTypes' => self::certificate_link_trigger_types(),
+			]
+		);
+	}
+
+	/**
 	 * Register the Certificate Link block
 	 *
 	 * The [ppcert_certificate_link] equivalent (Feature 2.0-008). Every
@@ -269,17 +291,11 @@ class PressPrimer_Certificate_Blocks {
 			true
 		);
 
-		wp_localize_script(
-			'ppcert-certificate-link-block-editor',
-			'ppcert_certificate_link_block_data',
-			[
-				'templates'    => function_exists( 'ppcert_get_templates' ) ? ppcert_get_templates( [ 'status' => 'published' ] ) : [],
-				// The Source type select: every registered trigger type
-				// that has sources, labeled by integration (the block's
-				// source_type is a trigger type id).
-				'triggerTypes' => self::certificate_link_trigger_types(),
-			]
-		);
+		// Editor data is localized when the editor loads, not here:
+		// blocks register before ppcert_loaded fires, so at this point
+		// no integration has attached its trigger types yet and the
+		// Source type list would always be empty.
+		add_action( 'enqueue_block_editor_assets', [ $this, 'localize_certificate_link_block' ] );
 
 		register_block_type(
 			'pressprimer-certificate/certificate-link',
@@ -315,6 +331,10 @@ class PressPrimer_Certificate_Blocks {
 						'default' => 'view',
 					],
 					'text'       => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'message'    => [
 						'type'    => 'string',
 						'default' => '',
 					],
@@ -362,6 +382,7 @@ class PressPrimer_Certificate_Blocks {
 			'template'    => isset( $attributes['template'] ) ? absint( $attributes['template'] ) : 0,
 			'action'      => isset( $attributes['action'] ) ? (string) $attributes['action'] : 'view',
 			'text'        => isset( $attributes['text'] ) ? (string) $attributes['text'] : '',
+			'message'     => isset( $attributes['message'] ) ? (string) $attributes['message'] : '',
 			'style'       => isset( $attributes['style'] ) ? (string) $attributes['style'] : 'button',
 			'new_tab'     => array_key_exists( 'newTab', $attributes ) && null !== $attributes['newTab']
 				? ( $attributes['newTab'] ? '1' : '0' )

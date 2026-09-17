@@ -377,6 +377,27 @@
 	display: inline-block;
 }
 
+/* With a message the link is a small card (2.0-008): the message sets
+   the context, the button follows. Same panel treatment as the view
+   page's details grid. */
+.ppcert-certificate-link--card {
+	display: block;
+	background: var(--ppcert-background-gray);
+	border: 1px solid var(--ppcert-border-light);
+	border-radius: var(--ppcert-radius-lg);
+	padding: var(--ppcert-space-lg);
+	margin: 0 0 var(--ppcert-space-lg);
+}
+
+.ppcert-certificate-link__message {
+	margin: 0 0 var(--ppcert-space-md);
+	line-height: 1.5;
+}
+
+.ppcert-certificate-link__action {
+	display: inline-block;
+}
+
 /* ------------------------------------------------------------------ *
  * My Certificates list ([ppcert_my_certificates] + block)
  * ------------------------------------------------------------------ */

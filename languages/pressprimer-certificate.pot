@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-17T20:14:01+00:00\n"
+"POT-Creation-Date: 2026-09-17T21:00:12+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -381,7 +381,7 @@ msgid "Recipient"
 msgstr ""
 
 #: includes/admin/class-ppcert-certificates-list-table.php:65
-#: blocks/certificate-link/index.js:197
+#: blocks/certificate-link/index.js:202
 #: src/issue/index.js:184
 msgid "Template"
 msgstr ""
@@ -390,7 +390,7 @@ msgstr ""
 #: includes/integrations/abstract-ppcert-lms-adapter.php:219
 #: includes/services/class-ppcert-merge-field-registry.php:170
 #: includes/utilities/class-ppcert-privacy.php:117
-#: blocks/certificate-link/index.js:143
+#: blocks/certificate-link/index.js:147
 #: src/designer/components/ElementPalette.jsx:251
 #: src/designer/components/TriggerPanel.jsx:883
 #: src/designer/components/TriggerPanel.jsx:1239
@@ -1183,13 +1183,13 @@ msgstr ""
 msgid "Lists the logged-in visitor's earned certificates with verification and download links."
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:288
-#: blocks/certificate-link/index.js:330
+#: includes/blocks/class-ppcert-blocks.php:304
+#: blocks/certificate-link/index.js:355
 msgid "Certificate Link"
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:289
-#: blocks/certificate-link/index.js:331
+#: includes/blocks/class-ppcert-blocks.php:305
+#: blocks/certificate-link/index.js:356
 msgid "A button to the logged-in learner's certificate for this course, lesson, quiz, or assignment. Shows only once it is earned."
 msgstr ""
 
@@ -1199,18 +1199,18 @@ msgstr ""
 msgid "%1$s requires PressPrimer Certificate %2$s or newer and has been paused. Please update PressPrimer Certificate."
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:333
-#: blocks/certificate-link/index.js:57
+#: includes/frontend/class-ppcert-certificate-link.php:348
+#: blocks/certificate-link/index.js:58
 msgid "View your certificate"
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:334
-#: blocks/certificate-link/index.js:52
+#: includes/frontend/class-ppcert-certificate-link.php:349
+#: blocks/certificate-link/index.js:53
 msgid "Download your certificate"
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:335
-#: blocks/certificate-link/index.js:55
+#: includes/frontend/class-ppcert-certificate-link.php:350
+#: blocks/certificate-link/index.js:56
 msgid "Verify your certificate"
 msgstr ""
 
@@ -1997,96 +1997,104 @@ msgstr ""
 msgid "PressPrimer Certificate requires WordPress %1$s or higher and PHP %2$s or higher. The plugin is inactive until the server meets these requirements."
 msgstr ""
 
-#: blocks/certificate-link/index.js:72
+#: blocks/certificate-link/index.js:73
 msgid "Any template"
 msgstr ""
 
-#: blocks/certificate-link/index.js:93
-msgid "Detect from the page"
+#: blocks/certificate-link/index.js:95
+msgid "Detect from the ID"
 msgstr ""
 
-#: blocks/certificate-link/index.js:137
+#: blocks/certificate-link/index.js:141
 msgid "Which certificate"
 msgstr ""
 
-#: blocks/certificate-link/index.js:144
+#: blocks/certificate-link/index.js:148
 msgid "What the certificate was earned for. \"This page\" covers a course, lesson, topic, or quiz page, and any PressPrimer quiz or assignment placed on the page with its block or shortcode."
 msgstr ""
 
-#: blocks/certificate-link/index.js:151
+#: blocks/certificate-link/index.js:155
 msgid "This page"
 msgstr ""
 
-#: blocks/certificate-link/index.js:158
+#: blocks/certificate-link/index.js:162
 msgid "A specific quiz, assignment, or post"
 msgstr ""
 
-#: blocks/certificate-link/index.js:165
+#: blocks/certificate-link/index.js:169
 msgid "Not scoped to a page (use the template)"
 msgstr ""
 
-#: blocks/certificate-link/index.js:178
+#: blocks/certificate-link/index.js:182
 msgid "Quiz, assignment, or post ID"
 msgstr ""
 
-#: blocks/certificate-link/index.js:182
+#: blocks/certificate-link/index.js:186
 msgid "For a PressPrimer quiz or assignment, the ID shown in its list in the admin. For a course, lesson, topic, or LMS quiz, the post ID."
 msgstr ""
 
-#: blocks/certificate-link/index.js:200
+#: blocks/certificate-link/index.js:205
 msgid "Required when not scoped to a post."
 msgstr ""
 
-#: blocks/certificate-link/index.js:204
+#: blocks/certificate-link/index.js:209
 msgid "Optional. Narrows to certificates from one template."
 msgstr ""
 
-#: blocks/certificate-link/index.js:219
-msgid "Source type"
+#: blocks/certificate-link/index.js:224
+msgid "Kind of ID"
 msgstr ""
 
-#: blocks/certificate-link/index.js:223
-msgid "Leave on \"Detect from the page\" unless the same ID could belong to more than one kind of source. Choosing a type matches only certificates earned that way."
+#: blocks/certificate-link/index.js:228
+msgid "A course, lesson, topic, or LMS quiz ID is a post ID and is detected on its own. A PressPrimer quiz or assignment ID is not a post, so choose its kind here."
 msgstr ""
 
-#: blocks/certificate-link/index.js:235
+#: blocks/certificate-link/index.js:240
 msgid "When the learner has earned this certificate more than once, the newest one is linked."
 msgstr ""
 
-#: blocks/certificate-link/index.js:241
+#: blocks/certificate-link/index.js:246
 msgid "Link"
 msgstr ""
 
-#: blocks/certificate-link/index.js:243
+#: blocks/certificate-link/index.js:248
 msgid "Action"
 msgstr ""
 
-#: blocks/certificate-link/index.js:247
+#: blocks/certificate-link/index.js:252
 msgid "Open the certificate page"
 msgstr ""
 
-#: blocks/certificate-link/index.js:254
+#: blocks/certificate-link/index.js:259
 #: src/onboarding/components/CertificateModal.jsx:140
 msgid "Download the PDF"
 msgstr ""
 
-#: blocks/certificate-link/index.js:261
+#: blocks/certificate-link/index.js:266
 msgid "Open the verification page"
 msgstr ""
 
-#: blocks/certificate-link/index.js:273
+#: blocks/certificate-link/index.js:278
 msgid "Label"
 msgstr ""
 
-#: blocks/certificate-link/index.js:281
+#: blocks/certificate-link/index.js:286
+msgid "Message shown with the button"
+msgstr ""
+
+#: blocks/certificate-link/index.js:290
+msgid "Optional. Appears in a panel above the button, and only when the button does, so it never shows to learners who have not earned the certificate yet. Example: Congratulations on completing the course! Download your certificate by clicking the button below."
+msgstr ""
+
+#: blocks/certificate-link/index.js:301
 msgid "Show as a button"
 msgstr ""
 
-#: blocks/certificate-link/index.js:293
+#: blocks/certificate-link/index.js:313
 msgid "Open in a new tab"
 msgstr ""
 
-#: blocks/certificate-link/index.js:318
+#: blocks/certificate-link/index.js:343
 msgid "Shows only to learners who have earned this certificate. Everyone else sees nothing."
 msgstr ""
 

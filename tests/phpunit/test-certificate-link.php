@@ -497,6 +497,44 @@ class Test_Certificate_Link extends TestCase {
 	}
 
 	/**
+	 * An optional message renders the link as a card, with the text
+	 * above the button; it never renders without the button, and it
+	 * keeps only light inline emphasis.
+	 *
+	 * @return void
+	 */
+	public function test_message_renders_a_card_only_with_the_link() {
+		$this->seed_certificate();
+		$GLOBALS['ppcert_test_queried_object_id'] = 42;
+
+		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode(
+			[
+				'message' => "Congratulations on <strong>completing</strong> the course!\nDownload it below. <script>alert(1)</script><a href=\"x\">no links</a>",
+				'action'  => 'download',
+			]
+		);
+
+		$this->assertStringStartsWith( '<div class="ppcert-certificate-link ppcert-certificate-link--card ppcert-certificate-link--download">', $html );
+		$this->assertStringContainsString( '<p class="ppcert-certificate-link__message">Congratulations on <strong>completing</strong> the course!<br />', $html );
+		$this->assertStringContainsString( 'Download it below. alert(1)no links</p>', $html, 'Scripts and links are stripped to their text.' );
+		$this->assertStringContainsString( '<span class="ppcert-certificate-link__action"><a', $html );
+		$this->assertStringContainsString( 'Download your certificate', $html );
+
+		// No message: the bare inline span, as before.
+		$plain = PressPrimer_Certificate_Certificate_Link::render_shortcode();
+		$this->assertStringStartsWith( '<span class="ppcert-certificate-link ppcert-certificate-link--view">', $plain );
+		$this->assertStringNotContainsString( 'ppcert-certificate-link--card', $plain );
+
+		// A message alone never shows: the quiz page has no certificate.
+		$GLOBALS['ppcert_test_queried_object_id'] = 43;
+		$this->assertSame( '', PressPrimer_Certificate_Certificate_Link::render_shortcode( [ 'message' => 'Congratulations!' ] ) );
+
+		// Whitespace-only messages count as none.
+		$GLOBALS['ppcert_test_queried_object_id'] = 42;
+		$this->assertStringNotContainsString( 'ppcert-certificate-link--card', PressPrimer_Certificate_Certificate_Link::render_shortcode( [ 'message' => "  \n " ] ) );
+	}
+
+	/**
 	 * The action filter can replace the entry or suppress the link.
 	 *
 	 * @return void
@@ -548,13 +586,48 @@ class Test_Certificate_Link extends TestCase {
 
 		$registered = $GLOBALS['ppcert_test_blocks']['pressprimer-certificate/certificate-link'];
 		$this->assertSame(
-			[ 'source', 'sourceId', 'sourceType', 'template', 'action', 'text', 'style', 'newTab' ],
+			[ 'source', 'sourceId', 'sourceType', 'template', 'action', 'text', 'message', 'style', 'newTab' ],
 			array_keys( $registered['attributes'] ),
 			'Every shortcode attribute has a block attribute'
 		);
 		$this->assertSame( [ $blocks, 'render_certificate_link_block' ], $registered['render_callback'] );
+		// Editor data is localized when the editor loads, not at
+		// registration: integrations register their trigger types on
+		// ppcert_loaded, after blocks register, so a type attached now
+		// must still reach the editor.
+		$this->assertArrayNotHasKey( 'ppcert_certificate_link_block_data', $GLOBALS['ppcert_test_localized'], 'Nothing is localized at registration.' );
+
+		add_filter(
+			'ppcert_register_trigger_types',
+			static function ( $types ) {
+				$types[] = [
+					'id'          => 'ppq_quiz',
+					'label'       => 'Quiz passed',
+					'integration' => 'PressPrimer Quiz',
+					'short_label' => 'Quiz passed',
+					'has_sources' => true,
+				];
+				$types[] = [
+					'id'          => 'test_credits',
+					'label'       => 'Credits earned',
+					'has_sources' => false,
+				];
+				return $types;
+			}
+		);
+
+		do_action( 'enqueue_block_editor_assets' );
+
 		$this->assertArrayHasKey( 'ppcert_certificate_link_block_data', $GLOBALS['ppcert_test_localized'] );
-		$this->assertArrayHasKey( 'triggerTypes', $GLOBALS['ppcert_test_localized']['ppcert_certificate_link_block_data'], 'The Source type select is fed from the trigger registry.' );
+		$data = $GLOBALS['ppcert_test_localized']['ppcert_certificate_link_block_data'];
+		$this->assertArrayHasKey( 'templates', $data );
+
+		$type_ids = array_column( $data['triggerTypes'], 'id' );
+		$this->assertContains( 'ppq_quiz', $type_ids, 'A type registered after block registration reaches the editor.' );
+		$this->assertNotContains( 'test_credits', $type_ids, 'Value-only types have no source to link and are left out.' );
+
+		$ppq = $data['triggerTypes'][ array_search( 'ppq_quiz', $type_ids, true ) ];
+		$this->assertSame( 'PressPrimer Quiz · Quiz passed', $ppq['label'] );
 
 		$this->seed_certificate();
 		$GLOBALS['ppcert_test_queried_object_id'] = 42;
