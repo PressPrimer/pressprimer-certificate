@@ -760,8 +760,14 @@
 	padding: 4px 0 24px;
 }
 
+/* The addon sections inside carry the free section margins (16px top,
+   12px bottom, like .ppcert-designer__validity), so the slot itself
+   adds none; a flex column with the panel's 8px gap keeps the rhythm
+   between tenants identical to the free sections above it. */
 .ppcert-designer__award-extension {
-	margin-top: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .ppcert-designer__award-extension:empty {

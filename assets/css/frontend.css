@@ -639,3 +639,38 @@
 [dir="rtl"] .ppcert-verify__details {
 	direction: rtl;
 }
+
+/* Themes must not underline our buttons and chips. Hello Elementor's
+ * `.page-content a { text-decoration: underline }` and the "Twenty"
+ * themes' `.entry-content a:hover` outrank a lone class, so this is
+ * the one place the sheet uses !important: text-decoration only, on
+ * the plugin's own button and chip classes, in every link state (an
+ * anchor always matches :link or :visited; <button> elements are not
+ * subject to theme link rules). */
+.ppcert-button-primary:link,
+.ppcert-button-primary:visited,
+.ppcert-button-primary:hover,
+.ppcert-button-primary:focus,
+.ppcert-button-primary:active,
+.ppcert-button-secondary:link,
+.ppcert-button-secondary:visited,
+.ppcert-button-secondary:hover,
+.ppcert-button-secondary:focus,
+.ppcert-button-secondary:active,
+.ppcert-view__download:link,
+.ppcert-view__download:visited,
+.ppcert-view__download:hover,
+.ppcert-view__download:focus,
+.ppcert-view__download:active,
+.ppcert-view__verify:link,
+.ppcert-view__verify:visited,
+.ppcert-view__verify:hover,
+.ppcert-view__verify:focus,
+.ppcert-view__verify:active,
+.ppcert-my-certificates__chip:link,
+.ppcert-my-certificates__chip:visited,
+.ppcert-my-certificates__chip:hover,
+.ppcert-my-certificates__chip:focus,
+.ppcert-my-certificates__chip:active {
+	text-decoration: none !important;
+}

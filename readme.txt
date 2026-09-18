@@ -293,6 +293,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Improved: Designer sidebar labels and help icons render at higher contrast.
 * Improved: Send Test Email on the Email settings tab saves your unsaved changes first, so the test always reflects what is on the page.
 * Fixed: The verification form's Verify button uses the same button style as the rest of the plugin, and the credential ID field is sized for a credential ID instead of stretching across the page.
+* Fixed: Themes can no longer underline the plugin's buttons and filter chips (Hello Elementor and the default themes did).
 * Fixed: The Valid For controls in the designer's Award tab keep the number readable while its up and down controls are showing.
 * Fixed: Designer extensions such as the Educator page rail appear on a newly created template without reloading the page.
 * Fixed: Add-on menu items now follow Certificates instead of separating it from Templates; Settings stays after them.
