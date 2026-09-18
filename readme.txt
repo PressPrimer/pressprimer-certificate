@@ -321,7 +321,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 == Upgrade Notice ==
 
 = 2.0.0 =
-Certificate search and filters, test award emails, Geometric starter templates, a Certificate Link block, PDF download on the verification page, multi-page rendering, a public developer API, and the new Educator, School, and Enterprise premium tiers. Existing certificates and templates are unchanged.
+Certificate search and filters, test award emails, Geometric starter templates, a Certificate Link block, PDF download on the verification page, multi-page rendering, a developer API, and the Educator, School, and Enterprise premium tiers. Existing certificates and templates are unchanged.
 
 = 1.1.0 =
 Merge fields inside text, "Any" award triggers, certificate names from merge fields, clickable PDF credentials, designer alignment tools, and email merge fields. Existing certificates and templates are unchanged.
