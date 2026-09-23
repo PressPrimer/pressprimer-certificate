@@ -328,7 +328,7 @@ class PressPrimer_Certificate_Blocks {
 					],
 					'action'     => [
 						'type'    => 'string',
-						'default' => 'view',
+						'default' => 'download',
 					],
 					'text'       => [
 						'type'    => 'string',
@@ -380,7 +380,7 @@ class PressPrimer_Certificate_Blocks {
 			'source'      => $source,
 			'source_type' => isset( $attributes['sourceType'] ) ? (string) $attributes['sourceType'] : '',
 			'template'    => isset( $attributes['template'] ) ? absint( $attributes['template'] ) : 0,
-			'action'      => isset( $attributes['action'] ) ? (string) $attributes['action'] : 'view',
+			'action'      => isset( $attributes['action'] ) ? (string) $attributes['action'] : 'download',
 			'text'        => isset( $attributes['text'] ) ? (string) $attributes['text'] : '',
 			'message'     => isset( $attributes['message'] ) ? (string) $attributes['message'] : '',
 			'style'       => isset( $attributes['style'] ) ? (string) $attributes['style'] : 'button',

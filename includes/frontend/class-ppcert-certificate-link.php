@@ -60,7 +60,7 @@ class PressPrimer_Certificate_Certificate_Link {
 			'source'      => null,
 			'source_type' => '',
 			'template'    => 0,
-			'action'      => 'view',
+			'action'      => 'download',
 			'text'        => '',
 			'message'     => '',
 			'style'       => 'button',
@@ -377,12 +377,12 @@ class PressPrimer_Certificate_Certificate_Link {
 	 * @since 2.0.0
 	 *
 	 * @param mixed $value Raw attribute.
-	 * @return string view | download | verify.
+	 * @return string download (the default since 2026-09-23) | view | verify.
 	 */
 	private static function sanitize_action( $value ) {
 		$action = sanitize_key( (string) $value );
 
-		return in_array( $action, [ 'view', 'download', 'verify' ], true ) ? $action : 'view';
+		return in_array( $action, [ 'view', 'download', 'verify' ], true ) ? $action : 'download';
 	}
 
 	/**

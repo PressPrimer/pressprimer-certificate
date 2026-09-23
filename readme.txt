@@ -67,7 +67,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * The QR code and credential ID on issued PDFs are clickable, so an emailed certificate verifies in one click
 * A shareable certificate view page with PDF download
 * Download PDF on the verification page for valid and expired certificates, so a verifier can keep a copy
-* Certificate Link block and shortcode: one button on a course, lesson, topic, or quiz page that opens the logged-in learner's own certificate for that item, hidden until it is earned
+* Certificate Link block and shortcode: one button on a course, lesson, topic, or quiz page that downloads the logged-in learner's own certificate for that item (or opens its page, your choice), hidden until it is earned
 * My Certificates list (shortcode and block) so logged-in learners can see, verify, and download everything they have earned, with status filters and sorting by date, name, or upcoming expiry
 * PDFs are protected against editing: Acrobat and other viewers refuse to modify the text, while printing and copying stay available
 
@@ -239,7 +239,7 @@ Three ways. Each certificate is emailed as a PDF the moment it is issued. Learne
 
 = Can I put a link to a learner's certificate on the course page itself? =
 
-Yes. Add the Certificate Link block (or the `[ppcert_certificate_link]` shortcode) to a course, lesson, topic, or quiz page, or to any page where you have placed a PressPrimer quiz or assignment with its block or shortcode. Each logged-in learner sees one button that opens their own certificate for that item, and nothing at all until they have earned it. If the learner has earned it more than once, the newest certificate is linked. Add a message in the block's settings and it appears in a panel with the button, only when the button shows, so you can congratulate the learner and explain the certificate without that text stranding on the page for everyone else. Point the block at a specific quiz, assignment, or post by ID, or at a template, when the page itself is not the source.
+Yes. Add the Certificate Link block (or the `[ppcert_certificate_link]` shortcode) to a course, lesson, topic, or quiz page, or to any page where you have placed a PressPrimer quiz or assignment with its block or shortcode. Each logged-in learner sees one button that downloads their own certificate for that item (you can point it at the certificate page or the verification page instead), and nothing at all until they have earned it. If the learner has earned it more than once, the newest certificate is linked. Add a message in the block's settings and it appears in a panel with the button, only when the button shows, so you can congratulate the learner and explain the certificate without that text stranding on the page for everyone else. Point the block at a specific quiz, assignment, or post by ID, or at a template, when the page itself is not the source.
 
 = Can a verifier download the PDF from the verification page? =
 
@@ -281,7 +281,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Added: Four Geometric starter templates - a modern design family drawn from your brand colors, in portrait and landscape for both A4 and Letter sizes.
 * Added: Multi-page certificate rendering. Certificates designed with multiple pages (created with the Educator addon) download, email, and verify as complete multi-page PDFs.
 * Added: An Upgrade page under the Certificates menu comparing the free plugin with the new Educator, School, and Enterprise tiers.
-* Added: Certificate Link block and shortcode. Drop one button on a course, lesson, topic, or quiz page, or on any page that contains a PressPrimer quiz or assignment, and each logged-in learner sees a link to their own certificate for that item, hidden until they earn it. Point it at a specific quiz, assignment, post, or template when the page itself is not the source, and add an optional message that appears with the button, such as congratulations and what the certificate is for.
+* Added: Certificate Link block and shortcode. Drop one button on a course, lesson, topic, or quiz page, or on any page that contains a PressPrimer quiz or assignment, and each logged-in learner sees a button that downloads their own certificate for that item (or opens its page, your choice), hidden until they earn it. Point it at a specific quiz, assignment, post, or template when the page itself is not the source, and add an optional message that appears with the button, such as congratulations and what the certificate is for.
 * Added: Download PDF button on the public verification page for valid and expired certificates, so a verifier can keep a copy without an account.
 * Added: WebP and AVIF images in certificate designs render in PDFs and previews on servers whose image library supports them. When a server cannot render a chosen image's format, the designer says so under the image picker and Preview PDF reports the skipped image.
 * Added: Short upgrade notes for administrators on the Settings Email tab and in the designer, pointing to the Educator and School features that would appear in those spots. They disappear once the addon is active and are never shown to other users.

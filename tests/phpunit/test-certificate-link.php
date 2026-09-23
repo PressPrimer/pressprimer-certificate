@@ -162,7 +162,8 @@ class Test_Certificate_Link extends TestCase {
 
 	/**
 	 * The default scope is the current singular post: a matching
-	 * certificate renders the view-page button; nothing matching
+	 * certificate renders the download button (the default action);
+	 * nothing matching
 	 * renders nothing; outside a singular query nothing renders.
 	 *
 	 * @return void
@@ -173,11 +174,11 @@ class Test_Certificate_Link extends TestCase {
 		$GLOBALS['ppcert_test_queried_object_id'] = 42;
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode();
 
-		$this->assertStringContainsString( 'class="ppcert-certificate-link ppcert-certificate-link--view"', $html );
+		$this->assertStringContainsString( 'class="ppcert-certificate-link ppcert-certificate-link--download"', $html );
 		$this->assertStringContainsString( 'class="ppcert-button-primary"', $html );
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 1 ) ), $html );
-		$this->assertStringContainsString( 'View your certificate', $html );
-		$this->assertStringNotContainsString( 'target=', $html, 'View opens in the same tab by default' );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 1 ) ), $html );
+		$this->assertStringContainsString( 'Download your certificate', $html );
+		$this->assertStringNotContainsString( 'target=', $html, 'Download opens in the same tab by default' );
 
 		// The quiz page: the certificate belongs to the course, not the quiz.
 		$GLOBALS['ppcert_test_queried_object_id'] = 43;
@@ -219,8 +220,8 @@ class Test_Certificate_Link extends TestCase {
 		$GLOBALS['ppcert_test_queried_object_id'] = 44;
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode();
 
-		$this->assertStringContainsString( 'class="ppcert-certificate-link ppcert-certificate-link--view"', $html );
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 1 ) ), $html );
+		$this->assertStringContainsString( 'class="ppcert-certificate-link ppcert-certificate-link--download"', $html );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 1 ) ), $html );
 
 		$GLOBALS['ppcert_test_queried_object_id'] = 45;
 		$this->assertSame( '', PressPrimer_Certificate_Certificate_Link::render_shortcode(), 'A page with nothing embedded resolves no scope.' );
@@ -256,8 +257,8 @@ class Test_Certificate_Link extends TestCase {
 		$GLOBALS['ppcert_test_queried_object_id'] = 42;
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode();
 
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 2 ) ), $html, 'The course certificate wins on the course page.' );
-		$this->assertStringNotContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 1 ) ), $html );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 2 ) ), $html, 'The course certificate wins on the course page.' );
+		$this->assertStringNotContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 1 ) ), $html );
 
 		// A third-party integration adds an embedded source through the filter.
 		$GLOBALS['ppcert_test_posts'][46] = (object) [
@@ -292,7 +293,7 @@ class Test_Certificate_Link extends TestCase {
 		);
 
 		$GLOBALS['ppcert_test_queried_object_id'] = 46;
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 3 ) ), PressPrimer_Certificate_Certificate_Link::render_shortcode() );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 3 ) ), PressPrimer_Certificate_Certificate_Link::render_shortcode() );
 	}
 
 	/**
@@ -335,7 +336,7 @@ class Test_Certificate_Link extends TestCase {
 		);
 
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode( [ 'source' => '42' ] );
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 1 ) ), $html );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 1 ) ), $html );
 
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode(
 			[
@@ -343,7 +344,7 @@ class Test_Certificate_Link extends TestCase {
 				'source_type' => 'ppq_quiz',
 			]
 		);
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 92 ) ), $html );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 92 ) ), $html );
 
 		// Ref 9 without a type: post 9 does not exist, so no inference.
 		$this->assertSame( '', PressPrimer_Certificate_Certificate_Link::render_shortcode( [ 'source' => '9' ] ) );
@@ -367,7 +368,7 @@ class Test_Certificate_Link extends TestCase {
 		$GLOBALS['ppcert_test_queried_object_id'] = 0;
 
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode( [ 'template' => '1' ] );
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 93 ) ), $html, 'Template alone: no source scope' );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 93 ) ), $html, 'Template alone: no source scope' );
 
 		$this->assertSame(
 			'',
@@ -414,7 +415,7 @@ class Test_Certificate_Link extends TestCase {
 			]
 		);
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode();
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 94 ) ), $html, 'Expired still renders' );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 94 ) ), $html, 'Expired still renders' );
 
 		$this->seed_certificate(
 			[
@@ -430,7 +431,7 @@ class Test_Certificate_Link extends TestCase {
 			]
 		);
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode();
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 95 ) ), $html, 'Newest non-revoked wins over an older one and a newer revoked one' );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 95 ) ), $html, 'Newest non-revoked wins over an older one and a newer revoked one' );
 	}
 
 	/**
@@ -472,7 +473,7 @@ class Test_Certificate_Link extends TestCase {
 		$this->assertStringContainsString( 'target="_blank"', $custom );
 
 		$unknown = PressPrimer_Certificate_Certificate_Link::render_shortcode( [ 'action' => 'delete' ] );
-		$this->assertStringContainsString( 'ppcert-certificate-link--view', $unknown, 'Unknown actions fall back to view' );
+		$this->assertStringContainsString( 'ppcert-certificate-link--download', $unknown, 'Unknown actions fall back to the download default' );
 	}
 
 	/**
@@ -522,7 +523,7 @@ class Test_Certificate_Link extends TestCase {
 
 		// No message: the bare inline span, as before.
 		$plain = PressPrimer_Certificate_Certificate_Link::render_shortcode();
-		$this->assertStringStartsWith( '<span class="ppcert-certificate-link ppcert-certificate-link--view">', $plain );
+		$this->assertStringStartsWith( '<span class="ppcert-certificate-link ppcert-certificate-link--download">', $plain );
 		$this->assertStringNotContainsString( 'ppcert-certificate-link--card', $plain );
 
 		// A message alone never shows: the quiz page has no certificate.
@@ -557,7 +558,7 @@ class Test_Certificate_Link extends TestCase {
 
 		$html = PressPrimer_Certificate_Certificate_Link::render_shortcode();
 		$this->assertStringContainsString( 'https://share.example/' . self::credential( 1 ), $html );
-		$this->assertStringContainsString( 'Share ' . self::credential( 1 ) . ' (view)', $html );
+		$this->assertStringContainsString( 'Share ' . self::credential( 1 ) . ' (download)', $html, 'The filter sees the default action' );
 
 		add_filter(
 			'ppcert_certificate_link_action',
@@ -649,7 +650,7 @@ class Test_Certificate_Link extends TestCase {
 				'sourceId' => 42,
 			]
 		);
-		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::view_url( self::credential( 1 ) ), $specific );
+		$this->assertStringContainsString( PressPrimer_Certificate_View_Page::pdf_url( self::credential( 1 ) ), $specific, 'The block default is the download' );
 
 		$this->assertSame(
 			'',

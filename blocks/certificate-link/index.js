@@ -250,17 +250,17 @@ function Edit( { attributes, setAttributes } ) {
 						options={ [
 							{
 								label: __(
-									'Open the certificate page',
-									'pressprimer-certificate'
-								),
-								value: 'view',
-							},
-							{
-								label: __(
 									'Download the PDF',
 									'pressprimer-certificate'
 								),
 								value: 'download',
+							},
+							{
+								label: __(
+									'Open the certificate page',
+									'pressprimer-certificate'
+								),
+								value: 'view',
 							},
 							{
 								label: __(
@@ -368,7 +368,7 @@ registerBlockType( 'pressprimer-certificate/certificate-link', {
 		sourceId: { type: 'integer', default: 0 },
 		sourceType: { type: 'string', default: '' },
 		template: { type: 'integer', default: 0 },
-		action: { type: 'string', default: 'view' },
+		action: { type: 'string', default: 'download' },
 		text: { type: 'string', default: '' },
 		message: { type: 'string', default: '' },
 		style: { type: 'string', default: 'button' },
