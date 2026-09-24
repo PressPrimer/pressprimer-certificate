@@ -75,6 +75,10 @@ class PressPrimer_Certificate_Admin_Certificates {
 
 		check_admin_referer( 'ppcert_revoke_certificate_' . $certificate_id );
 
+		if ( ! PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $certificate_id ), get_current_user_id() ) ) {
+			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
+		}
+
 		$reason = isset( $_GET['revoke_reason'] )
 			? sanitize_text_field( wp_unslash( $_GET['revoke_reason'] ) )
 			: '';
@@ -121,6 +125,10 @@ class PressPrimer_Certificate_Admin_Certificates {
 
 		check_admin_referer( 'ppcert_reinstate_certificate_' . $certificate_id );
 
+		if ( ! PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $certificate_id ), get_current_user_id() ) ) {
+			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
+		}
+
 		$result     = PressPrimer_Certificate_Certificate::reinstate( $certificate_id );
 		$reinstated = ! is_wp_error( $result ) ? 1 : 0;
 
@@ -165,6 +173,10 @@ class PressPrimer_Certificate_Admin_Certificates {
 
 		check_admin_referer( 'ppcert_delete_certificate_' . $certificate_id );
 
+		if ( ! PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $certificate_id ), get_current_user_id() ) ) {
+			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
+		}
+
 		$result  = PressPrimer_Certificate_Certificate::delete( $certificate_id );
 		$deleted = ! is_wp_error( $result ) ? 1 : 0;
 
@@ -206,6 +218,10 @@ class PressPrimer_Certificate_Admin_Certificates {
 		$certificate_id = isset( $_GET['certificate_id'] ) ? absint( wp_unslash( $_GET['certificate_id'] ) ) : 0;
 
 		check_admin_referer( 'ppcert_resend_email_' . $certificate_id );
+
+		if ( ! PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $certificate_id ), get_current_user_id() ) ) {
+			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
+		}
 
 		$sent = PressPrimer_Certificate_Email_Service::resend( $certificate_id ) ? 1 : 0;
 
@@ -444,6 +460,10 @@ class PressPrimer_Certificate_Admin_Certificates {
 		}
 
 		$certificate = PressPrimer_Certificate_Certificate::get( $certificate_id );
+
+		if ( $certificate && ! PressPrimer_Certificate_Certificate::user_can_access( $certificate, get_current_user_id() ) ) {
+			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
+		}
 
 		if ( ! $certificate || ! is_array( $certificate->layout_snapshot ) ) {
 			wp_die( esc_html__( 'Certificate not found.', 'pressprimer-certificate' ), 404 );

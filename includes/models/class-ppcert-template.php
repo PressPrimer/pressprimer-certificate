@@ -79,8 +79,8 @@ class PressPrimer_Certificate_Template {
 	 *                                     Since 2.0 (School contract).
 	 *     @type int[]|null $issuer_scope  Visible issuer ids for scoped
 	 *                                     callers (null = unscoped; [] =
-	 *                                     site templates only). Site
-	 *                                     templates always pass the scope.
+	 *                                     nothing). Site templates (NULL
+	 *                                     issuer) never pass a scope.
 	 *                                     Since 2.0 (School contract).
 	 *     @type int        $page          1-based page.
 	 *     @type int        $per_page     Page size (default 20).
@@ -104,7 +104,8 @@ class PressPrimer_Certificate_Template {
 			: '';
 
 		// Member scoping (School): null = unscoped; an id list restricts
-		// issuer templates to those issuers. Site templates always pass.
+		// the list to those issuers' templates. Site templates (NULL
+		// issuer) are the site's own and do not pass a scope (2026-09-24).
 		$scoped    = isset( $args['issuer_scope'] ) && is_array( $args['issuer_scope'] ) ? 1 : 0;
 		$scope_csv = $scoped ? implode( ',', array_map( 'absint', $args['issuer_scope'] ) ) : '';
 
@@ -112,7 +113,7 @@ class PressPrimer_Certificate_Template {
 
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) ) AND ( %s = '' OR CAST( COALESCE( t.issuer_id, 0 ) AS CHAR ) = %s ) AND ( %d = 0 OR t.issuer_id IS NULL OR FIND_IN_SET( t.issuer_id, %s ) )",
+				"SELECT COUNT(*) FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) ) AND ( %s = '' OR CAST( COALESCE( t.issuer_id, 0 ) AS CHAR ) = %s ) AND ( %d = 0 OR ( t.issuer_id IS NOT NULL AND FIND_IN_SET( t.issuer_id, %s ) ) )",
 				self::table(),
 				$status,
 				$status,
@@ -130,7 +131,7 @@ class PressPrimer_Certificate_Template {
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT t.* FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) ) AND ( %s = '' OR CAST( COALESCE( t.issuer_id, 0 ) AS CHAR ) = %s ) AND ( %d = 0 OR t.issuer_id IS NULL OR FIND_IN_SET( t.issuer_id, %s ) ) ORDER BY t.updated_at DESC LIMIT %d OFFSET %d",
+				"SELECT t.* FROM %i t WHERE t.deleted_at IS NULL AND ( %s = '' OR t.status = %s ) AND ( %s = '' OR t.title LIKE %s ) AND ( %s = '' OR EXISTS ( SELECT 1 FROM %i tr WHERE tr.template_id = t.id AND FIND_IN_SET( tr.trigger_type, %s ) ) ) AND ( %s = '' OR CAST( COALESCE( t.issuer_id, 0 ) AS CHAR ) = %s ) AND ( %d = 0 OR ( t.issuer_id IS NOT NULL AND FIND_IN_SET( t.issuer_id, %s ) ) ) ORDER BY t.updated_at DESC LIMIT %d OFFSET %d",
 				self::table(),
 				$status,
 				$status,

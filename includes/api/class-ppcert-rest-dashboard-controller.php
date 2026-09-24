@@ -128,11 +128,15 @@ class PressPrimer_Certificate_REST_Dashboard_Controller {
 	public function get_dashboard() {
 		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( self::STATS_WINDOW_DAYS * DAY_IN_SECONDS ) );
 
+		/** This filter is documented in includes/admin/class-ppcert-templates-list-table.php */
 		$published = PressPrimer_Certificate_Template::query(
-			[
-				'status'   => 'published',
-				'per_page' => 1,
-			]
+			apply_filters(
+				'ppcert_template_list_query_args',
+				[
+					'status'   => 'published',
+					'per_page' => 1,
+				]
+			)
 		);
 
 		return new WP_REST_Response(

@@ -119,7 +119,14 @@ class PressPrimer_Certificate_Certificate {
 		$source_type = isset( $args['source_type'] ) ? sanitize_key( (string) $args['source_type'] ) : '';
 		$search      = isset( $args['search'] ) ? sanitize_text_field( (string) $args['search'] ) : '';
 		$per_page    = isset( $args['per_page'] ) ? min( 100, max( 1, absint( $args['per_page'] ) ) ) : 20;
-		$page        = isset( $args['page'] ) ? max( 1, absint( $args['page'] ) ) : 1;
+
+		// Scope (2.0, School contract): null = unscoped; otherwise the
+		// rows are limited to the scope's issuers plus the user's own
+		// issues. Callers may pass 'scope' explicitly; by default the
+		// current user's scope applies (Certificate::scope_for()).
+		$scope                                        = array_key_exists( 'scope', $args ) ? self::normalize_scope( $args['scope'] ) : self::scope_for( get_current_user_id() );
+		list( $scoped, $scope_csv, $scope_issued_by ) = self::scope_bindings( $scope );
+		$page = isset( $args['page'] ) ? max( 1, absint( $args['page'] ) ) : 1;
 
 		// Issued date range (FR-002): Y-m-d in SITE timezone, inclusive
 		// day bounds, converted to UTC for the query (Datetime Standard).
@@ -182,34 +189,7 @@ class PressPrimer_Certificate_Certificate {
 
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s )",
-				self::table(),
-				$template_id,
-				$template_id,
-				$status,
-				$status,
-				$status,
-				$now,
-				$status,
-				$now,
-				$source_type,
-				$source_type,
-				$search,
-				$credential_exact,
-				$recipient_csv,
-				$recipient_csv,
-				$title_like,
-				$title_like,
-				$has_after,
-				$after_sql,
-				$has_before,
-				$before_sql
-			)
-		);
-
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
+				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) )",
 				self::table(),
 				$template_id,
 				$template_id,
@@ -231,6 +211,41 @@ class PressPrimer_Certificate_Certificate {
 				$after_sql,
 				$has_before,
 				$before_sql,
+				$scoped,
+				$scope_csv,
+				$scope_issued_by,
+				$scope_issued_by
+			)
+		);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
+				self::table(),
+				$template_id,
+				$template_id,
+				$status,
+				$status,
+				$status,
+				$now,
+				$status,
+				$now,
+				$source_type,
+				$source_type,
+				$search,
+				$credential_exact,
+				$recipient_csv,
+				$recipient_csv,
+				$title_like,
+				$title_like,
+				$has_after,
+				$after_sql,
+				$has_before,
+				$before_sql,
+				$scoped,
+				$scope_csv,
+				$scope_issued_by,
+				$scope_issued_by,
 				$per_page,
 				( $page - 1 ) * $per_page
 			)
@@ -974,8 +989,17 @@ class PressPrimer_Certificate_Certificate {
 	public static function count_all() {
 		global $wpdb;
 
+		list( $scoped, $scope_csv, $issued_by ) = self::scope_bindings( self::scope_for( get_current_user_id() ) );
+
 		return (int) $wpdb->get_var(
-			$wpdb->prepare( 'SELECT COUNT(*) FROM %i', self::table() )
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) )',
+				self::table(),
+				$scoped,
+				$scope_csv,
+				$issued_by,
+				$issued_by
+			)
 		);
 	}
 
@@ -990,11 +1014,17 @@ class PressPrimer_Certificate_Certificate {
 	public static function count_issued_since( $cutoff ) {
 		global $wpdb;
 
+		list( $scoped, $scope_csv, $issued_by ) = self::scope_bindings( self::scope_for( get_current_user_id() ) );
+
 		return (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(*) FROM %i WHERE issued_at >= %s',
+				'SELECT COUNT(*) FROM %i WHERE issued_at >= %s AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) )',
 				self::table(),
-				$cutoff
+				$cutoff,
+				$scoped,
+				$scope_csv,
+				$issued_by,
+				$issued_by
 			)
 		);
 	}
@@ -1013,12 +1043,21 @@ class PressPrimer_Certificate_Certificate {
 	public static function count_events_since( $event_type, $cutoff ) {
 		global $wpdb;
 
+		list( $scoped, $scope_csv, $issued_by ) = self::scope_bindings( self::scope_for( get_current_user_id() ) );
+
+		// Joined to the certificate so a scope can apply; events never
+		// outlive their certificate (delete removes both).
 		return (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(*) FROM %i WHERE event_type = %s AND created_at >= %s',
+				'SELECT COUNT(*) FROM %i e INNER JOIN %i c ON c.id = e.certificate_id WHERE e.event_type = %s AND e.created_at >= %s AND ( %d = 0 OR FIND_IN_SET( COALESCE( c.issuer_id, 0 ), %s ) OR ( %d > 0 AND c.issued_by = %d ) )',
 				self::events_table(),
+				self::table(),
 				sanitize_key( $event_type ),
-				$cutoff
+				$cutoff,
+				$scoped,
+				$scope_csv,
+				$issued_by,
+				$issued_by
 			)
 		);
 	}
@@ -1037,11 +1076,17 @@ class PressPrimer_Certificate_Certificate {
 	public static function get_daily_issue_counts( $cutoff ) {
 		global $wpdb;
 
+		list( $scoped, $scope_csv, $issued_by ) = self::scope_bindings( self::scope_for( get_current_user_id() ) );
+
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT DATE( issued_at ) AS day, COUNT(*) AS total FROM %i WHERE issued_at >= %s GROUP BY DATE( issued_at ) ORDER BY day ASC',
+				'SELECT DATE( issued_at ) AS day, COUNT(*) AS total FROM %i WHERE issued_at >= %s AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) ) GROUP BY DATE( issued_at ) ORDER BY day ASC',
 				self::table(),
-				$cutoff
+				$cutoff,
+				$scoped,
+				$scope_csv,
+				$issued_by,
+				$issued_by
 			)
 		);
 
@@ -1069,14 +1114,148 @@ class PressPrimer_Certificate_Certificate {
 	public static function get_top_templates( $limit ) {
 		global $wpdb;
 
+		list( $scoped, $scope_csv, $issued_by ) = self::scope_bindings( self::scope_for( get_current_user_id() ) );
+
 		return (array) $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT c.template_id, t.title, COUNT(*) AS total FROM %i c LEFT JOIN %i t ON t.id = c.template_id GROUP BY c.template_id, t.title ORDER BY total DESC, c.template_id ASC LIMIT %d',
+				'SELECT c.template_id, t.title, COUNT(*) AS total FROM %i c LEFT JOIN %i t ON t.id = c.template_id WHERE ( %d = 0 OR FIND_IN_SET( COALESCE( c.issuer_id, 0 ), %s ) OR ( %d > 0 AND c.issued_by = %d ) ) GROUP BY c.template_id, t.title ORDER BY total DESC, c.template_id ASC LIMIT %d',
 				self::table(),
 				PressPrimer_Certificate_Template::table(),
+				$scoped,
+				$scope_csv,
+				$issued_by,
+				$issued_by,
 				absint( $limit )
 			)
 		);
+	}
+
+	/**
+	 * The source types present among the certificates a user can see
+	 *
+	 * The Certificates list's source filter offers only these to a
+	 * scoped user (2.0, School members); unscoped users keep the full
+	 * registry list.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $user_id User id.
+	 * @return string[] Source type ids, sorted.
+	 */
+	public static function source_types_for( $user_id ) {
+		global $wpdb;
+
+		list( $scoped, $scope_csv, $issued_by ) = self::scope_bindings( self::scope_for( $user_id ) );
+
+		$types = $wpdb->get_col(
+			$wpdb->prepare(
+				'SELECT DISTINCT source_type FROM %i WHERE ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) ) ORDER BY source_type ASC',
+				self::table(),
+				$scoped,
+				$scope_csv,
+				$issued_by,
+				$issued_by
+			)
+		);
+
+		$types = array_values( array_unique( array_filter( array_map( 'sanitize_key', (array) $types ) ) ) );
+		sort( $types );
+
+		return $types;
+	}
+
+	/**
+	 * The certificate scope for a user (2.0, School contract)
+	 *
+	 * A null scope means unscoped (every certificate). A scope limits the list
+	 * query, the dashboard statistics, and per-certificate access to
+	 * certificates whose issuer is in `issuer_ids`, plus those the user
+	 * issued personally (`issued_by`), so awards from site templates stay
+	 * visible to the person who made them.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $user_id User id.
+	 * @return array|null { issuer_ids: int[], issued_by: int } or null.
+	 */
+	public static function scope_for( $user_id ) {
+		/**
+		 * Filters the certificate scope for a user.
+		 *
+		 * School returns the active issuers a member manages or awards
+		 * for, plus the member's own id, for users without
+		 * manage_options; null leaves the user unscoped.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array|null $scope   null, or { issuer_ids: int[], issued_by: int }.
+		 * @param int        $user_id User id.
+		 */
+		return self::normalize_scope( apply_filters( 'ppcert_certificate_scope', null, absint( $user_id ) ) );
+	}
+
+	/**
+	 * Whether a user may see and act on one certificate under their scope
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param object|null $certificate Hydrated certificate row.
+	 * @param int         $user_id     User id.
+	 * @return bool
+	 */
+	public static function user_can_access( $certificate, $user_id ) {
+		if ( ! $certificate ) {
+			return false;
+		}
+
+		$scope = self::scope_for( $user_id );
+
+		if ( null === $scope ) {
+			return true;
+		}
+
+		$issuer_id = ! empty( $certificate->issuer_id ) ? (int) $certificate->issuer_id : 0;
+		$issued_by = ! empty( $certificate->issued_by ) ? (int) $certificate->issued_by : 0;
+
+		return ( $issuer_id > 0 && in_array( $issuer_id, $scope['issuer_ids'], true ) )
+			|| ( $scope['issued_by'] > 0 && $issued_by === $scope['issued_by'] );
+	}
+
+	/**
+	 * Normalize a filtered scope value
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param mixed $scope Raw filter result.
+	 * @return array|null
+	 */
+	private static function normalize_scope( $scope ) {
+		if ( ! is_array( $scope ) ) {
+			return null;
+		}
+
+		$ids = isset( $scope['issuer_ids'] ) && is_array( $scope['issuer_ids'] ) ? $scope['issuer_ids'] : [];
+
+		return [
+			'issuer_ids' => array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) ),
+			'issued_by'  => isset( $scope['issued_by'] ) ? absint( $scope['issued_by'] ) : 0,
+		];
+	}
+
+	/**
+	 * The prepared-statement bindings for a scope: flag, id list, user
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array|null $scope Normalized scope.
+	 * @return array [ int $scoped, string $csv, int $issued_by ]
+	 */
+	private static function scope_bindings( $scope ) {
+		if ( null === $scope ) {
+			return [ 0, '', 0 ];
+		}
+
+		return [ 1, implode( ',', $scope['issuer_ids'] ), $scope['issued_by'] ];
 	}
 
 	/**

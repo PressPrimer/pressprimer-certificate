@@ -436,4 +436,57 @@ class Test_Certificate_Model extends TestCase {
 		$this->assertNull( PressPrimer_Certificate_Certificate::get_latest_for_recipient( 7, [ 'template_id' => 2, 'source_ref' => '42', 'source_types' => [ 'lms_a' ] ] ), 'Both filters must match' );
 		$this->assertNull( PressPrimer_Certificate_Certificate::get_latest_for_recipient( 9, [ 'template_id' => 1 ] ) );
 	}
+
+	/**
+	 * The certificate scope (2.0, School contract): the list query and
+	 * per-certificate access follow the ppcert_certificate_scope filter -
+	 * the scope's issuers plus the user's own issues; null is unscoped.
+	 *
+	 * @return void
+	 */
+	public function test_scope_query_and_access() {
+		$a    = $this->seed_certificate( [ 'uuid' => 'a', 'credential_id' => 'AAAA1111BBBB', 'issuer_id' => 1, 'issued_by' => 5, 'source_type' => 'manual' ] );
+		$b    = $this->seed_certificate( [ 'uuid' => 'b', 'credential_id' => 'CCCC2222DDDD', 'issuer_id' => 2, 'issued_by' => 5, 'source_type' => 'lms_b' ] );
+		$mine = $this->seed_certificate( [ 'uuid' => 'c', 'credential_id' => 'EEEE3333FFFF', 'issuer_id' => null, 'issued_by' => 9, 'source_type' => 'ppquiz' ] );
+
+		$this->assertNull( PressPrimer_Certificate_Certificate::scope_for( 9 ), 'No filter: unscoped' );
+		$this->assertCount( 3, PressPrimer_Certificate_Certificate::query( [] )['items'] );
+
+		add_filter(
+			'ppcert_certificate_scope',
+			static function ( $scope, $user_id ) {
+				return 9 === (int) $user_id ? [ 'issuer_ids' => [ 1, '1', 0 ], 'issued_by' => 9 ] : $scope;
+			},
+			10,
+			2
+		);
+
+		$this->assertSame( [ 'issuer_ids' => [ 1 ], 'issued_by' => 9 ], PressPrimer_Certificate_Certificate::scope_for( 9 ), 'Normalized: ints, unique, no zero' );
+
+		$GLOBALS['ppcert_test_current_user'] = 9;
+		$ids = array_map(
+			static function ( $row ) {
+				return (int) $row->id;
+			},
+			PressPrimer_Certificate_Certificate::query( [] )['items']
+		);
+		$this->assertEqualsCanonicalizing( [ $a, $mine ], $ids, 'Issuer 1 plus own issues; issuer 2 hidden' );
+		$this->assertSame( 2, PressPrimer_Certificate_Certificate::query( [] )['total'] );
+		$this->assertSame( 2, PressPrimer_Certificate_Certificate::count_all() );
+		$this->assertSame( [ 'manual', 'ppquiz' ], PressPrimer_Certificate_Certificate::source_types_for( 9 ), 'The Source filter offers only the sources present in the scope' );
+		$this->assertSame( [ 'lms_b', 'manual', 'ppquiz' ], PressPrimer_Certificate_Certificate::source_types_for( 5 ), 'Unscoped users see every source present' );
+
+		$this->assertTrue( PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $a ), 9 ) );
+		$this->assertTrue( PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $mine ), 9 ) );
+		$this->assertFalse( PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $b ), 9 ) );
+		$this->assertFalse( PressPrimer_Certificate_Certificate::user_can_access( null, 9 ) );
+
+		// An explicit scope argument overrides the current user's.
+		$this->assertCount( 3, PressPrimer_Certificate_Certificate::query( [ 'scope' => null ] )['items'] );
+		$this->assertCount( 1, PressPrimer_Certificate_Certificate::query( [ 'scope' => [ 'issuer_ids' => [ 2 ] ] ] )['items'] );
+
+		$GLOBALS['ppcert_test_current_user'] = 5;
+		$this->assertTrue( PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $b ), 5 ), 'Another user is unscoped' );
+		$this->assertCount( 3, PressPrimer_Certificate_Certificate::query( [] )['items'] );
+	}
 }

@@ -308,4 +308,36 @@ class Test_Dashboard_REST extends TestCase {
 
 		$this->assertSame( 90, $missing->get_data()['days'] );
 	}
+
+	/**
+	 * A scoped viewer's dashboard (2.0, School members): every statistic,
+	 * the recent list, and the top templates follow the certificate scope.
+	 *
+	 * @return void
+	 */
+	public function test_scope_limits_the_dashboard() {
+		$this->seed_certificate( [ 'issuer_id' => 1, 'issued_by' => 3 ] );
+		$this->seed_certificate( [ 'issuer_id' => 2, 'issued_by' => 3 ] );
+		$this->seed_certificate( [ 'issuer_id' => null, 'issued_by' => 8, 'template_id' => 2 ] );
+
+		add_filter(
+			'ppcert_certificate_scope',
+			static function ( $scope, $user_id ) {
+				return 8 === (int) $user_id ? [ 'issuer_ids' => [ 1 ], 'issued_by' => 8 ] : $scope;
+			},
+			10,
+			2
+		);
+
+		$GLOBALS['ppcert_test_current_user'] = 8;
+		$data                                = $this->controller->get_dashboard()->get_data();
+
+		$this->assertSame( 2, $data['stats']['total_certificates'], 'Issuer 1 plus own issue' );
+		$this->assertSame( 2, $data['stats']['issued_recent'] );
+		$this->assertCount( 2, $data['recent'] );
+		$this->assertEqualsCanonicalizing( [ 1, 2 ], array_map( 'intval', array_column( $data['top_templates'], 'template_id' ) ) );
+
+		$GLOBALS['ppcert_test_current_user'] = 3;
+		$this->assertSame( 3, $this->controller->get_dashboard()->get_data()['stats']['total_certificates'], 'Another user is unscoped' );
+	}
 }

@@ -150,11 +150,14 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 	 * @return bool
 	 */
 	public function can_view_detail( $request ) {
-		if ( $this->can_view() ) {
-			return true;
-		}
-
 		$certificate = PressPrimer_Certificate_Certificate::get( absint( $request->get_param( 'id' ) ) );
+
+		if ( $this->can_view() ) {
+			// A scoped viewer (2.0, School members) sees their issuers'
+			// certificates and their own issues; an unknown id falls
+			// through to the handler's own not-found answer.
+			return ! $certificate || PressPrimer_Certificate_Certificate::user_can_access( $certificate, get_current_user_id() );
+		}
 
 		return $certificate
 			&& get_current_user_id() > 0

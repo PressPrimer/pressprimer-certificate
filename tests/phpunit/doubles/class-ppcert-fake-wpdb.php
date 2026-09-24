@@ -1051,8 +1051,8 @@ class PPCert_Fake_WPDB {
 						return false;
 					}
 
-					// Member scope: site templates always pass.
-					if ( $scoped && $row_issuer > 0 && ! in_array( $row_issuer, $scope_ids, true ) ) {
+					// Member scope: site templates (no issuer) never pass.
+					if ( $scoped && ( $row_issuer <= 0 || ! in_array( $row_issuer, $scope_ids, true ) ) ) {
 						return false;
 					}
 
@@ -1400,8 +1400,10 @@ class PPCert_Fake_WPDB {
 		// credential, title LIKE, and UTC date bounds. args: [table,
 		// template_id x2, status x3 + now, status + now, source_type x2,
 		// search, credential_exact, recipient_csv x2, title_like x2,
-		// issued_after x2, issued_before x2, (per_page, offset)].
+		// issued_after x2, issued_before x2, scoped, scope_csv,
+		// issued_by x2, (per_page, offset)].
 		if ( false !== strpos( $query, 'FIND_IN_SET( recipient_id, %s )' ) ) {
+			$scope            = $this->scope_from_args( $args, 21 );
 			$template_id      = (int) $args[1];
 			$status           = (string) $args[3];
 			$now              = (string) $args[6];
@@ -1415,7 +1417,11 @@ class PPCert_Fake_WPDB {
 
 			$matches = $this->filter_rows(
 				$rows,
-				static function ( $row ) use ( $template_id, $status, $now, $source_type, $search, $credential_exact, $recipient_ids, $title_needle, $issued_after, $issued_before ) {
+				static function ( $row ) use ( $scope, $template_id, $status, $now, $source_type, $search, $credential_exact, $recipient_ids, $title_needle, $issued_after, $issued_before ) {
+					if ( ! PPCert_Fake_WPDB::scope_allows( $row, $scope ) ) {
+						return false;
+					}
+
 					if ( $template_id > 0 && (int) $row['template_id'] !== $template_id ) {
 						return false;
 					}
@@ -1477,8 +1483,8 @@ class PPCert_Fake_WPDB {
 				return [ [ 'total' => count( $matches ) ] ];
 			}
 
-			$per_page = (int) $args[21];
-			$offset   = (int) $args[22];
+			$per_page = (int) $args[25];
+			$offset   = (int) $args[26];
 
 			return array_slice( $matches, $offset, $per_page );
 		}
@@ -1571,13 +1577,33 @@ class PPCert_Fake_WPDB {
 		}
 
 		// Dashboard: count events of one type since a cutoff.
-		if ( false !== strpos( $query, 'WHERE event_type = %s AND created_at >= %s' ) ) {
-			$matches = $this->filter_rows(
+		// args: [events table, certificates table, type, cutoff, scoped,
+		// scope_csv, issued_by x2]. The join only bites under a scope.
+		if ( false !== strpos( $query, 'WHERE e.event_type = %s AND e.created_at >= %s' ) ) {
+			$scope        = $this->scope_from_args( $args, 4 );
+			$certificates = $this->rows( (string) $args[1] );
+			$matches      = $this->filter_rows(
 				$rows,
-				static function ( $row ) use ( $args ) {
-					return isset( $row['event_type'] )
-						&& (string) $row['event_type'] === (string) $args[1]
-						&& isset( $row['created_at'] ) && (string) $row['created_at'] >= (string) $args[2];
+				static function ( $row ) use ( $args, $scope, $certificates ) {
+					if ( ! isset( $row['event_type'] ) || (string) $row['event_type'] !== (string) $args[2] ) {
+						return false;
+					}
+
+					if ( ! isset( $row['created_at'] ) || (string) $row['created_at'] < (string) $args[3] ) {
+						return false;
+					}
+
+					if ( null === $scope ) {
+						return true;
+					}
+
+					foreach ( $certificates as $certificate ) {
+						if ( (int) $certificate['id'] === (int) $row['certificate_id'] ) {
+							return PPCert_Fake_WPDB::scope_allows( $certificate, $scope );
+						}
+					}
+
+					return false;
 				}
 			);
 
@@ -1586,10 +1612,15 @@ class PPCert_Fake_WPDB {
 
 		// Dashboard: daily issuance counts since a cutoff.
 		if ( false !== strpos( $query, 'SELECT DATE( issued_at ) AS day' ) ) {
+			$scope  = $this->scope_from_args( $args, 2 );
 			$counts = [];
 
 			foreach ( $rows as $row ) {
 				if ( ! isset( $row['issued_at'] ) || (string) $row['issued_at'] < (string) $args[1] ) {
+					continue;
+				}
+
+				if ( ! self::scope_allows( $row, $scope ) ) {
 					continue;
 				}
 
@@ -1614,10 +1645,15 @@ class PPCert_Fake_WPDB {
 
 		// Dashboard: templates ranked by certificates issued.
 		if ( false !== strpos( $query, 'GROUP BY c.template_id, t.title' ) ) {
+			$scope     = $this->scope_from_args( $args, 2 );
 			$templates = $this->rows( (string) $args[1] );
 			$totals    = [];
 
 			foreach ( $rows as $row ) {
+				if ( ! self::scope_allows( $row, $scope ) ) {
+					continue;
+				}
+
 				$template_id = (int) $row['template_id'];
 
 				$totals[ $template_id ] = ( isset( $totals[ $template_id ] ) ? $totals[ $template_id ] : 0 ) + 1;
@@ -1651,23 +1687,61 @@ class PPCert_Fake_WPDB {
 				}
 			);
 
-			return array_slice( $result, 0, (int) $args[2] );
+			return array_slice( $result, 0, (int) $args[6] );
 		}
 
 		// Dashboard: certificates issued since a cutoff.
 		if ( false !== strpos( $query, 'SELECT COUNT(*) FROM %i WHERE issued_at >= %s' ) ) {
+			$scope   = $this->scope_from_args( $args, 2 );
 			$matches = $this->filter_rows(
 				$rows,
-				static function ( $row ) use ( $args ) {
-					return isset( $row['issued_at'] ) && (string) $row['issued_at'] >= (string) $args[1];
+				static function ( $row ) use ( $args, $scope ) {
+					return isset( $row['issued_at'] ) && (string) $row['issued_at'] >= (string) $args[1]
+						&& PPCert_Fake_WPDB::scope_allows( $row, $scope );
 				}
 			);
 
 			return [ [ 'count' => count( $matches ) ] ];
 		}
 
-		// Dashboard: total certificates (exact match - the bare COUNT
-		// must never swallow more specific COUNT shapes).
+		// Dashboard: total certificates under the scope clause alone
+		// (the shape starts with the clause so it never swallows the
+		// more specific COUNT shapes above).
+		if ( 0 === strpos( $query, 'SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s )' ) ) {
+			$scope   = $this->scope_from_args( $args, 1 );
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $scope ) {
+					return PPCert_Fake_WPDB::scope_allows( $row, $scope );
+				}
+			);
+
+			return [ [ 'count' => count( $matches ) ] ];
+		}
+
+		// Distinct values of one column (School's capability sync reads the
+		// members table this way).
+		if ( preg_match( '/^SELECT DISTINCT ([a-z_]+) FROM %i( WHERE \\( %d = 0 OR FIND_IN_SET\\( COALESCE\\( issuer_id, 0 \\), %s \\) OR \\( %d > 0 AND issued_by = %d \\) \\)( ORDER BY [a-z_]+ ASC)?)?$/', $query, $distinct ) ) {
+			$column = $distinct[1];
+			$scope  = isset( $distinct[2] ) && '' !== $distinct[2] ? $this->scope_from_args( $args, 1 ) : null;
+			$seen   = [];
+			$result = [];
+
+			foreach ( $rows as $row ) {
+				$value = isset( $row[ $column ] ) ? $row[ $column ] : null;
+
+				if ( null === $value || in_array( $value, $seen, true ) || ! self::scope_allows( $row, $scope ) ) {
+					continue;
+				}
+
+				$seen[]   = $value;
+				$result[] = [ $column => $value ];
+			}
+
+			return $result;
+		}
+
+		// Bare total (older shape kept for direct model calls in tests).
 		if ( 'SELECT COUNT(*) FROM %i' === $query ) {
 			return [ [ 'count' => count( $rows ) ] ];
 		}
@@ -2292,5 +2366,43 @@ class PPCert_Fake_WPDB {
 		);
 
 		return $matches;
+	}
+
+	/**
+	 * Read the certificate scope bindings (scoped flag, id csv, issued_by x2)
+	 * starting at one argument offset.
+	 *
+	 * @param array $args   Prepared arguments.
+	 * @param int   $offset Index of the scoped flag.
+	 * @return array|null { issuer_ids: int[], issued_by: int } or null when unscoped.
+	 */
+	private function scope_from_args( array $args, $offset ) {
+		if ( ! isset( $args[ $offset ] ) || 0 === (int) $args[ $offset ] ) {
+			return null;
+		}
+
+		return [
+			'issuer_ids' => array_filter( array_map( 'intval', explode( ',', (string) $args[ $offset + 1 ] ) ) ),
+			'issued_by'  => (int) $args[ $offset + 2 ],
+		];
+	}
+
+	/**
+	 * The certificate scope rule: unscoped, or issuer in the list, or issued by the user.
+	 *
+	 * @param array      $row   Certificate row.
+	 * @param array|null $scope Scope from scope_from_args().
+	 * @return bool
+	 */
+	public static function scope_allows( array $row, $scope ) {
+		if ( null === $scope ) {
+			return true;
+		}
+
+		$issuer_id = isset( $row['issuer_id'] ) ? (int) $row['issuer_id'] : 0;
+		$issued_by = isset( $row['issued_by'] ) ? (int) $row['issued_by'] : 0;
+
+		return ( $issuer_id > 0 && in_array( $issuer_id, $scope['issuer_ids'], true ) )
+			|| ( $scope['issued_by'] > 0 && $issued_by === $scope['issued_by'] );
 	}
 }

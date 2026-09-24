@@ -436,6 +436,18 @@ class Test_Certificates_REST extends TestCase {
 		$GLOBALS['ppcert_test_user_caps'] = [ 'ppcert_view_certificates', 'ppcert_issue_certificates' ];
 		$this->assertTrue( $this->controller->can_view() );
 		$this->assertTrue( $this->controller->can_issue() );
+
+		// A scoped viewer (2.0, School members): the detail follows the
+		// certificate scope filter.
+		$this->assertTrue( $this->controller->can_view_detail( new WP_REST_Request( [ 'id' => $id ] ) ) );
+		add_filter(
+			'ppcert_certificate_scope',
+			static function () {
+				return [ 'issuer_ids' => [ 42 ], 'issued_by' => 0 ];
+			}
+		);
+		$this->assertFalse( $this->controller->can_view_detail( new WP_REST_Request( [ 'id' => $id ] ) ), 'Outside the scope' );
+		$this->assertTrue( $this->controller->can_view_detail( new WP_REST_Request( [ 'id' => 99999 ] ) ), 'Unknown ids fall through to the handler\'s not-found' );
 	}
 
 	/**

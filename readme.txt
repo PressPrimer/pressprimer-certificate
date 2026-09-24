@@ -290,6 +290,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Added: Third-party certificate integrations now appear with their proper names everywhere the built-in integrations do, including while their plugin is deactivated.
 * Added: A duplicate-suppression scoping filter for integrations whose completion events carry per-occurrence references.
 * Added: The extension points the Educator, School, and Enterprise addons build on - template settings and issuer assignment, designer sidebar tabs and slots, list columns and row actions, email sender and footer filters, PDF metadata, admin branding, template lifecycle actions, and the certificate title and directory-visibility columns. Existing data is untouched.
+* Added: Add-ons can scope the Certificates list (its Template and Source filters included), the Dashboard, and certificate actions to an issuing organization (used by School's owner and issuer roles)
 * Improved: Designer sidebar labels and help icons render at higher contrast.
 * Improved: Send Test Email on the Email settings tab saves your unsaved changes first, so the test always reflects what is on the page.
 * Fixed: The verification form's Verify button uses the same button style as the rest of the plugin, and the credential ID field is sized for a credential ID instead of stretching across the page.

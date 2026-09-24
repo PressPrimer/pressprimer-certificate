@@ -155,7 +155,24 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 		echo '<select name="template_id" id="ppcert-filter-template">';
 		echo '<option value="">' . esc_html__( 'All templates', 'pressprimer-certificate' ) . '</option>';
 
+		// A scoped user (2.0, School members) is offered their
+		// organizations' templates only; the template scope comes from the
+		// same filter the Templates list runs.
+		/** This filter is documented in includes/admin/class-ppcert-templates-list-table.php */
+		$scope_args     = apply_filters( 'ppcert_template_list_query_args', [] );
+		$template_scope = isset( $scope_args['issuer_scope'] ) && is_array( $scope_args['issuer_scope'] )
+			? array_map( 'absint', $scope_args['issuer_scope'] )
+			: null;
+
 		foreach ( PressPrimer_Certificate_Template::get_certificate_filter_templates() as $template ) {
+			if ( null !== $template_scope ) {
+				$template_issuer = ! empty( $template->issuer_id ) ? (int) $template->issuer_id : 0;
+
+				if ( ! $template_issuer || ! in_array( $template_issuer, $template_scope, true ) ) {
+					continue;
+				}
+			}
+
 			$title = (string) $template->title;
 
 			if ( ! empty( $template->deleted_at ) ) {
@@ -205,7 +222,23 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 		echo '<select name="source_type" id="ppcert-filter-source">';
 		echo '<option value="">' . esc_html__( 'All sources', 'pressprimer-certificate' ) . '</option>';
 
-		foreach ( self::source_options( $current_source ) as $value => $label ) {
+		// A scoped user sees only the sources present among their
+		// certificates (plus the current selection, so a bookmarked filter
+		// still shows what it filtered by).
+		$source_options = self::source_options( $current_source );
+
+		if ( null !== PressPrimer_Certificate_Certificate::scope_for( get_current_user_id() ) ) {
+			$present        = PressPrimer_Certificate_Certificate::source_types_for( get_current_user_id() );
+			$source_options = array_filter(
+				$source_options,
+				static function ( $value ) use ( $present, $current_source ) {
+					return in_array( (string) $value, $present, true ) || ( '' !== $current_source && (string) $value === (string) $current_source );
+				},
+				ARRAY_FILTER_USE_KEY
+			);
+		}
+
+		foreach ( $source_options as $value => $label ) {
 			printf(
 				'<option value="%s" %s>%s</option>',
 				esc_attr( $value ),
