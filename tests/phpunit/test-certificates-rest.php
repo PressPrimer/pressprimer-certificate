@@ -660,4 +660,32 @@ class Test_Certificates_REST extends TestCase {
 		$this->assertCount( 1, $items );
 		$this->assertSame( 'Dana Whitfield', $items[0]['name'] );
 	}
+
+	/**
+	 * Without list_users (School's organization members, 2026-09-24
+	 * review) the picker answers exact email or username matches only,
+	 * echoes the address only when it was the term, and never preloads.
+	 *
+	 * @return void
+	 */
+	public function test_user_search_is_exact_for_non_admins() {
+		$GLOBALS['ppcert_test_user_caps'] = [ 'ppcert_issue_certificates' ];
+		$GLOBALS['ppcert_test_users'][7]->user_login = 'dana.w';
+
+		$this->assertSame( [], $this->controller->search_users( new WP_REST_Request( [ 'search' => '' ] ) )->get_data(), 'No preload' );
+		$this->assertSame( [], $this->controller->search_users( new WP_REST_Request( [ 'search' => 'dana' ] ) )->get_data(), 'No fragment match on names' );
+		$this->assertSame( [], $this->controller->search_users( new WP_REST_Request( [ 'search' => 'dana@example' ] ) )->get_data(), 'No fragment match on addresses' );
+
+		$by_email = $this->controller->search_users( new WP_REST_Request( [ 'search' => 'Dana@Example.test' ] ) )->get_data();
+		$this->assertCount( 1, $by_email );
+		$this->assertSame( 'Dana Whitfield', $by_email[0]['name'] );
+		$this->assertSame( 'dana@example.test', $by_email[0]['email'], 'The address they typed comes back' );
+
+		$by_login = $this->controller->search_users( new WP_REST_Request( [ 'search' => 'dana.w' ] ) )->get_data();
+		$this->assertCount( 1, $by_login );
+		$this->assertSame( '', $by_login[0]['email'], 'A username match withholds the address' );
+
+		$GLOBALS['ppcert_test_user_caps'] = [ 'ppcert_issue_certificates', 'list_users' ];
+		$this->assertNotEmpty( $this->controller->search_users( new WP_REST_Request( [ 'search' => 'dana' ] ) )->get_data(), 'list_users restores fragment search' );
+	}
 }

@@ -151,6 +151,25 @@ class Test_Merge_Fields_REST extends TestCase {
 	}
 
 	/**
+	 * The meta-key discovery routes are administrators' (2026-09-24
+	 * review): a template editor without manage_options keeps the
+	 * registry feed but not other users' and posts' meta.
+	 *
+	 * @return void
+	 */
+	public function test_discovery_requires_administrator() {
+		$GLOBALS['ppcert_test_user_caps'] = [ 'ppcert_manage_templates' ];
+		$this->assertTrue( $this->controller->can_manage() );
+		$this->assertFalse( $this->controller->can_discover() );
+
+		$GLOBALS['ppcert_test_user_caps'] = [ 'ppcert_manage_templates', 'manage_options' ];
+		$this->assertTrue( $this->controller->can_discover() );
+
+		$GLOBALS['ppcert_test_user_caps'] = [ 'manage_options' ];
+		$this->assertFalse( $this->controller->can_discover(), 'Still needs the template capability' );
+	}
+
+	/**
 	 * User meta picker: denylisted and underscore keys never appear.
 	 *
 	 * @return void

@@ -279,29 +279,27 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 
 = 2.0.0 =
 * Added: Suggested privacy policy text under Settings > Privacy > Policy Guide, covering what certificates store and that certificate pages, verification, and PDF downloads are public to anyone with the link or credential ID
-* Added: Search and filters on the Certificates screen. Find certificates by recipient, certificate name, or exact credential ID, and filter by status, template, and issue date range.
-* Added: Send yourself a test award email from the template editor, with sample values filled in, before the template goes live.
-* Added: Four Geometric starter templates - a modern design family drawn from your brand colors, in portrait and landscape for both A4 and Letter sizes.
-* Added: Multi-page certificate rendering. Certificates designed with multiple pages (created with the Educator addon) download, email, and verify as complete multi-page PDFs.
+* Added: Search and filters on the Certificates screen.
+* Added: Send yourself a test award email from the template editor.
+* Added: Four Geometric starter templates.
+* Added: Multi-page certificate rendering.
 * Added: An Upgrade page under the Certificates menu comparing the free plugin with the new Educator, School, and Enterprise tiers.
-* Added: Certificate Link block and shortcode. Drop one button on a course, lesson, topic, or quiz page, or on any page that contains a PressPrimer quiz or assignment, and each logged-in learner sees a button that downloads their own certificate for that item (or opens its page, your choice), hidden until they earn it. Point it at a specific quiz, assignment, post, or template when the page itself is not the source, and add an optional message that appears with the button, such as congratulations and what the certificate is for.
+* Added: Certificate Link block and shortcode.
 * Added: Download PDF button on the public verification page for valid and expired certificates, so a verifier can keep a copy without an account.
-* Added: WebP and AVIF images in certificate designs render in PDFs and previews on servers whose image library supports them. When a server cannot render a chosen image's format, the designer says so under the image picker and Preview PDF reports the skipped image.
-* Added: Short upgrade notes for administrators on the Settings Email tab and in the designer, pointing to the Educator and School features that would appear in those spots. They disappear once the addon is active and are never shown to other users.
+* Added: WebP and AVIF images in certificate designs render in PDFs and previews on servers whose image library supports them.
+* Added: Short upgrade notes for administrators on the Settings Email tab and in the designer.
 * Added: Public developer API. New `ppcert_*()` functions let other plugins issue certificates, render PDFs, look up a learner's certificate, and build view and download links through a supported, stable surface.
-* Added: Value-only award triggers. Integrations can register triggers with no source object - points thresholds, membership tenure, credits earned - and they configure in the Award tab like any other trigger.
+* Added: Value-only award trigger support.
 * Added: Third-party certificate integrations now appear with their proper names everywhere the built-in integrations do, including while their plugin is deactivated.
 * Added: A duplicate-suppression scoping filter for integrations whose completion events carry per-occurrence references.
-* Added: The extension points the Educator, School, and Enterprise addons build on - template settings and issuer assignment, designer sidebar tabs and slots, list columns and row actions, email sender and footer filters, PDF metadata, admin branding, template lifecycle actions, and the certificate title and directory-visibility columns. Existing data is untouched.
+* Added: Support for Educator, School, and Enterprise add-ons.
 * Added: Add-ons can scope the Certificates list (its Template and Source filters included), the Dashboard, and certificate actions to an issuing organization (used by School's owner and issuer roles)
 * Improved: Designer sidebar labels and help icons render at higher contrast.
 * Improved: Send Test Email on the Email settings tab saves your unsaved changes first, so the test always reflects what is on the page.
 * Fixed: The verification form's Verify button uses the same button style as the rest of the plugin, and the credential ID field is sized for a credential ID instead of stretching across the page.
-* Fixed: Themes can no longer underline the plugin's buttons and filter chips (Hello Elementor and the default themes did).
+* Fixed: Themes can no longer underline the plugin's buttons and filter chips.
 * Fixed: The Valid For controls in the designer's Award tab keep the number readable while its up and down controls are showing.
-* Fixed: Designer extensions such as the Educator page rail appear on a newly created template without reloading the page.
-* Fixed: Add-on menu items now follow Certificates instead of separating it from Templates; Settings stays after them.
-* Improved: The Geometric starter designs no longer assume a course. Their body text reads "has successfully completed the program" instead of embedding a course title merge field that showed as a raw token until an award trigger was added, and they no longer preset a certificate display name, so a manually issued certificate keeps the template's name like the other starters.
+* Fixed: The designer's merge-field meta-key pickers, which read other users' and posts' data, are for administrators only.
 * Fixed: Custom merge-field groups registered with a sub-field named "label", "key", or "resolver" no longer disappear from the designer palette.
 * Fixed: The certificate view page's preview image keeps its layout wrapper instead of rendering flush against the details panel.
 * Fixed: The verification result's status colors appear on the JavaScript-enhanced page as well as the no-JavaScript page.

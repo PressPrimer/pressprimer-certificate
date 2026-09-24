@@ -88,7 +88,7 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_user_meta_keys' ],
-				'permission_callback' => [ $this, 'can_manage' ],
+				'permission_callback' => [ $this, 'can_discover' ],
 				'args'                => [
 					'search' => [
 						'sanitize_callback' => [ __CLASS__, 'sanitize_search' ],
@@ -103,7 +103,7 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_post_meta_keys' ],
-				'permission_callback' => [ $this, 'can_manage' ],
+				'permission_callback' => [ $this, 'can_discover' ],
 				'args'                => [
 					'post_id'      => [
 						'sanitize_callback' => 'absint',
@@ -128,6 +128,23 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 	 */
 	public function can_manage() {
 		return current_user_can( PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES );
+	}
+
+	/**
+	 * Permission for the meta-key discovery routes: administrators only
+	 *
+	 * The discovery routes read other users' and posts' meta (keys and a
+	 * sampled value). Template editors who are not administrators
+	 * (School's organization members, 2026-09-24 review) keep the
+	 * registry feed but not the discovery; the designer's pickers come
+	 * back empty for them.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public function can_discover() {
+		return $this->can_manage() && current_user_can( 'manage_options' );
 	}
 
 	/**

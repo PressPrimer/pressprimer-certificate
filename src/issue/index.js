@@ -224,7 +224,9 @@ function IssueApp() {
 						onChange={ setRecipient }
 						options={ users.map( ( user ) => ( {
 							value: user.id,
-							label: `${ user.name } (${ user.email })`,
+							label: user.email
+								? `${ user.name } (${ user.email })`
+								: user.name,
 						} ) ) }
 						className="ppcert-issue__control"
 					/>

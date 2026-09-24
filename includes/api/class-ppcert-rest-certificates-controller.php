@@ -513,27 +513,66 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function search_users( $request ) {
-		$search = (string) $request->get_param( 'search' );
+		return new WP_REST_Response( self::user_matches( (string) $request->get_param( 'search' ) ), 200 );
+	}
+
+	/**
+	 * The recipient picker's matches for a search term
+	 *
+	 * Users who may list the site's users (`list_users`, administrators)
+	 * search every column by fragment and see email addresses. Anyone
+	 * else holding the issue capability (School's organization members,
+	 * 2026-09-24 review) gets an exact match on email address or
+	 * username only, and the email comes back only when it was the
+	 * term: the picker still finds the learner they know, but it cannot
+	 * browse the user base or learn addresses.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $search Search term.
+	 * @return array[] Items `[ id, name, email ]` (email '' when withheld).
+	 */
+	public static function user_matches( $search ) {
+		$search = trim( (string) $search );
+		$broad  = current_user_can( 'list_users' );
+
+		if ( ! $broad && '' === $search ) {
+			return [];
+		}
 
 		$users = get_users(
-			[
-				'search'         => '*' . $search . '*',
-				'search_columns' => [ 'user_login', 'user_email', 'user_nicename', 'display_name' ],
-				'number'         => self::USER_SEARCH_LIMIT,
-			]
+			$broad
+				? [
+					'search'         => '*' . $search . '*',
+					'search_columns' => [ 'user_login', 'user_email', 'user_nicename', 'display_name' ],
+					'number'         => self::USER_SEARCH_LIMIT,
+				]
+				: [
+					'search'         => $search,
+					'search_columns' => [ 'user_email', 'user_login' ],
+					'number'         => self::USER_SEARCH_LIMIT,
+				]
 		);
 
+		$term  = strtolower( $search );
 		$items = [];
 
 		foreach ( (array) $users as $user ) {
+			$email = strtolower( (string) $user->user_email );
+			$login = strtolower( isset( $user->user_login ) ? (string) $user->user_login : '' );
+
+			if ( ! $broad && $term !== $email && $term !== $login ) {
+				continue;
+			}
+
 			$items[] = [
 				'id'    => (int) $user->ID,
 				'name'  => (string) $user->display_name,
-				'email' => (string) $user->user_email,
+				'email' => $broad || $term === $email ? (string) $user->user_email : '',
 			];
 		}
 
-		return new WP_REST_Response( $items, 200 );
+		return $items;
 	}
 
 	/**
