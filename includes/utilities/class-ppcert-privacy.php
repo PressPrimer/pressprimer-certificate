@@ -8,6 +8,12 @@
  * removes the user's certificate rows, their events, credits, and
  * cached preview PNGs - and with them, verification.
  *
+ * Suggested privacy policy text (2.0, release review): registered
+ * through wp_add_privacy_policy_content() so Settings -> Privacy ->
+ * Policy Guide tells site owners what the plugin stores and that
+ * certificate pages, verification, and PDF downloads are public to
+ * anyone with the link or credential ID.
+ *
  * @package PressPrimer_Certificate
  * @subpackage Utilities
  * @since 1.0.0
@@ -44,6 +50,114 @@ class PressPrimer_Certificate_Privacy {
 	public static function init() {
 		add_filter( 'wp_privacy_personal_data_exporters', [ __CLASS__, 'register_exporter' ] );
 		add_filter( 'wp_privacy_personal_data_erasers', [ __CLASS__, 'register_eraser' ] );
+
+		// Core requires the policy content to register on admin_init or
+		// later, in the admin.
+		add_action( 'admin_init', [ __CLASS__, 'register_policy_content' ] );
+	}
+
+	/**
+	 * Register the suggested privacy policy text
+	 *
+	 * Appears under Settings -> Privacy -> Policy Guide. The section is
+	 * titled with the (white-label aware) product name.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return void
+	 */
+	public static function register_policy_content() {
+		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+			return;
+		}
+
+		$name = class_exists( 'PressPrimer_Certificate_Admin' )
+			? (string) PressPrimer_Certificate_Admin::branding()['name']
+			: __( 'PressPrimer Certificate', 'pressprimer-certificate' );
+
+		wp_add_privacy_policy_content( $name, self::policy_content() );
+	}
+
+	/**
+	 * The suggested privacy policy content
+	 *
+	 * Guidance paragraphs for the site owner carry the core
+	 * `privacy-policy-tutorial` class (shown in the guide, dropped when
+	 * the text is copied into the policy); the suggested text follows.
+	 * The retention figure reads the live setting so the suggestion is
+	 * true for this site.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return string Sanitized HTML.
+	 */
+	public static function policy_content() {
+		$settings  = get_option( 'ppcert_settings', [] );
+		$retention = isset( $settings['events_retention_days'] ) ? absint( $settings['events_retention_days'] ) : 90;
+		$retention = min( 3650, max( 7, $retention ) );
+
+		$tutorial = [
+			__( 'This plugin issues certificates to users of your site and keeps a record of each one in your database. Nothing is sent to outside services. Use the text below as a starting point and adjust it to match how you use certificates.', 'pressprimer-certificate' ),
+			__( 'Certificates are public to anyone who has the link or the credential ID. Every certificate has a share page, a verification result, and a PDF download that open without signing in. They show the recipient\'s name, the certificate title, the issuer, the issue and expiry dates, and the certificate image and PDF with every field placed on the design, which can include the recipient\'s email address if your template uses that field. Long random credential IDs and rate limiting make guessing impractical, but anyone a recipient shares the link with, or who scans the QR code, sees the same information.', 'pressprimer-certificate' ),
+			__( 'The optional email-course opt-in on the dashboard sends only an administrator\'s own address, typed in and submitted by that administrator. It does not involve your users\' data and needs no mention in your policy.', 'pressprimer-certificate' ),
+		];
+
+		$suggested = [
+			[
+				__( 'Certificates', 'pressprimer-certificate' ),
+				__( 'When you earn a certificate on this site, we keep a record of it: your name as it appears on the certificate, the certificate title, the date it was issued and, where applicable, the date it expires, a unique credential ID, the course, quiz, or other activity that earned it, and the details placed on the certificate design, which may include your name and email address. We keep this record so that we can show you your certificates, let you download them, and confirm to others that they are genuine.', 'pressprimer-certificate' ),
+			],
+			[
+				__( 'Public verification and sharing', 'pressprimer-certificate' ),
+				__( 'Each certificate has a public web page, a verification result, and a PDF download that anyone with its link or credential ID can open without signing in. These show the recipient\'s name, the certificate title, the issuer, the issue and expiry dates, and the full certificate image. Share your certificate link only with people you want to see it. If a certificate is revoked, its page and verification result say so and the download is withdrawn.', 'pressprimer-certificate' ),
+			],
+			[
+				__( 'Usage records', 'pressprimer-certificate' ),
+				sprintf(
+					/* translators: %d: number of days view and verification records are kept */
+					_n(
+						'When a certificate is viewed, verified, or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. View and verification records are deleted after %d day; issue and download records are kept with the certificate.',
+						'When a certificate is viewed, verified, or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. View and verification records are deleted after %d days; issue and download records are kept with the certificate.',
+						$retention,
+						'pressprimer-certificate'
+					),
+					$retention
+				),
+			],
+			[
+				__( 'Your rights', 'pressprimer-certificate' ),
+				__( 'You can ask us to export or erase the certificate records we hold about you. Erasing them removes your certificates, their public pages, and their downloads, and they can no longer be verified.', 'pressprimer-certificate' ),
+			],
+		];
+
+		$content = '';
+
+		foreach ( $tutorial as $paragraph ) {
+			$content .= '<p class="privacy-policy-tutorial">' . esc_html( $paragraph ) . '</p>';
+		}
+
+		$content .= '<p><strong class="privacy-policy-tutorial">' . esc_html__( 'Suggested text:', 'pressprimer-certificate' ) . '</strong></p>';
+
+		foreach ( $suggested as $section ) {
+			$content .= '<p><strong>' . esc_html( $section[0] ) . '</strong> ' . esc_html( $section[1] ) . '</p>';
+		}
+
+		/**
+		 * Filters the suggested privacy policy content.
+		 *
+		 * Addons append their own paragraphs (a public credential
+		 * directory, social preview images) so the guide describes the
+		 * whole suite as installed. Return HTML; it is run through
+		 * wp_kses_post() after the filter.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $content   Suggested policy HTML.
+		 * @param int    $retention Days that view and verification events are kept.
+		 */
+		$content = apply_filters( 'ppcert_privacy_policy_content', $content, $retention );
+
+		return wp_kses_post( $content );
 	}
 
 	/**

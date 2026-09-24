@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-24T13:41:39+00:00\n"
+"POT-Creation-Date: 2026-09-24T14:34:38+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -20,6 +20,7 @@ msgstr ""
 #: includes/admin/class-ppcert-admin.php:291
 #: includes/admin/class-ppcert-admin.php:356
 #: includes/admin/class-ppcert-onboarding.php:346
+#: includes/utilities/class-ppcert-privacy.php:76
 #: src/onboarding/components/Tooltip.jsx:176
 msgid "PressPrimer Certificate"
 msgstr ""
@@ -73,7 +74,8 @@ msgstr ""
 #: includes/admin/class-ppcert-admin-certificates.php:249
 #: includes/admin/class-ppcert-admin-certificates.php:266
 #: includes/admin/class-ppcert-admin.php:292
-#: includes/utilities/class-ppcert-privacy.php:152
+#: includes/utilities/class-ppcert-privacy.php:107
+#: includes/utilities/class-ppcert-privacy.php:266
 #: src/settings/components/StatusTab.jsx:536
 msgid "Certificates"
 msgstr ""
@@ -169,7 +171,7 @@ msgstr ""
 #: includes/admin/class-ppcert-admin-user-profile.php:160
 #: includes/admin/class-ppcert-certificates-list-table.php:67
 #: includes/admin/class-ppcert-templates-list-table.php:96
-#: includes/utilities/class-ppcert-privacy.php:121
+#: includes/utilities/class-ppcert-privacy.php:235
 #: src/dashboard/components/RecentCertificates.jsx:132
 #: src/settings/components/SettingsPage.jsx:83
 #: src/settings/components/StatusTab.jsx:706
@@ -191,30 +193,30 @@ msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:150
 #: includes/admin/class-ppcert-certificates-list-table.php:68
-#: includes/admin/class-ppcert-certificates-list-table.php:182
-#: includes/admin/class-ppcert-certificates-list-table.php:491
-#: includes/admin/class-ppcert-certificates-list-table.php:558
+#: includes/admin/class-ppcert-certificates-list-table.php:199
+#: includes/admin/class-ppcert-certificates-list-table.php:524
+#: includes/admin/class-ppcert-certificates-list-table.php:591
 #: includes/frontend/class-ppcert-verification-page.php:97
 #: includes/frontend/class-ppcert-verification-page.php:284
 #: includes/frontend/class-ppcert-view-page.php:279
-#: includes/utilities/class-ppcert-privacy.php:125
+#: includes/utilities/class-ppcert-privacy.php:239
 #: src/dashboard/components/RecentCertificates.jsx:62
 msgid "Issued"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:151
-#: includes/admin/class-ppcert-certificates-list-table.php:183
-#: includes/admin/class-ppcert-certificates-list-table.php:492
-#: includes/admin/class-ppcert-certificates-list-table.php:559
+#: includes/admin/class-ppcert-certificates-list-table.php:200
+#: includes/admin/class-ppcert-certificates-list-table.php:525
+#: includes/admin/class-ppcert-certificates-list-table.php:592
 #: includes/frontend/class-ppcert-my-certificates.php:268
 #: src/dashboard/components/RecentCertificates.jsx:70
 msgid "Revoked"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:152
-#: includes/admin/class-ppcert-certificates-list-table.php:184
-#: includes/admin/class-ppcert-certificates-list-table.php:493
-#: includes/admin/class-ppcert-certificates-list-table.php:560
+#: includes/admin/class-ppcert-certificates-list-table.php:201
+#: includes/admin/class-ppcert-certificates-list-table.php:526
+#: includes/admin/class-ppcert-certificates-list-table.php:593
 #: includes/frontend/class-ppcert-my-certificates.php:186
 #: includes/frontend/class-ppcert-my-certificates.php:267
 #: includes/frontend/class-ppcert-my-certificates.php:295
@@ -227,8 +229,8 @@ msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:155
 #: includes/frontend/class-ppcert-verification-page.php:397
-#: includes/utilities/class-ppcert-privacy.php:59
-#: includes/utilities/class-ppcert-privacy.php:76
+#: includes/utilities/class-ppcert-privacy.php:173
+#: includes/utilities/class-ppcert-privacy.php:190
 msgid "PressPrimer Certificates"
 msgstr ""
 
@@ -237,7 +239,7 @@ msgstr ""
 #: includes/frontend/class-ppcert-verification-page.php:139
 #: includes/frontend/class-ppcert-view-page.php:278
 #: includes/services/class-ppcert-merge-field-registry.php:552
-#: includes/utilities/class-ppcert-privacy.php:109
+#: includes/utilities/class-ppcert-privacy.php:223
 #: src/dashboard/components/RecentCertificates.jsx:112
 msgid "Credential ID"
 msgstr ""
@@ -249,7 +251,7 @@ msgstr ""
 #: includes/frontend/class-ppcert-view-page.php:390
 #: includes/services/class-ppcert-merge-field-registry.php:168
 #: includes/services/class-ppcert-pdf-renderer.php:323
-#: includes/utilities/class-ppcert-privacy.php:113
+#: includes/utilities/class-ppcert-privacy.php:227
 #: src/dashboard/components/RecentCertificates.jsx:104
 #: src/designer/components/TriggerPanel.jsx:289
 msgid "Certificate"
@@ -267,7 +269,7 @@ msgstr ""
 #: includes/frontend/class-ppcert-verification-page.php:98
 #: includes/frontend/class-ppcert-verification-page.php:278
 #: includes/frontend/class-ppcert-view-page.php:273
-#: includes/utilities/class-ppcert-privacy.php:132
+#: includes/utilities/class-ppcert-privacy.php:246
 #: src/designer/components/TriggerPanel.jsx:403
 msgid "Expires"
 msgstr ""
@@ -284,13 +286,13 @@ msgid "Verify"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:173
-#: includes/admin/class-ppcert-certificates-list-table.php:320
+#: includes/admin/class-ppcert-certificates-list-table.php:353
 #: includes/frontend/class-ppcert-view-page.php:474
 msgid "(opens in a new tab)"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:180
-#: includes/admin/class-ppcert-certificates-list-table.php:321
+#: includes/admin/class-ppcert-certificates-list-table.php:354
 #: includes/api/class-ppcert-rest-verification-controller.php:259
 #: includes/frontend/class-ppcert-my-certificates.php:310
 #: includes/frontend/class-ppcert-view-page.php:299
@@ -298,7 +300,7 @@ msgid "Download PDF"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:185
-#: includes/admin/class-ppcert-certificates-list-table.php:453
+#: includes/admin/class-ppcert-certificates-list-table.php:486
 #: includes/api/class-ppcert-rest-certificates-controller.php:563
 #: includes/api/class-ppcert-rest-certificates-controller.php:567
 #: includes/frontend/class-ppcert-my-certificates.php:262
@@ -308,7 +310,7 @@ msgid "(deleted template)"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:192
-#: includes/admin/class-ppcert-certificates-list-table.php:510
+#: includes/admin/class-ppcert-certificates-list-table.php:543
 msgid "Never expires"
 msgstr ""
 
@@ -397,7 +399,7 @@ msgstr ""
 #: includes/admin/class-ppcert-certificates-list-table.php:66
 #: includes/integrations/abstract-ppcert-lms-adapter.php:219
 #: includes/services/class-ppcert-merge-field-registry.php:170
-#: includes/utilities/class-ppcert-privacy.php:117
+#: includes/utilities/class-ppcert-privacy.php:231
 #: blocks/certificate-link/index.js:147
 #: src/designer/components/ElementPalette.jsx:251
 #: src/designer/components/TriggerPanel.jsx:883
@@ -414,172 +416,172 @@ msgid "All templates"
 msgstr ""
 
 #. translators: %s: template title
-#: includes/admin/class-ppcert-certificates-list-table.php:163
+#: includes/admin/class-ppcert-certificates-list-table.php:180
 #, php-format
 msgid "%s (deleted)"
 msgstr ""
 
 #. translators: %s: template title
-#: includes/admin/class-ppcert-certificates-list-table.php:166
+#: includes/admin/class-ppcert-certificates-list-table.php:183
 #, php-format
 msgid "%s (archived)"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:188
+#: includes/admin/class-ppcert-certificates-list-table.php:205
 #: includes/admin/class-ppcert-templates-list-table.php:200
 msgid "Filter by status"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:190
+#: includes/admin/class-ppcert-certificates-list-table.php:207
 #: includes/admin/class-ppcert-templates-list-table.php:202
 msgid "All statuses"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:204
+#: includes/admin/class-ppcert-certificates-list-table.php:221
 msgid "Filter by source"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:206
+#: includes/admin/class-ppcert-certificates-list-table.php:223
 msgid "All sources"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:223
-#: includes/admin/class-ppcert-certificates-list-table.php:227
+#: includes/admin/class-ppcert-certificates-list-table.php:256
+#: includes/admin/class-ppcert-certificates-list-table.php:260
 msgid "Issued from date"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:230
+#: includes/admin/class-ppcert-certificates-list-table.php:263
 msgctxt "date range separator between the two issued-date inputs"
 msgid "to"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:234
+#: includes/admin/class-ppcert-certificates-list-table.php:267
 msgid "Issued to date"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:237
+#: includes/admin/class-ppcert-certificates-list-table.php:270
 #: includes/admin/class-ppcert-templates-list-table.php:248
 msgid "Filter"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:269
+#: includes/admin/class-ppcert-certificates-list-table.php:302
 msgid "Reset Filters"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:283
-#: includes/admin/class-ppcert-certificates-list-table.php:468
+#: includes/admin/class-ppcert-certificates-list-table.php:316
+#: includes/admin/class-ppcert-certificates-list-table.php:501
 msgid "Manual"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:319
+#: includes/admin/class-ppcert-certificates-list-table.php:352
 msgid "View"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:343
+#: includes/admin/class-ppcert-certificates-list-table.php:376
 msgid "Reinstate"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:358
+#: includes/admin/class-ppcert-certificates-list-table.php:391
 msgid "Revoke certificate"
 msgstr ""
 
 #. translators: %s: credential ID.
-#: includes/admin/class-ppcert-certificates-list-table.php:362
+#: includes/admin/class-ppcert-certificates-list-table.php:395
 #, php-format
 msgid "%s will verify as revoked and its PDF download will be disabled. You can reinstate it later if this is a mistake."
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:366
-#: includes/admin/class-ppcert-certificates-list-table.php:370
+#: includes/admin/class-ppcert-certificates-list-table.php:399
+#: includes/admin/class-ppcert-certificates-list-table.php:403
 msgid "Revoke"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:367
-#: includes/admin/class-ppcert-certificates-list-table.php:413
+#: includes/admin/class-ppcert-certificates-list-table.php:400
+#: includes/admin/class-ppcert-certificates-list-table.php:446
 #: src/issue/index.js:126
 msgid "Cancel"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:368
+#: includes/admin/class-ppcert-certificates-list-table.php:401
 msgid "Reason (optional, shown to staff only):"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:386
+#: includes/admin/class-ppcert-certificates-list-table.php:419
 msgid "Resend email"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:404
+#: includes/admin/class-ppcert-certificates-list-table.php:437
 msgid "Delete certificate"
 msgstr ""
 
 #. translators: %s: credential ID.
-#: includes/admin/class-ppcert-certificates-list-table.php:408
+#: includes/admin/class-ppcert-certificates-list-table.php:441
 #, php-format
 msgid "%s and its history will be permanently deleted, and the credential will no longer verify at all. This cannot be undone. To invalidate an earned credential while keeping its record, use Revoke instead."
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:412
+#: includes/admin/class-ppcert-certificates-list-table.php:445
 msgid "Delete permanently"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:414
+#: includes/admin/class-ppcert-certificates-list-table.php:447
 #: src/designer/components/Canvas.jsx:461
 msgid "Delete"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:449
+#: includes/admin/class-ppcert-certificates-list-table.php:482
 #: includes/api/class-ppcert-rest-certificates-controller.php:559
 msgid "(deleted user)"
 msgstr ""
 
 #. translators: %s: search term
-#: includes/admin/class-ppcert-certificates-list-table.php:545
+#: includes/admin/class-ppcert-certificates-list-table.php:578
 #, php-format
 msgid "search \"%s\""
 msgstr ""
 
 #. translators: %s: template title
-#: includes/admin/class-ppcert-certificates-list-table.php:552
+#: includes/admin/class-ppcert-certificates-list-table.php:585
 #, php-format
 msgid "template \"%s\""
 msgstr ""
 
 #. translators: %s: status label
-#: includes/admin/class-ppcert-certificates-list-table.php:563
+#: includes/admin/class-ppcert-certificates-list-table.php:596
 #, php-format
 msgid "status %s"
 msgstr ""
 
 #. translators: %s: source label
-#: includes/admin/class-ppcert-certificates-list-table.php:570
+#: includes/admin/class-ppcert-certificates-list-table.php:603
 #, php-format
 msgid "source %s"
 msgstr ""
 
 #. translators: 1: from date, 2: to date
-#: includes/admin/class-ppcert-certificates-list-table.php:578
+#: includes/admin/class-ppcert-certificates-list-table.php:611
 #, php-format
 msgid "issued %1$s to %2$s"
 msgstr ""
 
 #. translators: %s: from date
-#: includes/admin/class-ppcert-certificates-list-table.php:581
+#: includes/admin/class-ppcert-certificates-list-table.php:614
 #, php-format
 msgid "issued from %s"
 msgstr ""
 
 #. translators: %s: to date
-#: includes/admin/class-ppcert-certificates-list-table.php:584
+#: includes/admin/class-ppcert-certificates-list-table.php:617
 #, php-format
 msgid "issued up to %s"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:589
+#: includes/admin/class-ppcert-certificates-list-table.php:622
 msgid "No certificates issued yet. Add an award trigger to a published template, or issue one manually."
 msgstr ""
 
 #. translators: %s: comma-separated list of the active filters
-#: includes/admin/class-ppcert-certificates-list-table.php:595
+#: includes/admin/class-ppcert-certificates-list-table.php:628
 #, php-format
 msgid "No certificates match the current filters: %s. Clear or adjust the filters above."
 msgstr ""
@@ -1100,9 +1102,9 @@ msgstr ""
 #: includes/api/class-ppcert-rest-templates-controller.php:625
 #: includes/api/class-ppcert-rest-triggers-controller.php:252
 #: includes/api/class-ppcert-rest-triggers-controller.php:277
-#: includes/models/class-ppcert-template.php:177
-#: includes/models/class-ppcert-template.php:319
-#: includes/models/class-ppcert-template.php:398
+#: includes/models/class-ppcert-template.php:178
+#: includes/models/class-ppcert-template.php:320
+#: includes/models/class-ppcert-template.php:399
 #: includes/services/class-ppcert-issuance-service.php:106
 msgid "Template not found."
 msgstr ""
@@ -1640,26 +1642,26 @@ msgid "Certificate deletion failed."
 msgstr ""
 
 #. translators: %s: source template title
-#: includes/models/class-ppcert-template.php:184
+#: includes/models/class-ppcert-template.php:185
 #, php-format
 msgid "%s (Copy)"
 msgstr ""
 
-#: includes/models/class-ppcert-template.php:234
+#: includes/models/class-ppcert-template.php:235
 msgid "A layout document is required."
 msgstr ""
 
-#: includes/models/class-ppcert-template.php:270
+#: includes/models/class-ppcert-template.php:271
 #: src/designer/components/TemplateGallery.jsx:126
 msgid "The template could not be created."
 msgstr ""
 
-#: includes/models/class-ppcert-template.php:374
+#: includes/models/class-ppcert-template.php:375
 #: src/designer/components/DesignerApp.jsx:217
 msgid "The template could not be saved."
 msgstr ""
 
-#: includes/models/class-ppcert-template.php:416
+#: includes/models/class-ppcert-template.php:417
 msgid "The template could not be moved to the trash."
 msgstr ""
 
@@ -1977,25 +1979,73 @@ msgstr ""
 msgid "An \"Any\" trigger of this type must be scoped to a parent (for example, a specific course)."
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:164
+#: includes/utilities/class-ppcert-privacy.php:100
+msgid "This plugin issues certificates to users of your site and keeps a record of each one in your database. Nothing is sent to outside services. Use the text below as a starting point and adjust it to match how you use certificates."
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:101
+msgid "Certificates are public to anyone who has the link or the credential ID. Every certificate has a share page, a verification result, and a PDF download that open without signing in. They show the recipient's name, the certificate title, the issuer, the issue and expiry dates, and the certificate image and PDF with every field placed on the design, which can include the recipient's email address if your template uses that field. Long random credential IDs and rate limiting make guessing impractical, but anyone a recipient shares the link with, or who scans the QR code, sees the same information."
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:102
+msgid "The optional email-course opt-in on the dashboard sends only an administrator's own address, typed in and submitted by that administrator. It does not involve your users' data and needs no mention in your policy."
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:108
+msgid "When you earn a certificate on this site, we keep a record of it: your name as it appears on the certificate, the certificate title, the date it was issued and, where applicable, the date it expires, a unique credential ID, the course, quiz, or other activity that earned it, and the details placed on the certificate design, which may include your name and email address. We keep this record so that we can show you your certificates, let you download them, and confirm to others that they are genuine."
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:111
+msgid "Public verification and sharing"
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:112
+msgid "Each certificate has a public web page, a verification result, and a PDF download that anyone with its link or credential ID can open without signing in. These show the recipient's name, the certificate title, the issuer, the issue and expiry dates, and the full certificate image. Share your certificate link only with people you want to see it. If a certificate is revoked, its page and verification result say so and the download is withdrawn."
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:115
+msgid "Usage records"
+msgstr ""
+
+#. translators: %d: number of days view and verification records are kept
+#: includes/utilities/class-ppcert-privacy.php:118
+#, php-format
+msgid "When a certificate is viewed, verified, or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. View and verification records are deleted after %d day; issue and download records are kept with the certificate."
+msgid_plural "When a certificate is viewed, verified, or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. View and verification records are deleted after %d days; issue and download records are kept with the certificate."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/utilities/class-ppcert-privacy.php:128
+msgid "Your rights"
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:129
+msgid "You can ask us to export or erase the certificate records we hold about you. Erasing them removes your certificates, their public pages, and their downloads, and they can no longer be verified."
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:139
+msgid "Suggested text:"
+msgstr ""
+
+#: includes/utilities/class-ppcert-privacy.php:278
 msgid "Certificate Credits"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:168
+#: includes/utilities/class-ppcert-privacy.php:282
 msgid "Credit type"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:174
+#: includes/utilities/class-ppcert-privacy.php:288
 msgid "Amount"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:178
+#: includes/utilities/class-ppcert-privacy.php:292
 #: src/dashboard/components/ActivityChart.jsx:63
 #: src/dashboard/components/ActivityChart.jsx:190
 msgid "Awarded"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:262
+#: includes/utilities/class-ppcert-privacy.php:376
 msgid "Erased certificates are permanently removed and can no longer be verified."
 msgstr ""
 

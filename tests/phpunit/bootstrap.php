@@ -1613,6 +1613,24 @@ if ( ! function_exists( 'is_admin' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+	/**
+	 * Stub: Record suggested privacy policy content.
+	 *
+	 * Entries land in $GLOBALS['ppcert_test_privacy_policy'] as
+	 * [ 'name' => ..., 'text' => ... ].
+	 *
+	 * @param string $plugin_name Plugin name.
+	 * @param string $policy_text Policy HTML.
+	 */
+	function wp_add_privacy_policy_content( $plugin_name, $policy_text ) {
+		$GLOBALS['ppcert_test_privacy_policy'][] = [
+			'name' => (string) $plugin_name,
+			'text' => (string) $policy_text,
+		];
+	}
+}
+
 if ( ! function_exists( 'esc_html_e' ) ) {
 	/**
 	 * Stub: Echo an HTML-escaped translated string.

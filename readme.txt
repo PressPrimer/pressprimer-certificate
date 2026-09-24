@@ -186,6 +186,8 @@ If you have PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tuto
 
 PressPrimer Certificate stores certificate data (templates, issued certificates, recipient references, and issuance events) in your WordPress database under your full control. PDF and QR code generation happen locally on your server. No certificate or recipient data is ever transmitted to external servers. The single exception to "nothing leaves your site" is the optional email-course opt-in described under External Services; it sends only an email address that an administrator explicitly typed in and submitted.
 
+Issued certificates are public to anyone who has the link or the credential ID. The certificate's share page, its verification result, and its PDF download open without signing in and show the recipient's name, the certificate title, the issuer, the issue and expiry dates, and the full certificate with every merge field placed on its design (which can include the recipient's email address if the template uses that field). Long random credential IDs and rate limiting make guessing impractical, but anyone a recipient shares the link with, or who scans the QR code, sees the same information. If your site must meet GDPR or similar rules, say so in your privacy policy: the plugin adds suggested wording under Settings > Privacy > Policy Guide.
+
 The plugin integrates with the WordPress Privacy API:
 
 * **Tools > Export Personal Data** includes all certificates issued to the requested user.
@@ -276,6 +278,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 == Changelog ==
 
 = 2.0.0 =
+* Added: Suggested privacy policy text under Settings > Privacy > Policy Guide, covering what certificates store and that certificate pages, verification, and PDF downloads are public to anyone with the link or credential ID
 * Added: Search and filters on the Certificates screen. Find certificates by recipient, certificate name, or exact credential ID, and filter by status, template, and issue date range.
 * Added: Send yourself a test award email from the template editor, with sample values filled in, before the template goes live.
 * Added: Four Geometric starter templates - a modern design family drawn from your brand colors, in portrait and landscape for both A4 and Letter sizes.

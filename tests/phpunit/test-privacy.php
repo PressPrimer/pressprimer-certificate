@@ -265,4 +265,49 @@ class Test_Privacy extends TestCase {
 		$this->assertSame( 0, $result['items_removed'] );
 		$this->assertCount( 1, $this->wpdb->rows( 'wp_ppcert_certificates' ) );
 	}
+
+	/**
+	 * Suggested privacy policy text (2.0): registered on admin_init under
+	 * the product name, with the owner guidance marked as tutorial text,
+	 * the public-by-link disclosure, the live retention figure, and the
+	 * addon extension point.
+	 *
+	 * @return void
+	 */
+	public function test_suggested_privacy_policy_content() {
+		$GLOBALS['ppcert_test_privacy_policy'] = [];
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'events_retention_days' => 30 ];
+
+		PressPrimer_Certificate_Privacy::init();
+		$hooked = array_column( $GLOBALS['ppcert_test_hooks']['admin_init'], 'callback' );
+		$this->assertContains( [ 'PressPrimer_Certificate_Privacy', 'register_policy_content' ], $hooked, 'Core requires admin_init or later' );
+
+		PressPrimer_Certificate_Privacy::register_policy_content();
+		$this->assertCount( 1, $GLOBALS['ppcert_test_privacy_policy'] );
+		$entry = $GLOBALS['ppcert_test_privacy_policy'][0];
+		$this->assertSame( 'PressPrimer Certificate', $entry['name'] );
+
+		$text = $entry['text'];
+		$this->assertStringContainsString( 'class="privacy-policy-tutorial"', $text, 'Owner guidance is tutorial text the guide drops on copy' );
+		$this->assertStringContainsString( 'Suggested text:', $text );
+		$this->assertStringContainsString( 'public to anyone who has the link or the credential ID', $text );
+		$this->assertStringContainsString( 'without signing in', $text );
+		$this->assertStringContainsString( 'may include your name and email address', $text );
+		$this->assertStringContainsString( 'deleted after 30 days', $text, 'The retention figure is the live setting' );
+		$this->assertStringContainsString( 'can no longer be verified', $text );
+
+		// Addons extend the suggestion and receive the retention figure;
+		// the result is wp_kses_post()-sanitized after the filter (core's
+		// function, a passthrough in this harness).
+		add_filter(
+			'ppcert_privacy_policy_content',
+			static function ( $content, $retention ) {
+				return $content . '<p><strong>Credential directory</strong> Opt-in only (' . (int) $retention . ' days).</p>';
+			},
+			10,
+			2
+		);
+		$extended = PressPrimer_Certificate_Privacy::policy_content();
+		$this->assertStringEndsWith( '<p><strong>Credential directory</strong> Opt-in only (30 days).</p>', $extended );
+	}
 }
