@@ -148,6 +148,9 @@ class PressPrimer_Certificate_View_Page {
 
 		self::$certificate = $certificate;
 
+		// No comments, no edit link on the stub post (2.0.1).
+		PressPrimer_Certificate_Virtual_Page::guard();
+
 		wp_enqueue_style( 'ppcert-frontend' );
 
 		$post = self::build_stub_post( $certificate );

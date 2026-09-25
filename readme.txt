@@ -277,6 +277,9 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 
 == Changelog ==
 
+= 2.0.1 =
+* Fixed: The certificate view page no longer lists the site's comments under a "Responses" heading, or offers an Edit link that leads to the Posts list, on themes and page builders that render a comments section without checking whether comments are open (seen with Hello Elementor and Elementor's Post Comments widget)
+
 = 2.0.0 =
 * Added: Suggested privacy policy text under Settings > Privacy > Policy Guide, covering what certificates store and that certificate pages, verification, and PDF downloads are public to anyone with the link or credential ID
 * Added: Search and filters on the Certificates screen.

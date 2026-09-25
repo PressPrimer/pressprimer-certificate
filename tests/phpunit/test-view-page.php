@@ -376,4 +376,132 @@ class Test_View_Page extends TestCase {
 		$this->assertStringContainsString( 'Verify this certificate', $html );
 		$this->assertStringNotContainsString( 'not-an-action', $html, 'Malformed entries drop' );
 	}
+
+	/**
+	 * A fake main query for the injector.
+	 *
+	 * @param string $credential Query var value.
+	 * @return object
+	 */
+	private function fake_query( $credential ) {
+		$query = new class() {
+			public $posts             = [];
+			public $post              = null;
+			public $post_count        = 0;
+			public $found_posts       = 0;
+			public $is_page           = false;
+			public $is_singular       = false;
+			public $is_single         = false;
+			public $is_home           = false;
+			public $is_archive        = false;
+			public $is_404            = false;
+			public $queried_object    = null;
+			public $queried_object_id = 0;
+			public $vars              = [];
+			public function is_main_query() {
+				return true;
+			}
+			public function get( $var ) {
+				return isset( $this->vars[ $var ] ) ? $this->vars[ $var ] : '';
+			}
+			public function set_404() {
+				$this->is_404 = true;
+			}
+		};
+
+		$query->vars[ PressPrimer_Certificate_View_Page::QUERY_VAR ] = $credential;
+
+		return $query;
+	}
+
+	/**
+	 * The virtual page guard (2.0.1, production report): comments and
+	 * pings closed for the stub post only, a zero count, an empty
+	 * comments template, no edit link, no admin-bar Edit node - and
+	 * real posts on the same page untouched.
+	 *
+	 * @return void
+	 */
+	public function test_virtual_page_guard_closes_comments_and_edit_links() {
+		PressPrimer_Certificate_Virtual_Page::reset();
+		$this->assertFalse( PressPrimer_Certificate_Virtual_Page::is_active() );
+
+		PressPrimer_Certificate_Virtual_Page::guard();
+		PressPrimer_Certificate_Virtual_Page::guard();
+		$this->assertTrue( PressPrimer_Certificate_Virtual_Page::is_active() );
+		$this->assertCount( 1, $GLOBALS['ppcert_test_hooks']['comments_template'], 'Idempotent' );
+
+		$this->assertFalse( apply_filters( 'comments_open', true, 0 ) );
+		$this->assertTrue( apply_filters( 'comments_open', true, 12 ), 'Real posts keep their state' );
+		$this->assertFalse( apply_filters( 'pings_open', true, 0 ) );
+		$this->assertSame( 0, apply_filters( 'get_comments_number', 20, 0 ) );
+		$this->assertSame( 3, apply_filters( 'get_comments_number', 3, 12 ) );
+
+		$GLOBALS['post'] = (object) [ 'ID' => 0 ];
+		$template        = apply_filters( 'comments_template', '/theme/comments.php' );
+		$this->assertSame( PPCERT_PLUGIN_DIR . 'templates/virtual-page-comments.php', $template );
+		$this->assertFileExists( $template, 'The empty template ships with the plugin' );
+		$this->assertStringNotContainsString( 'comments', strtolower( (string) preg_replace( '/\/\*.*?\*\//s', '', file_get_contents( $template ) ) ), 'Nothing renders from it' );
+
+		$GLOBALS['post'] = (object) [ 'ID' => 12 ];
+		$this->assertSame( '/theme/comments.php', apply_filters( 'comments_template', '/theme/comments.php' ), 'A real post keeps the theme template' );
+		unset( $GLOBALS['post'] );
+
+		$this->assertSame( '', apply_filters( 'get_edit_post_link', 'https://example.test/wp-admin/post.php?post=0&action=edit', 0 ) );
+		$this->assertSame( 'https://example.test/wp-admin/post.php?post=12&action=edit', apply_filters( 'get_edit_post_link', 'https://example.test/wp-admin/post.php?post=12&action=edit', 12 ) );
+
+		$bar = new class() {
+			public $removed = [];
+			public function remove_node( $id ) {
+				$this->removed[] = $id;
+			}
+		};
+		$GLOBALS['ppcert_test_queried_object_id'] = 0;
+		PressPrimer_Certificate_Virtual_Page::remove_edit_node( $bar );
+		$this->assertSame( [ 'edit' ], $bar->removed );
+
+		$GLOBALS['ppcert_test_queried_object_id'] = 12;
+		PressPrimer_Certificate_Virtual_Page::remove_edit_node( $bar );
+		$this->assertSame( [ 'edit' ], $bar->removed, 'A real singular keeps its Edit node' );
+		unset( $GLOBALS['ppcert_test_queried_object_id'] );
+
+		PressPrimer_Certificate_Virtual_Page::reset();
+	}
+
+	/**
+	 * Injecting the certificate stub arms the guard for the request.
+	 *
+	 * @return void
+	 */
+	public function test_inject_virtual_page_arms_the_guard() {
+		PressPrimer_Certificate_Virtual_Page::reset();
+
+		$GLOBALS['wpdb']->seed_row(
+			PressPrimer_Certificate_Certificate::table(),
+			[
+				'uuid'                 => 'view-guard-1',
+				'credential_id'        => 'CRED00000042',
+				'recipient_id'         => 7,
+				'template_id'          => 1,
+				'status'               => 'issued',
+				'issued_at'            => '2026-06-12 00:00:00',
+				'expires_at'           => null,
+				'layout_snapshot_json' => wp_json_encode( [ 'page' => [], 'elements' => [] ] ),
+				'merge_data_json'      => wp_json_encode( [] ),
+			]
+		);
+
+		$query = $this->fake_query( 'CRED00000042' );
+		$posts = PressPrimer_Certificate_View_Page::inject_virtual_page( [], $query );
+
+		$this->assertCount( 1, $posts );
+		$this->assertSame( 0, (int) $posts[0]->ID, 'The stub post has no id' );
+		$this->assertSame( 'closed', $posts[0]->comment_status );
+		$this->assertTrue( $query->is_page );
+		$this->assertTrue( PressPrimer_Certificate_Virtual_Page::is_active(), 'The injector arms the guard' );
+		$this->assertArrayHasKey( 'comments_template', $GLOBALS['ppcert_test_hooks'] );
+		$this->assertArrayHasKey( 'admin_bar_menu', $GLOBALS['ppcert_test_hooks'] );
+
+		PressPrimer_Certificate_Virtual_Page::reset();
+	}
 }
