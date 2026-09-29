@@ -20,6 +20,13 @@
 class PPCert_Fake_WPDB {
 
 	/**
+	 * The users table name (bulk lookups read $GLOBALS['ppcert_test_users']).
+	 *
+	 * @var string
+	 */
+	public $users = 'wp_users';
+
+	/**
 	 * Table prefix, like the real thing.
 	 *
 	 * @var string
@@ -518,6 +525,96 @@ class PPCert_Fake_WPDB {
 		$args  = $payload['args'];
 		$table = isset( $args[0] ) ? (string) $args[0] : '';
 		$rows  = $this->rows( $table );
+
+		// Database write ceiling (Educator batch storage guard, 2.0.1).
+		if ( 'SELECT @@max_allowed_packet' === $query ) {
+			return [ [ 'max_allowed_packet' => isset( $GLOBALS['ppcert_test_max_allowed_packet'] ) ? (int) $GLOBALS['ppcert_test_max_allowed_packet'] : 1073741824 ] ];
+		}
+
+		// Recipient labels in bulk (School retroactive REST, 2.0.1).
+		if ( 'SELECT ID, display_name, user_email FROM %i WHERE FIND_IN_SET( ID, %s )' === $query ) {
+			$wanted = array_map( 'intval', explode( ',', (string) $args[1] ) );
+			$users  = isset( $GLOBALS['ppcert_test_users'] ) ? $GLOBALS['ppcert_test_users'] : [];
+			$out    = [];
+
+			foreach ( $users as $key => $user ) {
+				$id = isset( $user->ID ) ? (int) $user->ID : (int) $key;
+
+				if ( in_array( $id, $wanted, true ) ) {
+					$out[] = [
+						'ID'           => $id,
+						'display_name' => isset( $user->display_name ) ? (string) $user->display_name : '',
+						'user_email'   => isset( $user->user_email ) ? (string) $user->user_email : '',
+					];
+				}
+			}
+
+			return $out;
+		}
+
+		// Bulk user resolution (Educator batch preview, 2.0.1): id-list
+		// lookups against the users table, served from the user fixtures.
+		if ( 'SELECT ID FROM %i WHERE FIND_IN_SET( ID, %s )' === $query ) {
+			$wanted = array_map( 'intval', explode( ',', (string) $args[1] ) );
+			$users  = isset( $GLOBALS['ppcert_test_users'] ) ? $GLOBALS['ppcert_test_users'] : [];
+			$out    = [];
+
+			foreach ( $users as $key => $user ) {
+				$id = isset( $user->ID ) ? (int) $user->ID : (int) $key;
+
+				if ( in_array( $id, $wanted, true ) ) {
+					$out[] = [ 'ID' => $id ];
+				}
+			}
+
+			return $out;
+		}
+
+		if ( 'SELECT ID, user_email FROM %i WHERE FIND_IN_SET( user_email, %s )' === $query ) {
+			$wanted = array_map( 'strtolower', explode( ',', (string) $args[1] ) );
+			$users  = isset( $GLOBALS['ppcert_test_users'] ) ? $GLOBALS['ppcert_test_users'] : [];
+			$out    = [];
+
+			foreach ( $users as $key => $user ) {
+				$email = isset( $user->user_email ) ? strtolower( (string) $user->user_email ) : '';
+
+				if ( '' !== $email && in_array( $email, $wanted, true ) ) {
+					$out[] = [
+						'ID'         => isset( $user->ID ) ? (int) $user->ID : (int) $key,
+						'user_email' => (string) $user->user_email,
+					];
+				}
+			}
+
+			return $out;
+		}
+
+		// Bulk duplicate lookup (Educator batch preview, 2.0.1).
+		if ( "SELECT recipient_id, source_ref FROM %i WHERE template_id = %d AND source_type = %s AND status != 'revoked' AND FIND_IN_SET( recipient_id, %s )" === $query ) {
+			$template_id = (int) $args[1];
+			$source_type = (string) $args[2];
+			$wanted      = array_map( 'intval', explode( ',', (string) $args[3] ) );
+
+			return array_values(
+				array_map(
+					static function ( $row ) {
+						return [
+							'recipient_id' => (int) $row['recipient_id'],
+							'source_ref'   => isset( $row['source_ref'] ) ? $row['source_ref'] : null,
+						];
+					},
+					$this->filter_rows(
+						$rows,
+						static function ( $row ) use ( $template_id, $source_type, $wanted ) {
+							return (int) $row['template_id'] === $template_id
+								&& (string) $row['source_type'] === $source_type
+								&& 'revoked' !== (string) $row['status']
+								&& in_array( (int) $row['recipient_id'], $wanted, true );
+						}
+					)
+				)
+			);
+		}
 
 		// Migrator::verify_targets - table presence. The LIKE pattern is
 		// the exact table name (the migrator escapes nothing wild).
