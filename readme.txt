@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
 Tested up to: 7.1
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -278,7 +278,7 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 == Changelog ==
 
 = 2.0.1 =
-* Fixed: The certificate view page no longer lists the site's comments under a "Responses" heading, or offers an Edit link that leads to the Posts list, on themes and page builders that render a comments section without checking whether comments are open (seen with Hello Elementor and Elementor's Post Comments widget)
+* Fixed: The certificate view page no longer lists the site's comments, or offers an Edit link that leads to the Posts list, on themes and page builders that exposed them. 
 
 = 2.0.0 =
 * Added: Suggested privacy policy text under Settings > Privacy > Policy Guide, covering what certificates store and that certificate pages, verification, and PDF downloads are public to anyone with the link or credential ID
@@ -324,6 +324,9 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Initial release: certificate designer, credential IDs, QR verification, automatic issuance from PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, and LearnPress, email delivery, and a public verification page.
 
 == Upgrade Notice ==
+
+= 2.0.1 =
+The certificate view page no longer lists the site's comments or offers an Edit link on themes and page builders that render comments unconditionally. Recommended for every 2.0.0 site; nothing else changes.
 
 = 2.0.0 =
 Certificate search and filters, test award emails, Geometric starter templates, a Certificate Link block, PDF download on the verification page, multi-page rendering, a developer API, and the Educator, School, and Enterprise premium tiers. Existing certificates and templates are unchanged.

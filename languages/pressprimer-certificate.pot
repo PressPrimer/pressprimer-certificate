@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Certificate 2.0.0\n"
+"Project-Id-Version: PressPrimer Certificate 2.0.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-certificate\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-24T14:34:38+00:00\n"
+"POT-Creation-Date: 2026-09-29T12:33:43+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -198,7 +198,7 @@ msgstr ""
 #: includes/admin/class-ppcert-certificates-list-table.php:591
 #: includes/frontend/class-ppcert-verification-page.php:97
 #: includes/frontend/class-ppcert-verification-page.php:284
-#: includes/frontend/class-ppcert-view-page.php:279
+#: includes/frontend/class-ppcert-view-page.php:282
 #: includes/utilities/class-ppcert-privacy.php:239
 #: src/dashboard/components/RecentCertificates.jsx:62
 msgid "Issued"
@@ -222,7 +222,7 @@ msgstr ""
 #: includes/frontend/class-ppcert-my-certificates.php:295
 #: includes/frontend/class-ppcert-verification-page.php:99
 #: includes/frontend/class-ppcert-verification-page.php:277
-#: includes/frontend/class-ppcert-view-page.php:272
+#: includes/frontend/class-ppcert-view-page.php:275
 #: src/dashboard/components/RecentCertificates.jsx:66
 msgid "Expired"
 msgstr ""
@@ -237,7 +237,7 @@ msgstr ""
 #: includes/admin/class-ppcert-admin-user-profile.php:158
 #: includes/admin/class-ppcert-certificates-list-table.php:63
 #: includes/frontend/class-ppcert-verification-page.php:139
-#: includes/frontend/class-ppcert-view-page.php:278
+#: includes/frontend/class-ppcert-view-page.php:281
 #: includes/services/class-ppcert-merge-field-registry.php:552
 #: includes/utilities/class-ppcert-privacy.php:223
 #: src/dashboard/components/RecentCertificates.jsx:112
@@ -247,8 +247,8 @@ msgstr ""
 #: includes/admin/class-ppcert-admin-user-profile.php:159
 #: includes/frontend/class-ppcert-verification-page.php:95
 #: includes/frontend/class-ppcert-verification-page.php:282
-#: includes/frontend/class-ppcert-view-page.php:277
-#: includes/frontend/class-ppcert-view-page.php:390
+#: includes/frontend/class-ppcert-view-page.php:280
+#: includes/frontend/class-ppcert-view-page.php:393
 #: includes/services/class-ppcert-merge-field-registry.php:168
 #: includes/services/class-ppcert-pdf-renderer.php:323
 #: includes/utilities/class-ppcert-privacy.php:227
@@ -268,7 +268,7 @@ msgstr ""
 #: includes/frontend/class-ppcert-my-certificates.php:296
 #: includes/frontend/class-ppcert-verification-page.php:98
 #: includes/frontend/class-ppcert-verification-page.php:278
-#: includes/frontend/class-ppcert-view-page.php:273
+#: includes/frontend/class-ppcert-view-page.php:276
 #: includes/utilities/class-ppcert-privacy.php:246
 #: src/designer/components/TriggerPanel.jsx:403
 msgid "Expires"
@@ -287,7 +287,7 @@ msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:173
 #: includes/admin/class-ppcert-certificates-list-table.php:353
-#: includes/frontend/class-ppcert-view-page.php:474
+#: includes/frontend/class-ppcert-view-page.php:477
 msgid "(opens in a new tab)"
 msgstr ""
 
@@ -295,14 +295,14 @@ msgstr ""
 #: includes/admin/class-ppcert-certificates-list-table.php:354
 #: includes/api/class-ppcert-rest-verification-controller.php:259
 #: includes/frontend/class-ppcert-my-certificates.php:310
-#: includes/frontend/class-ppcert-view-page.php:299
+#: includes/frontend/class-ppcert-view-page.php:302
 msgid "Download PDF"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:185
 #: includes/admin/class-ppcert-certificates-list-table.php:486
-#: includes/api/class-ppcert-rest-certificates-controller.php:563
-#: includes/api/class-ppcert-rest-certificates-controller.php:567
+#: includes/api/class-ppcert-rest-certificates-controller.php:602
+#: includes/api/class-ppcert-rest-certificates-controller.php:606
 #: includes/frontend/class-ppcert-my-certificates.php:262
 #: src/dashboard/components/RecentCertificates.jsx:109
 #: src/dashboard/components/TopTemplates.jsx:74
@@ -383,7 +383,7 @@ msgstr ""
 #: includes/admin/class-ppcert-certificates-list-table.php:64
 #: includes/frontend/class-ppcert-verification-page.php:94
 #: includes/frontend/class-ppcert-verification-page.php:281
-#: includes/frontend/class-ppcert-view-page.php:276
+#: includes/frontend/class-ppcert-view-page.php:279
 #: includes/services/class-ppcert-merge-field-registry.php:167
 #: src/dashboard/components/RecentCertificates.jsx:91
 #: src/issue/index.js:208
@@ -530,7 +530,7 @@ msgid "Delete"
 msgstr ""
 
 #: includes/admin/class-ppcert-certificates-list-table.php:482
-#: includes/api/class-ppcert-rest-certificates-controller.php:559
+#: includes/api/class-ppcert-rest-certificates-controller.php:598
 msgid "(deleted user)"
 msgstr ""
 
@@ -1064,7 +1064,7 @@ msgstr ""
 #: includes/api/class-ppcert-rest-certificates-controller.php:449
 #: includes/frontend/class-ppcert-verification-page.php:88
 #: includes/frontend/class-ppcert-verification-page.php:244
-#: includes/frontend/class-ppcert-view-page.php:254
+#: includes/frontend/class-ppcert-view-page.php:257
 msgid "This certificate has been revoked."
 msgstr ""
 
@@ -1080,7 +1080,7 @@ msgstr ""
 msgid "Please enter a valid email address."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-merge-fields-controller.php:354
+#: includes/api/class-ppcert-rest-merge-fields-controller.php:371
 msgid "That post is not a source for any registered trigger type."
 msgstr ""
 
@@ -1324,16 +1324,16 @@ msgstr ""
 msgid "The %s verification page has been deleted. Certificate QR codes and links will not resolve until you assign a new page in the plugin settings."
 msgstr ""
 
-#: includes/frontend/class-ppcert-view-page.php:258
+#: includes/frontend/class-ppcert-view-page.php:261
 msgid "This certificate has expired."
 msgstr ""
 
-#: includes/frontend/class-ppcert-view-page.php:307
+#: includes/frontend/class-ppcert-view-page.php:310
 msgid "Verify this certificate"
 msgstr ""
 
 #. translators: %s: recipient name
-#: includes/frontend/class-ppcert-view-page.php:353
+#: includes/frontend/class-ppcert-view-page.php:356
 #, php-format
 msgid "Certificate preview for %s"
 msgstr ""
@@ -3003,15 +3003,15 @@ msgstr ""
 msgid "Search users…"
 msgstr ""
 
-#: src/issue/index.js:236
+#: src/issue/index.js:238
 msgid "Earned date"
 msgstr ""
 
-#: src/issue/index.js:258
+#: src/issue/index.js:260
 msgid "Expires (optional)"
 msgstr ""
 
-#: src/issue/index.js:269
+#: src/issue/index.js:271
 msgid "Certificate's validity, or never"
 msgstr ""
 
