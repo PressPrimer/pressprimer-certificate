@@ -324,6 +324,12 @@ class PPCert_Fake_WPDB {
 	 * @throws RuntimeException On an unsupported query shape.
 	 */
 	public function get_var( $prepared ) {
+		// Literal server-variable reads carry no placeholders and are not
+		// prepared (Educator's batch storage guard, 2.0.2).
+		if ( 'SELECT @@max_allowed_packet' === $prepared ) {
+			return isset( $GLOBALS['ppcert_test_max_allowed_packet'] ) ? (int) $GLOBALS['ppcert_test_max_allowed_packet'] : 1073741824;
+		}
+
 		$matches = $this->run_query( $prepared );
 
 		if ( empty( $matches ) ) {
