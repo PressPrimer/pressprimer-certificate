@@ -277,6 +277,9 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 
 == Changelog ==
 
+= 2.0.2 =
+* Fixed: On sites using LiteSpeed Cache with REST API caching, the template editor and other PressPrimer Certificate screens no longer load an outdated cached copy, which caused a false "Changed elsewhere" warning when saving a template
+
 = 2.0.1 =
 * Fixed: The certificate view page no longer lists the site's comments, or offers an Edit link that leads to the Posts list, on themes and page builders that exposed them. 
 

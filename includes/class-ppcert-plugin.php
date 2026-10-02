@@ -390,6 +390,12 @@ class PressPrimer_Certificate_Plugin {
 				$controller->init();
 			}
 		}
+
+		// Every suite REST response (addon namespaces included) is marked
+		// not cacheable for LiteSpeed (2.0.2).
+		if ( class_exists( 'PressPrimer_Certificate_REST_Cache_Guard' ) ) {
+			PressPrimer_Certificate_REST_Cache_Guard::init();
+		}
 	}
 
 	/**

@@ -1317,6 +1317,32 @@ if ( ! class_exists( 'WP_REST_Request' ) ) {
 		public function get_file_params() {
 			return $this->files;
 		}
+
+		/**
+		 * Route (since 2.0.2: the REST cache guard matches on it).
+		 *
+		 * @var string
+		 */
+		private $route = '';
+
+		/**
+		 * Set the route.
+		 *
+		 * @param string $route Route, e.g. /ppcert/v1/templates/6.
+		 * @return void
+		 */
+		public function set_route( $route ) {
+			$this->route = (string) $route;
+		}
+
+		/**
+		 * Get the route.
+		 *
+		 * @return string
+		 */
+		public function get_route() {
+			return $this->route;
+		}
 	}
 }
 
