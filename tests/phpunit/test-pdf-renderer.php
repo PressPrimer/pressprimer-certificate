@@ -257,6 +257,38 @@ class Test_PDF_Renderer extends TestCase {
 	}
 
 	/**
+	 * Rendering raises the memory limit first (2.0.2): large custom
+	 * fonts are decompressed whole for subsetting, and learner
+	 * downloads run outside wp-admin. A rejected layout renders nothing
+	 * and raises nothing.
+	 *
+	 * @return void
+	 */
+	public function test_render_raises_the_memory_limit() {
+		$GLOBALS['ppcert_test_memory_raises'] = [];
+
+		$renderer = new PressPrimer_Certificate_PDF_Renderer();
+		$renderer->render_pdf( [ 'layout_schema_version' => 1, 'elements' => [] ], [] );
+		$this->assertSame( [], $GLOBALS['ppcert_test_memory_raises'] );
+
+		$path = $renderer->render_pdf(
+			[
+				'layout_schema_version' => 2,
+				'page'                  => [ 'size' => 'a4', 'orientation' => 'landscape', 'width' => 842, 'height' => 595 ],
+				'background'            => [ 'color' => '#ffffff', 'attachment_id' => 0 ],
+				'elements'              => [],
+			],
+			[],
+			[ 'context' => 'preview' ]
+		);
+
+		$this->assertIsString( $path );
+		$this->assertSame( [ 'ppcert_pdf' ], $GLOBALS['ppcert_test_memory_raises'] );
+
+		unlink( $path );
+	}
+
+	/**
 	 * An image WordPress accepts but this server cannot render records
 	 * the format warning, not the generic not-an-image one (Feature
 	 * 2.0-010 FR-004) - whether GD can size the file (BMP) or not (HEIC).

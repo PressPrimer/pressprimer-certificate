@@ -95,6 +95,16 @@ class PressPrimer_Certificate_PDF_Renderer {
 			return $structure;
 		}
 
+		// Embedded fonts are decompressed whole for glyph subsetting, so
+		// a large custom font (Chinese, Japanese, and Korean faces run
+		// 15-60 MB) needs several times its size in memory. Learner
+		// downloads and issuance run outside wp-admin, where WordPress
+		// does not raise the limit itself; lift it to the admin ceiling
+		// (WP_MAX_MEMORY_LIMIT) the way Bulk Award does (2.0.2).
+		if ( function_exists( 'wp_raise_memory_limit' ) ) {
+			wp_raise_memory_limit( 'ppcert_pdf' );
+		}
+
 		$context = isset( $args['context'] ) ? (string) $args['context'] : 'download';
 
 		// wp_tempnam() lives in wp-admin/includes/file.php, which REST and

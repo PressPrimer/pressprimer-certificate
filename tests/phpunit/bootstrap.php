@@ -227,6 +227,19 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_raise_memory_limit' ) ) {
+	/**
+	 * Stub: Record a memory-limit raise request (since 2.0.2).
+	 *
+	 * @param string $context Context name.
+	 * @return false Never changes the test process's limit.
+	 */
+	function wp_raise_memory_limit( $context = 'admin' ) {
+		$GLOBALS['ppcert_test_memory_raises'][] = $context;
+		return false;
+	}
+}
+
 if ( ! function_exists( 'do_action' ) ) {
 	/**
 	 * Stub: Run registered action callbacks.
