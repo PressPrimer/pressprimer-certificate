@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
 Tested up to: 7.1
-Stable tag: 2.0.1
+Stable tag: 2.0.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -328,6 +328,9 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Initial release: certificate designer, credential IDs, QR verification, automatic issuance from PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, and LearnPress, email delivery, and a public verification page.
 
 == Upgrade Notice ==
+
+= 2.0.2 =
+Fixes a false "Changed elsewhere" warning when saving templates on sites using LiteSpeed Cache, and helps certificates with large custom fonts render on hosts with a low memory limit. Nothing else changes.
 
 = 2.0.1 =
 The certificate view page no longer lists the site's comments or offers an Edit link on themes and page builders that render comments unconditionally. Recommended for every 2.0.0 site; nothing else changes.
