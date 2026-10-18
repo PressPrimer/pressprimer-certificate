@@ -65,7 +65,10 @@ function Edit() {
 					<input
 						type="text"
 						disabled
-						placeholder="XXXX-XXXX-XXXX"
+						placeholder={
+							window.ppcert_verify_block_data?.example ||
+							'XXXX-XXXX-XXXX'
+						}
 						style={ {
 							fontFamily: 'monospace',
 							letterSpacing: '0.08em',

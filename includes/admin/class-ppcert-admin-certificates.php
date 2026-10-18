@@ -491,7 +491,7 @@ class PressPrimer_Certificate_Admin_Certificates {
 			get_current_user_id()
 		);
 
-		$filename = 'certificate-' . strtolower( (string) $certificate->credential_id ) . '.pdf';
+		$filename = PressPrimer_Certificate_Certificate::pdf_filename( $certificate );
 
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );

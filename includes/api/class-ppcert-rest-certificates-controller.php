@@ -380,7 +380,7 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 					[
 						'status'        => 409,
 						'existing_id'   => (int) $existing->id,
-						'credential_id' => PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $existing->credential_id ),
+						'credential_id' => PressPrimer_Certificate_Certificate::display_credential_id( $existing ),
 					]
 				);
 			}
@@ -428,9 +428,27 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request The request.
-	 * @return WP_Error On failure (success streams the file and exits).
+	 * @return WP_Error|WP_REST_Response On failure (success streams the file and exits).
 	 */
 	public function download_pdf( $request ) {
+		// Per-visitor limit before any work (2.1, Feature 2.1-004 FR-009):
+		// the certificate page's bucket, so walking IDs through either
+		// surface draws on one allowance.
+		if ( ! PressPrimer_Certificate_View_Page::check_rate_limit() ) {
+			$response = new WP_REST_Response(
+				[
+					'code'    => 'ppcert_rate_limited',
+					'message' => __( 'Too many requests. Please wait a minute and try again.', 'pressprimer-certificate' ),
+					'data'    => [ 'status' => 429 ],
+				],
+				429
+			);
+			$response->header( 'Cache-Control', 'no-store' );
+			$response->header( 'Retry-After', (string) PressPrimer_Certificate_View_Page::rate_window() );
+
+			return $response;
+		}
+
 		$certificate = PressPrimer_Certificate_Certificate::get_by_credential_id(
 			(string) $request->get_param( 'credential_id' )
 		);
@@ -475,10 +493,7 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 			get_current_user_id() > 0 ? get_current_user_id() : null
 		);
 
-		$this->stream_pdf(
-			$pdf_path,
-			'certificate-' . strtolower( (string) $certificate->credential_id ) . '.pdf'
-		);
+		$this->stream_pdf( $pdf_path, PressPrimer_Certificate_Certificate::pdf_filename( $certificate ) );
 	}
 
 	/**
@@ -587,15 +602,23 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 	 * @return array
 	 */
 	private function prepare_item( $certificate ) {
-		$recipient = get_userdata( (int) $certificate->recipient_id );
-		$template  = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
+		$template = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
+
+		// One-off certificates (2.1) have no account: the name captured
+		// at issue stands in.
+		if ( PressPrimer_Certificate_Certificate::is_one_off( $certificate ) ) {
+			$recipient_name = PressPrimer_Certificate_Certificate::recipient_name( $certificate );
+		} else {
+			$recipient      = get_userdata( (int) $certificate->recipient_id );
+			$recipient_name = $recipient ? (string) $recipient->display_name : __( '(deleted user)', 'pressprimer-certificate' );
+		}
 
 		return [
 			'id'                => (int) $certificate->id,
-			'credential_id'     => PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $certificate->credential_id ),
+			'credential_id'     => PressPrimer_Certificate_Certificate::display_credential_id( $certificate ),
 			'recipient'         => [
 				'id'   => (int) $certificate->recipient_id,
-				'name' => $recipient ? (string) $recipient->display_name : __( '(deleted user)', 'pressprimer-certificate' ),
+				'name' => $recipient_name,
 			],
 			'title'             => PressPrimer_Certificate_Certificate::display_title(
 				$certificate,

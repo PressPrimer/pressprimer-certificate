@@ -176,12 +176,17 @@ class PressPrimer_Certificate_Admin_User_Profile {
 			// Revoked certificates are not served by the download route.
 			if ( 'revoked' !== $status ) {
 				$links[] = '<a href="'
-					. esc_url( rest_url( 'ppcert/v1/certificates/' . rawurlencode( $credential ) . '/pdf' ) )
+					. esc_url(
+						PressPrimer_Certificate_View_Page::pdf_url(
+							$credential,
+							isset( $certificate->credential_display ) ? (string) $certificate->credential_display : ''
+						)
+					)
 					. '">' . esc_html__( 'Download PDF', 'pressprimer-certificate' ) . '</a>';
 			}
 
 			$output .= '<tr>';
-			$output .= '<td>' . esc_html( PressPrimer_Certificate_Credential_ID_Service::format_display( $credential ) ) . '</td>';
+			$output .= '<td>' . esc_html( PressPrimer_Certificate_Certificate::display_credential_id( $certificate ) ) . '</td>';
 			$output .= '<td>' . esc_html( PressPrimer_Certificate_Certificate::display_title( $certificate, __( '(deleted template)', 'pressprimer-certificate' ) ) ) . '</td>';
 			$output .= '<td>' . esc_html( isset( $status_labels[ $status ] ) ? $status_labels[ $status ] : $status ) . '</td>';
 			// UTC in, localized out (CLAUDE.md Datetime Standard).

@@ -65,21 +65,32 @@ class PressPrimer_Certificate_Issuance_Service {
 	 * @param array $args {
 	 *     Issuance arguments (Feature 003 FR-001).
 	 *
-	 *     @type int    $template_id  Published template row id.
-	 *     @type int    $recipient_id Recipient user id.
-	 *     @type string $source_type  'manual' or an adapter id. Default 'manual'.
-	 *     @type string $source_ref   Source object reference; null for manual.
-	 *     @type int    $issued_by    Acting user id; system events pass 0.
-	 *     @type array  $context      Adapter-supplied resolution context.
-	 *     @type bool   $force        Bypass duplicate suppression (manual
-	 *                                "Issue anyway" - 003 Edge Cases). Default false.
-	 *     @type string $issued_at    UTC MySQL datetime override for backdated
-	 *                                issuance - any caller may pass it (manual
-	 *                                admin issue, past-completion imports,
-	 *                                third-party integrations). Default now.
-	 *     @type string $expires_at   UTC MySQL datetime override. Default: the template's
-	 *                                validity_months setting counted from
-	 *                                issued_at, or never.
+	 *     @type int    $template_id     Published template row id.
+	 *     @type int    $recipient_id    Recipient user id; 0 only for one-off
+	 *                                   certificates (source_type 'one_off').
+	 *     @type string $source_type     'manual', 'one_off' (2.1), or an adapter id.
+	 *                                   Default 'manual'.
+	 *     @type string $source_ref      Source object reference; null for manual.
+	 *                                   Ignored for one-offs (each gets a UUID).
+	 *     @type int    $issued_by       Acting user id; system events pass 0.
+	 *     @type array  $context         Adapter-supplied resolution context. For
+	 *                                   one-offs, `recipient` => { name (required),
+	 *                                   email, first_name, last_name } (2.1).
+	 *     @type bool   $force           Bypass duplicate suppression (manual
+	 *                                   "Issue anyway" - 003 Edge Cases). Default false.
+	 *     @type string $issued_at       UTC MySQL datetime override for backdated
+	 *                                   issuance - any caller may pass it (manual
+	 *                                   admin issue, past-completion imports,
+	 *                                   third-party integrations). Default now.
+	 *     @type string $expires_at      UTC MySQL datetime override. Default:
+	 *                                   compute_expires_at() from issued_at.
+	 *     @type array  $merge_overrides Token => value, applied before the
+	 *                                   certificate name pass; limited to the
+	 *                                   template's own tokens outside
+	 *                                   certificate.* and site.* (2.1).
+	 *     @type string $duplicate_scope 'source' (default: same source type and
+	 *                                   ref) or 'template' (any certificate from
+	 *                                   this template suppresses) (2.1).
 	 * }
 	 * @return int|WP_Error Certificate row id (existing id when suppressed),
 	 *                      or WP_Error on abort.
@@ -96,6 +107,8 @@ class PressPrimer_Certificate_Issuance_Service {
 		$issued_by    = isset( $args['issued_by'] ) ? absint( $args['issued_by'] ) : 0;
 		$adapter_ctx  = isset( $args['context'] ) && is_array( $args['context'] ) ? $args['context'] : [];
 		$force        = ! empty( $args['force'] );
+		$is_one_off   = PressPrimer_Certificate_Certificate::SOURCE_ONE_OFF === $source_type;
+		$scope        = isset( $args['duplicate_scope'] ) && 'template' === $args['duplicate_scope'] ? 'template' : 'source';
 
 		// Step 1: template is published; recipient exists.
 		$template = PressPrimer_Certificate_Template::get( $template_id );
@@ -114,7 +127,20 @@ class PressPrimer_Certificate_Issuance_Service {
 			);
 		}
 
-		if ( $recipient_id < 1 || ! get_userdata( $recipient_id ) ) {
+		// One-off certificates (2.1, Feature 2.1-004 FR-007): no account,
+		// a typed recipient, a unique ref so suppression never collapses
+		// two of them.
+		$one_off_recipient = null;
+
+		if ( $is_one_off ) {
+			$one_off_recipient = self::one_off_recipient( $recipient_id, isset( $adapter_ctx['recipient'] ) ? $adapter_ctx['recipient'] : null );
+
+			if ( is_wp_error( $one_off_recipient ) ) {
+				return $one_off_recipient;
+			}
+
+			$source_ref = wp_generate_uuid4();
+		} elseif ( $recipient_id < 1 || ! get_userdata( $recipient_id ) ) {
 			return new WP_Error(
 				'ppcert_invalid_recipient',
 				__( 'Recipient user not found.', 'pressprimer-certificate' )
@@ -123,16 +149,22 @@ class PressPrimer_Certificate_Issuance_Service {
 
 		// The issuance context: server-built, shared by the validation
 		// filter, lifecycle hooks, and merge resolution. Adapter context
-		// keys never override the server-built core keys.
+		// keys never override the server-built core keys (including the
+		// one-off recipient and the merge overrides, 2.1).
 		$context = array_merge(
 			$adapter_ctx,
 			[
-				'template_id'  => $template_id,
-				'recipient_id' => $recipient_id,
-				'trigger_type' => $source_type,
-				'source_type'  => $source_type,
-				'source_ref'   => $source_ref,
-				'issued_by'    => $issued_by,
+				'template_id'     => $template_id,
+				'recipient_id'    => $recipient_id,
+				'trigger_type'    => $source_type,
+				'source_type'     => $source_type,
+				'source_ref'      => $source_ref,
+				'issued_by'       => $issued_by,
+				'recipient'       => $one_off_recipient,
+				'merge_overrides' => self::clean_merge_overrides(
+					$template,
+					isset( $args['merge_overrides'] ) ? $args['merge_overrides'] : []
+				),
 			]
 		);
 
@@ -143,25 +175,35 @@ class PressPrimer_Certificate_Issuance_Service {
 		//
 		// The filtered ref scopes ONLY the duplicate window (2.0, Feature
 		// 2.0-007 FR-005): callers whose refs are per-occurrence (e.g. an
-		// automation run id) can widen suppression to a stable key. The
-		// certificate row still records the REAL $source_ref.
+		// automation run id) can widen suppression to a stable key. Since
+		// 2.1.0 (Feature 2.1-005 FR-001) the filter may return a list of
+		// refs and any match suppresses. The certificate row still records
+		// the REAL $source_ref, and the reissue check reads the real ref.
 		/** This filter is documented in docs/architecture/HOOKS.md */
-		$duplicate_ref = apply_filters( 'ppcert_issue_duplicate_ref', $source_ref, $context );
-		$duplicate_ref = null === $duplicate_ref || '' === $duplicate_ref
-			? null
-			: substr( sanitize_text_field( (string) $duplicate_ref ), 0, 191 );
+		$duplicate_refs = apply_filters( 'ppcert_issue_duplicate_ref', $source_ref, $context );
+		$duplicate_refs = PressPrimer_Certificate_Certificate::normalize_refs(
+			is_array( $duplicate_refs )
+				? array_map( [ __CLASS__, 'clean_ref' ], $duplicate_refs )
+				: self::clean_ref( $duplicate_refs )
+		);
 
-		if ( ! $force && self::trigger_allows_reissue( $template_id, $source_type, $duplicate_ref ) ) {
+		if ( ! $force && self::trigger_allows_reissue( $template_id, $source_type, $source_ref ) ) {
 			$force = true;
 		}
 
 		if ( ! $force ) {
-			$existing = PressPrimer_Certificate_Certificate::find_duplicate(
-				$recipient_id,
-				$template_id,
-				$source_type,
-				$duplicate_ref
-			);
+			// duplicate_scope 'template' (2.1, Feature 2.1-004 FR-010):
+			// any certificate from this template held by this person
+			// suppresses, whatever its source. Never for one-offs, which
+			// have no account to compare.
+			$existing = 'template' === $scope && $recipient_id > 0
+				? PressPrimer_Certificate_Certificate::find_any_for_template( $recipient_id, $template_id )
+				: PressPrimer_Certificate_Certificate::find_duplicate(
+					$recipient_id,
+					$template_id,
+					$source_type,
+					$duplicate_refs
+				);
 
 			if ( $existing ) {
 				PressPrimer_Certificate_Certificate::record_event(
@@ -200,29 +242,14 @@ class PressPrimer_Certificate_Issuance_Service {
 			: current_time( 'mysql', true );
 
 		// Certificate validity: a manual expires_at override wins;
-		// otherwise the template's validity policy applies - a period
-		// counted forward from issued_at (so a backdated earned date
-		// shortens the remaining validity, as recertification
-		// expects), or a fixed calendar date expiring at that day's
-		// end, site time. Absent all, certificates never expire.
-		$expires_at = null;
-
+		// otherwise the template's validity policy applies
+		// (compute_expires_at(), public since 2.1.0 so previews of
+		// backdated awards can never disagree with issuance).
 		if ( isset( $args['expires_at'] )
 			&& preg_match( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', (string) $args['expires_at'] ) ) {
 			$expires_at = (string) $args['expires_at'];
-		} elseif ( isset( $template->settings['validity_mode'] ) ) {
-			if ( 'period' === $template->settings['validity_mode'] && ! empty( $template->settings['validity_amount'] ) ) {
-				$unit = in_array( $template->settings['validity_unit'], [ 'days', 'months', 'years' ], true )
-					? $template->settings['validity_unit']
-					: 'months';
-
-				$expires_at = gmdate(
-					'Y-m-d H:i:s',
-					strtotime( $issued_at . ' UTC +' . absint( $template->settings['validity_amount'] ) . ' ' . $unit )
-				);
-			} elseif ( 'date' === $template->settings['validity_mode'] && ! empty( $template->settings['validity_date'] ) ) {
-				$expires_at = get_gmt_from_date( (string) $template->settings['validity_date'] . ' 23:59:59' );
-			}
+		} else {
+			$expires_at = self::compute_expires_at( $template, $issued_at );
 		}
 
 		try {
@@ -245,7 +272,7 @@ class PressPrimer_Certificate_Issuance_Service {
 				$certificate_id,
 				'issued',
 				$issued_by,
-				self::issued_event_meta()
+				self::issued_event_meta( $is_one_off )
 			);
 
 			self::dispatch_email( $certificate_id, $context );
@@ -260,6 +287,202 @@ class PressPrimer_Certificate_Issuance_Service {
 		}
 
 		return $certificate_id;
+	}
+
+	/**
+	 * The expiry a template's validity policy gives a certificate issued
+	 * at a given time (Feature 2.1-004 FR-010)
+	 *
+	 * A period counts forward from issued_at (so a backdated issue date
+	 * shortens the remaining validity, as recertification expects); a
+	 * fixed calendar date expires at that day's end, site time. Absent
+	 * both, certificates never expire. This is what issue() uses.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $template      Template row (hydrated; settings decoded).
+	 * @param string $issued_at_utc UTC MySQL datetime.
+	 * @return string|null UTC MySQL datetime, or null for never.
+	 */
+	public static function compute_expires_at( $template, $issued_at_utc ) {
+		$settings = isset( $template->settings ) && is_array( $template->settings ) ? $template->settings : [];
+
+		if ( ! isset( $settings['validity_mode'] ) ) {
+			return null;
+		}
+
+		if ( 'period' === $settings['validity_mode'] && ! empty( $settings['validity_amount'] ) ) {
+			$unit = isset( $settings['validity_unit'] ) && in_array( $settings['validity_unit'], [ 'days', 'months', 'years' ], true )
+				? $settings['validity_unit']
+				: 'months';
+
+			return gmdate(
+				'Y-m-d H:i:s',
+				strtotime( (string) $issued_at_utc . ' UTC +' . absint( $settings['validity_amount'] ) . ' ' . $unit )
+			);
+		}
+
+		if ( 'date' === $settings['validity_mode'] && ! empty( $settings['validity_date'] ) ) {
+			return get_gmt_from_date( (string) $settings['validity_date'] . ' 23:59:59' );
+		}
+
+		return null;
+	}
+
+	/**
+	 * The merge tokens an issued certificate snapshots (Feature 2.1-004 FR-008)
+	 *
+	 * The layout's tokens (every page), the issuance email's tokens, and
+	 * the certificate-name pattern's tokens: exactly what issue()
+	 * resolves, so a form that asks for "the fields this certificate
+	 * uses" (Educator's one-off form) asks for the right ones.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $template Template row (hydrated).
+	 * @return string[] Inner token keys, unique.
+	 */
+	public static function template_tokens( $template ) {
+		$tokens = [];
+
+		if ( isset( $template->layout ) && is_array( $template->layout ) ) {
+			$tokens = PressPrimer_Certificate_Merge_Field_Registry::extract_tokens( $template->layout );
+		}
+
+		// The issuance email's merge tokens and the certificate-name
+		// pattern's tokens resolve into the same snapshot (1.1, Features
+		// 005 + 006), so the email and the name can use values the
+		// certificate itself does not print - and a resend still reads
+		// the immutable snapshot.
+		$settings     = isset( $template->settings ) && is_array( $template->settings ) ? $template->settings : [];
+		$name_pattern = isset( $settings['certificate_name'] ) ? (string) $settings['certificate_name'] : '';
+
+		return array_values(
+			array_unique(
+				array_merge(
+					$tokens,
+					PressPrimer_Certificate_Email_Service::template_tokens( $template ),
+					PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text( $name_pattern )
+				)
+			)
+		);
+	}
+
+	/**
+	 * Sanitize merge overrides against a template's tokens
+	 *
+	 * Allowed keys: tokens the template uses, outside the computed
+	 * certificate.* and site.* groups. Values: sanitize_text_field, at
+	 * most 500 characters. Anything else is dropped (Feature 2.1-004
+	 * FR-008). Shared by issue() and the template preview route.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $template  Template row (hydrated).
+	 * @param mixed  $overrides Raw token => value map.
+	 * @return array<string,string>
+	 */
+	public static function clean_merge_overrides( $template, $overrides ) {
+		if ( ! is_array( $overrides ) || empty( $overrides ) ) {
+			return [];
+		}
+
+		$allowed = self::template_tokens( $template );
+		$clean   = [];
+
+		foreach ( $overrides as $token => $value ) {
+			$token = trim( str_replace( [ '{{', '}}' ], '', (string) $token ) );
+
+			if ( ! in_array( $token, $allowed, true ) || 0 === strpos( $token, 'certificate.' ) || 0 === strpos( $token, 'site.' ) ) {
+				continue;
+			}
+
+			if ( ! is_scalar( $value ) ) {
+				continue;
+			}
+
+			$value = sanitize_text_field( (string) $value );
+
+			$clean[ $token ] = function_exists( 'mb_substr' ) ? mb_substr( $value, 0, 500 ) : substr( $value, 0, 500 );
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Validate and sanitize a one-off certificate's recipient
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int   $recipient_id Must be 0 (no account).
+	 * @param mixed $raw          { name, email, first_name, last_name }.
+	 * @return array|WP_Error Clean recipient, or WP_Error.
+	 */
+	private static function one_off_recipient( $recipient_id, $raw ) {
+		if ( $recipient_id > 0 ) {
+			return new WP_Error(
+				'ppcert_invalid_recipient',
+				__( 'One-off certificates are for people without an account. Issue to the account instead.', 'pressprimer-certificate' )
+			);
+		}
+
+		$raw  = is_array( $raw ) ? $raw : [];
+		$name = isset( $raw['name'] ) && is_scalar( $raw['name'] ) ? trim( sanitize_text_field( (string) $raw['name'] ) ) : '';
+
+		if ( '' === $name ) {
+			return new WP_Error(
+				'ppcert_invalid_recipient',
+				__( 'A one-off certificate needs the recipient\'s name.', 'pressprimer-certificate' )
+			);
+		}
+
+		$email = isset( $raw['email'] ) && is_scalar( $raw['email'] ) ? sanitize_email( (string) $raw['email'] ) : '';
+
+		if ( isset( $raw['email'] ) && '' !== trim( (string) $raw['email'] ) && ( '' === $email || ! is_email( $email ) ) ) {
+			return new WP_Error(
+				'ppcert_invalid_recipient_email',
+				__( 'The recipient\'s email address is not valid.', 'pressprimer-certificate' )
+			);
+		}
+
+		$cut = static function ( $value, $length ) {
+			return function_exists( 'mb_substr' ) ? mb_substr( $value, 0, $length ) : substr( $value, 0, $length );
+		};
+
+		$name  = $cut( $name, 200 );
+		$first = isset( $raw['first_name'] ) && is_scalar( $raw['first_name'] ) ? trim( sanitize_text_field( (string) $raw['first_name'] ) ) : '';
+		$last  = isset( $raw['last_name'] ) && is_scalar( $raw['last_name'] ) ? trim( sanitize_text_field( (string) $raw['last_name'] ) ) : '';
+
+		// No explicit parts: split at the last space ("Mary Ann Smith" ->
+		// "Mary Ann" + "Smith"; a one-word name is all first name).
+		if ( '' === $first && '' === $last ) {
+			$space = strrpos( $name, ' ' );
+			$first = false === $space ? $name : substr( $name, 0, $space );
+			$last  = false === $space ? '' : substr( $name, $space + 1 );
+		}
+
+		return [
+			'name'       => $name,
+			'email'      => $cut( $email, 190 ),
+			'first_name' => $cut( $first, 100 ),
+			'last_name'  => $cut( $last, 100 ),
+		];
+	}
+
+	/**
+	 * Sanitize one duplicate ref from the filter
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $ref Raw ref.
+	 * @return string|null
+	 */
+	private static function clean_ref( $ref ) {
+		if ( null === $ref || '' === $ref || ! is_scalar( $ref ) ) {
+			return null;
+		}
+
+		return substr( sanitize_text_field( (string) $ref ), 0, 191 );
 	}
 
 	/**
@@ -280,45 +503,37 @@ class PressPrimer_Certificate_Issuance_Service {
 	private static function resolve_and_insert( $template, $context, $issued_at, $expires_at = null ) {
 		global $wpdb;
 
-		$tokens = [];
+		$tokens   = self::template_tokens( $template );
+		$settings = is_array( $template->settings ) ? $template->settings : [];
 
-		if ( is_array( $template->layout ) ) {
-			$tokens = PressPrimer_Certificate_Merge_Field_Registry::extract_tokens( $template->layout );
+		// A one-off has no account to fall back on, so its name is always
+		// snapshotted: the certificate page, verification, the list, and
+		// search read it from there (Feature 2.1-004 FR-007).
+		if ( ! empty( $context['recipient'] ) && ! in_array( 'recipient.full_name', $tokens, true ) ) {
+			$tokens[] = 'recipient.full_name';
 		}
-
-		// The issuance email's merge tokens and the certificate-name
-		// pattern's tokens resolve into the same snapshot (1.1, Features
-		// 005 + 006), so the email and the name can use values the
-		// certificate itself does not print - and a resend still reads
-		// the immutable snapshot.
-		$settings     = is_array( $template->settings ) ? $template->settings : [];
-		$name_pattern = isset( $settings['certificate_name'] ) ? (string) $settings['certificate_name'] : '';
-
-		$tokens = array_values(
-			array_unique(
-				array_merge(
-					$tokens,
-					PressPrimer_Certificate_Email_Service::template_tokens( $template ),
-					PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text( $name_pattern )
-				)
-			)
-		);
 
 		// The registry's name post-pass reads these (Feature 1.1-006).
 		$context['template_settings'] = $settings;
 		$context['template_title']    = (string) $template->title;
 
+		$recipient_email = isset( $context['recipient']['email'] ) && '' !== (string) $context['recipient']['email']
+			? (string) $context['recipient']['email']
+			: null;
+
 		for ( $attempt = 1; $attempt <= self::MAX_INSERT_ATTEMPTS; $attempt++ ) {
-			$credential_id = PressPrimer_Certificate_Credential_ID_Service::generate();
+			list( $credential_id, $credential_display ) = self::credential_for_attempt( $template, $context, $issued_at, $attempt );
 
 			// Step 5: merge resolution with the candidate credential in
-			// context (Feature 002 FR-005).
+			// context (Feature 002 FR-005); a pattern ID's display form
+			// rides along so {{certificate.credential_id}} prints it.
 			$resolution_context = array_merge(
 				$context,
 				[
-					'credential_id' => $credential_id,
-					'issued_at'     => $issued_at,
-					'expires_at'    => $expires_at,
+					'credential_id'      => $credential_id,
+					'credential_display' => $credential_display,
+					'issued_at'          => $issued_at,
+					'expires_at'         => $expires_at,
 				]
 			);
 
@@ -363,14 +578,31 @@ class PressPrimer_Certificate_Issuance_Service {
 					'merge_data_json'       => wp_json_encode( $merge_data ),
 					'issued_at'             => $issued_at,
 					'expires_at'            => $expires_at,
-					'created_at'            => $issued_at,
-					'updated_at'            => $issued_at,
+					// The real insert time, even for a backdated issue
+					// date (2.1, Feature 2.1-004 FR-010); statistics key
+					// on issued_at.
+					'created_at'            => current_time( 'mysql', true ),
+					'updated_at'            => current_time( 'mysql', true ),
+					'credential_display'    => '' !== $credential_display ? $credential_display : null,
+					'recipient_email'       => $recipient_email,
 				],
-				[ '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s' ]
+				[ '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
 			);
 
 			if ( $inserted ) {
-				return (int) $wpdb->insert_id;
+				// Read the id first: update_option() below can insert an
+				// options row and replace $wpdb->insert_id (found on the
+				// dev site, 2026-10-18).
+				$certificate_id = (int) $wpdb->insert_id;
+
+				// The first non-core ID on this site switches verification
+				// to the pattern-aware gate for good (Decision 006 point 6).
+				if ( ! PressPrimer_Certificate_Credential_ID_Service::is_core( $credential_id )
+					&& ! PressPrimer_Certificate_Credential_ID_Service::pattern_ids_in_use() ) {
+					update_option( PressPrimer_Certificate_Credential_ID_Service::PATTERN_IDS_OPTION, 1, true );
+				}
+
+				return $certificate_id;
 			}
 
 			// Insert failed: retry covers the unique-key collision case;
@@ -381,6 +613,68 @@ class PressPrimer_Certificate_Issuance_Service {
 			'ppcert_insert_failed',
 			__( 'Certificate could not be written to the database.', 'pressprimer-certificate' )
 		);
+	}
+
+	/**
+	 * The credential ID for one insert attempt
+	 *
+	 * A fresh core ID, offered to `ppcert_credential_id` (Feature 2.1-004
+	 * FR-009, Decision 006) with the attempt number so a sequence can
+	 * draw a new number after a collision. The filter's `{ id, display }`
+	 * is used only when it passes the strict checks; otherwise the core
+	 * ID stands.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $template  Template row.
+	 * @param array  $context   Issuance context.
+	 * @param string $issued_at UTC issue datetime.
+	 * @param int    $attempt   1-based attempt number.
+	 * @return array{0:string,1:string} [ stored ID, display form or '' ].
+	 */
+	private static function credential_for_attempt( $template, array $context, $issued_at, $attempt ) {
+		$core = PressPrimer_Certificate_Credential_ID_Service::generate();
+
+		/**
+		 * Filters the credential ID of a certificate about to be issued.
+		 *
+		 * Return `[ 'id' => normalized ID, 'display' => display form ]`.
+		 * Accepted only when id is normalized and 4-32 characters of
+		 * [0-9A-Z], and display (optional) is at most 40 characters of
+		 * letters, digits, and single hyphens that normalizes to id;
+		 * otherwise the core ID is used. Called again on each retry.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array  $candidate [ 'id' => core ID, 'display' => '' ].
+		 * @param object $template  Template row.
+		 * @param array  $context   Issuance context plus issued_at (UTC) and issuer_id.
+		 * @param int    $attempt   1-based attempt number.
+		 */
+		$filtered = apply_filters(
+			'ppcert_credential_id',
+			[
+				'id'      => $core,
+				'display' => '',
+			],
+			$template,
+			array_merge(
+				$context,
+				[
+					'issued_at' => $issued_at,
+					'issuer_id' => ! empty( $template->issuer_id ) ? (int) $template->issuer_id : 0,
+				]
+			),
+			(int) $attempt
+		);
+
+		$accepted = PressPrimer_Certificate_Credential_ID_Service::accept_candidate( $filtered );
+
+		if ( null === $accepted ) {
+			return [ $core, '' ];
+		}
+
+		return [ $accepted['id'], $accepted['display'] ];
 	}
 
 	/**
@@ -411,19 +705,29 @@ class PressPrimer_Certificate_Issuance_Service {
 	/**
 	 * Build the issued event meta
 	 *
-	 * Records resolver_failed notes per Feature 002 FR-005. Privacy rules
-	 * apply: token names and reason slugs only, nothing identifying.
+	 * Records resolver_failed notes per Feature 002 FR-005, and marks
+	 * one-off certificates (source_type one_off, 2.1) so audit tools can
+	 * tell them apart. Privacy rules apply: token names and reason slugs
+	 * only, nothing identifying.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The one-off marker.
 	 *
+	 * @param bool $is_one_off Whether the certificate is a one-off.
 	 * @return array
 	 */
-	private static function issued_event_meta() {
-		if ( empty( self::$last_resolution_failures ) ) {
-			return [];
+	private static function issued_event_meta( $is_one_off = false ) {
+		$meta = [];
+
+		if ( $is_one_off ) {
+			$meta['source_type'] = PressPrimer_Certificate_Certificate::SOURCE_ONE_OFF;
 		}
 
-		return [ 'resolver_failed' => self::$last_resolution_failures ];
+		if ( ! empty( self::$last_resolution_failures ) ) {
+			$meta['resolver_failed'] = self::$last_resolution_failures;
+		}
+
+		return $meta;
 	}
 
 	/**

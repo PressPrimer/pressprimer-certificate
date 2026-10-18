@@ -5,6 +5,9 @@
  * and the checksum mirror PressPrimer_Certificate_Credential_ID_Service
  * exactly; a checksum failure shows the typo help WITHOUT calling the
  * API (the server deliberately yields no malformed-vs-missing oracle).
+ * Once the site holds pattern IDs (2.1, Decision 006) the localized
+ * strictChecksum flag is '0' and any pattern-shaped input goes to the
+ * server, which decides on the exact lookup.
  *
  * @package
  */
@@ -13,6 +16,7 @@
 
 	const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 	const WEIGHTS = [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 ];
+	const PATTERN_SHAPE = /^[0-9A-Z]{4,32}$/;
 
 	/**
 	 * Mirror of Credential_ID_Service::normalize().
@@ -55,6 +59,26 @@
 		}
 
 		return ALPHABET[ sum % 32 ] === candidate[ 11 ];
+	}
+
+	/**
+	 * Whether a normalized candidate may be sent to the server.
+	 *
+	 * Mirrors Credential_ID_Service::is_valid()'s default: the checksum,
+	 * or the pattern shape once the site holds pattern IDs.
+	 *
+	 * @param {string} candidate Normalized candidate.
+	 * @return {boolean} Whether to look it up.
+	 */
+	function mayExist( candidate ) {
+		if ( isWellFormed( candidate ) ) {
+			return true;
+		}
+
+		return (
+			window.ppcert_verify_data.strictChecksum === '0' &&
+			PATTERN_SHAPE.test( candidate )
+		);
 	}
 
 	/**
@@ -243,7 +267,7 @@
 	function verify( region, credential ) {
 		const normalized = normalize( credential );
 
-		if ( ! isWellFormed( normalized ) ) {
+		if ( ! mayExist( normalized ) ) {
 			render( region, 'typo', null );
 			return;
 		}

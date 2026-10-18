@@ -199,7 +199,8 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 * The load-row-render-snapshot step integrations need to attach the
 	 * PDF to their own emails: loads the certificate, renders its
 	 * immutable snapshot with its merge data, and returns a temp file
-	 * with a recipient-friendly name (certificate-XXXX-XXXX-XXXX.pdf).
+	 * with a recipient-friendly name (certificate-xxxx-xxxx-xxxx.pdf, the
+	 * one file-name form since 2.1).
 	 * The email service's attachment path delegates here. The caller
 	 * owns the file: attach or stream it, then wp_delete_file().
 	 *
@@ -245,9 +246,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		// A recipient-friendly filename: mail clients and download
 		// managers type the file by extension (wp_tempnam yields .tmp).
-		$friendly = dirname( $path ) . '/certificate-'
-			. PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $certificate->credential_id )
-			. '.pdf';
+		$friendly = dirname( $path ) . '/' . PressPrimer_Certificate_Certificate::pdf_filename( $certificate );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Temp-to-temp rename in the same directory; WP_Filesystem is for user-visible storage.
 		if ( rename( $path, $friendly ) ) {

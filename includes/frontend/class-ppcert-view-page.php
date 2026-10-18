@@ -40,12 +40,37 @@ class PressPrimer_Certificate_View_Page {
 	const QUERY_VAR = 'ppcert_credential';
 
 	/**
+	 * Default page and PDF requests per visitor per window
+	 * (filter: ppcert_view_rate_limit)
+	 *
+	 * @since 2.1.0
+	 * @var int
+	 */
+	const DEFAULT_RATE_LIMIT = 60;
+
+	/**
+	 * Default rate window in seconds (filter: ppcert_view_rate_limit)
+	 *
+	 * @since 2.1.0
+	 * @var int
+	 */
+	const DEFAULT_RATE_WINDOW = 60;
+
+	/**
 	 * The certificate being rendered on this request
 	 *
 	 * @since 1.0.0
 	 * @var object|null
 	 */
 	private static $certificate = null;
+
+	/**
+	 * Whether this request was refused by the rate limit
+	 *
+	 * @since 2.1.0
+	 * @var bool
+	 */
+	private static $rate_limited = false;
 
 	/**
 	 * Initialize: rewrite, query var, virtual page injection
@@ -117,7 +142,8 @@ class PressPrimer_Certificate_View_Page {
 	 * page holding a stub post, so the active theme (classic or block)
 	 * renders it through its ordinary page template. A credential that
 	 * does not resolve 404s - no partial matching, no suggestions
-	 * (Security Requirements, Feature 005).
+	 * (Security Requirements, Feature 005). A visitor over the rate
+	 * limit gets a 429 page before any lookup (2.1).
 	 *
 	 * @since 1.0.0
 	 *
@@ -134,6 +160,35 @@ class PressPrimer_Certificate_View_Page {
 
 		if ( '' === $credential ) {
 			return $posts;
+		}
+
+		// Per-visitor limit before the lookup (2.1, Feature 2.1-004
+		// FR-009), shared with the public PDF route: a misses-only walk
+		// through IDs is exactly what it stops.
+		if ( ! self::check_rate_limit() ) {
+			self::$rate_limited = true;
+
+			status_header( 429 );
+			nocache_headers();
+
+			if ( ! headers_sent() ) {
+				header( 'Retry-After: ' . self::rate_window() );
+			}
+
+			// WP::handle_404() would send a 200 for the stub post after
+			// this filter returns; the 429 must stand.
+			add_filter( 'pre_handle_404', '__return_true' );
+
+			PressPrimer_Certificate_Virtual_Page::guard();
+
+			return self::serve_stub(
+				$query,
+				self::build_stub_post(
+					__( 'Too Many Requests', 'pressprimer-certificate' ),
+					'certificate-rate-limited',
+					gmdate( 'Y-m-d H:i:s' )
+				)
+			);
 		}
 
 		$certificate = PressPrimer_Certificate_Certificate::get_for_verification( $credential );
@@ -153,8 +208,29 @@ class PressPrimer_Certificate_View_Page {
 
 		wp_enqueue_style( 'ppcert-frontend' );
 
-		$post = self::build_stub_post( $certificate );
+		return self::serve_stub(
+			$query,
+			self::build_stub_post(
+				PressPrimer_Certificate_Certificate::display_title(
+					$certificate,
+					__( 'Certificate', 'pressprimer-certificate' )
+				),
+				'certificate-' . strtolower( (string) $certificate->credential_id ),
+				(string) $certificate->issued_at
+			)
+		);
+	}
 
+	/**
+	 * Make the main query a singular page holding a stub post
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_Query $query The main query.
+	 * @param WP_Post  $post  Stub post.
+	 * @return WP_Post[]
+	 */
+	private static function serve_stub( $query, $post ) {
 		$query->posts       = [ $post ];
 		$query->post        = $post;
 		$query->post_count  = 1;
@@ -182,8 +258,14 @@ class PressPrimer_Certificate_View_Page {
 	 * @return string
 	 */
 	public static function filter_content( $content ) {
-		if ( null === self::$certificate || ! is_singular() || ! in_the_loop() || ! is_main_query() ) {
+		if ( ( null === self::$certificate && ! self::$rate_limited ) || ! is_singular() || ! in_the_loop() || ! is_main_query() ) {
 			return $content;
+		}
+
+		if ( self::$rate_limited ) {
+			return '<p class="ppcert-view__notice">'
+				. esc_html__( 'Too many requests from your connection. Please wait a minute and try again.', 'pressprimer-certificate' )
+				. '</p>';
 		}
 
 		// Return-time allowlist pass: the_content callbacks are rendered
@@ -246,8 +328,8 @@ class PressPrimer_Certificate_View_Page {
 	public static function render_content( $certificate ) {
 		$status     = PressPrimer_Certificate_Certificate::effective_status( $certificate );
 		$credential = (string) $certificate->credential_id;
-		$display_id = PressPrimer_Certificate_Credential_ID_Service::format_display( $credential );
-		$recipient  = self::recipient_name( $certificate );
+		$display_id = PressPrimer_Certificate_Certificate::display_credential_id( $certificate );
+		$recipient  = PressPrimer_Certificate_Certificate::recipient_name( $certificate );
 		$subject    = PressPrimer_Certificate_Certificate::display_title( $certificate );
 
 		$output = '<div class="ppcert-view">';
@@ -300,7 +382,7 @@ class PressPrimer_Certificate_View_Page {
 		if ( 'revoked' !== $status ) {
 			$actions['download'] = [
 				'label' => __( 'Download PDF', 'pressprimer-certificate' ),
-				'url'   => self::download_url( $credential ),
+				'url'   => self::download_url( $credential, isset( $certificate->credential_display ) ? (string) $certificate->credential_display : '' ),
 				'class' => 'ppcert-view__download button',
 			];
 		}
@@ -383,34 +465,33 @@ class PressPrimer_Certificate_View_Page {
 	 * Build the stub post the theme renders
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Takes the title, slug, and date (the rate-limit page
+	 *              uses it too).
 	 *
-	 * @param object $certificate Hydrated certificate row.
+	 * @param string $title Post title.
+	 * @param string $slug  Post name.
+	 * @param string $date  Post date (UTC).
 	 * @return WP_Post
 	 */
-	private static function build_stub_post( $certificate ) {
-		$subject = PressPrimer_Certificate_Certificate::display_title(
-			$certificate,
-			__( 'Certificate', 'pressprimer-certificate' )
-		);
-
+	private static function build_stub_post( $title, $slug, $date ) {
 		return new WP_Post(
 			(object) [
 				'ID'                    => 0,
 				'post_author'           => 0,
-				'post_date'             => (string) $certificate->issued_at,
-				'post_date_gmt'         => (string) $certificate->issued_at,
+				'post_date'             => $date,
+				'post_date_gmt'         => $date,
 				'post_content'          => '',
-				'post_title'            => $subject,
+				'post_title'            => $title,
 				'post_excerpt'          => '',
 				'post_status'           => 'publish',
 				'comment_status'        => 'closed',
 				'ping_status'           => 'closed',
 				'post_password'         => '',
-				'post_name'             => 'certificate-' . strtolower( (string) $certificate->credential_id ),
+				'post_name'             => $slug,
 				'to_ping'               => '',
 				'pinged'                => '',
-				'post_modified'         => (string) $certificate->issued_at,
-				'post_modified_gmt'     => (string) $certificate->issued_at,
+				'post_modified'         => $date,
+				'post_modified_gmt'     => $date,
 				'post_content_filtered' => '',
 				'post_parent'           => 0,
 				'guid'                  => '',
@@ -421,28 +502,6 @@ class PressPrimer_Certificate_View_Page {
 				'filter'                => 'raw',
 			]
 		);
-	}
-
-	/**
-	 * The recipient's display name, snapshot-first
-	 *
-	 * The merge snapshot's recipient name is what the certificate shows;
-	 * the live user record is the fallback (the account may be renamed
-	 * or gone).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param object $certificate Hydrated certificate row.
-	 * @return string
-	 */
-	private static function recipient_name( $certificate ) {
-		if ( is_array( $certificate->merge_data ) && ! empty( $certificate->merge_data['recipient.name'] ) ) {
-			return (string) $certificate->merge_data['recipient.name'];
-		}
-
-		$user = get_userdata( (int) $certificate->recipient_id );
-
-		return $user ? (string) $user->display_name : '';
 	}
 
 	/**
@@ -487,58 +546,182 @@ class PressPrimer_Certificate_View_Page {
 	 * The public PDF download URL for a credential
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The $display argument.
 	 *
 	 * @param string $credential_id Normalized credential ID.
+	 * @param string $display       Display form to use in the URL (pattern IDs).
 	 * @return string
 	 */
-	private static function download_url( $credential_id ) {
-		return rest_url( 'ppcert/v1/certificates/' . rawurlencode( $credential_id ) . '/pdf' );
+	private static function download_url( $credential_id, $display = '' ) {
+		return rest_url( 'ppcert/v1/certificates/' . rawurlencode( self::url_form( $credential_id, $display, $credential_id ) ) . '/pdf' );
 	}
 
 	/**
 	 * Public PDF download URL for a credential (2.0, Feature 2.0-007)
 	 *
 	 * The canonical public PDF route URL, mirroring view_url()'s
-	 * semantics: '' for input that does not normalize.
+	 * semantics: '' for input that cannot be a credential.
 	 *
 	 * @since 2.0.0
+	 * @since 2.1.0 Accepts pattern IDs and the $display argument.
 	 *
 	 * @param string $credential_id Credential ID (any accepted form).
+	 * @param string $display       Optional display form for the URL (a
+	 *                              pattern ID's credential_display).
 	 * @return string URL, or '' for an invalid credential.
 	 */
-	public static function pdf_url( $credential_id ) {
-		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( (string) $credential_id );
+	public static function pdf_url( $credential_id, $display = '' ) {
+		$normalized = self::url_credential( $credential_id );
 
-		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_credential_shaped( $normalized ) ) {
+		if ( '' === $normalized ) {
 			return '';
 		}
 
-		return self::download_url( $normalized );
+		return self::download_url( $normalized, $display );
 	}
 
 	/**
 	 * Public share URL for a credential's view page
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Accepts pattern IDs and the $display argument.
 	 *
 	 * @param string $credential_id Credential ID (any accepted form).
+	 * @param string $display       Optional display form for the URL (a
+	 *                              pattern ID's credential_display).
 	 * @return string URL, or '' for an invalid credential.
 	 */
-	public static function view_url( $credential_id ) {
-		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( (string) $credential_id );
+	public static function view_url( $credential_id, $display = '' ) {
+		$normalized = self::url_credential( $credential_id );
 
-		// Shape-gated, not checksummed - the same deliberate choice as
-		// the list search (Feature 2.0-002 FR-001): integration callers
-		// get '' for input that cannot be a credential (Feature 2.0-007
-		// FR-001), while anything credential-shaped builds its canonical
-		// URL and simply 404s if no row exists.
-		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_credential_shaped( $normalized ) ) {
+		if ( '' === $normalized ) {
 			return '';
 		}
 
-		$display = PressPrimer_Certificate_Credential_ID_Service::format_display( $normalized );
+		$path = self::url_form(
+			$normalized,
+			$display,
+			PressPrimer_Certificate_Credential_ID_Service::format_display( $normalized )
+		);
 
-		return home_url( '/certificate/' . rawurlencode( $display ) . '/' );
+		return home_url( '/certificate/' . rawurlencode( $path ) . '/' );
+	}
+
+	/**
+	 * The normalized credential a URL may be built for, or ''
+	 *
+	 * Core-shaped input is shape-gated, not checksummed - the same
+	 * deliberate choice as the list search (Feature 2.0-002 FR-001):
+	 * integration callers get '' for input that cannot be a credential
+	 * (Feature 2.0-007 FR-001), while anything credential-shaped builds
+	 * its canonical URL and simply 404s if no row exists. Since 2.1 a
+	 * pattern ID that passes the lookup gate builds one too.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $credential_id Credential ID (any accepted form).
+	 * @return string
+	 */
+	private static function url_credential( $credential_id ) {
+		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( (string) $credential_id );
+
+		if ( PressPrimer_Certificate_Credential_ID_Service::is_credential_shaped( $normalized )
+			|| PressPrimer_Certificate_Credential_ID_Service::is_valid( $normalized ) ) {
+			return $normalized;
+		}
+
+		return '';
+	}
+
+	/**
+	 * The credential form a URL carries
+	 *
+	 * A display form is used only when it belongs to the credential (it
+	 * normalizes to it) and has the display shape; otherwise the default.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $normalized Normalized credential ID.
+	 * @param string $display    Candidate display form.
+	 * @param string $default    Form to use otherwise.
+	 * @return string
+	 */
+	private static function url_form( $normalized, $display, $default ) {
+		$display = (string) $display;
+
+		if ( '' !== $display
+			&& PressPrimer_Certificate_Credential_ID_Service::normalize( $display ) === $normalized
+			&& preg_match( PressPrimer_Certificate_Credential_ID_Service::DISPLAY_SHAPE, $display ) ) {
+			return $display;
+		}
+
+		return $default;
+	}
+
+	/**
+	 * Whether this visitor may load another certificate page or PDF
+	 *
+	 * Salted-hash keyed (the raw IP is never stored), a bucket separate
+	 * from verification's. Default 60 requests per 60 seconds; a limit
+	 * below 1 disables.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return bool
+	 */
+	public static function check_rate_limit() {
+		$config = self::rate_config();
+
+		return PressPrimer_Certificate_Rate_Limiter::allow(
+			PressPrimer_Certificate_Rate_Limiter::client_key( 'view' ),
+			$config['limit'],
+			$config['window']
+		);
+	}
+
+	/**
+	 * The certificate page and PDF rate window in seconds
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return int
+	 */
+	public static function rate_window() {
+		return self::rate_config()['window'];
+	}
+
+	/**
+	 * The filtered certificate page and PDF rate limit
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return array{limit:int,window:int}
+	 */
+	private static function rate_config() {
+		$defaults = [
+			'limit'  => self::DEFAULT_RATE_LIMIT,
+			'window' => self::DEFAULT_RATE_WINDOW,
+		];
+
+		/**
+		 * Filters the per-visitor rate limit on certificate pages and
+		 * public PDF downloads.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array $config `limit` (requests per window; below 1
+		 *                      disables) and `window` (seconds).
+		 */
+		$config = apply_filters( 'ppcert_view_rate_limit', $defaults );
+
+		if ( ! is_array( $config ) ) {
+			return $defaults;
+		}
+
+		return [
+			'limit'  => isset( $config['limit'] ) && is_numeric( $config['limit'] ) ? (int) $config['limit'] : $defaults['limit'],
+			'window' => isset( $config['window'] ) && is_numeric( $config['window'] ) ? max( 1, (int) $config['window'] ) : $defaults['window'],
+		];
 	}
 
 	/**
@@ -565,6 +748,7 @@ class PressPrimer_Certificate_View_Page {
 	 * @since 1.0.0
 	 */
 	public static function reset() {
-		self::$certificate = null;
+		self::$certificate  = null;
+		self::$rate_limited = false;
 	}
 }

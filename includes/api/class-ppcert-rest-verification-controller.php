@@ -126,11 +126,13 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 	 * @return array The locked-shape result array.
 	 */
 	public static function lookup( $raw ) {
-		// Checksum gate. A malformed ID cannot exist, so it skips the
+		// Validity gate. A malformed ID cannot exist, so it skips the
 		// database and returns the identical not-found shape (the "check
 		// for typos" UX runs client-side in the shortcode, never here -
-		// no oracle).
-		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_well_formed( $raw ) ) {
+		// no oracle). Core IDs pass on their checksum; since 2.1 a site
+		// holding pattern IDs passes any pattern-shaped input to the
+		// exact lookup (Credential_ID_Service::is_valid()).
+		if ( ! PressPrimer_Certificate_Credential_ID_Service::is_valid( $raw ) ) {
 			return self::with_actions( self::with_display( self::not_found_result(), null ), null, 'not_found' );
 		}
 
@@ -257,7 +259,10 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 		$actions = [
 			'download' => [
 				'label'   => __( 'Download PDF', 'pressprimer-certificate' ),
-				'url'     => PressPrimer_Certificate_View_Page::pdf_url( (string) $certificate->credential_id ),
+				'url'     => PressPrimer_Certificate_View_Page::pdf_url(
+					(string) $certificate->credential_id,
+					isset( $certificate->credential_display ) ? (string) $certificate->credential_display : ''
+				),
 				'class'   => 'ppcert-button-primary',
 				'new_tab' => false,
 			],
@@ -406,12 +411,10 @@ class PressPrimer_Certificate_REST_Verification_Controller {
 	private static function within_rate_limit() {
 		$limit = defined( 'PPCERT_VERIFY_RATE_LIMIT' ) ? (int) PPCERT_VERIFY_RATE_LIMIT : self::DEFAULT_RATE_LIMIT;
 
-		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-
 		// Same key, limit, and window as the 1.0 inline implementation;
 		// the counter itself moved to the shared utility in 2.0.
 		return PressPrimer_Certificate_Rate_Limiter::allow(
-			'ppcert_verify_' . wp_hash( $ip . wp_salt() ),
+			PressPrimer_Certificate_Rate_Limiter::client_key( 'verify' ),
 			$limit,
 			self::rate_window()
 		);

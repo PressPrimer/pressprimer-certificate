@@ -337,10 +337,11 @@ class PressPrimer_Certificate_Certificate_Link {
 	private static function build_action( array $atts, $certificate ) {
 		$action     = self::sanitize_action( $atts['action'] );
 		$credential = (string) $certificate->credential_id;
+		$display    = isset( $certificate->credential_display ) ? (string) $certificate->credential_display : '';
 
 		$urls = [
-			'view'     => PressPrimer_Certificate_View_Page::view_url( $credential ),
-			'download' => PressPrimer_Certificate_View_Page::pdf_url( $credential ),
+			'view'     => PressPrimer_Certificate_View_Page::view_url( $credential, $display ),
+			'download' => PressPrimer_Certificate_View_Page::pdf_url( $credential, $display ),
 			'verify'   => ppcert_verification_url( $credential ),
 		];
 

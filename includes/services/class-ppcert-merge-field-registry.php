@@ -294,6 +294,19 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 			$values[ $token ] = self::resolve_token( $token, $fields, $context );
 		}
 
+		// Typed values (2.1, Feature 2.1-004 FR-008): merge overrides
+		// replace resolved values BEFORE the name pass, so a typed course
+		// title or name feeds the certificate's name. issue() and the
+		// preview route have already limited them to this template's
+		// tokens outside certificate.* and site.*.
+		if ( isset( $context['merge_overrides'] ) && is_array( $context['merge_overrides'] ) ) {
+			foreach ( $context['merge_overrides'] as $token => $value ) {
+				if ( array_key_exists( (string) $token, $values ) && is_scalar( $value ) ) {
+					$values[ (string) $token ] = (string) $value;
+				}
+			}
+		}
+
 		// Post-pass (Feature 1.1-006): the certificate's own name is the
 		// template's name pattern interpolated against everything resolved
 		// above, so it resolves LAST and always lands in the snapshot.
@@ -655,6 +668,13 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 	 * @return string
 	 */
 	public static function resolve_full_name( array $context ) {
+		// One-off certificates (2.1): the typed name, exactly as typed.
+		$one_off = self::get_one_off_recipient( $context );
+
+		if ( null !== $one_off ) {
+			return $one_off['name'];
+		}
+
 		$user = self::get_recipient( $context );
 
 		if ( ! $user ) {
@@ -700,7 +720,8 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 
 	/**
 	 * Resolve the credential ID in display form (XXXX-XXXX-XXXX) - the
-	 * printed certificate shows the human-formatted grouping.
+	 * printed certificate shows the human-formatted grouping, or a pattern
+	 * ID's display form (2.1, `credential_display` in the context).
 	 *
 	 * @since 1.0.0
 	 *
@@ -714,7 +735,10 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 			return '';
 		}
 
-		return PressPrimer_Certificate_Credential_ID_Service::format_display( $credential_id );
+		return PressPrimer_Certificate_Credential_ID_Service::format_display(
+			$credential_id,
+			isset( $context['credential_display'] ) ? (string) $context['credential_display'] : ''
+		);
 	}
 
 	/**
@@ -798,12 +822,59 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 	 * @since 1.0.0
 	 *
 	 * @param array $context Issuance context.
-	 * @return WP_User|false
+	 * @return WP_User|object|false User, a one-off stand-in (2.1), or false.
 	 */
 	private static function get_recipient( array $context ) {
 		$recipient_id = isset( $context['recipient_id'] ) ? absint( $context['recipient_id'] ) : 0;
 
-		return $recipient_id > 0 ? get_userdata( $recipient_id ) : false;
+		if ( $recipient_id > 0 ) {
+			return get_userdata( $recipient_id );
+		}
+
+		// One-off certificates (2.1): the typed recipient stands in for an
+		// account, with the properties the recipient resolvers read.
+		$one_off = self::get_one_off_recipient( $context );
+
+		if ( null === $one_off ) {
+			return false;
+		}
+
+		return (object) [
+			'display_name' => $one_off['name'],
+			'first_name'   => $one_off['first_name'],
+			'last_name'    => $one_off['last_name'],
+			'user_email'   => $one_off['email'],
+		];
+	}
+
+	/**
+	 * The one-off recipient from the context, or null
+	 *
+	 * Only issue() sets `recipient`, for source_type one_off with no
+	 * account (Feature 2.1-004 FR-007).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return array|null { name, email, first_name, last_name }.
+	 */
+	private static function get_one_off_recipient( array $context ) {
+		if ( empty( $context['recipient'] ) || ! is_array( $context['recipient'] ) || ! empty( $context['recipient_id'] ) ) {
+			return null;
+		}
+
+		$recipient = $context['recipient'];
+
+		if ( ! isset( $recipient['name'] ) || '' === (string) $recipient['name'] ) {
+			return null;
+		}
+
+		return [
+			'name'       => (string) $recipient['name'],
+			'email'      => isset( $recipient['email'] ) ? (string) $recipient['email'] : '',
+			'first_name' => isset( $recipient['first_name'] ) ? (string) $recipient['first_name'] : '',
+			'last_name'  => isset( $recipient['last_name'] ) ? (string) $recipient['last_name'] : '',
+		];
 	}
 
 	/**

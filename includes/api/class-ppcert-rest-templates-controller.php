@@ -97,7 +97,7 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'preview_template' ],
-				'permission_callback' => [ $this, 'can_manage_template' ],
+				'permission_callback' => [ $this, 'can_preview_template' ],
 			]
 		);
 
@@ -113,6 +113,46 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 				'callback'            => [ $this, 'send_test_email' ],
 				'permission_callback' => [ $this, 'can_manage_template' ],
 			]
+		);
+	}
+
+	/**
+	 * Permission for the preview route
+	 *
+	 * Template managers preview anything; since 2.1 a user who may issue
+	 * from the template previews its saved design with merge overrides.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_REST_Request $request The request.
+	 * @return bool
+	 */
+	public function can_preview_template( $request ) {
+		if ( $this->can_manage_template( $request ) ) {
+			return true;
+		}
+
+		// Previewing the SAVED design with typed values is part of
+		// issuing (2.1, Feature 2.1-004 FR-008: Educator's one-off form),
+		// so anyone who may issue from the template may do it. Unsaved
+		// layouts and unpublished templates stay with template managers.
+		if ( null !== $request->get_param( 'layout' )
+			|| ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			return false;
+		}
+
+		$template = PressPrimer_Certificate_Template::get( absint( $request->get_param( 'id' ) ) );
+
+		if ( ! $template || 'published' !== $template->status ) {
+			return false;
+		}
+
+		/** This filter is documented in includes/api/class-ppcert-rest-certificates-controller.php */
+		return true === apply_filters(
+			'ppcert_user_can_issue_from_template',
+			true,
+			absint( $request->get_param( 'id' ) ),
+			get_current_user_id()
 		);
 	}
 
@@ -639,23 +679,7 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			return $clean;
 		}
 
-		// Registry samples as merge data (FR-004: the designer never
-		// hard-codes samples).
-		$merge_data = [];
-
-		foreach ( PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' ) as $key => $field ) {
-			$merge_data[ $key ] = (string) $field['sample'];
-		}
-
-		// The certificate's name previews from the template's pattern
-		// against the samples, exactly as the canvas shows it (1.1-006).
-		$merge_data['certificate.title'] = PressPrimer_Certificate_Merge_Field_Registry::resolve_title(
-			[
-				'template_settings' => is_array( $row->settings ) ? $row->settings : [],
-				'template_title'    => (string) $row->title,
-			],
-			$merge_data
-		);
+		$merge_data = self::preview_merge_data( $row, $request->get_param( 'merge_overrides' ) );
 
 		$sample_credential = isset( $merge_data['certificate.credential_id'] )
 			? preg_replace( '/[^A-Z0-9]/', '', strtoupper( $merge_data['certificate.credential_id'] ) )
@@ -690,6 +714,44 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 		$stored['warnings'] = $renderer->get_last_render_warnings();
 
 		return new WP_REST_Response( $stored, 200 );
+	}
+
+	/**
+	 * The merge map a template preview renders with
+	 *
+	 * Registry samples (FR-004: the designer never hard-codes samples),
+	 * then typed values over them (2.1, Feature 2.1-004 FR-008: the
+	 * one-off form previews what it will issue; same allowlist and
+	 * sanitizing as issue()), then the certificate's name from the
+	 * template's pattern, exactly as the canvas shows it (1.1-006).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $row       Template row (hydrated).
+	 * @param mixed  $overrides Raw merge_overrides input.
+	 * @return array<string,string>
+	 */
+	public static function preview_merge_data( $row, $overrides = [] ) {
+		$merge_data = [];
+
+		foreach ( PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' ) as $key => $field ) {
+			$merge_data[ $key ] = (string) $field['sample'];
+		}
+
+		$merge_data = array_merge(
+			$merge_data,
+			PressPrimer_Certificate_Issuance_Service::clean_merge_overrides( $row, $overrides )
+		);
+
+		$merge_data['certificate.title'] = PressPrimer_Certificate_Merge_Field_Registry::resolve_title(
+			[
+				'template_settings' => is_array( $row->settings ) ? $row->settings : [],
+				'template_title'    => (string) $row->title,
+			],
+			$merge_data
+		);
+
+		return $merge_data;
 	}
 
 	/**

@@ -315,6 +315,11 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	public static function source_options( $current ) {
 		$options = [ 'manual' => __( 'Manual', 'pressprimer-certificate' ) ];
 
+		// One-off certificates (2.1): offered once any exist.
+		if ( PressPrimer_Certificate_Certificate::SOURCE_ONE_OFF === $current || PressPrimer_Certificate_Certificate::has_source_type( PressPrimer_Certificate_Certificate::SOURCE_ONE_OFF ) ) {
+			$options[ PressPrimer_Certificate_Certificate::SOURCE_ONE_OFF ] = __( 'One-off', 'pressprimer-certificate' );
+		}
+
 		foreach ( PressPrimer_Certificate_Trigger_Registry::get_types() as $type ) {
 			$options[ $type['id'] ] = $type['label'];
 		}
@@ -335,7 +340,7 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	 * @return string
 	 */
 	public function column_credential_id( $item ) {
-		$display = PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $item->credential_id );
+		$display = PressPrimer_Certificate_Certificate::display_credential_id( $item );
 
 		$download_url = wp_nonce_url(
 			add_query_arg(
@@ -416,7 +421,11 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 					'ppcert_resend_email_' . (int) $item->id
 				);
 
-				$actions['resend'] = '<a href="' . esc_url( $resend_url ) . '">' . esc_html__( 'Resend email', 'pressprimer-certificate' ) . '</a>';
+				// A one-off certificate without a stored email has no one
+				// to send to (2.1).
+				if ( ! PressPrimer_Certificate_Certificate::is_one_off( $item ) || ! empty( $item->recipient_email ) ) {
+					$actions['resend'] = '<a href="' . esc_url( $resend_url ) . '">' . esc_html__( 'Resend email', 'pressprimer-certificate' ) . '</a>';
+				}
 			}
 
 			// Permanent deletion (test data and mistakes) - always
@@ -477,6 +486,18 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	public function column_default( $item, $column_name ) {
 		switch ( $column_name ) {
 			case 'recipient':
+				// One-off certificates (2.1): the name captured at issue,
+				// marked as having no account.
+				if ( PressPrimer_Certificate_Certificate::is_one_off( $item ) ) {
+					return esc_html(
+						sprintf(
+							/* translators: %s: recipient name */
+							__( '%s (no account)', 'pressprimer-certificate' ),
+							PressPrimer_Certificate_Certificate::recipient_name( $item )
+						)
+					);
+				}
+
 				$user = get_userdata( (int) $item->recipient_id );
 
 				return esc_html( $user ? (string) $user->display_name : __( '(deleted user)', 'pressprimer-certificate' ) );
@@ -499,6 +520,10 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 			case 'source':
 				if ( 'manual' === (string) $item->source_type ) {
 					return esc_html__( 'Manual', 'pressprimer-certificate' );
+				}
+
+				if ( PressPrimer_Certificate_Certificate::SOURCE_ONE_OFF === (string) $item->source_type ) {
+					return esc_html__( 'One-off', 'pressprimer-certificate' );
 				}
 
 				$type = PressPrimer_Certificate_Trigger_Registry::get_type( (string) $item->source_type );

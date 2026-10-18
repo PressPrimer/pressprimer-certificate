@@ -73,9 +73,9 @@ class PressPrimer_Certificate_Email_Service {
 			return false;
 		}
 
-		$recipient = get_userdata( (int) $certificate->recipient_id );
+		$recipient = self::recipient_for( $certificate, 'issued' );
 
-		if ( ! $recipient || '' === (string) $recipient->user_email ) {
+		if ( null === $recipient ) {
 			return false;
 		}
 
@@ -97,7 +97,7 @@ class PressPrimer_Certificate_Email_Service {
 			(array) $context
 		);
 
-		$content = self::assemble( $template, $tokens, $merge, (string) $recipient->user_email, 'issued', $context );
+		$content = self::assemble( $template, $tokens, $merge, $recipient['email'], 'issued', $context );
 
 		// The PDF always attaches when rendering succeeds; the temp
 		// file is deleted after sending (Feature 007 FR-006 - nothing
@@ -192,12 +192,67 @@ class PressPrimer_Certificate_Email_Service {
 	}
 
 	/**
+	 * Who a certificate's emails go to (Feature 2.1-004 FR-007)
+	 *
+	 * The recipient's account, or, for a one-off certificate (no
+	 * account), its stored email; filtered through
+	 * `ppcert_email_recipient`. Null means no email can be sent (no
+	 * account, no stored email, or no valid address).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $certificate Certificate row (hydrated).
+	 * @param string $email_type  Email type ('issued', 'expiry_reminder', ...).
+	 * @return array|null { email, name }, or null.
+	 */
+	public static function recipient_for( $certificate, $email_type = 'issued' ) {
+		$recipient = null;
+
+		if ( (int) $certificate->recipient_id > 0 ) {
+			$user = get_userdata( (int) $certificate->recipient_id );
+
+			if ( $user && '' !== (string) $user->user_email ) {
+				$recipient = [
+					'email' => (string) $user->user_email,
+					'name'  => (string) $user->display_name,
+				];
+			}
+		} elseif ( PressPrimer_Certificate_Certificate::is_one_off( $certificate ) && ! empty( $certificate->recipient_email ) ) {
+			$recipient = [
+				'email' => (string) $certificate->recipient_email,
+				'name'  => PressPrimer_Certificate_Certificate::recipient_name( $certificate ),
+			];
+		}
+
+		/**
+		 * Filters who a certificate's email goes to.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array|null $recipient   { email, name }, or null for no email.
+		 * @param object     $certificate Certificate row.
+		 * @param string     $email_type  Email type.
+		 */
+		$recipient = apply_filters( 'ppcert_email_recipient', $recipient, $certificate, (string) $email_type );
+
+		if ( ! is_array( $recipient ) || empty( $recipient['email'] ) || ! is_email( (string) $recipient['email'] ) ) {
+			return null;
+		}
+
+		return [
+			'email' => (string) $recipient['email'],
+			'name'  => isset( $recipient['name'] ) ? (string) $recipient['name'] : '',
+		];
+	}
+
+	/**
 	 * The token map for subject/body substitution
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 $recipient is the { email, name } array from recipient_for().
 	 *
 	 * @param object      $certificate Certificate row.
-	 * @param object      $recipient   Recipient user.
+	 * @param array       $recipient   Recipient { email, name }.
 	 * @param object|null $template    Template row.
 	 * @return array Map of {token} => value.
 	 */
@@ -206,7 +261,7 @@ class PressPrimer_Certificate_Email_Service {
 
 		$name = isset( $merge['recipient.full_name'] ) && '' !== $merge['recipient.full_name']
 			? (string) $merge['recipient.full_name']
-			: (string) $recipient->display_name;
+			: (string) $recipient['name'];
 
 		return [
 			'{recipient_name}'   => $name,
@@ -214,7 +269,7 @@ class PressPrimer_Certificate_Email_Service {
 				$certificate,
 				$template ? (string) $template->title : ''
 			),
-			'{credential_id}'    => PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $certificate->credential_id ),
+			'{credential_id}'    => PressPrimer_Certificate_Certificate::display_credential_id( $certificate ),
 			'{verification_url}' => ppcert_verification_url( (string) $certificate->credential_id ),
 			'{issuer_name}'      => (string) get_bloginfo( 'name' ),
 			'{site_name}'        => (string) get_bloginfo( 'name' ),
@@ -275,17 +330,17 @@ class PressPrimer_Certificate_Email_Service {
 			return null;
 		}
 
-		$recipient = get_userdata( (int) $certificate->recipient_id );
+		$email_type = sanitize_key( (string) $email_type );
+		$recipient  = self::recipient_for( $certificate, $email_type );
 
-		if ( ! $recipient || '' === (string) $recipient->user_email ) {
+		if ( null === $recipient ) {
 			return null;
 		}
 
-		$template   = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
-		$tokens     = self::tokens( $certificate, $recipient, $template );
-		$merge      = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
-		$email_type = sanitize_key( (string) $email_type );
-		$context    = array_merge(
+		$template = PressPrimer_Certificate_Template::get( (int) $certificate->template_id );
+		$tokens   = self::tokens( $certificate, $recipient, $template );
+		$merge    = is_array( $certificate->merge_data ) ? $certificate->merge_data : [];
+		$context  = array_merge(
 			[
 				'certificate_id' => (int) $certificate->id,
 				'template_id'    => (int) $certificate->template_id,
@@ -295,7 +350,7 @@ class PressPrimer_Certificate_Email_Service {
 		);
 
 		return [
-			'to'          => (string) $recipient->user_email,
+			'to'          => $recipient['email'],
 			'subject'     => self::substitute( (string) $subject_template, $tokens, $merge ),
 			'body'        => self::apply_footer( self::substitute( (string) $body_template, $tokens, $merge ), $email_type, $context ),
 			'headers'     => [ self::from_header( $email_type, $context ) ],

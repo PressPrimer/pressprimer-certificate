@@ -217,24 +217,28 @@ function ppcert_render_certificate_pdf( $certificate_id, $context = 'download' )
  * Public share URL for a certificate's view page
  *
  * @since 2.0.0
+ * @since 2.1.0 The $display argument (a pattern ID's credential_display).
  *
  * @param string $credential_id Credential ID (any accepted input form).
+ * @param string $display       Optional display form for the URL.
  * @return string URL, or '' for an invalid credential.
  */
-function ppcert_certificate_view_url( $credential_id ) {
-	return PressPrimer_Certificate_View_Page::view_url( $credential_id );
+function ppcert_certificate_view_url( $credential_id, $display = '' ) {
+	return PressPrimer_Certificate_View_Page::view_url( $credential_id, $display );
 }
 
 /**
  * Public PDF download URL for a certificate
  *
  * @since 2.0.0
+ * @since 2.1.0 The $display argument (a pattern ID's credential_display).
  *
  * @param string $credential_id Credential ID (any accepted input form).
+ * @param string $display       Optional display form for the URL.
  * @return string URL, or '' for an invalid credential.
  */
-function ppcert_certificate_pdf_url( $credential_id ) {
-	return PressPrimer_Certificate_View_Page::pdf_url( $credential_id );
+function ppcert_certificate_pdf_url( $credential_id, $display = '' ) {
+	return PressPrimer_Certificate_View_Page::pdf_url( $credential_id, $display );
 }
 
 /**
@@ -275,23 +279,29 @@ function ppcert_get_templates( array $args = [] ) {
  * Find a recipient's existing certificate for a source
  *
  * The duplicate-suppression lookup, exposed so integrations can link an
- * earned certificate to its credential page: the newest non-revoked row
- * matching (recipient, template, source_type, source_ref).
+ * earned certificate to its credential page: a non-revoked row matching
+ * (recipient, template, source_type, source_ref).
+ *
+ * Since 2.1.0 the ref may be a list (any entry matches) and a null
+ * source type means any source: with refs, those refs whatever their
+ * type; with no ref, the recipient's newest certificate from the
+ * template (Feature 2.1-005 FR-001, Feature 2.1-004 FR-010).
  *
  * @since 2.0.0
+ * @since 2.1.0 Ref lists and a null (any) source type.
  *
- * @param int         $recipient_id Recipient user id.
- * @param int         $template_id  Template row id.
- * @param string      $source_type  Source type id.
- * @param string|null $source_ref   Source reference (null when none).
+ * @param int                      $recipient_id Recipient user id.
+ * @param int                      $template_id  Template row id.
+ * @param string|null              $source_type  Source type id, or null for any source.
+ * @param string|null|array<mixed> $source_ref   Source reference(s) (null when none).
  * @return object|null Hydrated certificate row, or null.
  */
 function ppcert_find_certificate( $recipient_id, $template_id, $source_type, $source_ref = null ) {
 	return PressPrimer_Certificate_Certificate::find_duplicate(
 		absint( $recipient_id ),
 		absint( $template_id ),
-		sanitize_key( (string) $source_type ),
-		null === $source_ref || '' === $source_ref ? null : (string) $source_ref
+		null === $source_type ? null : sanitize_key( (string) $source_type ),
+		$source_ref
 	);
 }
 

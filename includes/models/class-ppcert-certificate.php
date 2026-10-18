@@ -29,6 +29,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PressPrimer_Certificate_Certificate {
 
 	/**
+	 * Source type of certificates issued to someone without an account
+	 * (Feature 2.1-004 FR-007). Built in like 'manual': never a trigger.
+	 *
+	 * @since 2.1.0
+	 * @var string
+	 */
+	const SOURCE_ONE_OFF = 'one_off';
+
+	/**
+	 * Most duplicate refs one lookup considers (the IN list's fixed
+	 * width; Feature 2.1-005 FR-001)
+	 *
+	 * @since 2.1.0
+	 * @var int
+	 */
+	const MAX_DUPLICATE_REFS = 20;
+
+	/**
 	 * Get the full certificates table name
 	 *
 	 * @since 1.0.0
@@ -98,10 +116,11 @@ class PressPrimer_Certificate_Certificate {
 	 *                                 currently valid, 'expired' means issued
 	 *                                 but past expiry. Default '' (all).
 	 *     @type string $source_type   Trigger type or 'manual'. Default '' (all).
-	 *     @type string $search        One input (FR-001): credential-shaped
-	 *                                 terms resolve as an exact credential
-	 *                                 lookup; anything else matches recipient
-	 *                                 name/email and certificate title.
+	 *     @type string $search        One input (FR-001): matches recipient
+	 *                                 name/email, certificate title, and (2.1)
+	 *                                 one-off certificates' stored email and
+	 *                                 name; a term that could be a credential
+	 *                                 ID also matches it exactly.
 	 *     @type string $issued_after  Y-m-d (site timezone), inclusive. Default ''.
 	 *     @type string $issued_before Y-m-d (site timezone), inclusive. Default ''.
 	 *     @type int    $per_page      Page size (1-100). Default 20.
@@ -142,33 +161,44 @@ class PressPrimer_Certificate_Certificate {
 			unset( $swap );
 		}
 
-		// Search semantics (FR-001): a credential-shaped term (normalized
-		// form passes the checksum) resolves as an EXACT credential
-		// lookup; anything else matches recipients (name/email via the
-		// core user query) and certificate title (the 2.0 search-only
-		// column - never the JSON blob, TR-002).
+		// Search semantics (FR-001; combined since 2.1.0, Feature 2.1-004
+		// FR-009): every term matches recipients (name/email via the core
+		// user query) and certificate title (the 2.0 search-only column),
+		// plus one-off certificates by stored email and by the name in
+		// their snapshot (the JSON match is bounded to one-off rows and
+		// encodes the term the way the snapshot stores it). A term shaped
+		// like a credential ALSO matches that exact credential - both,
+		// never either, so short words are never taken for IDs alone.
 		$credential_exact = '';
 		$recipient_csv    = '';
 		$title_like       = '';
+		$one_off_like     = '';
+		$one_off_json     = '';
 
 		if ( '' !== $search ) {
 			$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $search );
 
-			if ( PressPrimer_Certificate_Credential_ID_Service::is_credential_shaped( $normalized ) ) {
+			// Core-shaped input matches exactly with or without a valid
+			// check character (the 2.0 shape gate: a typo simply matches
+			// no row); pattern IDs through the validity gate.
+			if ( PressPrimer_Certificate_Credential_ID_Service::is_credential_shaped( $normalized )
+				|| PressPrimer_Certificate_Credential_ID_Service::is_valid( $normalized ) ) {
 				$credential_exact = $normalized;
-			} else {
-				$user_ids = get_users(
-					[
-						'search'         => '*' . $search . '*',
-						'search_columns' => [ 'user_login', 'user_email', 'user_nicename', 'display_name' ],
-						'fields'         => 'ID',
-						'number'         => 100,
-					]
-				);
-
-				$recipient_csv = implode( ',', array_map( 'absint', (array) $user_ids ) );
-				$title_like    = '%' . $wpdb->esc_like( $search ) . '%';
 			}
+
+			$user_ids = get_users(
+				[
+					'search'         => '*' . $search . '*',
+					'search_columns' => [ 'user_login', 'user_email', 'user_nicename', 'display_name' ],
+					'fields'         => 'ID',
+					'number'         => 100,
+				]
+			);
+
+			$recipient_csv = implode( ',', array_map( 'absint', (array) $user_ids ) );
+			$title_like    = '%' . $wpdb->esc_like( $search ) . '%';
+			$one_off_like  = $title_like;
+			$one_off_json  = '%' . $wpdb->esc_like( substr( (string) wp_json_encode( $search ), 1, -1 ) ) . '%';
 		}
 
 		// The status pill's read-time expiry semantics, applied in SQL so
@@ -189,7 +219,7 @@ class PressPrimer_Certificate_Certificate {
 
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) )",
+				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) OR ( %s <> '' AND ( recipient_email LIKE %s OR ( source_type = 'one_off' AND merge_data_json LIKE %s ) ) ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) )",
 				self::table(),
 				$template_id,
 				$template_id,
@@ -207,6 +237,9 @@ class PressPrimer_Certificate_Certificate {
 				$recipient_csv,
 				$title_like,
 				$title_like,
+				$one_off_like,
+				$one_off_like,
+				$one_off_json,
 				$has_after,
 				$after_sql,
 				$has_before,
@@ -220,7 +253,7 @@ class PressPrimer_Certificate_Certificate {
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
+				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) OR ( %s <> '' AND ( recipient_email LIKE %s OR ( source_type = 'one_off' AND merge_data_json LIKE %s ) ) ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
 				self::table(),
 				$template_id,
 				$template_id,
@@ -238,6 +271,9 @@ class PressPrimer_Certificate_Certificate {
 				$recipient_csv,
 				$title_like,
 				$title_like,
+				$one_off_like,
+				$one_off_like,
+				$one_off_json,
 				$has_after,
 				$after_sql,
 				$has_before,
@@ -644,18 +680,106 @@ class PressPrimer_Certificate_Certificate {
 	 * source_ref) - Feature 003 FR-001 step 2. Revoked certificates do
 	 * not suppress (an admin may legitimately reissue after revocation).
 	 *
+	 * 2.1.0 (Feature 2.1-005 FR-001, Feature 2.1-004 FR-010): the ref may
+	 * be a list, matching when ANY entry matches (a null entry matches a
+	 * NULL ref), and a null source_type means any source: with refs, the
+	 * refs match whatever their type; with no ref, any certificate from
+	 * the template matches (School's one-certificate-per-person rule).
+	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Ref lists and the any-source (null) source_type.
+	 *
+	 * @param int                      $recipient_id Recipient user id.
+	 * @param int                      $template_id  Template row id.
+	 * @param string|null              $source_type  Source type slug, or null for any source.
+	 * @param string|null|array<mixed> $source_ref  Source reference(s); null for none.
+	 * @return object|null Existing certificate row, or null.
+	 */
+	public static function find_duplicate( $recipient_id, $template_id, $source_type, $source_ref ) {
+		$refs = self::normalize_refs( $source_ref );
+		$type = null === $source_type ? '' : sanitize_key( (string) $source_type );
+
+		if ( '' === $type && [ null ] === $refs ) {
+			return self::find_any_for_template( $recipient_id, $template_id );
+		}
+
+		// One ref of one type: the 2.0 query, unchanged.
+		if ( '' !== $type && 1 === count( $refs ) ) {
+			return self::find_by_ref( $recipient_id, $template_id, $type, $refs[0] );
+		}
+
+		return self::find_by_refs( $recipient_id, $template_id, $type, $refs );
+	}
+
+	/**
+	 * The recipient's newest non-revoked certificate from a template, from
+	 * any source (Feature 2.1-004 FR-010)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $recipient_id Recipient user id.
+	 * @param int $template_id  Template row id.
+	 * @return object|null
+	 */
+	public static function find_any_for_template( $recipient_id, $template_id ) {
+		global $wpdb;
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM %i WHERE template_id = %d AND recipient_id = %d AND status != 'revoked' ORDER BY id DESC LIMIT 1",
+				self::table(),
+				absint( $template_id ),
+				absint( $recipient_id )
+			)
+		);
+
+		return $row ? self::hydrate( $row ) : null;
+	}
+
+	/**
+	 * Normalize a ref argument to a list of refs (null = no ref)
+	 *
+	 * Strings are cut to the column's 191 characters; empty strings mean
+	 * no ref; duplicates collapse; at most 20 refs are considered.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $source_ref A ref, null, or a list of refs.
+	 * @return array<int,string|null> Never empty.
+	 */
+	public static function normalize_refs( $source_ref ) {
+		$refs = [];
+
+		foreach ( is_array( $source_ref ) ? $source_ref : [ $source_ref ] as $ref ) {
+			if ( null === $ref || '' === $ref || ! is_scalar( $ref ) ) {
+				$ref = null;
+			} else {
+				$ref = substr( (string) $ref, 0, 191 );
+			}
+
+			if ( ! in_array( $ref, $refs, true ) ) {
+				$refs[] = $ref;
+			}
+		}
+
+		return empty( $refs ) ? [ null ] : array_slice( $refs, 0, self::MAX_DUPLICATE_REFS );
+	}
+
+	/**
+	 * One duplicate lookup: a source type and one ref (the 2.0 query)
+	 *
+	 * @since 2.1.0
 	 *
 	 * @param int         $recipient_id Recipient user id.
 	 * @param int         $template_id  Template row id.
 	 * @param string      $source_type  Source type slug.
-	 * @param string|null $source_ref   Source reference, or null (manual).
-	 * @return object|null Existing certificate row, or null.
+	 * @param string|null $source_ref   Source reference, or null.
+	 * @return object|null
 	 */
-	public static function find_duplicate( $recipient_id, $template_id, $source_type, $source_ref ) {
+	private static function find_by_ref( $recipient_id, $template_id, $source_type, $source_ref ) {
 		global $wpdb;
 
-		if ( null === $source_ref || '' === $source_ref ) {
+		if ( null === $source_ref ) {
 			$row = $wpdb->get_row(
 				$wpdb->prepare(
 					"SELECT * FROM %i WHERE recipient_id = %d AND template_id = %d AND source_type = %s AND source_ref IS NULL AND status != 'revoked'",
@@ -679,6 +803,204 @@ class PressPrimer_Certificate_Certificate {
 		}
 
 		return $row ? self::hydrate( $row ) : null;
+	}
+
+	/**
+	 * One duplicate lookup over a ref list, one type or any
+	 *
+	 * A fixed 20-slot IN list (normalize_refs() caps lists at 20), unused
+	 * slots repeating the first ref, so the statement is static - no
+	 * placeholder assembly. A null entry adds the NULL-ref branch. The
+	 * newest match wins.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int                    $recipient_id Recipient user id.
+	 * @param int                    $template_id  Template row id.
+	 * @param string                 $source_type  Source type slug, or '' for any.
+	 * @param array<int,string|null> $refs         From normalize_refs(); holds at least one string.
+	 * @return object|null
+	 */
+	private static function find_by_refs( $recipient_id, $template_id, $source_type, array $refs ) {
+		global $wpdb;
+
+		$strings = array_values( array_filter( $refs, 'is_string' ) );
+
+		if ( empty( $strings ) ) {
+			return null;
+		}
+
+		$slots    = array_pad( array_slice( $strings, 0, self::MAX_DUPLICATE_REFS ), self::MAX_DUPLICATE_REFS, $strings[0] );
+		$has_null = in_array( null, $refs, true ) ? 1 : 0;
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM %i WHERE recipient_id = %d AND template_id = %d AND ( %s = '' OR source_type = %s ) AND ( source_ref IN ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) OR ( %d = 1 AND source_ref IS NULL ) ) AND status != 'revoked' ORDER BY id DESC LIMIT 1",
+				self::table(),
+				absint( $recipient_id ),
+				absint( $template_id ),
+				(string) $source_type,
+				(string) $source_type,
+				$slots[0],
+				$slots[1],
+				$slots[2],
+				$slots[3],
+				$slots[4],
+				$slots[5],
+				$slots[6],
+				$slots[7],
+				$slots[8],
+				$slots[9],
+				$slots[10],
+				$slots[11],
+				$slots[12],
+				$slots[13],
+				$slots[14],
+				$slots[15],
+				$slots[16],
+				$slots[17],
+				$slots[18],
+				$slots[19],
+				$has_null
+			)
+		);
+
+		return $row ? self::hydrate( $row ) : null;
+	}
+
+	/**
+	 * Whether any certificate has a given source type
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $source_type Source type slug.
+	 * @return bool
+	 */
+	public static function has_source_type( $source_type ) {
+		global $wpdb;
+
+		return null !== $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT id FROM %i WHERE source_type = %s LIMIT 1',
+				self::table(),
+				sanitize_key( (string) $source_type )
+			)
+		);
+	}
+
+	/**
+	 * Whether a certificate was issued to someone without an account
+	 * (one-off, Feature 2.1-004 FR-007)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $row Certificate row.
+	 * @return bool
+	 */
+	public static function is_one_off( $row ) {
+		return isset( $row->source_type ) && self::SOURCE_ONE_OFF === (string) $row->source_type && 0 === (int) $row->recipient_id;
+	}
+
+	/**
+	 * The recipient's name as captured at issue (the snapshot)
+	 *
+	 * `recipient.full_name`, then `recipient.display_name` from the merge
+	 * snapshot; then, for account holders, the account's current display
+	 * name. One-off certificates always have the snapshot name.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $row Certificate row (hydrated or raw).
+	 * @return string
+	 */
+	public static function recipient_name( $row ) {
+		$merge = self::merge_snapshot( $row );
+
+		foreach ( [ 'recipient.full_name', 'recipient.display_name' ] as $key ) {
+			if ( isset( $merge[ $key ] ) && '' !== trim( (string) $merge[ $key ] ) ) {
+				return (string) $merge[ $key ];
+			}
+		}
+
+		$user = (int) $row->recipient_id > 0 ? get_userdata( (int) $row->recipient_id ) : false;
+
+		return $user ? (string) $user->display_name : '';
+	}
+
+	/**
+	 * A certificate's credential ID as people see it
+	 *
+	 * The snapshotted display form of a pattern ID, else the core
+	 * XXXX-XXXX-XXXX grouping; filtered through
+	 * `ppcert_credential_id_display` (Feature 2.1-004 FR-009).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $row Certificate row.
+	 * @return string
+	 */
+	public static function display_credential_id( $row ) {
+		$display = PressPrimer_Certificate_Credential_ID_Service::format_display(
+			(string) $row->credential_id,
+			isset( $row->credential_display ) ? (string) $row->credential_display : ''
+		);
+
+		/**
+		 * Filters a certificate's credential ID wherever it is shown.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param string $display     Display form.
+		 * @param object $certificate Certificate row.
+		 */
+		return (string) apply_filters( 'ppcert_credential_id_display', $display, $row );
+	}
+
+	/**
+	 * The download file name for a certificate's PDF
+	 *
+	 * One form everywhere (Feature 2.1-004 FR-009): `certificate-` plus
+	 * the lowercased display ID, plus `-{variant}` for a variant render.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $row     Certificate row.
+	 * @param string $variant Optional variant key.
+	 * @return string
+	 */
+	public static function pdf_filename( $row, $variant = '' ) {
+		$name = 'certificate-' . strtolower( self::display_credential_id( $row ) );
+		$name = preg_replace( '/[^a-z0-9\-]/', '', $name );
+
+		if ( '' !== (string) $variant ) {
+			$name .= '-' . sanitize_key( (string) $variant );
+		}
+
+		return $name . '.pdf';
+	}
+
+	/**
+	 * The decoded merge snapshot of a row
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $row Certificate row.
+	 * @return array
+	 */
+	private static function merge_snapshot( $row ) {
+		if ( isset( $row->merge_data ) && is_array( $row->merge_data ) ) {
+			return $row->merge_data;
+		}
+
+		if ( ! empty( $row->merge_data_json ) ) {
+			$decoded = json_decode( (string) $row->merge_data_json, true );
+
+			if ( is_array( $decoded ) ) {
+				return $decoded;
+			}
+		}
+
+		return [];
 	}
 
 	/**
@@ -802,6 +1124,38 @@ class PressPrimer_Certificate_Certificate {
 				self::table(),
 				PressPrimer_Certificate_Template::table(),
 				absint( $recipient_id ),
+				absint( $limit ),
+				absint( $offset )
+			)
+		);
+
+		return array_map( [ __CLASS__, 'hydrate' ], (array) $rows );
+	}
+
+	/**
+	 * One batch of a person's certificates for the privacy tools, oldest
+	 * first (2.1): their account's certificates plus one-off certificates
+	 * issued to their email address (Feature 2.1-004 FR-007)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int    $user_id User id (0 when the email has no account).
+	 * @param string $email   Email address.
+	 * @param int    $limit   Batch size.
+	 * @param int    $offset  Row offset.
+	 * @return object[] Hydrated rows with a template_title property.
+	 */
+	public static function get_batch_for_privacy( $user_id, $email, $limit, $offset = 0 ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT c.*, t.title AS template_title FROM %i c LEFT JOIN %i t ON t.id = c.template_id WHERE ( ( %d > 0 AND c.recipient_id = %d ) OR ( c.source_type = 'one_off' AND c.recipient_email = %s ) ) ORDER BY c.id ASC LIMIT %d OFFSET %d",
+				self::table(),
+				PressPrimer_Certificate_Template::table(),
+				absint( $user_id ),
+				absint( $user_id ),
+				(string) $email,
 				absint( $limit ),
 				absint( $offset )
 			)

@@ -81,8 +81,13 @@ class PressPrimer_Certificate_Verification_Page {
 			'ppcert-verify',
 			'ppcert_verify_data',
 			[
-				'rest_url' => rest_url( 'ppcert/v1/verify/' ),
-				'i18n'     => [
+				'rest_url'       => rest_url( 'ppcert/v1/verify/' ),
+				// '0' once the site holds pattern IDs (2.1, Decision 006):
+				// the browser can no longer reject typos by checksum and
+				// sends any pattern-shaped input to the server instead.
+				// A string because wp_localize_script() stringifies scalars.
+				'strictChecksum' => PressPrimer_Certificate_Credential_ID_Service::pattern_ids_in_use() ? '0' : '1',
+				'i18n'           => [
 					'valid'        => __( 'Valid certificate', 'pressprimer-certificate' ),
 					'expired'      => __( 'Expired certificate', 'pressprimer-certificate' ),
 					'revoked'      => __( 'This certificate has been revoked.', 'pressprimer-certificate' ),
@@ -139,7 +144,7 @@ class PressPrimer_Certificate_Verification_Page {
 			. esc_html__( 'Credential ID', 'pressprimer-certificate' ) . '</label> ';
 		$output .= '<input type="text" id="ppcert-verify-input" class="ppcert-verify__input" name="ppcert_id" '
 			. 'value="' . esc_attr( isset( $data['prefill'] ) ? $data['prefill'] : '' ) . '" '
-			. 'placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" required /> ';
+			. 'placeholder="' . esc_attr( PressPrimer_Certificate_Credential_ID_Service::example() ) . '" autocomplete="off" spellcheck="false" required /> ';
 		$output .= '<button type="submit" class="ppcert-verify__submit ppcert-button-primary">'
 			. esc_html__( 'Verify', 'pressprimer-certificate' ) . '</button>';
 		$output .= '</form>';

@@ -587,7 +587,7 @@ class Test_Certificates_REST extends TestCase {
 		$controller->download_pdf( new WP_REST_Request( [ 'credential_id' => 'D0WN-0000-0001' ] ) );
 
 		$this->assertNotNull( $controller->streamed );
-		$this->assertSame( 'certificate-d0wn00000001.pdf', $controller->streamed['filename'] );
+		$this->assertSame( 'certificate-d0wn-0000-0001.pdf', $controller->streamed['filename'], 'The one 2.1 file-name form' );
 
 		$this->assertFileExists( $controller->streamed['path'] );
 		$head = (string) file_get_contents( $controller->streamed['path'], false, null, 0, 5 );

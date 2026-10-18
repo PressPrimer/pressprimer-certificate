@@ -1405,6 +1405,41 @@ class PPCert_Fake_WPDB {
 			return [ [ 'count' => count( $matches ) ] ];
 		}
 
+		// Certificate::get_batch_for_privacy (2.1) - the account's rows
+		// plus one-offs issued to the email. args: [certificates,
+		// templates, user_id x2, email, limit, offset].
+		if ( false !== strpos( $query, "WHERE ( ( %d > 0 AND c.recipient_id = %d ) OR ( c.source_type = 'one_off' AND c.recipient_email = %s ) ) ORDER BY c.id ASC LIMIT %d OFFSET %d" ) ) {
+			$templates = $this->rows( (string) $args[1] );
+			$matches   = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					$account = (int) $args[2] > 0 && (int) $row['recipient_id'] === (int) $args[3];
+					$one_off = isset( $row['source_type'], $row['recipient_email'] )
+						&& 'one_off' === $row['source_type']
+						// MySQL's default collation compares emails case-insensitively.
+						&& 0 === strcasecmp( (string) $row['recipient_email'], (string) $args[4] );
+
+					return $account || $one_off;
+				}
+			);
+
+			$matches = array_slice( $matches, (int) $args[6], (int) $args[5] );
+
+			return array_map(
+				static function ( $row ) use ( $templates ) {
+					$row['template_title'] = null;
+					foreach ( $templates as $template ) {
+						if ( (int) $template['id'] === (int) $row['template_id'] ) {
+							$row['template_title'] = isset( $template['title'] ) ? $template['title'] : null;
+							break;
+						}
+					}
+					return $row;
+				},
+				$matches
+			);
+		}
+
 		// Certificate::get_batch_for_recipient - the privacy batch query.
 		if ( false !== strpos( $query, 'WHERE c.recipient_id = %d ORDER BY c.id ASC LIMIT %d OFFSET %d' ) ) {
 			$templates = $this->rows( (string) $args[1] );
@@ -1464,6 +1499,78 @@ class PPCert_Fake_WPDB {
 				static function ( $row ) use ( $args ) {
 					return isset( $row['credential_id'] ) && $row['credential_id'] === $args[1];
 				}
+			);
+		}
+
+		// Certificate::find_by_refs (2.1) - the fixed 20-slot IN list, one
+		// type or any (''), optional NULL-ref branch, newest first.
+		// args: [table, recipient, template, type x2, ref x20, has_null].
+		if ( false !== strpos( $query, 'AND ( source_ref IN ( %s, %s, %s' ) ) {
+			$refs     = array_slice( $args, 5, 20 );
+			$has_null = 1 === (int) $args[25];
+			$matches  = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args, $refs, $has_null ) {
+					$ref = isset( $row['source_ref'] ) ? $row['source_ref'] : null;
+
+					return (int) $row['recipient_id'] === (int) $args[1]
+						&& (int) $row['template_id'] === (int) $args[2]
+						&& ( '' === (string) $args[3] || $row['source_type'] === $args[4] )
+						&& ( ( null !== $ref && in_array( (string) $ref, $refs, true ) ) || ( $has_null && null === $ref ) )
+						&& 'revoked' !== $row['status'];
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return (int) $b['id'] <=> (int) $a['id'];
+				}
+			);
+
+			return array_slice( $matches, 0, 1 );
+		}
+
+		// Certificate::find_any_for_template (2.1). args: [table,
+		// template, recipient].
+		if ( "SELECT * FROM %i WHERE template_id = %d AND recipient_id = %d AND status != 'revoked' ORDER BY id DESC LIMIT 1" === $query ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) $row['template_id'] === (int) $args[1]
+						&& (int) $row['recipient_id'] === (int) $args[2]
+						&& 'revoked' !== $row['status'];
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return (int) $b['id'] <=> (int) $a['id'];
+				}
+			);
+
+			return array_slice( $matches, 0, 1 );
+		}
+
+		// Certificate::has_source_type (2.1). args: [table, source_type].
+		if ( 'SELECT id FROM %i WHERE source_type = %s LIMIT 1' === $query ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return isset( $row['source_type'] ) && $row['source_type'] === $args[1];
+				}
+			);
+
+			return array_slice(
+				array_map(
+					static function ( $row ) {
+						return [ 'id' => $row['id'] ];
+					},
+					$matches
+				),
+				0,
+				1
 			);
 		}
 
@@ -1553,13 +1660,14 @@ class PPCert_Fake_WPDB {
 
 		// Certificates admin list (fixed-shape query, 2.0 shape):
 		// sentinel-driven filters, pill-semantics status, exact
-		// credential, title LIKE, and UTC date bounds. args: [table,
-		// template_id x2, status x3 + now, status + now, source_type x2,
-		// search, credential_exact, recipient_csv x2, title_like x2,
-		// issued_after x2, issued_before x2, scoped, scope_csv,
-		// issued_by x2, (per_page, offset)].
+		// credential, title LIKE, one-off email/name (2.1), and UTC date
+		// bounds. args: [table, template_id x2, status x3 + now, status +
+		// now, source_type x2, search, credential_exact, recipient_csv x2,
+		// title_like x2, one_off_like x2, one_off_json, issued_after x2,
+		// issued_before x2, scoped, scope_csv, issued_by x2, (per_page,
+		// offset)].
 		if ( false !== strpos( $query, 'FIND_IN_SET( recipient_id, %s )' ) ) {
-			$scope            = $this->scope_from_args( $args, 21 );
+			$scope            = $this->scope_from_args( $args, 24 );
 			$template_id      = (int) $args[1];
 			$status           = (string) $args[3];
 			$now              = (string) $args[6];
@@ -1568,12 +1676,14 @@ class PPCert_Fake_WPDB {
 			$credential_exact = (string) $args[12];
 			$recipient_ids    = array_filter( array_map( 'intval', explode( ',', (string) $args[13] ) ) );
 			$title_needle     = $this->like_to_substring( (string) $args[15] );
-			$issued_after     = 0 !== (int) $args[17] ? (string) $args[18] : '';
-			$issued_before    = 0 !== (int) $args[19] ? (string) $args[20] : '';
+			$email_needle     = $this->like_to_substring( (string) $args[17] );
+			$json_needle      = $this->like_to_substring( (string) $args[19] );
+			$issued_after     = 0 !== (int) $args[20] ? (string) $args[21] : '';
+			$issued_before    = 0 !== (int) $args[22] ? (string) $args[23] : '';
 
 			$matches = $this->filter_rows(
 				$rows,
-				static function ( $row ) use ( $scope, $template_id, $status, $now, $source_type, $search, $credential_exact, $recipient_ids, $title_needle, $issued_after, $issued_before ) {
+				static function ( $row ) use ( $scope, $template_id, $status, $now, $source_type, $search, $credential_exact, $recipient_ids, $title_needle, $email_needle, $json_needle, $issued_after, $issued_before ) {
 					if ( ! PPCert_Fake_WPDB::scope_allows( $row, $scope ) ) {
 						return false;
 					}
@@ -1608,8 +1718,13 @@ class PPCert_Fake_WPDB {
 						$recipient_hit  = ! empty( $recipient_ids ) && in_array( (int) $row['recipient_id'], $recipient_ids, true );
 						$title_hit      = '' !== $title_needle && isset( $row['title'] ) && null !== $row['title']
 							&& false !== stripos( (string) $row['title'], $title_needle );
+						$email_hit      = '' !== $email_needle && isset( $row['recipient_email'] ) && null !== $row['recipient_email']
+							&& false !== stripos( (string) $row['recipient_email'], $email_needle );
+						$name_hit       = '' !== $json_needle && isset( $row['source_type'], $row['merge_data_json'] )
+							&& 'one_off' === $row['source_type']
+							&& false !== stripos( (string) $row['merge_data_json'], $json_needle );
 
-						if ( ! $credential_hit && ! $recipient_hit && ! $title_hit ) {
+						if ( ! $credential_hit && ! $recipient_hit && ! $title_hit && ! $email_hit && ! $name_hit ) {
 							return false;
 						}
 					}
@@ -1639,8 +1754,8 @@ class PPCert_Fake_WPDB {
 				return [ [ 'total' => count( $matches ) ] ];
 			}
 
-			$per_page = (int) $args[25];
-			$offset   = (int) $args[26];
+			$per_page = (int) $args[28];
+			$offset   = (int) $args[29];
 
 			return array_slice( $matches, $offset, $per_page );
 		}

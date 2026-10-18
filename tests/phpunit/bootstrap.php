@@ -1551,10 +1551,11 @@ if ( ! function_exists( 'ppcert_certificate_view_url' ) ) {
 	 * Mirror: public share URL for a certificate's view page.
 	 *
 	 * @param string $credential_id Credential ID.
+	 * @param string $display       Optional display form.
 	 * @return string
 	 */
-	function ppcert_certificate_view_url( $credential_id ) {
-		return PressPrimer_Certificate_View_Page::view_url( $credential_id );
+	function ppcert_certificate_view_url( $credential_id, $display = '' ) {
+		return PressPrimer_Certificate_View_Page::view_url( $credential_id, $display );
 	}
 }
 
@@ -1563,10 +1564,11 @@ if ( ! function_exists( 'ppcert_certificate_pdf_url' ) ) {
 	 * Mirror: public PDF download URL for a certificate.
 	 *
 	 * @param string $credential_id Credential ID.
+	 * @param string $display       Optional display form.
 	 * @return string
 	 */
-	function ppcert_certificate_pdf_url( $credential_id ) {
-		return PressPrimer_Certificate_View_Page::pdf_url( $credential_id );
+	function ppcert_certificate_pdf_url( $credential_id, $display = '' ) {
+		return PressPrimer_Certificate_View_Page::pdf_url( $credential_id, $display );
 	}
 }
 
@@ -1601,18 +1603,18 @@ if ( ! function_exists( 'ppcert_find_certificate' ) ) {
 	/**
 	 * Mirror: find a recipient's existing certificate for a source.
 	 *
-	 * @param int         $recipient_id Recipient user id.
-	 * @param int         $template_id  Template row id.
-	 * @param string      $source_type  Source type id.
-	 * @param string|null $source_ref   Source reference.
+	 * @param int                      $recipient_id Recipient user id.
+	 * @param int                      $template_id  Template row id.
+	 * @param string|null              $source_type  Source type id, or null for any.
+	 * @param string|null|array<mixed> $source_ref   Source reference(s).
 	 * @return object|null
 	 */
 	function ppcert_find_certificate( $recipient_id, $template_id, $source_type, $source_ref = null ) {
 		return PressPrimer_Certificate_Certificate::find_duplicate(
 			absint( $recipient_id ),
 			absint( $template_id ),
-			sanitize_key( (string) $source_type ),
-			null === $source_ref || '' === $source_ref ? null : (string) $source_ref
+			null === $source_type ? null : sanitize_key( (string) $source_type ),
+			$source_ref
 		);
 	}
 }
@@ -1743,11 +1745,22 @@ if ( ! function_exists( 'update_option' ) ) {
 	/**
 	 * Stub: Option write into the test options store.
 	 *
+	 * Adding a NEW option is an INSERT in WordPress, which replaces
+	 * $wpdb->insert_id; the stub does the same so code that reads the id
+	 * after an option write fails here as it does live (the 2.1 first
+	 * pattern-ID insert, found on the dev site 2026-10-18).
+	 *
 	 * @param string $option Option name.
 	 * @param mixed  $value  Value.
 	 * @return bool
 	 */
 	function update_option( $option, $value ) {
+		$options = isset( $GLOBALS['ppcert_test_options'] ) ? (array) $GLOBALS['ppcert_test_options'] : [];
+
+		if ( ! array_key_exists( $option, $options ) && isset( $GLOBALS['wpdb'] ) && $GLOBALS['wpdb'] instanceof PPCert_Fake_WPDB ) {
+			$GLOBALS['wpdb']->insert_id = 900000 + count( $options );
+		}
+
 		$GLOBALS['ppcert_test_options'][ $option ] = $value;
 		return true;
 	}
@@ -2841,4 +2854,54 @@ if ( ! function_exists( 'paginate_links' ) ) {
 
 		return implode( ' ', $links );
 	}
+}
+
+/**
+ * The 2.1 seam tests' template layout: name and credential merge fields
+ * (shared by test-credential-seams.php and test-issuance-seams.php).
+ *
+ * @return string Layout JSON.
+ */
+function ppcert_tests_seams_layout() {
+	$field = static function ( $id, $token, $y ) {
+		return [
+			'id'    => $id,
+			'type'  => 'merge_field',
+			'x'     => 100,
+			'y'     => $y,
+			'w'     => 600,
+			'h'     => 40,
+			'z'     => 1,
+			'props' => [
+				'token'       => $token,
+				'font_family' => 'playfair-display',
+				'font_size'   => 24,
+				'color'       => '#1f2a44',
+				'align'       => 'center',
+				'line_height' => 1.2,
+				'bold'        => false,
+				'italic'      => false,
+			],
+		];
+	};
+
+	return (string) wp_json_encode(
+		[
+			'layout_schema_version' => 1,
+			'page'                  => [
+				'size'        => 'a4',
+				'orientation' => 'landscape',
+				'width'       => 842,
+				'height'      => 595,
+			],
+			'background'            => [
+				'color'         => '#ffffff',
+				'attachment_id' => 0,
+			],
+			'elements'              => [
+				$field( 'el_seamname', '{{recipient.display_name}}', 200 ),
+				$field( 'el_seamcred', '{{certificate.credential_id}}', 500 ),
+			],
+		]
+	);
 }

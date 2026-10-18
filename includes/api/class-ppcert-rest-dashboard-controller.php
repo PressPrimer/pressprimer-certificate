@@ -220,13 +220,16 @@ class PressPrimer_Certificate_REST_Dashboard_Controller {
 				$titles[ $template_id ] = $template ? (string) $template->title : '';
 			}
 
-			$recipient  = get_userdata( (int) $certificate->recipient_id );
+			$recipient  = (int) $certificate->recipient_id > 0 ? get_userdata( (int) $certificate->recipient_id ) : false;
 			$credential = (string) $certificate->credential_id;
 
 			$rows[] = [
 				'id'             => (int) $certificate->id,
-				'credential_id'  => PressPrimer_Certificate_Credential_ID_Service::format_display( $credential ),
-				'recipient_name' => $recipient ? (string) $recipient->display_name : '',
+				'credential_id'  => PressPrimer_Certificate_Certificate::display_credential_id( $certificate ),
+				// One-off certificates (2.1): the name captured at issue.
+				'recipient_name' => PressPrimer_Certificate_Certificate::is_one_off( $certificate )
+					? PressPrimer_Certificate_Certificate::recipient_name( $certificate )
+					: ( $recipient ? (string) $recipient->display_name : '' ),
 				// The certificate's own name when it has one (1.1-006).
 				'template_title' => PressPrimer_Certificate_Certificate::display_title( $certificate, $titles[ $template_id ] ),
 				'status'         => PressPrimer_Certificate_Certificate::effective_status( $certificate ),

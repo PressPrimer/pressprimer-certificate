@@ -98,7 +98,7 @@ class PressPrimer_Certificate_Privacy {
 
 		$tutorial = [
 			__( 'This plugin issues certificates to users of your site and keeps a record of each one in your database. Nothing is sent to outside services. Use the text below as a starting point and adjust it to match how you use certificates.', 'pressprimer-certificate' ),
-			__( 'Certificates are public to anyone who has the link or the credential ID. Every certificate has a share page, a verification result, and a PDF download that open without signing in. They show the recipient\'s name, the certificate title, the issuer, the issue and expiry dates, and the certificate image and PDF with every field placed on the design, which can include the recipient\'s email address if your template uses that field. Long random credential IDs and rate limiting make guessing impractical, but anyone a recipient shares the link with, or who scans the QR code, sees the same information.', 'pressprimer-certificate' ),
+			__( 'Certificates are public to anyone who has the link or the credential ID. Every certificate has a share page, a verification result, and a PDF download that open without signing in. They show the recipient\'s name, the certificate title, the issuer, the issue and expiry dates, and the certificate image and PDF with every field placed on the design, which can include the recipient\'s email address if your template uses that field. Core credential IDs are long, random, and never sequential, and rate limiting makes guessing them impractical, but anyone a recipient shares the link with, or who scans the QR code, sees the same information.', 'pressprimer-certificate' ),
 			__( 'The optional email-course opt-in on the dashboard sends only an administrator\'s own address, typed in and submitted by that administrator. It does not involve your users\' data and needs no mention in your policy.', 'pressprimer-certificate' ),
 		];
 
@@ -206,22 +206,17 @@ class PressPrimer_Certificate_Privacy {
 	public static function export( $email, $page = 1 ) {
 		$user = get_user_by( 'email', $email );
 
-		if ( ! $user ) {
-			return [
-				'data' => [],
-				'done' => true,
-			];
-		}
-
+		// One-off certificates (2.1) belong to an email with no account,
+		// so a missing account no longer ends the export.
 		$page         = max( 1, (int) $page );
-		$certificates = self::user_certificates( (int) $user->ID, $page );
+		$certificates = self::user_certificates( $user ? (int) $user->ID : 0, (string) $email, $page );
 		$items        = [];
 
 		foreach ( $certificates as $certificate ) {
 			$data = [
 				[
 					'name'  => __( 'Credential ID', 'pressprimer-certificate' ),
-					'value' => PressPrimer_Certificate_Credential_ID_Service::format_display( (string) $certificate->credential_id ),
+					'value' => PressPrimer_Certificate_Certificate::display_credential_id( $certificate ),
 				],
 				[
 					'name'  => __( 'Certificate', 'pressprimer-certificate' ),
@@ -271,7 +266,7 @@ class PressPrimer_Certificate_Privacy {
 
 		// Credit rows (dormant foundation table) export on the first page -
 		// the ledger is small while no UI writes to it.
-		if ( 1 === $page ) {
+		if ( 1 === $page && $user ) {
 			foreach ( self::user_credits( (int) $user->ID ) as $credit ) {
 				$items[] = [
 					'group_id'    => 'ppcert-credits',
@@ -319,20 +314,13 @@ class PressPrimer_Certificate_Privacy {
 	public static function erase( $email, $page = 1 ) {
 		global $wpdb;
 
-		$user = get_user_by( 'email', $email );
-
-		if ( ! $user ) {
-			return [
-				'items_removed'  => 0,
-				'items_retained' => 0,
-				'messages'       => [],
-				'done'           => true,
-			];
-		}
+		$user    = get_user_by( 'email', $email );
+		$user_id = $user ? (int) $user->ID : 0;
 
 		// Batches always query page 1: each pass deletes what it fetched,
-		// so the next pass sees the next rows.
-		$certificates = self::user_certificates( (int) $user->ID, 1 );
+		// so the next pass sees the next rows. One-off certificates (2.1)
+		// match by email, account or not.
+		$certificates = self::user_certificates( $user_id, (string) $email, 1 );
 		$removed      = 0;
 
 		foreach ( $certificates as $certificate ) {
@@ -358,10 +346,10 @@ class PressPrimer_Certificate_Privacy {
 		$done = count( $certificates ) < self::BATCH_SIZE;
 
 		// The credit ledger clears once, on the final pass.
-		if ( $done ) {
+		if ( $done && $user_id > 0 ) {
 			$credits_removed = $wpdb->delete(
 				$wpdb->prefix . 'ppcert_credits',
-				[ 'user_id' => (int) $user->ID ],
+				[ 'user_id' => $user_id ],
 				[ '%d' ]
 			);
 
@@ -385,17 +373,23 @@ class PressPrimer_Certificate_Privacy {
 	}
 
 	/**
-	 * One batch of a user's certificates, oldest first
+	 * One batch of a person's certificates, oldest first
+	 *
+	 * Their account's certificates plus one-off certificates issued to
+	 * their email (2.1).
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The $email argument.
 	 *
-	 * @param int $user_id User id.
-	 * @param int $page    Batch page (1-based).
+	 * @param int    $user_id User id (0 when the email has no account).
+	 * @param string $email   Email address.
+	 * @param int    $page    Batch page (1-based).
 	 * @return object[] Hydrated rows with template_title.
 	 */
-	private static function user_certificates( $user_id, $page ) {
-		return PressPrimer_Certificate_Certificate::get_batch_for_recipient(
+	private static function user_certificates( $user_id, $email, $page ) {
+		return PressPrimer_Certificate_Certificate::get_batch_for_privacy(
 			$user_id,
+			$email,
 			self::BATCH_SIZE,
 			( max( 1, $page ) - 1 ) * self::BATCH_SIZE
 		);

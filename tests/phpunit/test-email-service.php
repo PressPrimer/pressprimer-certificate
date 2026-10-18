@@ -125,7 +125,7 @@ class Test_Email_Service extends TestCase {
 		$this->assertStringContainsString( 'ppcert_id=7Q4MK9P2XT3A', $mail['body'], 'Working verification link' );
 		$this->assertStringContainsString( 'From: Sunrise Training Academy <admin@sunrise.example>', $mail['headers'][0] );
 		$this->assertCount( 1, $mail['attachments'], 'PDF always attaches' );
-		$this->assertStringEndsWith( 'certificate-7Q4M-K9P2-XT3A.pdf', $mail['attachments'][0], 'Recipient-friendly attachment filename' );
+		$this->assertStringEndsWith( 'certificate-7q4m-k9p2-xt3a.pdf', $mail['attachments'][0], 'Recipient-friendly attachment filename (the one 2.1 file-name form)' );
 	}
 
 	/**

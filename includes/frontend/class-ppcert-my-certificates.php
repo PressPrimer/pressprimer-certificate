@@ -256,6 +256,7 @@ class PressPrimer_Certificate_My_Certificates {
 	private static function render_item( $certificate ) {
 		$status     = PressPrimer_Certificate_Certificate::effective_status( $certificate );
 		$credential = (string) $certificate->credential_id;
+		$display    = isset( $certificate->credential_display ) ? (string) $certificate->credential_display : '';
 
 		$title = PressPrimer_Certificate_Certificate::display_title(
 			$certificate,
@@ -269,7 +270,7 @@ class PressPrimer_Certificate_My_Certificates {
 		];
 		$pill  = isset( $pills[ $status ] ) ? $pills[ $status ] : $pills['issued'];
 
-		$view_url = PressPrimer_Certificate_View_Page::view_url( $credential );
+		$view_url = PressPrimer_Certificate_View_Page::view_url( $credential, $display );
 
 		$output = '<li class="ppcert-my-certificates__item"><div>';
 
@@ -308,7 +309,7 @@ class PressPrimer_Certificate_My_Certificates {
 		if ( 'revoked' !== $status ) {
 			$actions['download'] = [
 				'label' => __( 'Download PDF', 'pressprimer-certificate' ),
-				'url'   => rest_url( 'ppcert/v1/certificates/' . rawurlencode( $credential ) . '/pdf' ),
+				'url'   => PressPrimer_Certificate_View_Page::pdf_url( $credential, $display ),
 				'class' => 'ppcert-button-primary',
 			];
 		}

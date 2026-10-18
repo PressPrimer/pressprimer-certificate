@@ -110,6 +110,16 @@ class PressPrimer_Certificate_Blocks {
 			true
 		);
 
+		// The editor preview shows the same example ID as the published
+		// form (2.1, ppcert_credential_id_example).
+		wp_localize_script(
+			'ppcert-verify-block-editor',
+			'ppcert_verify_block_data',
+			[
+				'example' => PressPrimer_Certificate_Credential_ID_Service::example(),
+			]
+		);
+
 		register_block_type(
 			'pressprimer-certificate/verify',
 			[

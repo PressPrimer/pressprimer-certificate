@@ -86,7 +86,7 @@ class Test_View_Page extends TestCase {
 				'issued_at'       => '2026-07-01 12:00:00',
 				'expires_at'      => null,
 				'layout_snapshot' => $snapshot,
-				'merge_data'      => [ 'recipient.name' => 'Dana Whitfield' ],
+				'merge_data'      => [ 'recipient.full_name' => 'Dana Whitfield' ],
 			],
 			$overrides
 		);
@@ -291,7 +291,7 @@ class Test_View_Page extends TestCase {
 			$this->certificate(
 				[
 					'status'     => 'revoked',
-					'merge_data' => [ 'recipient.name' => '<script>alert(1)</script>' ],
+					'merge_data' => [ 'recipient.full_name' => '<script>alert(1)</script>' ],
 				]
 			)
 		);
@@ -317,6 +317,40 @@ class Test_View_Page extends TestCase {
 		);
 
 		$this->assertStringContainsString( '<dt>Recipient</dt><dd>Dana Whitfield</dd>', $html );
+	}
+
+	/**
+	 * The page shows the name issued, not the account's current one
+	 * (2.1, Feature 2.1-005 FR-004): a renamed account and a deleted
+	 * account both keep the snapshot; display_name snapshots count too.
+	 *
+	 * @return void
+	 */
+	public function test_snapshot_name_survives_rename_and_deletion() {
+		$GLOBALS['ppcert_test_users'][7]->display_name = 'Dana Whitfield-Okafor';
+
+		$html = PressPrimer_Certificate_View_Page::render_content( $this->certificate( [ 'status' => 'revoked' ] ) );
+		$this->assertStringContainsString( '<dt>Recipient</dt><dd>Dana Whitfield</dd>', $html, 'Renamed account' );
+
+		$html = PressPrimer_Certificate_View_Page::render_content(
+			$this->certificate(
+				[
+					'status'       => 'revoked',
+					'recipient_id' => 404,
+				]
+			)
+		);
+		$this->assertStringContainsString( '<dt>Recipient</dt><dd>Dana Whitfield</dd>', $html, 'Deleted account' );
+
+		$html = PressPrimer_Certificate_View_Page::render_content(
+			$this->certificate(
+				[
+					'status'     => 'revoked',
+					'merge_data' => [ 'recipient.display_name' => 'D. Whitfield' ],
+				]
+			)
+		);
+		$this->assertStringContainsString( '<dt>Recipient</dt><dd>D. Whitfield</dd>', $html, 'A display-name-only snapshot' );
 	}
 
 	/**

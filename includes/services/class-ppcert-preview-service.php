@@ -4,8 +4,13 @@
  *
  * Cached view-page preview PNGs (Feature 005 FR-003): page 1 of the
  * certificate rasterized server-side and stored in uploads at
- * ppcert/previews/{credential_id}.png, regenerated on demand if
+ * ppcert/previews/{credential_id}-{secret}.png, regenerated on demand if
  * missing. The eraser deletes them (Feature 008 FR-005).
+ *
+ * Since 2.1.0 the file name carries a secret derived from the
+ * certificate's UUID (Feature 2.1-004 FR-009, Decision 006): a pattern
+ * credential ID can be guessable, and the static image URL must not be.
+ * 2.0 files ({credential_id}.png) are replaced on the next view.
  *
  * @package PressPrimer_Certificate
  * @subpackage Services
@@ -46,8 +51,7 @@ class PressPrimer_Certificate_Preview_Service {
 	/**
 	 * Subscribe preview cleanup to the certificate lifecycle
 	 *
-	 * The cached PNG lives at a static uploads URL derived from the
-	 * credential ID. Revocation must take it offline with the PDF (the
+	 * The cached PNG lives at a static uploads URL. Revocation must take it offline with the PDF (the
 	 * download route 410s, and the preview may not outlive it), and
 	 * permanent deletion must leave nothing behind. Reinstatement needs
 	 * no handler - the next view-page load regenerates via
@@ -96,40 +100,84 @@ class PressPrimer_Certificate_Preview_Service {
 	 * Absolute filesystem path for a credential's preview PNG
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The $uuid argument; without it, the 2.0 file name.
 	 *
 	 * @param string $credential_id Credential ID (any accepted form).
+	 * @param string $uuid          The certificate's UUID.
 	 * @return string Path, or '' for an invalid credential.
 	 */
-	public static function preview_path( $credential_id ) {
-		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $credential_id );
+	public static function preview_path( $credential_id, $uuid = '' ) {
+		$file = self::file_name( $credential_id, $uuid );
 
-		if ( '' === $normalized ) {
+		if ( '' === $file ) {
 			return '';
 		}
 
 		$uploads = wp_upload_dir();
 
-		return trailingslashit( $uploads['basedir'] ) . self::SUBDIR . '/' . $normalized . '.png';
+		return trailingslashit( $uploads['basedir'] ) . self::SUBDIR . '/' . $file;
 	}
 
 	/**
 	 * Public URL for a credential's preview PNG
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The $uuid argument; without it, the 2.0 file name.
 	 *
 	 * @param string $credential_id Credential ID (any accepted form).
+	 * @param string $uuid          The certificate's UUID.
 	 * @return string URL, or '' for an invalid credential.
 	 */
-	public static function preview_url( $credential_id ) {
-		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( $credential_id );
+	public static function preview_url( $credential_id, $uuid = '' ) {
+		$file = self::file_name( $credential_id, $uuid );
 
-		if ( '' === $normalized ) {
+		if ( '' === $file ) {
 			return '';
 		}
 
 		$uploads = wp_upload_dir();
 
-		return trailingslashit( $uploads['baseurl'] ) . self::SUBDIR . '/' . $normalized . '.png';
+		return trailingslashit( $uploads['baseurl'] ) . self::SUBDIR . '/' . $file;
+	}
+
+	/**
+	 * The preview file name: `{normalized}-{first 12 of wp_hash( uuid )}.png`
+	 *
+	 * The hash is salted, so the name cannot be derived from the
+	 * credential ID. Without a UUID, the 2.0 name `{normalized}.png`.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $credential_id Credential ID (any accepted form).
+	 * @param string $uuid          The certificate's UUID.
+	 * @return string File name, or '' for an invalid credential.
+	 */
+	private static function file_name( $credential_id, $uuid ) {
+		$normalized = self::safe_credential( $credential_id );
+
+		if ( '' === $normalized ) {
+			return '';
+		}
+
+		if ( '' === (string) $uuid ) {
+			return $normalized . '.png';
+		}
+
+		return $normalized . '-' . substr( wp_hash( (string) $uuid ), 0, 12 ) . '.png';
+	}
+
+	/**
+	 * A normalized credential safe to use in a file name and a glob
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $credential_id Credential ID (any accepted form).
+	 * @return string Normalized ID, or '' when it holds anything but [0-9A-Z].
+	 */
+	private static function safe_credential( $credential_id ) {
+		$normalized = PressPrimer_Certificate_Credential_ID_Service::normalize( (string) $credential_id );
+
+		return preg_match( '/^[0-9A-Z]{1,32}$/', $normalized ) ? $normalized : '';
 	}
 
 	/**
@@ -144,7 +192,8 @@ class PressPrimer_Certificate_Preview_Service {
 	 * @return string|WP_Error Preview URL, or the render error.
 	 */
 	public static function get_or_create( $certificate ) {
-		$path = self::preview_path( (string) $certificate->credential_id );
+		$uuid = isset( $certificate->uuid ) ? (string) $certificate->uuid : '';
+		$path = self::preview_path( (string) $certificate->credential_id, $uuid );
 
 		if ( '' === $path ) {
 			return new WP_Error(
@@ -154,7 +203,7 @@ class PressPrimer_Certificate_Preview_Service {
 		}
 
 		if ( file_exists( $path ) ) {
-			return self::preview_url( (string) $certificate->credential_id );
+			return self::preview_url( (string) $certificate->credential_id, $uuid );
 		}
 
 		if ( ! is_array( $certificate->layout_snapshot ) ) {
@@ -205,6 +254,10 @@ class PressPrimer_Certificate_Preview_Service {
 
 		self::ensure_index_guard( $dir );
 
+		// A 2.0 name (or one hashed under an older salt) goes before the
+		// new file lands.
+		self::delete( (string) $certificate->credential_id );
+
 		// Move the temp render into the cache location.
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Moving a locally rendered temp file into the uploads cache.
 		if ( ! rename( $png_path, $path ) ) {
@@ -222,29 +275,44 @@ class PressPrimer_Certificate_Preview_Service {
 			wp_delete_file( $png_path );
 		}
 
-		return self::preview_url( (string) $certificate->credential_id );
+		return self::preview_url( (string) $certificate->credential_id, $uuid );
 	}
 
 	/**
-	 * Delete a credential's cached preview PNG
+	 * Delete a credential's cached preview PNGs
 	 *
-	 * Used by the privacy eraser and available to future revocation flows.
+	 * Every name the credential's preview may have: the 2.0 name and any
+	 * hashed name (the UUID is not needed, so the deleted-row hook can
+	 * call this). Used by revocation, deletion, and the privacy eraser.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Deletes hashed names too.
 	 *
 	 * @param string $credential_id Credential ID (any accepted form).
 	 * @return bool Whether a file was deleted.
 	 */
 	public static function delete( $credential_id ) {
-		$path = self::preview_path( $credential_id );
+		$normalized = self::safe_credential( $credential_id );
 
-		if ( '' === $path || ! file_exists( $path ) ) {
+		if ( '' === $normalized ) {
 			return false;
 		}
 
-		wp_delete_file( $path );
+		$legacy = self::preview_path( $normalized );
+		$paths  = glob( dirname( $legacy ) . '/' . $normalized . '-*.png' );
+		$paths  = is_array( $paths ) ? $paths : [];
 
-		return ! file_exists( $path );
+		$paths[] = $legacy;
+		$deleted = false;
+
+		foreach ( $paths as $path ) {
+			if ( file_exists( $path ) ) {
+				wp_delete_file( $path );
+				$deleted = $deleted || ! file_exists( $path );
+			}
+		}
+
+		return $deleted;
 	}
 
 	/**
