@@ -5,6 +5,8 @@
  * Exercises the version-chain migrator against the fake wpdb's schema
  * registry and the bootstrap's dbDelta shim: fresh install, idempotency,
  * the 1.1.0-to-2.0.0 upgrade on a populated fixture (title backfill),
+ * the 2.0.0-to-2.1.0 upgrade (page_size widened, new columns and
+ * indexes, type-checked targets), fresh-versus-upgraded schema parity,
  * verify-before-advance, and backfill batching. Real dbDelta behavior
  * (SHOW CREATE TABLE parity between fresh and upgraded installs) is
  * additionally verified live on the dev site per the prompt convention.
@@ -40,7 +42,36 @@ class Test_Migrator extends TestCase {
 		$this->wpdb = ppcert_tests_reset_wpdb();
 
 		$GLOBALS['ppcert_test_options'] = [];
-		unset( $GLOBALS['ppcert_test_dbdelta_skip_tables'] );
+		unset( $GLOBALS['ppcert_test_dbdelta_skip_tables'], $GLOBALS['ppcert_test_dbdelta_keep_types'] );
+	}
+
+	/**
+	 * Register the shipped 2.0.0 schema (all ten tables, captured from
+	 * free 2.0.2) and stamp the stored version.
+	 *
+	 * @return void
+	 */
+	private function install_2_0_schema() {
+		dbDelta( (string) file_get_contents( __DIR__ . '/fixtures/schema-2.0.0.sql' ) );
+		update_option( 'ppcert_db_version', '2.0.0' );
+	}
+
+	/**
+	 * Column types and index names of every table, for parity checks.
+	 *
+	 * @return array
+	 */
+	private function schema_snapshot() {
+		$snapshot = [];
+
+		foreach ( PressPrimer_Certificate_Schema::get_table_names() as $table ) {
+			$snapshot[ $table ] = [
+				'columns' => $this->wpdb->table_column_types( 'wp_' . $table ),
+				'indexes' => $this->wpdb->table_indexes( 'wp_' . $table ),
+			];
+		}
+
+		return $snapshot;
 	}
 
 	/**
@@ -127,36 +158,39 @@ class Test_Migrator extends TestCase {
 		$this->assertContains( 'context', $this->wpdb->table_columns( 'wp_ppcert_email_templates' ) );
 		$this->assertContains( 'event_type', $this->wpdb->table_columns( 'wp_ppcert_audit' ), 'The audit table (Enterprise contract item 8) ships schema-only in 2.0.0' );
 		$this->assertContains( 'object_type', $this->wpdb->table_columns( 'wp_ppcert_audit' ) );
-		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ) );
+		$this->assertSame( 'varchar(32)', $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'] );
+		$this->assertContains( 'recipient_email', $this->wpdb->table_columns( 'wp_ppcert_certificates' ) );
+		$this->assertContains( 'settings_json', $this->wpdb->table_columns( 'wp_ppcert_issuers' ) );
+		$this->assertSame( PPCERT_DB_VERSION, get_option( 'ppcert_db_version' ) );
+		$this->assertSame( '2.1.0', PPCERT_DB_VERSION );
 	}
 
 	/**
-	 * A site already at the head version whose head-step targets are
-	 * missing (the audit table joined 2.0.0 after pre-release sites had
-	 * migrated) heals on the next load: the step re-runs, the table
-	 * appears, the version is untouched. A healthy head site runs no
-	 * migration callback.
+	 * A site already at the head version whose head-step targets fail
+	 * verification (here: page_size still on the 2.0 ENUM, a CHANGE
+	 * COLUMN that never applied) heals on the next day's load: the step
+	 * re-runs, the column is widened, the version is untouched. A
+	 * healthy head site runs no migration callback.
 	 *
 	 * @return void
 	 */
-	public function test_head_step_heals_missing_targets() {
+	public function test_head_step_heals_failed_targets() {
 		PressPrimer_Certificate_Migrator::maybe_migrate();
-		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ) );
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ) );
 
-		// Simulate the pre-release site: at 2.0.0 without the audit table.
-		$this->wpdb->drop_table( 'wp_ppcert_audit' );
-		$this->assertEmpty( $this->wpdb->table_columns( 'wp_ppcert_audit' ) );
+		// Simulate the broken site: at 2.1.0 with page_size un-widened.
+		$this->wpdb->register_table( 'wp_ppcert_templates', [ 'page_size' => "enum('a4','letter')" ] );
 
 		// Verified today: no re-check yet (one verification per day).
 		PressPrimer_Certificate_Migrator::maybe_migrate();
-		$this->assertEmpty( $this->wpdb->table_columns( 'wp_ppcert_audit' ), 'A same-day load trusts the daily verification' );
+		$this->assertSame( "enum('a4','letter')", $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'], 'A same-day load trusts the daily verification' );
 
 		// The next day.
 		ppcert_tests_reset_transients();
 		PressPrimer_Certificate_Migrator::maybe_migrate();
 
-		$this->assertContains( 'event_type', $this->wpdb->table_columns( 'wp_ppcert_audit' ), 'The head step re-ran and produced its missing target' );
-		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ), 'Healing never changes the stored version' );
+		$this->assertSame( 'varchar(32)', $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'], 'The head step re-ran and widened the column' );
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ), 'Healing never changes the stored version' );
 	}
 
 	/**
@@ -179,7 +213,7 @@ class Test_Migrator extends TestCase {
 		PressPrimer_Certificate_Migrator::maybe_migrate();
 
 		$this->assertSame( $queries_before, $this->wpdb->read_queries, 'An up-to-date site ran queries.' );
-		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ) );
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ) );
 
 		foreach ( $schemas_before as $table => $columns ) {
 			$this->assertSame( $columns, $this->wpdb->table_columns( 'wp_' . $table ) );
@@ -210,7 +244,7 @@ class Test_Migrator extends TestCase {
 
 		PressPrimer_Certificate_Migrator::maybe_migrate();
 
-		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ) );
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ), 'A 1.1 site runs the whole chain to the head' );
 		$this->assertNotEmpty( $this->wpdb->table_columns( 'wp_ppcert_email_templates' ) );
 		$this->assertContains( 'title', $this->wpdb->table_columns( 'wp_ppcert_certificates' ) );
 
@@ -248,8 +282,116 @@ class Test_Migrator extends TestCase {
 
 		PressPrimer_Certificate_Migrator::maybe_migrate();
 
-		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ), 'The retry must complete the chain.' );
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ), 'The retry must complete the chain.' );
 		$this->assertNotEmpty( $this->wpdb->table_columns( 'wp_ppcert_email_templates' ) );
+	}
+
+	/**
+	 * The 2.0.0-to-2.1.0 upgrade on a populated fixture: page_size widens
+	 * to VARCHAR(32) with its values intact, certificates gain the two
+	 * columns and three indexes, issuers gain settings_json, no row data
+	 * changes, and the version advances.
+	 *
+	 * @return void
+	 */
+	public function test_upgrade_from_2_0_widens_page_size_and_adds_columns() {
+		$this->install_2_0_schema();
+
+		$this->assertSame( "enum('a4','letter')", $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'], 'The fixture is the shipped 2.0 schema' );
+
+		$letter = $this->wpdb->seed_row(
+			'wp_ppcert_templates',
+			[
+				'uuid'        => 'tpl-1',
+				'title'       => 'Letter template',
+				'page_size'   => 'letter',
+				'orientation' => 'landscape',
+				'layout_json' => '{}',
+			]
+		);
+		$a4     = $this->wpdb->seed_row(
+			'wp_ppcert_templates',
+			[
+				'uuid'        => 'tpl-2',
+				'title'       => 'A4 template',
+				'page_size'   => 'a4',
+				'orientation' => 'portrait',
+				'layout_json' => '{}',
+			]
+		);
+		$cert   = $this->seed_certificate( [ 'certificate.title' => 'Kept' ] );
+
+		$templates_before    = $this->wpdb->rows( 'wp_ppcert_templates' );
+		$certificates_before = $this->wpdb->rows( 'wp_ppcert_certificates' );
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ) );
+
+		$template_types    = $this->wpdb->table_column_types( 'wp_ppcert_templates' );
+		$certificate_types = $this->wpdb->table_column_types( 'wp_ppcert_certificates' );
+
+		$this->assertSame( 'varchar(32)', $template_types['page_size'] );
+		$this->assertSame( 'varchar(40)', $certificate_types['credential_display'] );
+		$this->assertSame( 'varchar(190)', $certificate_types['recipient_email'] );
+		$this->assertSame( 'longtext', $this->wpdb->table_column_types( 'wp_ppcert_issuers' )['settings_json'] );
+
+		foreach ( [ 'issued_at', 'issued_by', 'recipient_email' ] as $index ) {
+			$this->assertContains( $index, $this->wpdb->table_indexes( 'wp_ppcert_certificates' ), "Index {$index} added" );
+		}
+
+		$this->assertSame( $templates_before, $this->wpdb->rows( 'wp_ppcert_templates' ), 'Template rows (and their page_size values) are untouched' );
+		$this->assertSame( $certificates_before, $this->wpdb->rows( 'wp_ppcert_certificates' ), 'Certificate rows are untouched' );
+		$this->assertGreaterThan( 0, $letter + $a4 + $cert );
+	}
+
+	/**
+	 * A fresh 2.1.0 install and a 2.0.0 site upgraded to 2.1.0 end with
+	 * identical tables: same columns, types, column order, and indexes
+	 * (the fake's stand-in for comparing SHOW CREATE TABLE).
+	 *
+	 * @return void
+	 */
+	public function test_fresh_install_and_upgrade_schemas_match() {
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+		$fresh = $this->schema_snapshot();
+
+		$this->wpdb = ppcert_tests_reset_wpdb();
+		$GLOBALS['ppcert_test_options'] = [];
+		ppcert_tests_reset_transients();
+
+		$this->install_2_0_schema();
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ) );
+		$this->assertSame( $fresh, $this->schema_snapshot() );
+	}
+
+	/**
+	 * Type-checked targets: when dbDelta leaves page_size on the ENUM (a
+	 * CHANGE COLUMN that silently failed), the 2.1.0 step fails
+	 * verification, the version stays at 2.0.0, and the next load
+	 * retries and completes.
+	 *
+	 * @return void
+	 */
+	public function test_type_check_catches_unwidened_column() {
+		$this->install_2_0_schema();
+
+		$GLOBALS['ppcert_test_dbdelta_keep_types'] = [ 'wp_ppcert_templates' ];
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ), 'An un-widened page_size must not advance the version' );
+		$this->assertSame( "enum('a4','letter')", $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'] );
+		$this->assertContains( 'recipient_email', $this->wpdb->table_columns( 'wp_ppcert_certificates' ), 'Presence alone would have passed: the new columns exist' );
+
+		unset( $GLOBALS['ppcert_test_dbdelta_keep_types'] );
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ), 'The retry completes the step' );
+		$this->assertSame( 'varchar(32)', $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'] );
 	}
 
 	/**

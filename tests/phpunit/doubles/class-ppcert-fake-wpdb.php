@@ -83,13 +83,21 @@ class PPCert_Fake_WPDB {
 	private $tables = [];
 
 	/**
-	 * Registered table schemas: table => column names (2.0, migrator
-	 * tests). Populated by the bootstrap's dbDelta shim; answers the
-	 * migrator's SHOW TABLES / SHOW COLUMNS presence checks.
+	 * Registered table schemas: table => [ column => type ] (2.0,
+	 * migrator tests; types since 2.1.0). Populated by the bootstrap's
+	 * dbDelta shim; answers the migrator's SHOW TABLES / SHOW COLUMNS
+	 * checks. A column registered by name only has type ''.
 	 *
 	 * @var array
 	 */
 	private $schemas = [];
+
+	/**
+	 * Registered index names per table (2.1.0, schema parity tests).
+	 *
+	 * @var array
+	 */
+	private $indexes = [];
 
 	/**
 	 * Auto-increment counters per table.
@@ -134,16 +142,47 @@ class PPCert_Fake_WPDB {
 	/**
 	 * Register a table schema (the bootstrap dbDelta shim's "CREATE TABLE").
 	 *
-	 * Re-registering merges column lists - the shim's stand-in for
-	 * dbDelta adding missing columns to an existing table.
+	 * Columns are listed by name, or as name => type (lowercase, as SHOW
+	 * COLUMNS reports it). Re-registering merges: new columns are added
+	 * (dbDelta's ADD COLUMN) and a typed entry replaces the stored type
+	 * (dbDelta's CHANGE COLUMN), unless $keep_types is set - the knob
+	 * migrator tests use to simulate a CHANGE COLUMN that silently
+	 * failed. Index names merge the same way.
 	 *
-	 * @param string   $table   Full table name.
-	 * @param string[] $columns Column names.
+	 * @param string $table      Full table name.
+	 * @param array  $columns    Column names, or name => type.
+	 * @param array  $indexes    Index names (2.1.0).
+	 * @param bool   $keep_types Keep existing columns' types (2.1.0).
 	 * @return void
 	 */
-	public function register_table( $table, array $columns ) {
-		$existing               = isset( $this->schemas[ $table ] ) ? $this->schemas[ $table ] : [];
-		$this->schemas[ $table ] = array_values( array_unique( array_merge( $existing, $columns ) ) );
+	public function register_table( $table, array $columns, array $indexes = [], $keep_types = false ) {
+		$schema = isset( $this->schemas[ $table ] ) ? $this->schemas[ $table ] : [];
+
+		foreach ( $columns as $key => $value ) {
+			$name = is_int( $key ) ? (string) $value : (string) $key;
+			$type = is_int( $key ) ? null : strtolower( (string) $value );
+
+			if ( ! isset( $schema[ $name ] ) ) {
+				$schema[ $name ] = null === $type ? '' : $type;
+			} elseif ( null !== $type && ! $keep_types ) {
+				$schema[ $name ] = $type;
+			}
+		}
+
+		$this->schemas[ $table ] = $schema;
+
+		$existing                = isset( $this->indexes[ $table ] ) ? $this->indexes[ $table ] : [];
+		$this->indexes[ $table ] = array_values( array_unique( array_merge( $existing, $indexes ) ) );
+	}
+
+	/**
+	 * Forget a table's schema and rows (tests simulating a dropped table).
+	 *
+	 * @param string $table Full table name.
+	 * @return void
+	 */
+	public function drop_table( $table ) {
+		unset( $this->schemas[ $table ], $this->tables[ $table ], $this->indexes[ $table ] );
 	}
 
 	/**
@@ -152,18 +191,28 @@ class PPCert_Fake_WPDB {
 	 * @param string $table Full table name.
 	 * @return string[] Column names; empty when unregistered.
 	 */
-	/**
-	 * Forget a table's schema and rows (tests simulating a dropped table).
-	 *
-	 * @param string $table Full table name.
-	 * @return void
-	 */
-	public function drop_table( $table ) {
-		unset( $this->schemas[ $table ], $this->tables[ $table ] );
+	public function table_columns( $table ) {
+		return isset( $this->schemas[ $table ] ) ? array_keys( $this->schemas[ $table ] ) : [];
 	}
 
-	public function table_columns( $table ) {
+	/**
+	 * Registered column types of a table (2.1.0, test assertions).
+	 *
+	 * @param string $table Full table name.
+	 * @return array<string,string> Column => lowercase type ('' when untyped).
+	 */
+	public function table_column_types( $table ) {
 		return isset( $this->schemas[ $table ] ) ? $this->schemas[ $table ] : [];
+	}
+
+	/**
+	 * Registered index names of a table (2.1.0, test assertions).
+	 *
+	 * @param string $table Full table name.
+	 * @return string[] Index names.
+	 */
+	public function table_indexes( $table ) {
+		return isset( $this->indexes[ $table ] ) ? $this->indexes[ $table ] : [];
 	}
 
 	/**
@@ -630,14 +679,18 @@ class PPCert_Fake_WPDB {
 			return isset( $this->schemas[ $name ] ) ? [ [ 'name' => $name ] ] : [];
 		}
 
-		// Migrator::verify_targets - column presence.
+		// Migrator::verify_targets - column presence and type (2.1.0).
 		if ( 'SHOW COLUMNS FROM %i' === $query ) {
-			return array_map(
-				static function ( $column ) {
-					return [ 'Field' => $column ];
-				},
-				$this->table_columns( $table )
-			);
+			$rows = [];
+
+			foreach ( $this->table_column_types( $table ) as $column => $type ) {
+				$rows[] = [
+					'Field' => $column,
+					'Type'  => $type,
+				];
+			}
+
+			return $rows;
 		}
 
 		// Migrator::backfill_certificate_titles - keyset-paginated batch

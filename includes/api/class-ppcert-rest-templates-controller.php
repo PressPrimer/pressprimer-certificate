@@ -434,8 +434,10 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			}
 
 			// The single sanitization path for layout documents: every
-			// submitted field is rebuilt against the schema.
-			$clean = PressPrimer_Certificate_Layout_Validator::validate( $raw_layout );
+			// submitted field is rebuilt against the schema. The saved
+			// page rides along so a custom-size template still saves
+			// when custom sizes are off (Feature 2.1-004 FR-002).
+			$clean = PressPrimer_Certificate_Layout_Validator::validate( $raw_layout, self::validation_context( $row ) );
 
 			if ( is_wp_error( $clean ) ) {
 				$clean->add_data( [ 'status' => 400 ] );
@@ -630,7 +632,7 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 		$raw_layout = $request->get_param( 'layout' );
 		$layout     = is_array( $raw_layout ) ? $raw_layout : $row->layout;
 
-		$clean = PressPrimer_Certificate_Layout_Validator::validate( (array) $layout );
+		$clean = PressPrimer_Certificate_Layout_Validator::validate( (array) $layout, self::validation_context( $row ) );
 
 		if ( is_wp_error( $clean ) ) {
 			$clean->add_data( [ 'status' => 400 ] );
@@ -797,10 +799,27 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 	}
 
 	/**
+	 * Validator context for a saved template (its stored page)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $row Hydrated template row.
+	 * @return array
+	 */
+	private static function validation_context( $row ) {
+		return [
+			'stored_page' => is_array( $row->layout ) && isset( $row->layout['page'] ) && is_array( $row->layout['page'] )
+				? $row->layout['page']
+				: [],
+		];
+	}
+
+	/**
 	 * The blank layout (the low-emphasis "Start blank" card)
 	 *
 	 * Landscape at the Appearance default certificate size (Letter
-	 * unless the site chose A4 - Phase 5B item 7).
+	 * unless the site chose another registry size - Phase 5B item 7;
+	 * the registry since 2.1.0).
 	 *
 	 * @since 1.0.0
 	 *
@@ -808,7 +827,12 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 	 */
 	private static function blank_layout() {
 		$size = PressPrimer_Certificate_Appearance_Service::get()['page_size'];
-		$dims = 'a4' === $size ? [ 842, 595 ] : [ 792, 612 ];
+		$dims = PressPrimer_Certificate_Page_Sizes::dimensions( $size, 'landscape' );
+
+		if ( null === $dims ) {
+			$size = 'letter';
+			$dims = PressPrimer_Certificate_Page_Sizes::dimensions( $size, 'landscape' );
+		}
 
 		return [
 			'layout_schema_version' => PressPrimer_Certificate_Layout_Validator::SCHEMA_VERSION,

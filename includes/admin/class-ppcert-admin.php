@@ -638,16 +638,9 @@ class PressPrimer_Certificate_Admin {
 				'fitting'       => PressPrimer_Certificate_PDF_Renderer::fitting_thresholds(),
 				'sample_qr'     => is_wp_error( $sample_qr ) ? null : $sample_qr,
 				'starters'      => $starters,
-				'page_presets'  => [
-					'a4'     => [
-						'landscape' => [ 842, 595 ],
-						'portrait'  => [ 595, 842 ],
-					],
-					'letter' => [
-						'landscape' => [ 792, 612 ],
-						'portrait'  => [ 612, 792 ],
-					],
-				],
+				// The page-size registry in menu order, with labels
+				// (2.1.0; was a hand-copied A4/Letter table).
+				'page_presets'  => PressPrimer_Certificate_Page_Sizes::all(),
 				// Upsell touchpoints this user may see in the designer
 				// (2.0, Feature 2.0-005): resolved server-side, empty
 				// for non-admins and for active tiers.

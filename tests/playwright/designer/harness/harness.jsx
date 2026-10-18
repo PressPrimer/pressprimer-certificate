@@ -36,6 +36,7 @@ import {
 } from '../../../../src/designer/mergeFields';
 import { seedSampleQr } from '../../../../src/designer/qr';
 import { DesignerViewContext } from '../../../../src/designer/view-context';
+import PAGE_PRESETS from '../../fixtures/page-presets.json';
 
 // Boot fixture: installed before render - designer modules read boot
 // lazily via getBoot(), never at import time.
@@ -128,10 +129,9 @@ window.ppcert_designer_data = {
 		},
 	},
 	starters: [],
-	page_presets: {
-		a4: { landscape: [ 842, 595 ], portrait: [ 595, 842 ] },
-		letter: { landscape: [ 792, 612 ], portrait: [ 612, 792 ] },
-	},
+	// The page-size registry, kept identical to the PHP registry by
+	// test-page-sizes.php (2.1).
+	page_presets: PAGE_PRESETS,
 };
 
 // Merge-field registry fixture (no REST in the harness) - a subset of

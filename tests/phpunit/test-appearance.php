@@ -341,6 +341,15 @@ class Test_Size_And_Earned_Date extends TestCase {
 
 		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'appearance_page_size' => 'tabloid' ];
 		$this->assertSame( 'letter', PressPrimer_Certificate_Appearance_Service::get()['page_size'] );
+
+		// 2.1.0: every registry size; never `custom` (no fixed dimensions).
+		foreach ( [ 'legal', 'a3' ] as $size ) {
+			$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'appearance_page_size' => $size ];
+			$this->assertSame( $size, PressPrimer_Certificate_Appearance_Service::get()['page_size'] );
+		}
+
+		$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'appearance_page_size' => 'custom' ];
+		$this->assertSame( 'letter', PressPrimer_Certificate_Appearance_Service::get()['page_size'] );
 	}
 
 	/**
@@ -365,6 +374,23 @@ class Test_Size_And_Earned_Date extends TestCase {
 
 		$this->assertSame( 'a4', $layout['page']['size'] );
 		$this->assertSame( 842, (int) $layout['page']['width'] );
+
+		// 2.1.0: blank templates start at any registry default.
+		$expected = [
+			'legal' => [ 1008, 612 ],
+			'a3'    => [ 1191, 842 ],
+		];
+
+		foreach ( $expected as $size => $dims ) {
+			$GLOBALS['ppcert_test_options']['ppcert_settings'] = [ 'appearance_page_size' => $size ];
+
+			$layout = $controller->create_template( new WP_REST_Request( [] ) )->get_data()['layout'];
+
+			$this->assertSame( $size, $layout['page']['size'] );
+			$this->assertSame( 'landscape', $layout['page']['orientation'] );
+			$this->assertSame( $dims[0], (int) $layout['page']['width'] );
+			$this->assertSame( $dims[1], (int) $layout['page']['height'] );
+		}
 	}
 
 	/**

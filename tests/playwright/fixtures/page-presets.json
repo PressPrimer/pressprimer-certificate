@@ -1,0 +1,50 @@
+{
+	"letter": {
+		"label": "Letter",
+		"unit": "in",
+		"landscape": [
+			792,
+			612
+		],
+		"portrait": [
+			612,
+			792
+		]
+	},
+	"legal": {
+		"label": "Legal",
+		"unit": "in",
+		"landscape": [
+			1008,
+			612
+		],
+		"portrait": [
+			612,
+			1008
+		]
+	},
+	"a4": {
+		"label": "A4",
+		"unit": "mm",
+		"landscape": [
+			842,
+			595
+		],
+		"portrait": [
+			595,
+			842
+		]
+	},
+	"a3": {
+		"label": "A3",
+		"unit": "mm",
+		"landscape": [
+			1191,
+			842
+		],
+		"portrait": [
+			842,
+			1191
+		]
+	}
+}

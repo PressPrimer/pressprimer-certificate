@@ -23,6 +23,7 @@ import DesignerApp from '../../../../src/designer/components/DesignerApp';
 import { seedMetaKeys } from '../../../../src/designer/mergeFields';
 import { seedAttachmentUrl } from '../../../../src/designer/hooks/useAttachment';
 import { getBoot } from '../../../../src/designer/boot';
+import PAGE_PRESETS from '../../fixtures/page-presets.json';
 
 const STORAGE_KEY = 'ppcert_harness_template';
 
@@ -72,10 +73,9 @@ window.ppcert_designer_data = {
 		},
 	},
 	starters: [],
-	page_presets: {
-		a4: { landscape: [ 842, 595 ], portrait: [ 595, 842 ] },
-		letter: { landscape: [ 792, 612 ], portrait: [ 612, 792 ] },
-	},
+	// The page-size registry, kept identical to the PHP registry by
+	// test-page-sizes.php (2.1).
+	page_presets: PAGE_PRESETS,
 };
 
 // Registry fixtures: core fields are untagged; source fields carry the

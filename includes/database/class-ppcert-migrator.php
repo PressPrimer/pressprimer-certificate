@@ -24,7 +24,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * leaves the version at the last verified step, so the chain retries from
  * there on the next load instead of stranding the site on an advanced
  * version with a half-applied schema (the Quiz 3.0 verify-before-advance
- * lesson, in its simplest form - a presence check per step).
+ * lesson, in its simplest form - a presence check per step). Since 2.1.0
+ * a target column can also name the type prefix it must have, so a step
+ * that changes a column's type (page_size ENUM to VARCHAR) is verified
+ * by type, not just presence.
  *
  * @since 1.0.0
  */
@@ -163,9 +166,11 @@ class PressPrimer_Certificate_Migrator {
 	 * Get the ordered migration chain
 	 *
 	 * Each step: 'version' (target), 'callback' (idempotent), 'targets'
-	 * (map of unprefixed table name => array of required column names; an
-	 * empty array means table presence only). A new schema version appends
-	 * a step here.
+	 * (map of unprefixed table name => required columns; an empty array
+	 * means table presence only). A column is listed either by name
+	 * (presence) or as name => type prefix (2.1.0: the column must exist
+	 * AND its SHOW COLUMNS type must start with that prefix, compared
+	 * case-insensitively). A new schema version appends a step here.
 	 *
 	 * @since 1.0.0
 	 *
@@ -202,6 +207,24 @@ class PressPrimer_Certificate_Migrator {
 					'ppcert_email_templates' => [],
 					'ppcert_audit'           => [],
 					'ppcert_certificates'    => [ 'title', 'directory_visibility' ],
+				],
+			],
+			// 2.1.0 (Feature 2.1-004 FR-001): page_size widens to
+			// VARCHAR(32) for the page-size registry; certificates gain
+			// credential_display and recipient_email (plus the issued_at,
+			// issued_by, and recipient_email indexes); issuers gain
+			// settings_json. Type-checked targets: a page_size still on
+			// the 2.0 ENUM fails verification.
+			[
+				'version'  => '2.1.0',
+				'callback' => [ __CLASS__, 'migrate_to_2_1_0' ],
+				'targets'  => [
+					'ppcert_templates'    => [ 'page_size' => 'varchar(32)' ],
+					'ppcert_certificates' => [
+						'credential_display' => 'varchar(40)',
+						'recipient_email'    => 'varchar(190)',
+					],
+					'ppcert_issuers'      => [ 'settings_json' => 'longtext' ],
 				],
 			],
 		];
@@ -251,6 +274,22 @@ class PressPrimer_Certificate_Migrator {
 		dbDelta( PressPrimer_Certificate_Schema::get_schema() );
 
 		self::backfill_certificate_titles();
+	}
+
+	/**
+	 * Migration step 2.1.0: page-size column, certificate and issuer columns
+	 *
+	 * Runs dbDelta over the full schema: CHANGE COLUMN page_size from
+	 * ENUM('a4','letter') to VARCHAR(32) (stored values carry over), ADD
+	 * the certificate and issuer columns and indexes. No data changes.
+	 * Idempotent.
+	 *
+	 * @since 2.1.0
+	 */
+	public static function migrate_to_2_1_0() {
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		dbDelta( PressPrimer_Certificate_Schema::get_schema() );
 	}
 
 	/**
@@ -320,13 +359,17 @@ class PressPrimer_Certificate_Migrator {
 	/**
 	 * Verify that a step's target tables (and columns) exist
 	 *
-	 * Presence check only - existence of each table, and of each named
-	 * column within it. Not a full definition comparison.
+	 * Existence of each table, of each named column, and - for columns
+	 * listed as name => type prefix - that the column's SHOW COLUMNS type
+	 * starts with the prefix (case-insensitive). Not a full definition
+	 * comparison.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Column entries may be name => type prefix.
 	 *
-	 * @param array $targets Map of unprefixed table name => required column names.
-	 * @return string[] Missing items ('table' or 'table.column'), empty when all present.
+	 * @param array $targets Map of unprefixed table name => required columns.
+	 * @return string[] Missing items ('table', 'table.column', or
+	 *                  'table.column:expected-type'), empty when all present.
 	 */
 	private static function verify_targets( $targets ) {
 		global $wpdb;
@@ -349,13 +392,27 @@ class PressPrimer_Certificate_Migrator {
 				continue;
 			}
 
-			$existing_columns = $wpdb->get_col(
-				$wpdb->prepare( 'SHOW COLUMNS FROM %i', $full_table )
-			);
+			$types = [];
 
-			foreach ( $columns as $column ) {
-				if ( ! in_array( $column, $existing_columns, true ) ) {
+			foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SHOW COLUMNS FROM %i', $full_table ) ) as $row ) {
+				$row = (array) $row;
+
+				if ( isset( $row['Field'] ) ) {
+					$types[ (string) $row['Field'] ] = isset( $row['Type'] ) ? strtolower( (string) $row['Type'] ) : '';
+				}
+			}
+
+			foreach ( $columns as $key => $value ) {
+				$column   = is_int( $key ) ? (string) $value : (string) $key;
+				$expected = is_int( $key ) ? '' : strtolower( (string) $value );
+
+				if ( ! isset( $types[ $column ] ) ) {
 					$missing[] = $table . '.' . $column;
+					continue;
+				}
+
+				if ( '' !== $expected && 0 !== strpos( $types[ $column ], $expected ) ) {
+					$missing[] = $table . '.' . $column . ':' . $expected;
 				}
 			}
 		}

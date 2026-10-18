@@ -18,11 +18,6 @@ import ImageFormatWarning from './ImageFormatWarning';
 
 const { Text } = Typography;
 
-const SIZE_LABELS = {
-	a4: 'A4',
-	letter: __( 'Letter', 'pressprimer-certificate' ),
-};
-
 /**
  * The section.
  *
@@ -102,7 +97,8 @@ export default function PageSection() {
 					}
 					options={ Object.keys( presets ).map( ( size ) => ( {
 						value: size,
-						label: SIZE_LABELS[ size ] || size.toUpperCase(),
+						// Labels come from the page-size registry (2.1).
+						label: presets[ size ].label || size.toUpperCase(),
 					} ) ) }
 				/>
 			</PropRow>

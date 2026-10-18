@@ -403,6 +403,182 @@ class Test_Layout_Validator extends TestCase {
 		$this->assertEquals( 792, $result['page']['height'] );
 	}
 
+	// -------------------------------------------------------------------
+	// Page sizes (2.1.0): the registry, the gated custom size.
+	// -------------------------------------------------------------------
+
+	/**
+	 * Every registry size and orientation recomputes to the registry's
+	 * dimensions, whatever width and height were submitted.
+	 *
+	 * @return void
+	 */
+	public function test_every_registry_size_and_orientation() {
+		foreach ( PressPrimer_Certificate_Page_Sizes::keys() as $size ) {
+			foreach ( [ 'landscape', 'portrait' ] as $orientation ) {
+				$document         = $this->document( [] );
+				$document['page'] = [
+					'size'        => $size,
+					'orientation' => $orientation,
+					'width'       => 1,
+					'height'      => 99999,
+				];
+
+				$result = PressPrimer_Certificate_Layout_Validator::validate( $document );
+				$dims   = PressPrimer_Certificate_Page_Sizes::dimensions( $size, $orientation );
+
+				$this->assertIsArray( $result, "{$size} {$orientation}" );
+				$this->assertSame( $size, $result['page']['size'] );
+				$this->assertSame( $orientation, $result['page']['orientation'] );
+				$this->assertEquals( $dims[0], $result['page']['width'], "{$size} {$orientation} width" );
+				$this->assertEquals( $dims[1], $result['page']['height'], "{$size} {$orientation} height" );
+			}
+		}
+	}
+
+	/**
+	 * An unknown size is refused, naming the registry's sizes.
+	 *
+	 * @return void
+	 */
+	public function test_unknown_size_rejected_with_registry_labels() {
+		$document                 = $this->document( [] );
+		$document['page']['size'] = 'tabloid';
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $document );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertContains( 'page.size', $this->error_paths( $result ) );
+		$this->assertStringContainsString( 'Letter, Legal, A4, A3', $result->get_error_message() );
+	}
+
+	/**
+	 * A preset added through ppcert_page_presets validates.
+	 *
+	 * @return void
+	 */
+	public function test_filtered_preset_accepted() {
+		add_filter(
+			'ppcert_page_presets',
+			static function ( $presets ) {
+				$presets['half_letter'] = [
+					'label'     => 'Half Letter',
+					'landscape' => [ 612, 396 ],
+					'portrait'  => [ 396, 612 ],
+				];
+				return $presets;
+			}
+		);
+
+		$document         = $this->document( [] );
+		$document['page'] = [
+			'size'        => 'half_letter',
+			'orientation' => 'portrait',
+		];
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $document );
+
+		$this->assertIsArray( $result );
+		$this->assertEquals( 396, $result['page']['width'] );
+		$this->assertEquals( 612, $result['page']['height'] );
+	}
+
+	/**
+	 * Build a custom-size document.
+	 *
+	 * @param mixed $width  Width in points.
+	 * @param mixed $height Height in points.
+	 * @return array
+	 */
+	private function custom_document( $width, $height ) {
+		$document         = $this->document( [] );
+		$document['page'] = [
+			'size'        => 'custom',
+			'orientation' => 'landscape',
+			'width'       => $width,
+			'height'      => $height,
+		];
+
+		return $document;
+	}
+
+	/**
+	 * Custom sizes are refused while custom sizes are off.
+	 *
+	 * @return void
+	 */
+	public function test_custom_size_refused_by_default() {
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $this->custom_document( 576, 720 ) );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertContains( 'page.size', $this->error_paths( $result ) );
+	}
+
+	/**
+	 * With custom sizes on, width and height are kept, clamped to 72-1728
+	 * pt, and the orientation follows the shape.
+	 *
+	 * @return void
+	 */
+	public function test_custom_size_allowed_clamped_and_oriented() {
+		add_filter( 'ppcert_allow_custom_page_size', '__return_true' );
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $this->custom_document( 576, 720 ) );
+
+		$this->assertIsArray( $result );
+		$this->assertSame( 'custom', $result['page']['size'] );
+		$this->assertSame( 'portrait', $result['page']['orientation'], 'Taller than wide: portrait, whatever was sent' );
+		$this->assertEquals( 576, $result['page']['width'] );
+		$this->assertEquals( 720, $result['page']['height'] );
+
+		$result = PressPrimer_Certificate_Layout_Validator::validate( $this->custom_document( 10, 99999 ) );
+
+		$this->assertIsArray( $result );
+		$this->assertEquals( 72, $result['page']['width'] );
+		$this->assertEquals( 1728, $result['page']['height'] );
+	}
+
+	/**
+	 * With custom sizes off, the template's own stored custom page still
+	 * saves unchanged; a changed custom page is refused.
+	 *
+	 * @return void
+	 */
+	public function test_stored_custom_page_accepted_unchanged_when_off() {
+		$context = [
+			'stored_page' => [
+				'size'        => 'custom',
+				'orientation' => 'portrait',
+				'width'       => 576,
+				'height'      => 720,
+			],
+		];
+
+		$same = PressPrimer_Certificate_Layout_Validator::validate( $this->custom_document( 576, 720 ), $context );
+
+		$this->assertIsArray( $same );
+		$this->assertEquals( 576, $same['page']['width'] );
+		$this->assertEquals( 720, $same['page']['height'] );
+
+		$changed = PressPrimer_Certificate_Layout_Validator::validate( $this->custom_document( 576, 700 ), $context );
+
+		$this->assertInstanceOf( WP_Error::class, $changed );
+
+		$preset_stored = PressPrimer_Certificate_Layout_Validator::validate(
+			$this->custom_document( 842, 595 ),
+			[
+				'stored_page' => [
+					'size'        => 'a4',
+					'orientation' => 'landscape',
+					'width'       => 842,
+					'height'      => 595,
+				],
+			]
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $preset_stored, 'A preset-sized template cannot become custom while custom sizes are off' );
+	}
+
 	/**
 	 * Coordinates and numeric props clamp to their documented ranges.
 	 *

@@ -347,7 +347,19 @@ class PressPrimer_Certificate_Templates_List_Table extends WP_List_Table {
 				return $this->render_trigger_column( $item );
 
 			case 'page':
-				return esc_html( strtoupper( (string) $item->page_size ) . ' · ' . ucfirst( (string) $item->orientation ) );
+				// Registry label ("A3 · Landscape"); custom sizes show
+				// their dimensions from the layout (2.1.0), the only case
+				// that decodes the layout.
+				$page = [];
+
+				if ( PressPrimer_Certificate_Page_Sizes::CUSTOM === (string) $item->page_size && isset( $item->layout_json ) ) {
+					$layout = json_decode( (string) $item->layout_json, true );
+					$page   = is_array( $layout ) && isset( $layout['page'] ) && is_array( $layout['page'] ) ? $layout['page'] : [];
+				}
+
+				return esc_html(
+					PressPrimer_Certificate_Page_Sizes::label( (string) $item->page_size, (string) $item->orientation, $page )
+				);
 
 			case 'updated_at':
 				// UTC in, localized out (CLAUDE.md Datetime Standard).

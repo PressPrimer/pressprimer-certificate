@@ -83,6 +83,24 @@ class Test_Settings_REST extends TestCase {
 	}
 
 	/**
+	 * The default page size accepts every registry size and refuses
+	 * `custom` and unknown sizes (2.1.0).
+	 *
+	 * @return void
+	 */
+	public function test_page_size_allowlist_follows_registry() {
+		foreach ( [ 'letter', 'legal', 'a4', 'a3' ] as $size ) {
+			$response = $this->controller->update_settings( new WP_REST_Request( [], [ 'appearance_page_size' => $size ] ) );
+			$this->assertSame( $size, $response->get_data()['settings']['appearance_page_size'], $size );
+		}
+
+		foreach ( [ 'custom', 'tabloid' ] as $size ) {
+			$response = $this->controller->update_settings( new WP_REST_Request( [], [ 'appearance_page_size' => $size ] ) );
+			$this->assertSame( 'a3', $response->get_data()['settings']['appearance_page_size'], "{$size} is refused; the last valid choice stays" );
+		}
+	}
+
+	/**
 	 * An unregistered font slug is rejected; empty clears the setting.
 	 *
 	 * @return void

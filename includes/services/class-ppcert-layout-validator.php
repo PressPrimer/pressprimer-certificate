@@ -144,6 +144,9 @@ class PressPrimer_Certificate_Layout_Validator {
 	 * Page dimensions in points, [width, height] per orientation
 	 *
 	 * @since 1.0.0
+	 * @deprecated 2.1.0 The page-size registry (PressPrimer_Certificate_Page_Sizes)
+	 *             is the source of truth; this constant keeps the two 1.0 sizes
+	 *             for any external reader and is no longer used by the validator.
 	 * @var array
 	 */
 	const PAGE_PRESETS = [
@@ -185,12 +188,23 @@ class PressPrimer_Certificate_Layout_Validator {
 	 * receives an array and returns the rebuilt clean document, or a
 	 * WP_Error carrying every collected failure with its path.
 	 *
-	 * @since 1.0.0
+	 * Page sizes come from the page-size registry (2.1.0). A `custom`
+	 * size keeps its own width and height (clamped to 72-1728 pt) while
+	 * `ppcert_allow_custom_page_size` is on; with it off, a custom page
+	 * is accepted only when it is unchanged from $context['stored_page']
+	 * (the template's saved page), so a template sized with Educator can
+	 * still be saved after Educator is deactivated (Feature 2.1-004
+	 * FR-002).
 	 *
-	 * @param array $raw Decoded layout document.
+	 * @since 1.0.0
+	 * @since 2.1.0 Registry sizes, the gated custom size, and $context.
+	 *
+	 * @param array $raw     Decoded layout document.
+	 * @param array $context Optional. `stored_page`: the saved page object
+	 *                       of the template being updated.
 	 * @return array|WP_Error Rebuilt document, or WP_Error on any failure.
 	 */
-	public static function validate( array $raw ) {
+	public static function validate( array $raw, array $context = [] ) {
 		self::$errors   = [];
 		self::$seen_ids = [];
 
@@ -218,9 +232,25 @@ class PressPrimer_Certificate_Layout_Validator {
 		$page_raw    = isset( $raw['page'] ) && is_array( $raw['page'] ) ? $raw['page'] : [];
 		$size        = isset( $page_raw['size'] ) ? (string) $page_raw['size'] : '';
 		$orientation = isset( $page_raw['orientation'] ) ? (string) $page_raw['orientation'] : '';
+		$dimensions  = self::page_dimensions( $size, $page_raw, $context );
 
-		if ( ! isset( self::PAGE_PRESETS[ $size ] ) ) {
-			self::add_error( 'page.size', __( 'must be a4 or letter.', 'pressprimer-certificate' ) );
+		if ( null === $dimensions ) {
+			self::add_error(
+				'page.size',
+				sprintf(
+					/* translators: %s: comma-separated list of page size names */
+					__( 'must be one of: %s.', 'pressprimer-certificate' ),
+					implode(
+						', ',
+						array_map(
+							static function ( $preset ) {
+								return $preset['label'];
+							},
+							PressPrimer_Certificate_Page_Sizes::all()
+						)
+					)
+				)
+			);
 		}
 
 		if ( ! in_array( $orientation, [ 'landscape', 'portrait' ], true ) ) {
@@ -231,9 +261,17 @@ class PressPrimer_Certificate_Layout_Validator {
 			return self::build_error();
 		}
 
-		// Recompute page dimensions from the preset table - the width and
-		// height in the input are ignored (defense against tampering).
-		$dimensions  = self::PAGE_PRESETS[ $size ][ $orientation ];
+		// Preset pages: dimensions are recomputed from the registry - the
+		// width and height in the input are ignored (defense against
+		// tampering). Custom pages: clamped input dimensions, with the
+		// orientation following the shape (the renderer derives it the
+		// same way).
+		if ( PressPrimer_Certificate_Page_Sizes::CUSTOM === $size ) {
+			$orientation = $dimensions[0] >= $dimensions[1] ? 'landscape' : 'portrait';
+		} else {
+			$dimensions = PressPrimer_Certificate_Page_Sizes::dimensions( $size, $orientation );
+		}
+
 		$page_width  = $dimensions[0];
 		$page_height = $dimensions[1];
 
@@ -272,6 +310,53 @@ class PressPrimer_Certificate_Layout_Validator {
 		}
 
 		return $clean;
+	}
+
+	/**
+	 * Resolve a page's dimensions, or null when the size is not allowed
+	 *
+	 * Presets: the registry's dimensions for the orientation (any value
+	 * here; the caller recomputes after validating the orientation).
+	 * Custom: the clamped input dimensions when custom sizes are on, or
+	 * when the page is unchanged from the stored page.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $size     Size slug.
+	 * @param array  $page_raw Raw page object.
+	 * @param array  $context  Validation context (`stored_page`).
+	 * @return array|null [width, height] in points, or null.
+	 */
+	private static function page_dimensions( $size, array $page_raw, array $context ) {
+		if ( PressPrimer_Certificate_Page_Sizes::is_preset( $size ) ) {
+			return PressPrimer_Certificate_Page_Sizes::dimensions( $size, 'landscape' );
+		}
+
+		if ( PressPrimer_Certificate_Page_Sizes::CUSTOM !== $size ) {
+			return null;
+		}
+
+		$width  = PressPrimer_Certificate_Page_Sizes::clamp_side( isset( $page_raw['width'] ) ? $page_raw['width'] : 0 );
+		$height = PressPrimer_Certificate_Page_Sizes::clamp_side( isset( $page_raw['height'] ) ? $page_raw['height'] : 0 );
+
+		if ( PressPrimer_Certificate_Page_Sizes::custom_allowed() ) {
+			return [ $width, $height ];
+		}
+
+		// Custom sizes are off (Educator inactive): only the template's
+		// own stored custom page passes, unchanged.
+		$stored = isset( $context['stored_page'] ) && is_array( $context['stored_page'] ) ? $context['stored_page'] : [];
+
+		if (
+			isset( $stored['size'], $stored['width'], $stored['height'] )
+			&& PressPrimer_Certificate_Page_Sizes::CUSTOM === $stored['size']
+			&& PressPrimer_Certificate_Page_Sizes::clamp_side( $stored['width'] ) === $width
+			&& PressPrimer_Certificate_Page_Sizes::clamp_side( $stored['height'] ) === $height
+		) {
+			return [ $width, $height ];
+		}
+
+		return null;
 	}
 
 	/**

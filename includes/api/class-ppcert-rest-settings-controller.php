@@ -184,11 +184,12 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 			$sanitized['verification_page_id'] = absint( $data['verification_page_id'] );
 		}
 
-		// Appearance: certificate size is a fixed choice.
+		// Appearance: the default certificate size is a page-size
+		// registry slug (never `custom`, which has no fixed dimensions).
 		if ( isset( $data['appearance_page_size'] ) ) {
 			$size = sanitize_key( (string) $data['appearance_page_size'] );
 
-			if ( in_array( $size, [ 'a4', 'letter' ], true ) ) {
+			if ( PressPrimer_Certificate_Page_Sizes::is_preset( $size ) ) {
 				$sanitized['appearance_page_size'] = $size;
 			}
 		}

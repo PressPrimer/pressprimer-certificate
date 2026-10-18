@@ -101,6 +101,91 @@ class Test_Templates_REST extends TestCase {
 	}
 
 	/**
+	 * A3 and Legal layouts save, and the row's page_size column follows
+	 * the layout (2.1.0, VARCHAR column).
+	 *
+	 * @return void
+	 */
+	public function test_new_sizes_save_and_store_page_size() {
+		$template = $this->create_template();
+
+		foreach ( [ 'a3', 'legal' ] as $size ) {
+			$layout                = $this->valid_layout();
+			$layout['page']['size'] = $size;
+
+			$response = $this->controller->update_template(
+				new WP_REST_Request(
+					[
+						'id'     => $template['id'],
+						'layout' => $layout,
+					]
+				)
+			);
+
+			$this->assertSame( 200, $response->get_status(), $size );
+			$this->assertSame( $size, PressPrimer_Certificate_Template::get( $template['id'] )->page_size );
+		}
+	}
+
+	/**
+	 * A template saved at a custom size while custom sizes were on keeps
+	 * saving unchanged after they turn off (Educator deactivated); a
+	 * different custom size is then refused (Feature 2.1-004 FR-002).
+	 *
+	 * @return void
+	 */
+	public function test_stored_custom_size_survives_custom_sizes_off() {
+		$template = $this->create_template();
+
+		$custom                   = $this->valid_layout();
+		$custom['page']['size']   = 'custom';
+		$custom['page']['width']  = 576;
+		$custom['page']['height'] = 720;
+
+		add_filter( 'ppcert_allow_custom_page_size', '__return_true' );
+
+		$response = $this->controller->update_template(
+			new WP_REST_Request(
+				[
+					'id'     => $template['id'],
+					'layout' => $custom,
+				]
+			)
+		);
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'custom', PressPrimer_Certificate_Template::get( $template['id'] )->page_size );
+
+		// Educator deactivated.
+		ppcert_tests_reset_hooks();
+
+		$same = $this->controller->update_template(
+			new WP_REST_Request(
+				[
+					'id'     => $template['id'],
+					'layout' => $custom,
+				]
+			)
+		);
+
+		$this->assertSame( 200, $same->get_status(), 'The unchanged custom page still saves' );
+
+		$custom['page']['height'] = 700;
+
+		$changed = $this->controller->update_template(
+			new WP_REST_Request(
+				[
+					'id'     => $template['id'],
+					'layout' => $custom,
+				]
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $changed );
+		$this->assertSame( 400, $changed->get_error_data()['status'] );
+	}
+
+	/**
 	 * Saving adopts the rebuilt document: hostile/unknown props never
 	 * reach storage or the response.
 	 *

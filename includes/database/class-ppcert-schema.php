@@ -109,6 +109,11 @@ class PressPrimer_Certificate_Schema {
 	 * Certificate designs. The layout JSON is the single source of truth
 	 * consumed by the designer canvas and the PDF renderer.
 	 *
+	 * page_size is VARCHAR since DB 2.1.0 (was ENUM('a4','letter')): the
+	 * page-size registry is an open value set (Letter, Legal, A4, A3,
+	 * addon presets, and Educator's gated `custom`), so new sizes need no
+	 * migration (Feature 2.1-003 TR-002).
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $charset_collate Character set and collation.
@@ -124,7 +129,7 @@ class PressPrimer_Certificate_Schema {
 			status ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
 			author_id BIGINT UNSIGNED NOT NULL,
 			issuer_id BIGINT UNSIGNED DEFAULT NULL,
-			page_size ENUM('a4','letter') NOT NULL DEFAULT 'a4',
+			page_size VARCHAR(32) NOT NULL DEFAULT 'a4',
 			orientation ENUM('landscape','portrait') NOT NULL DEFAULT 'landscape',
 			layout_schema_version SMALLINT UNSIGNED NOT NULL DEFAULT 1,
 			layout_json LONGTEXT NOT NULL,
@@ -147,6 +152,13 @@ class PressPrimer_Certificate_Schema {
 	 * Issued certificates. Immutable after issuance except for status
 	 * transitions; layout_snapshot_json + merge_data_json freeze the
 	 * certificate exactly as issued.
+	 *
+	 * DB 2.1.0 (Feature 2.1-004 FR-001) appends credential_display (the
+	 * display form of an addon-generated credential ID, snapshotted at
+	 * issue; NULL for core IDs) and recipient_email (one-off certificates
+	 * issued to someone without an account; NULL otherwise), plus the
+	 * issued_at and issued_by indexes the bulk-action filters use. New
+	 * columns go at the end so fresh and upgraded tables match.
 	 *
 	 * @since 1.0.0
 	 *
@@ -178,6 +190,8 @@ class PressPrimer_Certificate_Schema {
 			revoke_reason VARCHAR(191) DEFAULT NULL,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			credential_display VARCHAR(40) DEFAULT NULL,
+			recipient_email VARCHAR(190) DEFAULT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY uuid (uuid),
 			UNIQUE KEY credential_id (credential_id),
@@ -187,7 +201,10 @@ class PressPrimer_Certificate_Schema {
 			KEY status (status),
 			KEY source (source_type,source_ref),
 			KEY title (title(60)),
-			KEY directory_visibility (directory_visibility)
+			KEY directory_visibility (directory_visibility),
+			KEY issued_at (issued_at),
+			KEY issued_by (issued_by),
+			KEY recipient_email (recipient_email)
 		) $charset_collate;\n";
 	}
 
@@ -226,6 +243,10 @@ class PressPrimer_Certificate_Schema {
 	/**
 	 * Get issuers table schema (dormant foundation - no UI yet)
 	 *
+	 * DB 2.1.0 appends settings_json for the School addon's organization
+	 * settings (credential ID format, program order). Free never reads
+	 * it; brand_json stays branding only.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $charset_collate Character set and collation.
@@ -246,6 +267,7 @@ class PressPrimer_Certificate_Schema {
 			status ENUM('active','archived') NOT NULL DEFAULT 'active',
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			settings_json LONGTEXT DEFAULT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY uuid (uuid),
 			UNIQUE KEY slug (slug),

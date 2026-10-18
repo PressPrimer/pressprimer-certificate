@@ -31,7 +31,7 @@ if ( ! defined( 'PPCERT_VERSION' ) ) {
 // The migration chain's head, mirroring the production constant (the
 // migrator tests drive maybe_migrate() against it).
 if ( ! defined( 'PPCERT_DB_VERSION' ) ) {
-	define( 'PPCERT_DB_VERSION', '2.0.0' );
+	define( 'PPCERT_DB_VERSION', '2.1.0' );
 }
 
 // TCPDF font lookup roots in the plugin's converted-fonts directory,
@@ -552,13 +552,17 @@ if ( ! function_exists( 'dbDelta' ) ) {
 	 * Stub: dbDelta against the fake wpdb's schema registry.
 	 *
 	 * Parses each CREATE TABLE statement just far enough to register the
-	 * table name and its column names with PPCert_Fake_WPDB. Re-running
-	 * merges columns into an existing registration - the shim's stand-in
-	 * for dbDelta's ADD COLUMN behavior. Row data is untouched (the fake
-	 * stores schemaless rows). Tables listed in
+	 * table name, its columns with their types (lowercase, as SHOW COLUMNS
+	 * reports them, e.g. "varchar(32)", "bigint unsigned"), and its index
+	 * names with PPCert_Fake_WPDB. Re-running merges into an existing
+	 * registration - the shim's stand-in for dbDelta's ADD COLUMN, CHANGE
+	 * COLUMN, and ADD INDEX. Row data is untouched (the fake stores
+	 * schemaless rows). Tables listed in
 	 * $GLOBALS['ppcert_test_dbdelta_skip_tables'] are skipped, so tests
 	 * can simulate a partially failed migration for the migrator's
-	 * verify-before-advance behavior.
+	 * verify-before-advance behavior; tables listed in
+	 * $GLOBALS['ppcert_test_dbdelta_keep_types'] keep their existing
+	 * column types (a CHANGE COLUMN that silently failed, 2.1.0).
 	 *
 	 * @param string $sql CREATE TABLE statements.
 	 * @return array Empty (return value unused by the migrator).
@@ -566,6 +570,10 @@ if ( ! function_exists( 'dbDelta' ) ) {
 	function dbDelta( $sql ) {
 		$skip = isset( $GLOBALS['ppcert_test_dbdelta_skip_tables'] )
 			? (array) $GLOBALS['ppcert_test_dbdelta_skip_tables']
+			: [];
+
+		$keep_types = isset( $GLOBALS['ppcert_test_dbdelta_keep_types'] )
+			? (array) $GLOBALS['ppcert_test_dbdelta_keep_types']
 			: [];
 
 		preg_match_all( '/CREATE TABLE ([^\s(]+)\s*\((.*?)\)[^();]*;/s', (string) $sql, $statements, PREG_SET_ORDER );
@@ -578,18 +586,40 @@ if ( ! function_exists( 'dbDelta' ) ) {
 			}
 
 			$columns = [];
+			$indexes = [];
 
 			foreach ( explode( "\n", $statement[2] ) as $line ) {
-				$line = trim( $line );
+				$line = rtrim( trim( $line ), ',' );
 
-				if ( '' === $line || preg_match( '/^(PRIMARY\s+KEY|UNIQUE\s+KEY|KEY|CONSTRAINT)\b/i', $line ) ) {
+				if ( '' === $line ) {
 					continue;
 				}
 
-				$columns[] = trim( strtok( $line, " \t" ), '`' );
+				if ( preg_match( '/^PRIMARY\s+KEY\b/i', $line ) ) {
+					$indexes[] = 'PRIMARY';
+					continue;
+				}
+
+				if ( preg_match( '/^(?:UNIQUE\s+)?KEY\s+`?([A-Za-z0-9_]+)`?/i', $line, $index ) ) {
+					$indexes[] = $index[1];
+					continue;
+				}
+
+				if ( preg_match( '/^CONSTRAINT\b/i', $line ) ) {
+					continue;
+				}
+
+				$tokens = preg_split( '/\s+/', $line );
+				$type   = isset( $tokens[1] ) ? strtolower( $tokens[1] ) : '';
+
+				if ( isset( $tokens[2] ) && 'unsigned' === strtolower( $tokens[2] ) ) {
+					$type .= ' unsigned';
+				}
+
+				$columns[ trim( $tokens[0], '`' ) ] = $type;
 			}
 
-			$GLOBALS['wpdb']->register_table( $table, $columns );
+			$GLOBALS['wpdb']->register_table( $table, $columns, $indexes, in_array( $table, $keep_types, true ) );
 		}
 
 		return [];

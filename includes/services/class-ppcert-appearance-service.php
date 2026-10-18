@@ -41,7 +41,8 @@ class PressPrimer_Certificate_Appearance_Service {
 	 *     @type string $primary_color Hex color for shapes, or ''.
 	 *     @type string $accent_color  Hex color for shapes, or ''.
 	 *     @type string $text_color    Hex color for text + QR ink, or ''.
-	 *     @type string $page_size     'letter' (default) or 'a4'.
+	 *     @type string $page_size     A page-size registry slug; 'letter' by default
+	 *                                 and when the stored slug is no longer registered.
 	 * }
 	 */
 	public static function get() {
@@ -59,7 +60,7 @@ class PressPrimer_Certificate_Appearance_Service {
 		$page_size = isset( $settings['appearance_page_size'] ) ? sanitize_key( (string) $settings['appearance_page_size'] ) : '';
 
 		return [
-			'page_size'     => in_array( $page_size, [ 'a4', 'letter' ], true ) ? $page_size : 'letter',
+			'page_size'     => PressPrimer_Certificate_Page_Sizes::is_preset( $page_size ) ? $page_size : 'letter',
 			'default_font'  => $font,
 			'signature_id'  => isset( $settings['appearance_signature_id'] ) ? absint( $settings['appearance_signature_id'] ) : 0,
 			'logo_id'       => isset( $settings['appearance_logo_id'] ) ? absint( $settings['appearance_logo_id'] ) : 0,
