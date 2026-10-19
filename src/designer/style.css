@@ -832,3 +832,18 @@
 	height: 100%;
 	object-fit: contain;
 }
+
+/* Save conflict notice (2.1, Feature 2.1-005 FR-002). */
+.ppcert-designer__conflict-text,
+.ppcert-designer__conflict-time {
+	margin: 0 0 8px;
+}
+
+.ppcert-designer__conflict-time {
+	color: #646970;
+}
+
+.ppcert-designer__conflict-actions {
+	display: flex;
+	gap: 8px;
+}

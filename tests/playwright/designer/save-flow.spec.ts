@@ -48,6 +48,20 @@ async function selectAndNudge( page: Page, id: string ): Promise< void > {
 	await page.keyboard.press( 'ArrowRight' );
 }
 
+/**
+ * Clear AntD overlays whose leave motion the harness's 0s animations
+ * never finish (the real screen removes them on its own).
+ *
+ * @param page
+ */
+async function clearClosedOverlays( page: Page ): Promise< void > {
+	await page.evaluate( () => {
+		document
+			.querySelectorAll( '.ant-modal-root, .ant-notification' )
+			.forEach( ( element ) => element.remove() );
+	} );
+}
+
 test.describe( 'save flow', () => {
 	test( 'edit, save, hard reload: identical layout; dirty lifecycle', async ( {
 		page,
@@ -147,11 +161,95 @@ test.describe( 'save flow', () => {
 		await page.locator( '[data-ppcert-action="save"]' ).click();
 
 		await expect( page.getByText( 'Changed elsewhere' ) ).toBeVisible();
+		await expect(
+			page.getByText( 'by a cached copy of this page', { exact: false } )
+		).toBeVisible();
+		await expect(
+			page.getByText( 'Last saved elsewhere at', { exact: false } )
+		).toBeVisible();
 		expect( await isDirty( page ) ).toBe( true );
 
 		await page.getByRole( 'button', { name: 'Save anyway' } ).click();
 		await expect( page.getByText( 'Template saved.' ) ).toBeVisible();
 		expect( await isDirty( page ) ).toBe( false );
+	} );
+
+	test( 'conflict Reload restores the server copy (2.1)', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		const original = await getElement( page, TITLE_ID );
+		await selectAndNudge( page, TITLE_ID );
+		expect( ( await getElement( page, TITLE_ID ) ).x ).not.toBe(
+			original.x
+		);
+
+		// Another tab saved a different design meanwhile.
+		await page.evaluate( ( id ) => {
+			const bridge = ( window as any ).__ppcertHarness;
+			const state = bridge.getState();
+			const layout = JSON.parse( JSON.stringify( state.layout ) );
+			const title = layout.elements.find( ( el: any ) => el.id === id );
+			title.x = 123;
+			title.props.content = 'Saved in another tab';
+
+			window.localStorage.setItem(
+				'ppcert_harness_template',
+				JSON.stringify( {
+					...state.template,
+					layout,
+					updated_at: '2026-10-19T14:05:00Z',
+				} )
+			);
+		}, TITLE_ID );
+
+		await page.locator( '[data-ppcert-action="save"]' ).click();
+		await expect( page.getByText( 'Changed elsewhere' ) ).toBeVisible();
+
+		await page
+			.locator( '.ant-notification' )
+			.getByRole( 'button', { name: 'Reload' } )
+			.click();
+		await expect(
+			page.getByText(
+				'Discard your unsaved changes and reload the template?'
+			)
+		).toBeVisible();
+		await page
+			.locator( '.ant-modal-confirm' )
+			.getByRole( 'button', { name: 'Reload' } )
+			.click();
+
+		await expect( page.getByText( 'Template reloaded.' ) ).toBeVisible();
+
+		// The notice and the dialog close. The harness stops motion at 0s,
+		// which never fires animationend, so AntD's leave motion waits
+		// here: assert the close started, then clear the overlays.
+		await expect(
+			page.locator( '.ant-notification-notice-wrapper' )
+		).toHaveClass( /-leave/ );
+		await expect( page.locator( '.ant-modal-confirm' ) ).toHaveClass(
+			/-leave/
+		);
+		await clearClosedOverlays( page );
+
+		const reloaded = await getElement( page, TITLE_ID );
+		expect( reloaded.x ).toBe( 123 );
+		expect( reloaded.props.content ).toBe( 'Saved in another tab' );
+		expect( await isDirty( page ) ).toBe( false );
+		expect(
+			await page.evaluate(
+				() =>
+					( window as any ).__ppcertHarness.getState().template
+						.updated_at
+			)
+		).toBe( '2026-10-19T14:05:00Z' );
+
+		// The next save goes through: no stale conflict.
+		await selectAndNudge( page, TITLE_ID );
+		await page.locator( '[data-ppcert-action="save"]' ).click();
+		await expect( page.getByText( 'Template saved.' ) ).toBeVisible();
 	} );
 
 	test( 'publish transitions status and updates the toolbar', async ( {

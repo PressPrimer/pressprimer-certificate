@@ -23,6 +23,7 @@ import {
 	Input,
 	Spin,
 	message,
+	Modal,
 	notification,
 	Alert,
 } from 'antd';
@@ -202,32 +203,7 @@ export default function DesignerApp( { boot } ) {
 			} )
 			.catch( ( error ) => {
 				if ( 'ppcert_template_conflict' === error?.code ) {
-					notification.warning( {
-						message: __(
-							'Changed elsewhere',
-							'pressprimer-certificate'
-						),
-						description: __(
-							'This template was changed in another window since you opened it. Saving again will overwrite those changes.',
-							'pressprimer-certificate'
-						),
-						btn: (
-							<Button
-								size="small"
-								danger
-								onClick={ () => {
-									notification.destroy();
-									doSave( { ...extra, force: true } );
-								} }
-							>
-								{ __(
-									'Save anyway',
-									'pressprimer-certificate'
-								) }
-							</Button>
-						),
-						duration: 0,
-					} );
+					showConflict( error, extra );
 					return;
 				}
 
@@ -243,6 +219,143 @@ export default function DesignerApp( { boot } ) {
 	};
 
 	doSaveRef.current = doSave;
+
+	/**
+	 * The save conflict notice (2.1, Feature 2.1-005 FR-002): names the
+	 * real causes, says when the other save happened, and offers Reload
+	 * (the safe choice when a cached page served a stale copy) beside
+	 * Save anyway.
+	 *
+	 * @param {Object} error The 409 error (data.updated_at, UTC ISO).
+	 * @param {Object} extra The save's extra payload (status on publish).
+	 */
+	const showConflict = ( error, extra ) => {
+		const savedAt = error?.data?.updated_at
+			? new Date( error.data.updated_at )
+			: null;
+		const savedAtText =
+			savedAt && ! Number.isNaN( savedAt.getTime() )
+				? savedAt.toLocaleString( undefined, {
+						dateStyle: 'medium',
+						timeStyle: 'short',
+				  } )
+				: '';
+
+		notification.warning( {
+			key: 'ppcert-template-conflict',
+			placement: 'topRight',
+			message: __( 'Changed elsewhere', 'pressprimer-certificate' ),
+			description: (
+				<>
+					<p className="ppcert-designer__conflict-text">
+						{ __(
+							'This template was saved somewhere else after you opened it: in another browser tab, by another user, by an action on the Templates list, or by a cached copy of this page. Reload to get the latest version, or save anyway to replace it with yours.',
+							'pressprimer-certificate'
+						) }
+					</p>
+					{ savedAtText ? (
+						<p className="ppcert-designer__conflict-time">
+							{ sprintf(
+								/* translators: %s: date and time of the other save. */
+								__(
+									'Last saved elsewhere at %s.',
+									'pressprimer-certificate'
+								),
+								savedAtText
+							) }
+						</p>
+					) : null }
+				</>
+			),
+			btn: (
+				<div className="ppcert-designer__conflict-actions">
+					<Button
+						size="small"
+						danger
+						onClick={ () => {
+							notification.destroy( 'ppcert-template-conflict' );
+							doSave( { ...extra, force: true } );
+						} }
+					>
+						{ __( 'Save anyway', 'pressprimer-certificate' ) }
+					</Button>
+					<Button
+						size="small"
+						type="primary"
+						onClick={ () =>
+							Modal.confirm( {
+								title: __(
+									'Reload the template?',
+									'pressprimer-certificate'
+								),
+								content: __(
+									'Discard your unsaved changes and reload the template?',
+									'pressprimer-certificate'
+								),
+								okText: __(
+									'Reload',
+									'pressprimer-certificate'
+								),
+								okButtonProps: { danger: true },
+								cancelText: __(
+									'Cancel',
+									'pressprimer-certificate'
+								),
+								onOk: () => {
+									notification.destroy(
+										'ppcert-template-conflict'
+									);
+
+									return reloadTemplate();
+								},
+							} )
+						}
+					>
+						{ __( 'Reload', 'pressprimer-certificate' ) }
+					</Button>
+				</div>
+			),
+			duration: 0,
+		} );
+	};
+
+	/**
+	 * Reload the open template from the server: the normal load
+	 * (layout through ppcert.designer.loadLayout, settings) plus its
+	 * triggers. Unsaved changes and undo history are discarded.
+	 *
+	 * @return {Promise} Settles when the template and triggers are in.
+	 */
+	const reloadTemplate = () => {
+		const id = state.template && state.template.id;
+
+		if ( ! id ) {
+			return Promise.resolve();
+		}
+
+		return fetchTemplate( id )
+			.then( ( template ) => {
+				if ( ! template ) {
+					return null;
+				}
+
+				return getTriggers( id ).then( ( rows ) => {
+					dispatch( { type: 'SET_TRIGGERS', triggers: rows } );
+					message.success(
+						__( 'Template reloaded.', 'pressprimer-certificate' )
+					);
+				} );
+			} )
+			.catch( ( error ) => {
+				message.error(
+					error?.message ||
+						__(
+							'The template could not be loaded.',
+							'pressprimer-certificate'
+						)
+				);
+			} );
+	};
 
 	const doPreview = () => {
 		if ( ! state.template || previewing ) {
@@ -409,56 +522,68 @@ export default function DesignerApp( { boot } ) {
 			window.removeEventListener( 'beforeunload', onBeforeUnload );
 	}, [ state.dirty, state.triggersDirty ] );
 
+	/**
+	 * Load a template into the designer (the deep link and Reload): the
+	 * schema-version gate, then LOAD_TEMPLATE through the extensions'
+	 * load projection. Resolves the template, or null when this
+	 * designer cannot open it (the load error is set).
+	 *
+	 * @param {number} id Template id.
+	 * @return {Promise<Object|null>} The loaded template.
+	 */
+	const fetchTemplate = ( id ) =>
+		apiFetch( { path: `/ppcert/v1/templates/${ id }` } ).then(
+			( template ) => {
+				// A newer-version document (v3 multi-page, Educator-
+				// authored) never opens here: this designer is
+				// single-page and a save would destroy pages[].
+				// Issuance and rendering handle it fully regardless.
+				const version =
+					parseInt( template.layout?.layout_schema_version, 10 ) || 0;
+
+				/**
+				 * Extensions declaring they can open a newer schema
+				 * version (Educator's page rail opens v3) flip this;
+				 * free-only installs keep the decline unchanged.
+				 * (Feature 2.0-006 / E-002 extension contract.)
+				 */
+				const canOpen = applyFilters(
+					'ppcert.designer.canOpenVersion',
+					version <= CURRENT_SCHEMA_VERSION,
+					version
+				);
+
+				if ( ! canOpen ) {
+					setLoadError(
+						__(
+							'This design uses multi-page features from PressPrimer Certificate Educator, so it cannot be opened in the single-page designer. Certificates still award and download from it normally.',
+							'pressprimer-certificate'
+						)
+					);
+					return null;
+				}
+
+				dispatch( {
+					type: 'LOAD_TEMPLATE',
+					template,
+					// Extensions project multi-page documents into
+					// the working page here (and keep the full
+					// document their own concern).
+					layout: applyFilters(
+						'ppcert.designer.loadLayout',
+						template.layout,
+						template
+					),
+				} );
+
+				return template;
+			}
+		);
+
 	// Deep link: ?action=edit&template_id=N loads directly.
 	useEffect( () => {
 		if ( boot.template_id > 0 ) {
-			apiFetch( { path: `/ppcert/v1/templates/${ boot.template_id }` } )
-				.then( ( template ) => {
-					// A newer-version document (v3 multi-page, Educator-
-					// authored) never opens here: this designer is
-					// single-page and a save would destroy pages[].
-					// Issuance and rendering handle it fully regardless.
-					const version =
-						parseInt(
-							template.layout?.layout_schema_version,
-							10
-						) || 0;
-
-					/**
-					 * Extensions declaring they can open a newer schema
-					 * version (Educator's page rail opens v3) flip this;
-					 * free-only installs keep the decline unchanged.
-					 * (Feature 2.0-006 / E-002 extension contract.)
-					 */
-					const canOpen = applyFilters(
-						'ppcert.designer.canOpenVersion',
-						version <= CURRENT_SCHEMA_VERSION,
-						version
-					);
-
-					if ( ! canOpen ) {
-						setLoadError(
-							__(
-								'This design uses multi-page features from PressPrimer Certificate Educator, so it cannot be opened in the single-page designer. Certificates still award and download from it normally.',
-								'pressprimer-certificate'
-							)
-						);
-						return;
-					}
-
-					dispatch( {
-						type: 'LOAD_TEMPLATE',
-						template,
-						// Extensions project multi-page documents into
-						// the working page here (and keep the full
-						// document their own concern).
-						layout: applyFilters(
-							'ppcert.designer.loadLayout',
-							template.layout,
-							template
-						),
-					} );
-				} )
+			fetchTemplate( boot.template_id )
 				.catch( ( error ) => {
 					setLoadError(
 						error?.message ||
@@ -470,7 +595,7 @@ export default function DesignerApp( { boot } ) {
 				} )
 				.finally( () => setLoading( false ) );
 		}
-	}, [ boot.template_id, dispatch ] );
+	}, [ boot.template_id, dispatch ] ); // eslint-disable-line react-hooks/exhaustive-deps -- fetchTemplate is recreated each render; the deep link loads once.
 
 	const onCreate = ( template ) => {
 		dispatch( {

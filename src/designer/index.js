@@ -8,13 +8,16 @@
  */
 
 import { render } from '@wordpress/element';
-import { message } from 'antd';
+import { message, notification } from 'antd';
 import DesignerApp from './components/DesignerApp';
 import { DesignerProvider } from './hooks/useDesignerStore';
 import './style.css';
 
 // Ecosystem convention: identical message positioning in every entry point.
 message.config( { top: 50, duration: 5, maxCount: 3 } );
+
+// Notifications (the save conflict notice) open below the admin bar too.
+notification.config( { top: 50 } );
 
 document.addEventListener( 'DOMContentLoaded', () => {
 	const root = document.getElementById( 'ppcert-designer-root' );

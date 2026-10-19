@@ -412,7 +412,8 @@ apiFetch.use( ( options, next ) => {
 			return Promise.reject( {
 				code: 'ppcert_template_conflict',
 				message: 'This template was changed elsewhere.',
-				data: { status: 409 },
+				// The server's 409 carries the other save's time (2.1).
+				data: { status: 409, updated_at: stored.updated_at },
 			} );
 		}
 
