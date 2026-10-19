@@ -450,6 +450,32 @@ test.describe( '2.1 page sizes', () => {
 } );
 
 /**
+ * Custom page sizes (2.1, Educator E-008 TR-005): free renders a
+ * `custom` page from its own width and height. Each fixture is a Letter
+ * starter after the designer's scale-to-fit (scaleElements()), rounded
+ * to whole points like the other fixtures: Modern portrait to an 8 x 10
+ * in frame (576 x 720 pt), and Modern landscape to a 4 x 6 in postcard
+ * (432 x 288 pt).
+ */
+test.describe( '2.1 custom sizes (Educator)', () => {
+	for ( const slug of [
+		'parity-custom-8x10-portrait',
+		'parity-custom-4x6-landscape',
+	] ) {
+		test( `${ slug }: canvas matches the PDF raster within parity thresholds`, async ( {
+			page,
+		} ) => {
+			const dir = tmpDir();
+			const { layout, layoutPath } = fixtureLayout( slug, dir );
+
+			expect( layout.page.size ).toBe( 'custom' );
+
+			await runParityCase( page, layout, layoutPath, dir );
+		} );
+	}
+} );
+
+/**
  * Addon font contract fixtures (2.0, Feature 2.0-006 / Educator E-001).
  *
  * 'Uploaded': a custom-slug family registered exactly as an Educator

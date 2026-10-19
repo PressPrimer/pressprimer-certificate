@@ -1,0 +1,190 @@
+{
+	"layout_schema_version": 1,
+	"page": {
+		"size": "custom",
+		"orientation": "portrait",
+		"width": 576,
+		"height": 720
+	},
+	"background": {
+		"color": "#ffffff",
+		"attachment_id": 0
+	},
+	"elements": [
+		{
+			"id": "el_mptband1",
+			"type": "shape",
+			"x": 10,
+			"y": 0,
+			"w": 15,
+			"h": 720,
+			"z": 1,
+			"props": {
+				"shape": "rect",
+				"stroke_color": "#0f766e",
+				"stroke_width": 0,
+				"fill_color": "#0f766e",
+				"radius": 0
+			}
+		},
+		{
+			"id": "el_mptband2",
+			"type": "shape",
+			"x": 24,
+			"y": 0,
+			"w": 4,
+			"h": 720,
+			"z": 2,
+			"props": {
+				"shape": "rect",
+				"stroke_color": "#f59e0b",
+				"stroke_width": 0,
+				"fill_color": "#f59e0b",
+				"radius": 0
+			}
+		},
+		{
+			"id": "el_mptkick1",
+			"type": "text",
+			"x": 64,
+			"y": 82,
+			"w": 434,
+			"h": 18,
+			"z": 3,
+			"props": {
+				"content": "CERTIFICATE OF ACHIEVEMENT",
+				"font_family": "source-sans-3",
+				"font_size": 12,
+				"color": "#0f766e",
+				"align": "left",
+				"line_height": 1.2,
+				"bold": true,
+				"italic": false
+			}
+		},
+		{
+			"id": "el_mptname1",
+			"type": "merge_field",
+			"x": 72,
+			"y": 136,
+			"w": 432,
+			"h": 46,
+			"z": 4,
+			"props": {
+				"token": "{{recipient.full_name}}",
+				"font_family": "source-sans-3",
+				"font_size": 36,
+				"color": "#111827",
+				"align": "left",
+				"line_height": 1.1,
+				"bold": true,
+				"italic": false
+			}
+		},
+		{
+			"id": "el_mptsubj1",
+			"type": "text",
+			"x": 64,
+			"y": 206,
+			"w": 434,
+			"h": 62,
+			"z": 5,
+			"props": {
+				"content": "has demonstrated outstanding commitment and successfully completed all program requirements.",
+				"font_family": "source-sans-3",
+				"font_size": 14,
+				"color": "#4b5563",
+				"align": "left",
+				"line_height": 1.5,
+				"bold": false,
+				"italic": false
+			}
+		},
+		{
+			"id": "el_mptcrse1",
+			"type": "text",
+			"x": 72,
+			"y": 286,
+			"w": 432,
+			"h": 27,
+			"z": 6,
+			"props": {
+				"content": "Course Name",
+				"font_family": "source-sans-3",
+				"font_size": 18,
+				"color": "#111827",
+				"align": "left",
+				"line_height": 1.2,
+				"bold": true,
+				"italic": false
+			}
+		},
+		{
+			"id": "el_mptrule1",
+			"type": "shape",
+			"x": 72,
+			"y": 591,
+			"w": 432,
+			"h": 1,
+			"z": 7,
+			"props": {
+				"shape": "line",
+				"stroke_color": "#e5e7eb",
+				"stroke_width": 1,
+				"fill_color": "",
+				"radius": 0
+			}
+		},
+		{
+			"id": "el_mptissue",
+			"type": "merge_field",
+			"x": 64,
+			"y": 611,
+			"w": 182,
+			"h": 16,
+			"z": 8,
+			"props": {
+				"token": "{{certificate.issue_date}}",
+				"font_family": "source-sans-3",
+				"font_size": 10,
+				"color": "#6b7280",
+				"align": "left",
+				"line_height": 1.2,
+				"bold": false,
+				"italic": false
+			}
+		},
+		{
+			"id": "el_mptissr1",
+			"type": "merge_field",
+			"x": 64,
+			"y": 635,
+			"w": 273,
+			"h": 16,
+			"z": 9,
+			"props": {
+				"token": "{{certificate.issuer_name}}",
+				"font_family": "playfair-display",
+				"font_size": 12,
+				"color": "#111827",
+				"align": "left",
+				"line_height": 1.2,
+				"bold": false,
+				"italic": true
+			}
+		},
+		{
+			"id": "el_mptqr001",
+			"type": "qr",
+			"x": 461,
+			"y": 602,
+			"w": 51,
+			"h": 51,
+			"z": 10,
+			"props": {
+				"dark_color": "#111827",
+				"light_color": ""
+			}
+		}
+	]
+}
