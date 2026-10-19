@@ -285,6 +285,47 @@ test.describe( 'save flow', () => {
 		await popup.waitForURL( /#ppcert-preview/ );
 	} );
 
+	test( 'saveLayout says why it runs: save or preview (2.1)', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		await page.evaluate( () => {
+			const harness = ( window as any ).__ppcertHarness;
+			( window as any ).__purposes = [];
+			harness.addFilter(
+				'ppcert.designer.saveLayout',
+				'ppcert-test/purpose',
+				( layout: any, context: any ) => {
+					( window as any ).__purposes.push(
+						context ? context.purpose : null
+					);
+					return layout;
+				}
+			);
+		} );
+
+		const popupPromise = page.waitForEvent( 'popup' );
+		await page.locator( '[data-ppcert-action="preview"]' ).click();
+		await ( await popupPromise ).waitForURL( /#ppcert-preview/ );
+
+		await selectAndNudge( page, TITLE_ID );
+		await page.locator( '[data-ppcert-action="save"]' ).click();
+		await expect(
+			page.locator( '[data-ppcert-action="save"]' )
+		).toBeDisabled();
+
+		expect(
+			await page.evaluate( () => ( window as any ).__purposes )
+		).toEqual( [ 'preview', 'save' ] );
+
+		await page.evaluate( () =>
+			( window as any ).__ppcertHarness.removeAllFilters(
+				'ppcert.designer.saveLayout'
+			)
+		);
+	} );
+
 	test( 'unsaved changes arm the navigation guard; saving disarms it', async ( {
 		page,
 	} ) => {

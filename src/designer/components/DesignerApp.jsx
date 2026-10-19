@@ -144,8 +144,11 @@ export default function DesignerApp( { boot } ) {
 		saveTemplate( state.template.id, {
 			// Extensions assemble the full stored document here
 			// (Educator reassembles v3 from its pages; free-only
-			// installs save the working document unchanged).
-			layout: applyFilters( 'ppcert.designer.saveLayout', state.layout ),
+			// installs save the working document unchanged). The
+			// third argument says why (2.1): 'save' or 'preview'.
+			layout: applyFilters( 'ppcert.designer.saveLayout', state.layout, {
+				purpose: 'save',
+			} ),
 			title: state.template.title,
 			settings: state.template.settings || {},
 			// The issuer of record for future issues (2.0, School
@@ -367,9 +370,14 @@ export default function DesignerApp( { boot } ) {
 		const tab = window.open( 'about:blank', '_blank' );
 		setPreviewing( true );
 
+		// A preview may show what is on screen rather than the whole
+		// stored document (2.1: Educator previews the wallet card while
+		// it is being edited).
 		previewTemplate(
 			state.template.id,
-			applyFilters( 'ppcert.designer.saveLayout', state.layout )
+			applyFilters( 'ppcert.designer.saveLayout', state.layout, {
+				purpose: 'preview',
+			} )
 		)
 			.then( ( { url, warnings } ) => {
 				if ( tab ) {
