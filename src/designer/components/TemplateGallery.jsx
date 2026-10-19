@@ -84,10 +84,10 @@ export default function TemplateGallery( { starters, onCreate } ) {
 	const [ creating, setCreating ] = useState( '' );
 
 	// Certificate size (Phase 5B item 7): every starter design ships
-	// natively in both sizes; the toggle defaults to the Appearance
+	// natively in Letter and A4; the toggle defaults to the Appearance
 	// setting and switches which variant each card creates.
-	const [ pageSize, setPageSize ] = useState(
-		() => getBoot().appearance?.page_size || 'letter'
+	const [ pageSize, setPageSize ] = useState( () =>
+		starterSizeFor( getBoot().appearance?.page_size )
 	);
 
 	// Group variants by design: the '-letter' suffix marks the Letter
@@ -167,6 +167,15 @@ export default function TemplateGallery( { starters, onCreate } ) {
 					onChange={ setPageSize }
 				/>
 			</div>
+			<Paragraph
+				type="secondary"
+				className="ppcert-designer__gallery-size-note"
+			>
+				{ __(
+					'Starter designs come in Letter and A4. After creating one, change the size in the Page panel.',
+					'pressprimer-certificate'
+				) }
+			</Paragraph>
 
 			<Row gutter={ [ 16, 16 ] }>
 				{ designs.map( ( design ) => {
@@ -227,4 +236,23 @@ export default function TemplateGallery( { starters, onCreate } ) {
 			</Row>
 		</div>
 	);
+}
+
+/**
+ * The starter variant for a default page size (2.1, Feature 2.1-003
+ * FR-003). Starters ship in Letter and A4 only: another size takes the
+ * variant of its measuring system (Legal the Letter starters, A3 the A4
+ * starters).
+ *
+ * @param {string} size Appearance default page size.
+ * @return {string} 'letter' or 'a4'.
+ */
+function starterSizeFor( size ) {
+	if ( 'letter' === size || 'a4' === size ) {
+		return size;
+	}
+
+	const preset = ( getBoot().page_presets || {} )[ size ];
+
+	return preset && 'mm' === preset.unit ? 'a4' : 'letter';
 }

@@ -182,6 +182,8 @@ const ImageSetting = ( { label, help, value, previewUrl, onChange } ) => {
  * @param {string} props.text         Text hex ('' = design ink).
  * @param {string} props.logoUrl      Logo image URL.
  * @param {string} props.signatureUrl Signature image URL.
+ * @param {Object} props.page         Default size { width, height } in
+ *                                    points (landscape), for the shape.
  */
 const CertificatePreview = ( {
 	font,
@@ -190,6 +192,7 @@ const CertificatePreview = ( {
 	text,
 	logoUrl,
 	signatureUrl,
+	page,
 } ) => {
 	const fontFamily = `"${ font || 'source-sans-3' }"`;
 	// Brand colors style shapes; text falls back to the design ink.
@@ -201,7 +204,10 @@ const CertificatePreview = ( {
 		<div className="ppcert-appearance-preview">
 			<div
 				className="ppcert-appearance-preview__page"
-				style={ { borderColor } }
+				style={ {
+					borderColor,
+					aspectRatio: `${ page.width } / ${ page.height }`,
+				} }
 			>
 				<div
 					className="ppcert-appearance-preview__inner"
@@ -283,6 +289,24 @@ const CertificatePreview = ( {
 };
 
 /**
+ * Sizes when the localized registry list is missing (never expected).
+ */
+const FALLBACK_PAGE_SIZES = [
+	{
+		value: 'letter',
+		label: __( 'Letter', 'pressprimer-certificate' ),
+		width: 792,
+		height: 612,
+	},
+	{
+		value: 'a4',
+		label: __( 'A4', 'pressprimer-certificate' ),
+		width: 842,
+		height: 595,
+	},
+];
+
+/**
  * Appearance Tab
  *
  * @param {Object}   props               Component props.
@@ -292,6 +316,14 @@ const CertificatePreview = ( {
  */
 const AppearanceTab = ( { settings, updateSetting, settingsData } ) => {
 	const fonts = settingsData.fonts || [];
+	// Registry sizes in menu order (2.1: Letter, Legal, A4, A3).
+	const pageSizes = settingsData.pageSizes?.length
+		? settingsData.pageSizes
+		: FALLBACK_PAGE_SIZES;
+	const pageSizeValue = settings.appearance_page_size || 'letter';
+	const page =
+		pageSizes.find( ( size ) => size.value === pageSizeValue ) ||
+		pageSizes[ 0 ];
 	const [ signatureUrl, setSignatureUrl ] = useState( '' );
 	const [ logoUrl, setLogoUrl ] = useState( '' );
 
@@ -323,31 +355,16 @@ const AppearanceTab = ( { settings, updateSetting, settingsData } ) => {
 									'pressprimer-certificate'
 								) }
 								help={ __(
-									'The default page size for new certificates. Every starter template ships natively in both sizes.',
+									'The default page size for new certificates. Every starter template ships natively in Letter and A4.',
 									'pressprimer-certificate'
 								) }
 							>
 								<Segmented
-									value={
-										settings.appearance_page_size ||
-										'letter'
-									}
-									options={ [
-										{
-											label: __(
-												'Letter',
-												'pressprimer-certificate'
-											),
-											value: 'letter',
-										},
-										{
-											label: __(
-												'A4',
-												'pressprimer-certificate'
-											),
-											value: 'a4',
-										},
-									] }
+									value={ pageSizeValue }
+									options={ pageSizes.map( ( size ) => ( {
+										label: size.label,
+										value: size.value,
+									} ) ) }
 									onChange={ ( value ) =>
 										updateSetting(
 											'appearance_page_size',
@@ -498,6 +515,7 @@ const AppearanceTab = ( { settings, updateSetting, settingsData } ) => {
 						text={ settings.appearance_text_color || '' }
 						logoUrl={ logoUrl }
 						signatureUrl={ signatureUrl }
+						page={ page }
 					/>
 				</div>
 			</div>

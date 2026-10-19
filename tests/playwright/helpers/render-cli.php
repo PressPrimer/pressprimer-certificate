@@ -84,4 +84,6 @@ if ( ! rename( $ppcert_png, $argv[4] ) ) {
 	exit( 1 );
 }
 
-echo "ok\n";
+// The PHP peak (2.1): the A3 parity case checks the raster's memory
+// (Feature 2.1-003 TR-005). Imagick's own buffers are not counted.
+echo 'ok peak=' . memory_get_peak_usage( true ) . "\n";

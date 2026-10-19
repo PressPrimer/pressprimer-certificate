@@ -58,6 +58,8 @@ export interface RenderArgs {
 
 /**
  * Render a layout fixture to a PNG via the PHP CLI bridge.
+ *
+ * Returns the PHP peak memory of the render in bytes (2.1).
  * @param layoutPath
  * @param mergePath
  * @param args
@@ -68,8 +70,8 @@ export function renderPng(
 	mergePath: string,
 	args: RenderArgs,
 	outPath: string
-): void {
-	execFileSync(
+): number {
+	const out = execFileSync(
 		findPhp(),
 		[
 			path.join(
@@ -86,6 +88,10 @@ export function renderPng(
 		],
 		{ stdio: [ 'ignore', 'pipe', 'inherit' ] }
 	);
+
+	const peak = /peak=(\d+)/.exec( out.toString() );
+
+	return peak ? Number( peak[ 1 ] ) : 0;
 }
 
 export const PATHS = {

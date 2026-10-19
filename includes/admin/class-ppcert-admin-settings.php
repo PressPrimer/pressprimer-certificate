@@ -210,6 +210,19 @@ class PressPrimer_Certificate_Admin_Settings {
 			];
 		}
 
+		// The Appearance size toggle and preview shape (2.1): registry
+		// sizes in menu order, with landscape dimensions in points.
+		$page_sizes = [];
+
+		foreach ( PressPrimer_Certificate_Page_Sizes::all() as $key => $preset ) {
+			$page_sizes[] = [
+				'value'  => (string) $key,
+				'label'  => (string) $preset['label'],
+				'width'  => (int) $preset['landscape'][0],
+				'height' => (int) $preset['landscape'][1],
+			];
+		}
+
 		return [
 			'settings'          => PressPrimer_Certificate_REST_Settings_Controller::current_settings(),
 			'settingsTabs'      => $settings_tabs,
@@ -217,6 +230,7 @@ class PressPrimer_Certificate_Admin_Settings {
 			'pluginUrl'         => PPCERT_PLUGIN_URL,
 			'pages'             => $this->page_choices(),
 			'fonts'             => $fonts,
+			'pageSizes'         => $page_sizes,
 			'appearance'        => PressPrimer_Certificate_Appearance_Service::get(),
 			// Effective email templates: what actually sends today, so
 			// the fields never open empty.

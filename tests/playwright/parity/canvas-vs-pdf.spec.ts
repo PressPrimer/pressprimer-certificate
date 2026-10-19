@@ -405,6 +405,51 @@ for ( let pageNumber = 1; pageNumber <= MULTIPAGE_PAGES; pageNumber++ ) {
 }
 
 /**
+ * A3 and Legal (2.1, Feature 2.1-003 TR-004): each fixture is a starter
+ * after the Page panel's switch (the designer's own scaleElements()):
+ * Formal A4 to A3 landscape with its geometry and font sizes rounded to
+ * whole points like every other fixture, and Modern Letter to Legal
+ * portrait (whole points already) with a footer at the foot of the
+ * taller page. A3 landscape is 1191 pt wide - wider than the 1100 px
+ * viewport at 100% - so these cases widen the viewport; the page is
+ * still captured at 100% against the 144 DPI raster.
+ */
+test.describe( '2.1 page sizes', () => {
+	test.use( { viewport: { width: 1400, height: 900 } } );
+
+	for ( const slug of [ 'parity-a3-landscape', 'parity-legal-portrait' ] ) {
+		test( `${ slug }: canvas matches the PDF raster within parity thresholds`, async ( {
+			page,
+		} ) => {
+			const dir = tmpDir();
+			const { layout, layoutPath } = fixtureLayout( slug, dir );
+
+			await runParityCase( page, layout, layoutPath, dir );
+		} );
+	}
+
+	// TR-005: A3 at the production raster resolution (previews, share
+	// images, samples) stays well inside a shared host's memory limit.
+	test( 'parity-a3-landscape: the 150 DPI raster stays under 128 MB of PHP memory', () => {
+		const dir = tmpDir();
+		const { layoutPath } = fixtureLayout( 'parity-a3-landscape', dir );
+
+		const peak = renderPng(
+			layoutPath,
+			SAMPLES_PATH,
+			{ context: 'preview', dpi: 150, credential_id: CREDENTIAL },
+			path.join( dir, 'a3-150.png' )
+		);
+
+		expect( peak, 'render-cli reports its peak' ).toBeGreaterThan( 0 );
+		expect(
+			peak,
+			`PHP peak ${ ( peak / 1048576 ).toFixed( 1 ) } MB`
+		).toBeLessThan( 128 * 1048576 );
+	} );
+} );
+
+/**
  * Addon font contract fixtures (2.0, Feature 2.0-006 / Educator E-001).
  *
  * 'Uploaded': a custom-slug family registered exactly as an Educator

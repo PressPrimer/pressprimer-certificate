@@ -377,7 +377,15 @@
 }
 
 .ppcert-appearance-preview__page {
+
+	/* The default size's shape is set inline (2.1); A4 until then. The
+	 * sample scales with the box width (container units below) so the
+	 * content never stretches the box off its shape. */
 	aspect-ratio: 842 / 595;
+	box-sizing: border-box;
+	container-type: inline-size;
+	min-height: 0;
+	overflow: hidden;
 	background: #fdfcf8;
 	border: 3px solid #b8860b;
 	border-radius: 2px;
@@ -387,7 +395,9 @@
 }
 
 .ppcert-appearance-preview__inner {
+	box-sizing: border-box;
 	height: 100%;
+	font-size: clamp(6px, 2.3cqw, 14px);
 	border: 1px solid #b8860b;
 	display: flex;
 	flex-direction: column;
@@ -443,7 +453,7 @@
 }
 
 .ppcert-appearance-preview__signature-image {
-	max-height: 34px;
+	max-height: 2.4em;
 	max-width: 80%;
 	object-fit: contain;
 	margin-bottom: 2px;

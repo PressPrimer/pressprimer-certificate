@@ -764,8 +764,11 @@ export const CUSTOM_PAGE_MAX_PT = 1728;
  * Uniform scale by the smaller axis ratio - never distorting element
  * aspect - then the scaled design centers on the new page (Ryan's
  * Award-tab review, 2026-07-22). Font sizes, stroke widths, and corner
- * radii scale with the boxes. With identical or missing dimensions the
- * elements only re-clamp to the new page.
+ * radii scale with the boxes, held to the validator's ranges (font 6-200,
+ * stroke 0-20, radius 0-100; the upper limits are 2.1, Feature 2.1-003
+ * FR-002) so what the canvas shows after a jump to A3 is what saves.
+ * With identical or missing dimensions the elements only re-clamp to the
+ * new page.
  *
  * @param {Array}  elements Elements.
  * @param {Object} fromPage { width, height } in points.
@@ -794,19 +797,18 @@ export function scaleElements( elements, fromPage, toPage ) {
 	const offsetX = ( toPage.width - oldWidth * scale ) / 2;
 	const offsetY = ( toPage.height - oldHeight * scale ) / 2;
 
-	const scaleProp = ( value, min ) =>
+	const scaleProp = ( value, min, max ) =>
 		'number' === typeof value
-			? Math.max( min, roundPt( value * scale ) )
+			? clamp( roundPt( value * scale ), min, max )
 			: value;
 
 	return elements.map( ( element ) => {
 		const raw = element.props || {};
 		const props = {
 			...raw,
-			// Validator floor for font_size is 6pt.
-			font_size: scaleProp( raw.font_size, 6 ),
-			stroke_width: scaleProp( raw.stroke_width, 0 ),
-			radius: scaleProp( raw.radius, 0 ),
+			font_size: scaleProp( raw.font_size, 6, 200 ),
+			stroke_width: scaleProp( raw.stroke_width, 0, 20 ),
+			radius: scaleProp( raw.radius, 0, 100 ),
 		};
 
 		// Only carry keys the element actually had.
