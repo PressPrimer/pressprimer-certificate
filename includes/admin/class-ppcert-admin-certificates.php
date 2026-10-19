@@ -366,6 +366,18 @@ class PressPrimer_Certificate_Admin_Certificates {
 		echo '<p class="description ppcert-certificates-search-help">'
 			. esc_html__( 'Search matches recipient name or email, a full credential ID, and certificate titles.', 'pressprimer-certificate' )
 			. '</p>';
+		// "Select all matching" context for ppcert-admin.js (2.1): only
+		// for users with bulk actions.
+		if ( current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES )
+			&& [] !== array_filter(
+				PressPrimer_Certificate_Bulk_Action_Service::ACTIONS,
+				static function ( $bulk_action ) {
+					return PressPrimer_Certificate_Certificate::user_can_bulk_manage( get_current_user_id(), $bulk_action );
+				}
+			) ) {
+			echo '<div id="ppcert-bulk-context" hidden data-ppcert-context="' . esc_attr( (string) wp_json_encode( $list_table->bulk_context() ) ) . '"></div>';
+		}
+
 		$list_table->display();
 		echo '</form>';
 

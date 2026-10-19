@@ -1313,6 +1313,22 @@ if ( ! function_exists( 'register_rest_route' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_date' ) ) {
+	/**
+	 * Stub: format a timestamp (UTC in tests).
+	 *
+	 * @param string $format    Date format.
+	 * @param int    $timestamp Unix timestamp.
+	 * @param mixed  $timezone  Ignored (UTC).
+	 * @return string
+	 */
+	function wp_date( $format, $timestamp = null, $timezone = null ) {
+		unset( $timezone );
+
+		return gmdate( (string) $format, null === $timestamp ? time() : (int) $timestamp );
+	}
+}
+
 if ( ! class_exists( 'WP_List_Table' ) ) {
 	/**
 	 * Stub: the parts of WP_List_Table the plugin's list tables use

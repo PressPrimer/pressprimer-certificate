@@ -37,6 +37,14 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	const PER_PAGE = 20;
 
 	/**
+	 * The filtered total of the last prepare_items()
+	 *
+	 * @since 2.1.0
+	 * @var int
+	 */
+	private $list_total = 0;
+
+	/**
 	 * Constructor
 	 *
 	 * @since 1.0.0
@@ -128,6 +136,137 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * The list filters from the request, as the query applies them
+	 *
+	 * One source for the list query and the bulk actions' "all
+	 * matching" set (2.1, Feature 2.1-002 FR-002), so the two always
+	 * agree. Values are sanitized here and again in the model.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return array template_id, status, source_type, search,
+	 *               issued_after, issued_before.
+	 */
+	public function current_filters() {
+		$status = $this->request_filter( 'status' );
+		$dates  = [];
+
+		foreach ( [ 'issued_after', 'issued_before' ] as $key ) {
+			$value         = $this->request_filter( $key );
+			$dates[ $key ] = preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ? $value : '';
+		}
+
+		return [
+			'template_id'   => absint( $this->request_filter( 'template_id' ) ),
+			'status'        => in_array( $status, [ 'issued', 'revoked', 'expired' ], true ) ? $status : '',
+			'source_type'   => sanitize_key( $this->request_filter( 'source_type' ) ),
+			'search'        => $this->request_filter( 's' ),
+			'issued_after'  => $dates['issued_after'],
+			'issued_before' => $dates['issued_before'],
+		];
+	}
+
+	/**
+	 * What ppcert-admin.js needs for "select all matching" (2.1,
+	 * Feature 2.1-002 FR-002)
+	 *
+	 * The list's own filtered total, the total the user's bulk scope
+	 * reaches (smaller for a School owner whose list also shows their
+	 * own awards from other organizations), the filters, and the
+	 * criteria in words for the banner tooltip and the confirmation.
+	 * Call after prepare_items().
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return array
+	 */
+	public function bulk_context() {
+		$user_id    = get_current_user_id();
+		$filters    = $this->current_filters();
+		$bulk_scope = PressPrimer_Certificate_Certificate::bulk_scope( $user_id );
+		$bulk_total = $this->list_total;
+
+		if ( $bulk_scope !== PressPrimer_Certificate_Certificate::scope_for( $user_id ) ) {
+			$bulk_total = (int) PressPrimer_Certificate_Certificate::query(
+				array_merge(
+					$filters,
+					[
+						'scope'    => $bulk_scope,
+						'per_page' => 1,
+					]
+				)
+			)['total'];
+		}
+
+		return [
+			'total'     => $this->list_total,
+			'bulkTotal' => $bulk_total,
+			'filters'   => $filters,
+			'criteria'  => $this->criteria_summary( $filters ),
+			'note'      => '' !== $filters['search']
+				? __( 'Name and email searches match the first 100 people found.', 'pressprimer-certificate' )
+				: '',
+		];
+	}
+
+	/**
+	 * The active filters in words ("Template: Safety Basics", ...)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $filters current_filters().
+	 * @return string[] One entry per active filter; "All certificates"
+	 *                  when none.
+	 */
+	public function criteria_summary( array $filters ) {
+		$parts = [];
+
+		if ( $filters['template_id'] > 0 ) {
+			$template = PressPrimer_Certificate_Template::get( $filters['template_id'] );
+			/* translators: %s: template title. */
+			$parts[] = sprintf( __( 'Template: %s', 'pressprimer-certificate' ), $template ? (string) $template->title : '#' . $filters['template_id'] );
+		}
+
+		if ( '' !== $filters['status'] ) {
+			$statuses = [
+				'issued'  => __( 'Issued', 'pressprimer-certificate' ),
+				'revoked' => __( 'Revoked', 'pressprimer-certificate' ),
+				'expired' => __( 'Expired', 'pressprimer-certificate' ),
+			];
+			/* translators: %s: status label. */
+			$parts[] = sprintf( __( 'Status: %s', 'pressprimer-certificate' ), $statuses[ $filters['status'] ] );
+		}
+
+		if ( '' !== $filters['source_type'] ) {
+			$sources = self::source_options( $filters['source_type'] );
+			/* translators: %s: source label. */
+			$parts[] = sprintf( __( 'Source: %s', 'pressprimer-certificate' ), $sources[ $filters['source_type'] ] );
+		}
+
+		if ( '' !== $filters['search'] ) {
+			/* translators: %s: search term. */
+			$parts[] = sprintf( __( 'Search: "%s"', 'pressprimer-certificate' ), $filters['search'] );
+		}
+
+		$day = static function ( $ymd ) {
+			return wp_date( get_option( 'date_format' ), (int) strtotime( $ymd . ' 12:00:00 UTC' ), new DateTimeZone( 'UTC' ) );
+		};
+
+		if ( '' !== $filters['issued_after'] && '' !== $filters['issued_before'] ) {
+			/* translators: 1: first issued date, 2: last issued date. */
+			$parts[] = sprintf( __( 'Issued %1$s to %2$s', 'pressprimer-certificate' ), $day( $filters['issued_after'] ), $day( $filters['issued_before'] ) );
+		} elseif ( '' !== $filters['issued_after'] ) {
+			/* translators: %s: first issued date. */
+			$parts[] = sprintf( __( 'Issued on or after %s', 'pressprimer-certificate' ), $day( $filters['issued_after'] ) );
+		} elseif ( '' !== $filters['issued_before'] ) {
+			/* translators: %s: last issued date. */
+			$parts[] = sprintf( __( 'Issued on or before %s', 'pressprimer-certificate' ), $day( $filters['issued_before'] ) );
+		}
+
+		return [] === $parts ? [ __( 'All certificates', 'pressprimer-certificate' ) ] : $parts;
+	}
+
+	/**
 	 * Read a sanitized filter value from the request
 	 *
 	 * Display-only routing: capability enforcement happened at the
@@ -154,19 +293,17 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 		$page = max( 1, $this->get_pagenum() );
 
 		$result = PressPrimer_Certificate_Certificate::query(
-			[
-				'template_id'   => absint( $this->request_filter( 'template_id' ) ),
-				'status'        => $this->request_filter( 'status' ),
-				'source_type'   => $this->request_filter( 'source_type' ),
-				'search'        => $this->request_filter( 's' ),
-				'issued_after'  => $this->request_filter( 'issued_after' ),
-				'issued_before' => $this->request_filter( 'issued_before' ),
-				'page'          => $page,
-				'per_page'      => self::PER_PAGE,
-			]
+			array_merge(
+				$this->current_filters(),
+				[
+					'page'     => $page,
+					'per_page' => self::PER_PAGE,
+				]
+			)
 		);
 
-		$this->items = $result['items'];
+		$this->items      = $result['items'];
+		$this->list_total = (int) $result['total'];
 
 		$this->set_pagination_args(
 			[

@@ -17,7 +17,10 @@
  *   data-ppcert-input-name   Query argument name for the input value.
  *
  * 2.1 (Feature 2.1-002): the Certificates list's Bulk actions. The
- * Apply buttons are intercepted for the ppcert-bulk-* actions; the
+ * Apply buttons are intercepted for the ppcert-bulk-* actions (core
+ * forwards the bottom Apply to the top one and keeps the two menus in
+ * sync); a banner offers every certificate matching the filters once
+ * the whole page is checked; the
  * house modal confirms, then the open page drives the REST job one
  * request at a time with a progress bar, a Cancel button, and a
  * summary. The resume notice's Resume and Discard buttons continue or
@@ -251,6 +254,184 @@
 			);
 			$( document ).on( 'click', '.ppcert-bulk-resume', this.onResume );
 			$( document ).on( 'click', '.ppcert-bulk-discard', this.onDiscard );
+
+			// "Select all matching" (FR-002): the banner follows the
+			// checkboxes; core's select-all sets them without change events.
+			this.context = this.readContext();
+			this.allMatching = false;
+
+			if ( this.context ) {
+				$( document ).on(
+					'click change',
+					'.wp-list-table .check-column input[type="checkbox"]',
+					function () {
+						setTimeout( PPCert.updateBanner, 0 );
+					}
+				);
+				$( document ).on(
+					'click',
+					'.ppcert-bulk-select-all',
+					this.onSelectAll
+				);
+				$( document ).on(
+					'click',
+					'.ppcert-bulk-clear',
+					this.onClearSelection
+				);
+			}
+		},
+
+		/**
+		 * The list's bulk context (totals, filters, criteria), or null.
+		 *
+		 * @return {Object|null} Context.
+		 */
+		readContext() {
+			const raw = $( '#ppcert-bulk-context' ).attr(
+				'data-ppcert-context'
+			);
+
+			if ( ! raw ) {
+				return null;
+			}
+
+			try {
+				return JSON.parse( raw );
+			} catch ( error ) {
+				return null;
+			}
+		},
+
+		/**
+		 * Show, update, or remove the select-all banner.
+		 */
+		updateBanner() {
+			const ctx = PPCert.context;
+			const $rows = $( 'input[name="certificate[]"]' );
+			const allChecked =
+				$rows.length > 0 &&
+				$rows.filter( ':checked' ).length === $rows.length;
+
+			if ( ! allChecked ) {
+				PPCert.allMatching = false;
+			}
+
+			$( '.ppcert-bulk-banner' ).remove();
+
+			if (
+				! allChecked ||
+				ctx.total <= $rows.length ||
+				ctx.bulkTotal < 1
+			) {
+				return;
+			}
+
+			let html;
+
+			if ( PPCert.allMatching ) {
+				html =
+					PPCert.escapeHtml(
+						sprintf(
+							/* translators: %s: number of certificates. */
+							_n(
+								'All %s certificate that matches these filters is selected.',
+								'All %s certificates that match these filters are selected.',
+								ctx.bulkTotal,
+								'pressprimer-certificate'
+							),
+							fmt( ctx.bulkTotal )
+						)
+					) +
+					' <button type="button" class="button-link ppcert-bulk-clear">' +
+					PPCert.escapeHtml(
+						__( 'Clear selection.', 'pressprimer-certificate' )
+					) +
+					'</button>';
+			} else {
+				const link =
+					ctx.bulkTotal === ctx.total
+						? sprintf(
+								/* translators: %s: number of certificates. */
+								_n(
+									'Select all %s certificate that matches these filters.',
+									'Select all %s certificates that match these filters.',
+									ctx.bulkTotal,
+									'pressprimer-certificate'
+								),
+								fmt( ctx.bulkTotal )
+						  )
+						: sprintf(
+								/* translators: %s: number of certificates. */
+								_n(
+									'Select all %s certificate you can manage that matches these filters.',
+									'Select all %s certificates you can manage that match these filters.',
+									ctx.bulkTotal,
+									'pressprimer-certificate'
+								),
+								fmt( ctx.bulkTotal )
+						  );
+
+				html =
+					PPCert.escapeHtml(
+						sprintf(
+							/* translators: %s: number of certificates. */
+							_n(
+								'All %s certificate on this page is selected.',
+								'All %s certificates on this page are selected.',
+								$rows.length,
+								'pressprimer-certificate'
+							),
+							fmt( $rows.length )
+						)
+					) +
+					' <button type="button" class="button-link ppcert-bulk-select-all">' +
+					PPCert.escapeHtml( link ) +
+					'</button>';
+			}
+
+			$(
+				'<div class="notice notice-info inline ppcert-bulk-banner" role="status"><p>' +
+					html +
+					'</p></div>'
+			)
+				.attr( 'title', PPCert.criteriaText() )
+				.insertBefore( 'table.wp-list-table' );
+		},
+
+		/**
+		 * The active criteria in words, one per line.
+		 *
+		 * @return {string} Criteria.
+		 */
+		criteriaText() {
+			const ctx = PPCert.context || {};
+			const lines = ( ctx.criteria || [] ).slice();
+
+			if ( ctx.note ) {
+				lines.push( ctx.note );
+			}
+
+			return lines.join( '\n' );
+		},
+
+		/**
+		 * Switch the selection to every matching certificate.
+		 */
+		onSelectAll() {
+			PPCert.allMatching = true;
+			PPCert.updateBanner();
+		},
+
+		/**
+		 * Clear the selection entirely.
+		 */
+		onClearSelection() {
+			PPCert.allMatching = false;
+			$( '.wp-list-table .check-column input[type="checkbox"]' ).prop(
+				'checked',
+				false
+			);
+			$( '.ppcert-bulk-banner' ).remove();
 		},
 
 		/**
@@ -285,8 +466,9 @@
 					return parseInt( this.value, 10 );
 				} )
 				.get();
+			const matching = PPCert.allMatching && PPCert.context;
 
-			if ( ! ids.length ) {
+			if ( ! ids.length && ! matching ) {
 				PPCert.confirm( {
 					title: copy.title,
 					message: __(
@@ -300,22 +482,48 @@
 			}
 
 			const notes = ( window.ppcert_bulk_data || {} ).notes || {};
+			const count = matching ? PPCert.context.bulkTotal : ids.length;
+			let message =
+				copy.message( count ) +
+				( notes[ action ] ? ' ' + notes[ action ] : '' );
+
+			if ( matching ) {
+				message +=
+					'\n\n' +
+					__( 'Matching:', 'pressprimer-certificate' ) +
+					'\n' +
+					PPCert.criteriaText();
+			}
+
+			// Deleting everything that matches is typed (FR-003).
+			const typed = matching && 'delete' === action;
 
 			PPCert.confirm( {
 				title: copy.title,
-				message:
-					copy.message( ids.length ) +
-					( notes[ action ] ? ' ' + notes[ action ] : '' ),
+				message,
 				confirmText: copy.confirm,
 				cancelText: __( 'Cancel', 'pressprimer-certificate' ),
 				inputLabel: copy.input || '',
-				onConfirm( reason ) {
-					const progress = PPCert.progress( action, ids.length );
+				typedConfirm: typed ? 'DELETE' : '',
+				typedLabel: __(
+					'Type DELETE to confirm.',
+					'pressprimer-certificate'
+				),
+				onConfirm( reason, confirmText ) {
+					const progress = PPCert.progress( action, count );
+					const data = matching
+						? {
+								action,
+								filters: PPCert.context.filters,
+								reason,
+								confirm: confirmText,
+						  }
+						: { action, ids, reason };
 
 					wp.apiFetch( {
 						path: '/ppcert/v1/certificates/bulk',
 						method: 'POST',
-						data: { action, ids, reason },
+						data,
 					} )
 						.then( ( job ) => PPCert.runJob( job, progress ) )
 						.catch( ( error ) => progress.fail( error ) );
@@ -640,7 +848,9 @@
 		 * Show the confirmation modal.
 		 *
 		 * @param {Object} options Title, message, labels, callbacks;
-		 *                         hideCancel for a single OK button.
+		 *                         hideCancel for a single OK button;
+		 *                         typedConfirm (+ typedLabel) for a word
+		 *                         the user must type to enable confirm.
 		 * @return {Object} The modal element (jQuery wrapped).
 		 */
 		confirm( options ) {
@@ -675,6 +885,12 @@
 					  '</label>' +
 					  '<input type="text" id="ppcert-modal-input" class="ppcert-modal-input" maxlength="191" />'
 					: '' ) +
+				( options.typedConfirm
+					? '<label class="ppcert-modal-input-label" for="ppcert-modal-typed">' +
+					  self.escapeHtml( options.typedLabel ) +
+					  '</label>' +
+					  '<input type="text" id="ppcert-modal-typed" class="ppcert-modal-input ppcert-modal-typed" autocomplete="off" spellcheck="false" />'
+					: '' ) +
 				'</div>' +
 				'<div class="ppcert-modal-footer">' +
 				( options.hideCancel
@@ -697,11 +913,27 @@
 				$modal.addClass( 'ppcert-modal-overlay--visible' );
 			}, 10 );
 
-			// Focus the input when present, else the confirm button.
-			if ( options.inputLabel ) {
-				$modal.find( '.ppcert-modal-input' ).trigger( 'focus' );
+			const $confirm = $modal.find( '.ppcert-modal-confirm' );
+			const $typed = $modal.find( '.ppcert-modal-typed' );
+
+			// A typed confirmation keeps the button disabled until the
+			// field matches exactly.
+			if ( options.typedConfirm ) {
+				$confirm.prop( 'disabled', true );
+				$typed.on( 'input', function () {
+					$confirm.prop(
+						'disabled',
+						String( $typed.val() || '' ).trim() !==
+							options.typedConfirm
+					);
+				} );
+			}
+
+			// Focus the first input when present, else the confirm button.
+			if ( options.inputLabel || options.typedConfirm ) {
+				$modal.find( '.ppcert-modal-input' ).first().trigger( 'focus' );
 			} else {
-				$modal.find( '.ppcert-modal-confirm' ).trigger( 'focus' );
+				$confirm.trigger( 'focus' );
 			}
 
 			const close = function () {
@@ -713,10 +945,15 @@
 			};
 
 			$modal.on( 'click', '.ppcert-modal-confirm', function () {
-				const value = $modal.find( '.ppcert-modal-input' ).val() || '';
+				if ( $( this ).prop( 'disabled' ) ) {
+					return;
+				}
+
+				const value = $modal.find( '#ppcert-modal-input' ).val() || '';
+				const typedValue = String( $typed.val() || '' ).trim();
 				close();
 				if ( typeof options.onConfirm === 'function' ) {
-					options.onConfirm( value );
+					options.onConfirm( value, typedValue );
 				}
 			} );
 

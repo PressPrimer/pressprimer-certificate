@@ -3,7 +3,8 @@
  * Bulk certificate actions REST controller
  *
  * The Certificates screen's bulk actions (Feature 2.1-002 TR-004):
- * create a job from the checked rows, run it chunk by chunk from the
+ * create a job from the checked rows or from every certificate matching
+ * the list filters, run it chunk by chunk from the
  * open page, read its status, and cancel or discard it. Every route
  * needs the bulk permission check for the action; run, status, and
  * delete also need the job to be the caller's own.
@@ -56,16 +57,15 @@ class PressPrimer_Certificate_REST_Bulk_Controller {
 				'callback'            => [ $this, 'create_job' ],
 				'permission_callback' => [ $this, 'can_create' ],
 				'args'                => [
-					'action' => [
+					'action'  => [
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_key',
 						'validate_callback' => [ $this, 'validate_action' ],
 					],
-					'ids'    => [
-						'required'          => true,
-						'validate_callback' => [ $this, 'validate_ids' ],
-					],
-					'reason' => [ 'sanitize_callback' => 'sanitize_text_field' ],
+					'ids'     => [ 'validate_callback' => [ $this, 'validate_ids' ] ],
+					'filters' => [ 'validate_callback' => [ $this, 'validate_filters' ] ],
+					'reason'  => [ 'sanitize_callback' => 'sanitize_text_field' ],
+					'confirm' => [ 'sanitize_callback' => 'sanitize_text_field' ],
 				],
 			]
 		);
@@ -158,7 +158,59 @@ class PressPrimer_Certificate_REST_Bulk_Controller {
 	}
 
 	/**
-	 * POST /certificates/bulk - confirm a job for the checked rows
+	 * Validate the filters object: GET /certificates' names and rules
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $value Parameter value.
+	 * @return bool
+	 */
+	public function validate_filters( $value ) {
+		if ( ! is_array( $value ) ) {
+			return false;
+		}
+
+		$list = new PressPrimer_Certificate_REST_Certificates_Controller();
+
+		foreach ( $value as $key => $filter ) {
+			switch ( $key ) {
+				case 'template_id':
+					$valid = is_numeric( $filter ) || '' === $filter;
+					break;
+
+				case 'status':
+					$valid = $list->validate_status_filter( $filter );
+					break;
+
+				case 'issued_after':
+				case 'issued_before':
+					$valid = $list->validate_filter_date( $filter );
+					break;
+
+				case 'source_type':
+				case 'search':
+					$valid = is_string( $filter );
+					break;
+
+				default:
+					$valid = false;
+			}
+
+			if ( ! $valid ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * POST /certificates/bulk - confirm a job
+	 *
+	 * Either the checked rows (`ids`) or every certificate matching the
+	 * list filters (`filters`, resolved now with the user's bulk scope:
+	 * the set is fixed at confirmation, FR-004). Deleting everything
+	 * that matches needs the typed confirmation `confirm: DELETE`.
 	 *
 	 * @since 2.1.0
 	 *
@@ -166,19 +218,83 @@ class PressPrimer_Certificate_REST_Bulk_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function create_job( $request ) {
-		$ids = array_map( 'intval', (array) $request->get_param( 'ids' ) );
+		$user_id = get_current_user_id();
+		$action  = (string) $request->get_param( 'action' );
+		$ids     = $request->get_param( 'ids' );
+		$filters = $request->get_param( 'filters' );
+
+		if ( null !== $ids && null !== $filters ) {
+			return new WP_Error( 'ppcert_bulk_ambiguous', __( 'Send either the selected certificates or the filters, not both.', 'pressprimer-certificate' ), [ 'status' => 400 ] );
+		}
+
+		$criteria = [ 'type' => 'selected' ];
+
+		if ( null !== $filters ) {
+			$filters = $this->clean_filters( (array) $filters );
+
+			if ( '' !== $filters['issued_after'] && '' !== $filters['issued_before'] && $filters['issued_after'] > $filters['issued_before'] ) {
+				return new WP_Error(
+					'ppcert_invalid_date_range',
+					__( 'The issued-date range is reversed: the from date is after the to date.', 'pressprimer-certificate' ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			if ( 'delete' === $action && ! hash_equals( 'DELETE', (string) $request->get_param( 'confirm' ) ) ) {
+				return new WP_Error( 'ppcert_bulk_confirm_required', __( 'Type DELETE to confirm.', 'pressprimer-certificate' ), [ 'status' => 400 ] );
+			}
+
+			// One past the cap, so the service can refuse an oversized set.
+			$ids = PressPrimer_Certificate_Certificate::query_ids(
+				$filters,
+				PressPrimer_Certificate_Certificate::bulk_scope( $user_id ),
+				PressPrimer_Certificate_Bulk_Action_Service::max_items() + 1
+			);
+
+			if ( empty( $ids ) ) {
+				return new WP_Error( 'ppcert_bulk_empty', __( 'No certificates match these filters.', 'pressprimer-certificate' ), [ 'status' => 400 ] );
+			}
+
+			$criteria = [
+				'type'    => 'filters',
+				'filters' => $filters,
+			];
+		}
 
 		$job = PressPrimer_Certificate_Bulk_Action_Service::create(
-			get_current_user_id(),
-			(string) $request->get_param( 'action' ),
-			$ids,
+			$user_id,
+			$action,
+			array_map( 'intval', (array) $ids ),
 			[
 				'reason'   => (string) $request->get_param( 'reason' ),
-				'criteria' => [ 'type' => 'selected' ],
+				'criteria' => $criteria,
 			]
 		);
 
 		return is_wp_error( $job ) ? $job : new WP_REST_Response( $job, 201 );
+	}
+
+	/**
+	 * Sanitize a validated filters object to the list's six filters
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $filters Raw filters.
+	 * @return array
+	 */
+	private function clean_filters( array $filters ) {
+		$text = static function ( $key ) use ( $filters ) {
+			return isset( $filters[ $key ] ) ? sanitize_text_field( (string) $filters[ $key ] ) : '';
+		};
+
+		return [
+			'template_id'   => isset( $filters['template_id'] ) ? absint( $filters['template_id'] ) : 0,
+			'status'        => $text( 'status' ),
+			'source_type'   => sanitize_key( $text( 'source_type' ) ),
+			'search'        => $text( 'search' ),
+			'issued_after'  => $text( 'issued_after' ),
+			'issued_before' => $text( 'issued_before' ),
+		];
 	}
 
 	/**

@@ -2,13 +2,14 @@
 /**
  * Bulk action tests (2.1)
  *
- * Exercises Feature 2.1-002 for selected rows: Certificate::query_ids()
+ * Exercises Feature 2.1-002: Certificate::query_ids()
  * against the list, the job lifecycle (create, run, cancel, resume),
  * per-row skips with reasons, the site lock and the one-run-per-job
  * guard, the explicit actor, the time budget, the stored bulk scope
  * and the per-certificate check (a School-style test consumer), the
- * bulk job actions, retention, the REST routes, and the list table's
- * checkbox column.
+ * bulk job actions, retention, the REST routes (selected rows, and
+ * filters with the typed DELETE and owner narrowing), and the list
+ * table's checkbox column, filters, and criteria.
  *
  * @package PressPrimer_Certificate
  * @subpackage Tests
@@ -88,6 +89,7 @@ class Test_Bulk_Actions extends TestCase {
 	 */
 	protected function tearDown(): void {
 		$GLOBALS['ppcert_test_mail_fail'] = '';
+		$_GET                             = [];
 		parent::tearDown();
 	}
 
@@ -756,6 +758,227 @@ class Test_Bulk_Actions extends TestCase {
 		// No bulk permission: the create route refuses.
 		add_filter( 'ppcert_user_can_bulk_manage_certificates', static fn() => false );
 		$this->assertFalse( $controller->can_create( $request ) );
+	}
+
+	/**
+	 * POST with filters: the set is the list's matching ids in the
+	 * user's bulk scope, fixed at confirmation, with the filters as the
+	 * criteria.
+	 *
+	 * @return void
+	 */
+	public function test_filter_jobs() {
+		$issuer_six = $this->seed_template( 6 );
+		$four       = $this->issue( 3 );
+		$six        = $this->issue( 2, $issuer_six );
+		PressPrimer_Certificate_Certificate::revoke( $four[0] );
+		PressPrimer_Certificate_Certificate::revoke( $six[0] );
+
+		$controller = new PressPrimer_Certificate_REST_Bulk_Controller();
+		$create     = static function ( array $params ) use ( $controller ) {
+			return $controller->create_job( new WP_REST_Request( $params ) );
+		};
+
+		$response = $create(
+			[
+				'action'  => 'reinstate',
+				'filters' => [ 'status' => 'revoked' ],
+			]
+		);
+		$this->assertSame( 201, $response->get_status() );
+		$job = $response->get_data();
+		$this->assertSame( 2, $job['total'] );
+		$this->assertSame(
+			[
+				'type'    => 'filters',
+				'filters' => [
+					'template_id'   => 0,
+					'status'        => 'revoked',
+					'source_type'   => '',
+					'search'        => '',
+					'issued_after'  => '',
+					'issued_before' => '',
+				],
+			],
+			$job['criteria']
+		);
+		PressPrimer_Certificate_Bulk_Action_Service::cancel( $job['id'], 1 );
+
+		// GET /certificates' validators and the reversed range.
+		$this->assertFalse( $controller->validate_filters( [ 'status' => 'pending' ] ) );
+		$this->assertFalse( $controller->validate_filters( [ 'issued_after' => '10/01/2026' ] ) );
+		$this->assertFalse( $controller->validate_filters( [ 'author' => 3 ] ), 'Unknown filters are refused' );
+		$this->assertFalse( $controller->validate_filters( 'status=revoked' ) );
+		$this->assertTrue( $controller->validate_filters( [ 'template_id' => '7', 'search' => 'Dana', 'issued_before' => '2026-10-01' ] ) );
+
+		$reversed = $create(
+			[
+				'action'  => 'revoke',
+				'filters' => [
+					'issued_after'  => '2026-10-02',
+					'issued_before' => '2026-10-01',
+				],
+			]
+		);
+		$this->assertSame( 'ppcert_invalid_date_range', $reversed->get_error_code() );
+
+		// Typed confirmation for delete-all-matching.
+		foreach ( [ null, '', 'delete', 'DELETE ', 'DELET' ] as $typed ) {
+			$params = [
+				'action'  => 'delete',
+				'filters' => [ 'template_id' => $issuer_six ],
+			];
+
+			if ( null !== $typed ) {
+				$params['confirm'] = $typed;
+			}
+
+			$this->assertSame( 'ppcert_bulk_confirm_required', $create( $params )->get_error_code(), wp_json_encode( $typed ) );
+		}
+
+		$this->assertNull( PressPrimer_Certificate_Bulk_Action_Service::lock_holder(), 'Refused deletes take no lock' );
+
+		$deleted = $create(
+			[
+				'action'  => 'delete',
+				'filters' => [ 'template_id' => $issuer_six ],
+				'confirm' => 'DELETE',
+			]
+		);
+		$this->assertSame( 2, $deleted->get_data()['total'] );
+		PressPrimer_Certificate_Bulk_Action_Service::run( $deleted->get_data()['id'], 1 );
+		$this->assertNull( PressPrimer_Certificate_Certificate::get( $six[1] ) );
+		$this->assertNotNull( PressPrimer_Certificate_Certificate::get( $four[1] ) );
+
+		// Nothing matching; ids and filters together; the cap.
+		$this->assertSame( 'ppcert_bulk_empty', $create( [ 'action' => 'revoke', 'filters' => [ 'search' => 'nobody-matches-this' ] ] )->get_error_code() );
+		$this->assertSame( 'ppcert_bulk_ambiguous', $create( [ 'action' => 'revoke', 'ids' => [ $four[1] ], 'filters' => [] ] )->get_error_code() );
+
+		add_filter( 'ppcert_bulk_max_items', static fn() => 2 );
+		$this->assertSame( 'Narrow your filters to 2 certificates or fewer.', $create( [ 'action' => 'revoke', 'filters' => [] ] )->get_error_message() );
+	}
+
+	/**
+	 * A School-style owner's filter job holds only their own issuer's
+	 * certificates, though the filters match more on the site and their
+	 * list also shows their own awards elsewhere.
+	 *
+	 * @return void
+	 */
+	public function test_filter_job_owner_narrowing() {
+		$issuer_six = $this->seed_template( 6 );
+		$four       = $this->issue( 2 );
+		$six        = $this->issue( 2, $issuer_six );
+
+		// Issued by the owner (user 2) from issuer 6: in their list scope
+		// (issued_by), not in their bulk scope.
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Certificate::table(), $six[0], [ 'issued_by' => 2 ] );
+
+		$this->school_style_owner();
+		$GLOBALS['ppcert_test_current_user'] = 2;
+
+		$response = ( new PressPrimer_Certificate_REST_Bulk_Controller() )->create_job(
+			new WP_REST_Request(
+				[
+					'action'  => 'delete',
+					'filters' => [],
+					'confirm' => 'DELETE',
+				]
+			)
+		);
+
+		$job = $response->get_data();
+		$this->assertSame( 2, $job['total'] );
+		$this->assertSame( $four, PressPrimer_Certificate_Bulk_Action_Service::get( $job['id'] )['ids'] );
+		$this->assertSame(
+			[
+				'issuer_ids' => [ 4 ],
+				'issued_by'  => 0,
+			],
+			$job['scope']
+		);
+	}
+
+	/**
+	 * The list table's filters, bulk context, and criteria in words.
+	 *
+	 * @return void
+	 */
+	public function test_list_table_bulk_context() {
+		$ids = $this->issue( 3 );
+		PressPrimer_Certificate_Certificate::revoke( $ids[0] );
+
+		$_GET = [
+			'template_id'   => (string) $this->template_id,
+			'status'        => 'revoked',
+			'source_type'   => 'manual',
+			's'             => 'Dana',
+			'issued_after'  => '2026-10-01',
+			'issued_before' => 'not-a-date',
+		];
+
+		$table = new PressPrimer_Certificate_Certificates_List_Table();
+		$table->prepare_items();
+		$context = $table->bulk_context();
+
+		$this->assertSame(
+			[
+				'template_id'   => $this->template_id,
+				'status'        => 'revoked',
+				'source_type'   => 'manual',
+				'search'        => 'Dana',
+				'issued_after'  => '2026-10-01',
+				'issued_before' => '',
+			],
+			$context['filters']
+		);
+		$this->assertSame(
+			[
+				'Template: Completion Certificate',
+				'Status: Revoked',
+				'Source: Manual',
+				'Search: "Dana"',
+				'Issued on or after October 1, 2026',
+			],
+			$context['criteria']
+		);
+		$this->assertStringContainsString( 'first 100 people', $context['note'] );
+		$this->assertSame( $context['total'], $context['bulkTotal'], 'Administrators: the bulk scope is the list scope' );
+
+		$_GET = [];
+		$this->assertSame( [ 'All certificates' ], ( new PressPrimer_Certificate_Certificates_List_Table() )->criteria_summary( ( new PressPrimer_Certificate_Certificates_List_Table() )->current_filters() ) );
+
+		// A School-style owner: their list also shows an award they made
+		// for issuer 6; the bulk total does not count it.
+		$issuer_six = $this->seed_template( 6 );
+		$elsewhere  = $this->issue( 1, $issuer_six );
+		$this->wpdb->mutate_row( PressPrimer_Certificate_Certificate::table(), $elsewhere[0], [ 'issued_by' => 2 ] );
+		add_filter(
+			'ppcert_certificate_scope',
+			static function () {
+				return [
+					'issuer_ids' => [ 4 ],
+					'issued_by'  => 2,
+				];
+			}
+		);
+		add_filter( 'ppcert_user_can_bulk_manage_certificates', static fn() => true );
+		add_filter(
+			'ppcert_bulk_certificate_scope',
+			static function () {
+				return [
+					'issuer_ids' => [ 4 ],
+					'issued_by'  => 0,
+				];
+			}
+		);
+
+		$owner_table = new PressPrimer_Certificate_Certificates_List_Table();
+		$owner_table->prepare_items();
+		$owner = $owner_table->bulk_context();
+
+		$this->assertSame( 4, $owner['total'] );
+		$this->assertSame( 3, $owner['bulkTotal'] );
 	}
 
 	/**

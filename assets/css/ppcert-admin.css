@@ -281,6 +281,10 @@ a.ant-btn-default:visited {
 	background: #fff;
 }
 
+.ppcert-modal-confirm:disabled {
+	cursor: not-allowed;
+}
+
 /* Bulk actions (2.1): the modal's progress state and summary. */
 .ppcert-modal-progress {
 	height: 8px;
@@ -317,6 +321,16 @@ a.ant-btn-default:visited {
 	max-height: 180px;
 	overflow-y: auto;
 	margin: 8px 0 0;
+}
+
+.ppcert-bulk-banner {
+	clear: both;
+	margin: 8px 0;
+}
+
+.ppcert-bulk-banner .button-link {
+	vertical-align: baseline;
+	text-decoration: underline;
 }
 
 .ppcert-bulk-resume-notice .button {

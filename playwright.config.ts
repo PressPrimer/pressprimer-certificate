@@ -7,7 +7,9 @@ import { defineConfig } from '@playwright/test';
  * drive the PHP renderer through a CLI bridge and compare rasters).
  * designer-canvas: browser specs against the standalone canvas harness
  * (tests/playwright/designer/harness — build with `npm run
- * build:harness` first; `npm run test:designer` does both). Phase 3
+ * build:harness` first; `npm run test:designer` does both).
+ * admin-screens: the Certificates screen's bulk actions on a static
+ * harness page (`npm run test:admin`). Phase 3
  * closes the canvas-vs-PDF parity loop on top of these projects
  * (Feature 007 FR-005 — a parity failure is a release blocker).
  */
@@ -36,6 +38,16 @@ export default defineConfig( {
 			use: {
 				browserName: 'chromium',
 				launchOptions: { args: RENDER_ARGS },
+			},
+		},
+		{
+			// The Certificates screen's bulk actions (2.1): the real
+			// ppcert-admin.js on a harness page (no WordPress needed).
+			name: 'admin-screens',
+			testMatch: /admin\/.*\.spec\.ts/,
+			use: {
+				browserName: 'chromium',
+				viewport: { width: 1280, height: 900 },
 			},
 		},
 		{
