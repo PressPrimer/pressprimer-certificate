@@ -506,27 +506,29 @@ function mirrorCandidates( el, pageSize ) {
  * @param {number} dy     Proposed delta y in points.
  * @param {Array}  others Other elements (excluded from dragging).
  * @param {Object} page   { width, height }.
+ * @param {number} margin The safe print margin in points (2.1: per page,
+ *                        see safeMargin.js; default 24).
  * @return {Object} { dx, dy, guides }. Guides: { axis: 'v'|'h', at,
  *                  kind: 'align' } or { axis, at, kind: 'mirror',
  *                  margin, side: 'leading'|'trailing', partnerCross }.
  */
-export function snapDrag( box, dx, dy, others, page ) {
+export function snapDrag( box, dx, dy, others, page, margin = SAFE_MARGIN_PT ) {
 	const guides = [];
 
 	// Page structure targets (the Canva set): edges, the drawn
 	// safe-print margin, and the center lines.
 	const targetsX = [
 		0,
-		SAFE_MARGIN_PT,
+		margin,
 		page.width / 2,
-		page.width - SAFE_MARGIN_PT,
+		page.width - margin,
 		page.width,
 	];
 	const targetsY = [
 		0,
-		SAFE_MARGIN_PT,
+		margin,
 		page.height / 2,
-		page.height - SAFE_MARGIN_PT,
+		page.height - margin,
 		page.height,
 	];
 

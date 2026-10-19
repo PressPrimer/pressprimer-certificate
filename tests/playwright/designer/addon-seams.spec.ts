@@ -4,7 +4,8 @@
  * The page panel seams Educator's custom sizes and wallet cards build
  * on (resizePage, the Size-menu filter, the custom-size slot, small-page
  * zoom), the history seam (attachHistoryState + historyState on undo and
- * redo), scaleElements, and the image quick picks.
+ * redo), scaleElements, the image quick picks, and the safe margin
+ * filter (Educator's 1/8 in card margin).
  */
 import { test, expect, type Page } from '@playwright/test';
 import * as path from 'path';
@@ -125,6 +126,92 @@ test.describe( 'addon seams', () => {
 			[ 'redo', { pages: 'before-resize' } ],
 		] );
 		expect( events[ events.length - 1 ] ).toEqual( [ null, null ] );
+	} );
+
+	test( 'the safe margin follows ppcert.designer.safeMargin: the dashed line, snapping, and the Page panel note', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		const guide = page.locator( '.ppcert-designer__safe-margin' );
+		await expect( guide ).toHaveAttribute(
+			'data-ppcert-safe-margin',
+			'24'
+		);
+		await expect(
+			page.locator( '[data-ppcert-safe-margin-help]' )
+		).toBeVisible();
+
+		await page.evaluate( () => {
+			const harness = ( window as any ).__ppcertHarness;
+			harness.addFilter(
+				'ppcert.designer.safeMargin',
+				'ppcert-test',
+				() => 30
+			);
+			// Re-render the canvas.
+			const api = ( window as any ).ppcert_designer_api;
+			api.replaceLayout(
+				JSON.parse( JSON.stringify( api.getLayout() ) )
+			);
+		} );
+
+		await expect( guide ).toHaveAttribute(
+			'data-ppcert-safe-margin',
+			'30'
+		);
+		expect(
+			await guide.evaluate( ( el ) => window.getComputedStyle( el ).top )
+		).toBe( '30px' );
+
+		// A drag that would leave the title's left edge at 29 pt locks
+		// onto the filtered margin (24 pt is beyond the 4 pt tolerance).
+		const { x, scale } = await page.evaluate( () => {
+			const api = ( window as any ).ppcert_designer_api;
+			const title = api
+				.getLayout()
+				.elements.find( ( el: any ) => 'el_frmtitle' === el.id );
+			const node = document.querySelector(
+				'[data-ppcert-canvas-scale]'
+			) as HTMLElement;
+
+			return {
+				x: title.x,
+				scale: Number( node.dataset.ppcertCanvasScale ),
+			};
+		} );
+
+		const box = await page
+			.locator( '[data-ppcert-el="el_frmtitle"]' )
+			.boundingBox();
+		const from = {
+			x: Math.round( box!.x + box!.width / 2 ),
+			y: Math.round( box!.y + box!.height / 2 ),
+		};
+
+		await page.mouse.move( from.x, from.y );
+		await page.mouse.down();
+		await page.mouse.move( from.x + ( 29 - x ) * scale, from.y, {
+			steps: 8,
+		} );
+		await expect( page.locator( '[data-ppcert-guide="v"]' ) ).toBeVisible();
+		await page.mouse.up();
+
+		expect(
+			await page.evaluate(
+				() =>
+					( window as any ).ppcert_designer_api
+						.getLayout()
+						.elements.find( ( el: any ) => 'el_frmtitle' === el.id )
+						.x
+			)
+		).toBe( 30 );
+
+		await page.evaluate( () =>
+			( window as any ).__ppcertHarness.removeAllFilters(
+				'ppcert.designer.safeMargin'
+			)
+		);
 	} );
 
 	test( 'scaleElements is the Page panel geometry', async ( { page } ) => {

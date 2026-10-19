@@ -210,6 +210,18 @@ export default function PageSection() {
 				) }
 			</Text>
 
+			{ /* What the dashed line is (2.1): a guide, not a clip. */ }
+			<Text
+				type="secondary"
+				className="ppcert-designer__page-info"
+				data-ppcert-safe-margin-help
+			>
+				{ __(
+					"Keep text and logos inside the dashed line so printing doesn't cut them off.",
+					'pressprimer-certificate'
+				) }
+			</Text>
+
 			<PropRow label={ __( 'Background', 'pressprimer-certificate' ) }>
 				<ColorField
 					value={ background.color || '' }

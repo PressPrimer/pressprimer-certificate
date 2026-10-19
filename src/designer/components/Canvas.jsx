@@ -36,10 +36,10 @@ import {
 	resizeBox,
 	resizeElement,
 	reorderElement,
-	SAFE_MARGIN_PT,
 	SMALL_PAGE_PT,
 	snapDrag,
 } from '../schema/geometry';
+import { safeMargin } from '../safeMargin';
 import Ruler, { RULER_PX } from './Ruler';
 
 const DRAG_THRESHOLD_PX = 3;
@@ -145,7 +145,8 @@ export default function Canvas( { layout, zoom, rulers = true } ) {
 								dx,
 								dy,
 								others,
-								layout.page
+								layout.page,
+								safeMargin( layout.page )
 							);
 							dx = snapped.dx;
 							dy = snapped.dy;
@@ -623,7 +624,8 @@ export default function Canvas( { layout, zoom, rulers = true } ) {
 				>
 					<div
 						className="ppcert-designer__safe-margin"
-						style={ { inset: SAFE_MARGIN_PT } }
+						data-ppcert-safe-margin={ safeMargin( layout.page ) }
+						style={ { inset: safeMargin( layout.page ) } }
 					/>
 
 					{ ordered.map( ( element ) => {
