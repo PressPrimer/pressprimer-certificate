@@ -1646,6 +1646,20 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
+	 * Every certificate on the site, unscoped (2.1: the review prompt's
+	 * threshold counts the site, not the viewer)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return int
+	 */
+	public static function count_site() {
+		global $wpdb;
+
+		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', self::table() ) );
+	}
+
+	/**
 	 * Count certificates issued on or after a UTC cutoff
 	 *
 	 * @since 1.0.0

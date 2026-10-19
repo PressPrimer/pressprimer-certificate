@@ -183,6 +183,11 @@ class PressPrimer_Certificate_Plugin {
 			$upgrade_page->init();
 		}
 
+		// The review prompt (2.1, Feature 2.1-006).
+		if ( class_exists( 'PressPrimer_Certificate_Review_Notice' ) ) {
+			PressPrimer_Certificate_Review_Notice::init();
+		}
+
 		// The upsell touchpoint defaults (2.0, Feature 2.0-005).
 		if ( class_exists( 'PressPrimer_Certificate_Touchpoints' ) ) {
 			$touchpoints = new PressPrimer_Certificate_Touchpoints();

@@ -355,3 +355,57 @@ a.ant-btn-default:visited {
 	font-size: 12px;
 	margin-top: 2px;
 }
+
+/* Review prompt (2.1, Feature 2.1-006 FR-001), after Quiz's notice. */
+.notice.ppcert-review-notice {
+	position: relative;
+	border-left-color: #2271b1;
+	padding: 12px 40px 12px 12px;
+}
+
+.ppcert-review-notice__content {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+}
+
+.ppcert-review-notice__icon {
+	font-size: 28px;
+	line-height: 1;
+}
+
+.ppcert-review-notice__title {
+	margin: 0 0 4px;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.ppcert-review-notice__message {
+	margin: 0 0 10px;
+}
+
+.ppcert-review-notice__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin: 0;
+}
+
+.ppcert-review-notice__close {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	border: none;
+	background: none;
+	color: #787c82;
+	cursor: pointer;
+	font-size: 20px;
+	line-height: 1;
+	padding: 4px 8px;
+}
+
+.ppcert-review-notice__close:hover,
+.ppcert-review-notice__close:focus {
+	color: #1d2327;
+}
