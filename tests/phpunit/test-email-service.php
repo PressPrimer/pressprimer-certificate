@@ -301,10 +301,23 @@ class Test_Email_Service extends TestCase {
 	/**
 	 * Seed an email-template row and map the setUp template to it.
 	 *
+	 * Since 2.1 a stored mapping applies only through
+	 * `ppcert_email_template_id` (Educator returns the stored id); the
+	 * helper installs that consumer, as an active Educator would.
+	 *
 	 * @param array $overrides Row overrides.
 	 * @return int Email template row id.
 	 */
 	private function seed_mapped_email_template( array $overrides = [] ) {
+		add_filter(
+			'ppcert_email_template_id',
+			static function ( $id, $stored_id ) {
+				return $stored_id;
+			},
+			10,
+			2
+		);
+
 		$row_id = $this->wpdb->seed_row(
 			PressPrimer_Certificate_Email_Template::table(),
 			array_merge(
@@ -348,6 +361,45 @@ class Test_Email_Service extends TestCase {
 		$this->assertSame( 'Well done, Dana Whitfield', $mail['subject'] );
 		$this->assertStringContainsString( 'Your Advanced Botany certificate is ready.', $mail['body'] );
 		$this->assertStringContainsString( 'Legacy: 7Q4M-K9P2-XT3A', $mail['body'], 'Legacy tokens substitute in mapped content too' );
+	}
+
+	/**
+	 * Free alone ignores a stored mapping (2.1, Decision 005 note): the
+	 * `ppcert_email_template_id` default is 0, so the built-in default
+	 * sends until Educator honors the mapping. The resolved-content
+	 * filter has the last word either way.
+	 *
+	 * @return void
+	 */
+	public function test_stored_mapping_ignored_without_educator() {
+		$this->seed_mapped_email_template();
+		ppcert_tests_reset_hooks();
+
+		$template = PressPrimer_Certificate_Template::get( 40 );
+		$this->assertNull( PressPrimer_Certificate_Email_Service::resolve_content( $template ) );
+
+		PressPrimer_Certificate_Email_Service::send_issued( $this->certificate_id, [ 'recipient_id' => 7 ] );
+		$this->assertSame( 'Your certificate: Advanced Botany Certification', $GLOBALS['ppcert_test_mail'][0]['subject'] );
+
+		add_filter(
+			'ppcert_email_resolved_content',
+			static function ( $content, $template, $context ) {
+				return 'reminder' === $context ? [
+					'subject' => 'Expiring soon',
+					'body'    => 'Renew {{recipient.meta.renewal_code}}',
+				] : $content;
+			},
+			10,
+			3
+		);
+
+		$this->assertNull( PressPrimer_Certificate_Email_Service::resolve_content( $template ) );
+		$this->assertSame( 'Expiring soon', PressPrimer_Certificate_Email_Service::resolve_content( $template, 'reminder' )['subject'] );
+		$this->assertContains(
+			'recipient.meta.renewal_code',
+			PressPrimer_Certificate_Email_Service::template_tokens( $template ),
+			'Reminder tokens are snapshotted too (FR-004)'
+		);
 	}
 
 	/**

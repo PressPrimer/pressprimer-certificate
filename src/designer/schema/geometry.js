@@ -743,68 +743,63 @@ export function distributeSelection( layout, ids, axis ) {
 }
 
 /**
- * Change the page preset (size + orientation), keeping elements valid.
- *
- * Element boxes re-clamp against the new page dimensions (the same
- * ranges the validator enforces); elements keep their positions and may
- * hang past a smaller page until the user repositions them.
- *
- * @param {Object} layout      Layout document.
- * @param {string} size        'a4' | 'letter'.
- * @param {string} orientation 'landscape' | 'portrait'.
- * @param {Object} presets     Boot page_presets map.
- * @return {Object} New layout.
+ * Pages narrower than this many points are "small" (2.1, Feature
+ * 2.1-004 FR-002): fit-to-width may zoom to 400% and the zoom menu
+ * offers 300% and 400%, so a wallet card edits at a readable size.
  */
-export function updatePagePreset( layout, size, orientation, presets ) {
-	const preset = presets[ size ] && presets[ size ][ orientation ];
+export const SMALL_PAGE_PT = 400;
 
-	if ( ! preset ) {
-		return layout;
-	}
+/**
+ * Custom page side bounds in points (mirror of
+ * PressPrimer_Certificate_Page_Sizes::MIN_POINTS / MAX_POINTS).
+ */
+export const CUSTOM_PAGE_MIN_PT = 72;
+export const CUSTOM_PAGE_MAX_PT = 1728;
 
-	const page = {
-		...layout.page,
-		size,
-		orientation,
-		width: preset[ 0 ],
-		height: preset[ 1 ],
-	};
-
-	const oldWidth = layout.page.width;
-	const oldHeight = layout.page.height;
+/**
+ * Scale elements from one page to another (the Page panel's
+ * scale-to-fit; exported to addons as
+ * window.ppcert_designer_api.scaleElements, 2.1 Feature 2.1-004 FR-006).
+ *
+ * Uniform scale by the smaller axis ratio - never distorting element
+ * aspect - then the scaled design centers on the new page (Ryan's
+ * Award-tab review, 2026-07-22). Font sizes, stroke widths, and corner
+ * radii scale with the boxes. With identical or missing dimensions the
+ * elements only re-clamp to the new page.
+ *
+ * @param {Array}  elements Elements.
+ * @param {Object} fromPage { width, height } in points.
+ * @param {Object} toPage   { width, height } in points.
+ * @return {Array} New elements.
+ */
+export function scaleElements( elements, fromPage, toPage ) {
+	const oldWidth = fromPage && fromPage.width;
+	const oldHeight = fromPage && fromPage.height;
 
 	if (
 		! oldWidth ||
 		! oldHeight ||
-		( oldWidth === page.width && oldHeight === page.height )
+		( oldWidth === toPage.width && oldHeight === toPage.height )
 	) {
-		return {
-			...layout,
-			page,
-			elements: layout.elements.map( ( element ) => ( {
-				...element,
-				...clampBox( element, page ),
-			} ) ),
-		};
+		return elements.map( ( element ) => ( {
+			...element,
+			...clampBox( element, toPage ),
+		} ) );
 	}
 
-	// Rescale the design to the new page (Ryan's Award-tab review,
-	// 2026-07-22): uniform scale by the smaller axis ratio - never
-	// distorting element aspect - then center the scaled design. A4 <->
-	// Letter is near-lossless; an orientation flip shrinks the design
-	// to fit with even margins on the long axis. Font sizes, stroke
-	// widths, and corner radii scale with the boxes; the change is one
-	// undo step like any layout mutation.
-	const scale = Math.min( page.width / oldWidth, page.height / oldHeight );
-	const offsetX = ( page.width - oldWidth * scale ) / 2;
-	const offsetY = ( page.height - oldHeight * scale ) / 2;
+	const scale = Math.min(
+		toPage.width / oldWidth,
+		toPage.height / oldHeight
+	);
+	const offsetX = ( toPage.width - oldWidth * scale ) / 2;
+	const offsetY = ( toPage.height - oldHeight * scale ) / 2;
 
 	const scaleProp = ( value, min ) =>
 		'number' === typeof value
 			? Math.max( min, roundPt( value * scale ) )
 			: value;
 
-	const elements = layout.elements.map( ( element ) => {
+	return elements.map( ( element ) => {
 		const raw = element.props || {};
 		const props = {
 			...raw,
@@ -830,8 +825,106 @@ export function updatePagePreset( layout, size, orientation, presets ) {
 			props,
 		};
 
-		return { ...scaled, ...clampBox( scaled, page ) };
+		return { ...scaled, ...clampBox( scaled, toPage ) };
 	} );
+}
 
-	return { ...layout, page, elements };
+/**
+ * Change the page preset (size + orientation), keeping elements valid.
+ *
+ * The design scales to fit the new page (scaleElements()); the change
+ * is one undo step like any layout mutation.
+ *
+ * @param {Object} layout      Layout document.
+ * @param {string} size        A page-size registry key.
+ * @param {string} orientation 'landscape' | 'portrait'.
+ * @param {Object} presets     Boot page_presets map.
+ * @return {Object} New layout.
+ */
+export function updatePagePreset( layout, size, orientation, presets ) {
+	const preset = presets[ size ] && presets[ size ][ orientation ];
+
+	if ( ! preset ) {
+		return layout;
+	}
+
+	const page = {
+		...layout.page,
+		size,
+		orientation,
+		width: preset[ 0 ],
+		height: preset[ 1 ],
+	};
+
+	return {
+		...layout,
+		page,
+		elements: scaleElements( layout.elements, layout.page, page ),
+	};
+}
+
+/**
+ * Resize the page to a registry size or to custom dimensions (2.1,
+ * Feature 2.1-004 FR-002 - window.ppcert_designer_api.resizePage).
+ *
+ * A registry key takes its preset dimensions for the orientation
+ * (default: the current one). Anything else becomes a `custom` page:
+ * width and height in points, clamped to 72-1728 and rounded to
+ * hundredths (the validator's rule), orientation following the shape.
+ * Only addons offer custom sizes; the validator accepts them while
+ * ppcert_allow_custom_page_size is on.
+ *
+ * @param {Object} layout  Layout document.
+ * @param {Object} target  { size, orientation, width, height }.
+ * @param {Object} presets Boot page_presets map.
+ * @return {Object} New layout (the same object when the target is invalid).
+ */
+export function resizeLayoutPage( layout, target, presets ) {
+	const size = target && target.size ? String( target.size ) : 'custom';
+	const orientation =
+		target && [ 'landscape', 'portrait' ].includes( target.orientation )
+			? target.orientation
+			: layout.page.orientation;
+
+	if ( presets[ size ] ) {
+		return updatePagePreset( layout, size, orientation, presets );
+	}
+
+	const side = ( value ) => {
+		const number = Number( value );
+
+		if ( ! Number.isFinite( number ) || number <= 0 ) {
+			return null;
+		}
+
+		return (
+			Math.round(
+				Math.min(
+					CUSTOM_PAGE_MAX_PT,
+					Math.max( CUSTOM_PAGE_MIN_PT, number )
+				) * 100
+			) / 100
+		);
+	};
+
+	const width = side( target && target.width );
+	const height = side( target && target.height );
+
+	if ( null === width || null === height ) {
+		return layout;
+	}
+
+	const page = {
+		...layout.page,
+		size: 'custom',
+		orientation: width >= height ? 'landscape' : 'portrait',
+		width,
+		height,
+	};
+
+	return {
+		...layout,
+		page,
+		elements: scaleElements( layout.elements, layout.page, page ),
+	};
 }

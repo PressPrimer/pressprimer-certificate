@@ -332,17 +332,20 @@ class PressPrimer_Certificate_Issuance_Service {
 	/**
 	 * The merge tokens an issued certificate snapshots (Feature 2.1-004 FR-008)
 	 *
-	 * The layout's tokens (every page), the issuance email's tokens, and
-	 * the certificate-name pattern's tokens: exactly what issue()
-	 * resolves, so a form that asks for "the fields this certificate
-	 * uses" (Educator's one-off form) asks for the right ones.
+	 * The layout's tokens (every page, plus addon pages through
+	 * `ppcert_layout_token_pages`), every mapped email's tokens
+	 * (issuance and reminder, FR-004), the certificate-name pattern's
+	 * tokens, and `ppcert_issue_tokens`: exactly what issue() resolves,
+	 * so a form that asks for "the fields this certificate uses"
+	 * (Educator's one-off form) asks for the right ones.
 	 *
 	 * @since 2.1.0
 	 *
 	 * @param object $template Template row (hydrated).
+	 * @param array  $context  Issuance context ([] outside issue()).
 	 * @return string[] Inner token keys, unique.
 	 */
-	public static function template_tokens( $template ) {
+	public static function template_tokens( $template, array $context = [] ) {
 		$tokens = [];
 
 		if ( isset( $template->layout ) && is_array( $template->layout ) ) {
@@ -357,15 +360,40 @@ class PressPrimer_Certificate_Issuance_Service {
 		$settings     = isset( $template->settings ) && is_array( $template->settings ) ? $template->settings : [];
 		$name_pattern = isset( $settings['certificate_name'] ) ? (string) $settings['certificate_name'] : '';
 
-		return array_values(
-			array_unique(
-				array_merge(
-					$tokens,
-					PressPrimer_Certificate_Email_Service::template_tokens( $template ),
-					PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text( $name_pattern )
-				)
-			)
+		$tokens = array_merge(
+			$tokens,
+			PressPrimer_Certificate_Email_Service::template_tokens( $template ),
+			PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text( $name_pattern )
 		);
+
+		/**
+		 * Filters the merge tokens snapshotted at issue.
+		 *
+		 * For addon-owned content that prints merge fields (Educator's
+		 * card variants, its email templates): a token added here is
+		 * resolved into the certificate's snapshot, so it never renders
+		 * empty later. Entries are inner-form keys ('recipient.full_name';
+		 * braces are stripped).
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param string[] $tokens   Token keys.
+		 * @param object   $template Template row.
+		 * @param array    $context  Issuance context ([] outside issue(),
+		 *                           e.g. the one-off form's field list).
+		 */
+		$filtered = apply_filters( 'ppcert_issue_tokens', $tokens, $template, $context );
+		$clean    = [];
+
+		foreach ( is_array( $filtered ) ? $filtered : $tokens as $token ) {
+			$token = is_string( $token ) ? trim( str_replace( [ '{{', '}}' ], '', $token ) ) : '';
+
+			if ( '' !== $token ) {
+				$clean[] = $token;
+			}
+		}
+
+		return array_values( array_unique( $clean ) );
 	}
 
 	/**
@@ -503,7 +531,7 @@ class PressPrimer_Certificate_Issuance_Service {
 	private static function resolve_and_insert( $template, $context, $issued_at, $expires_at = null ) {
 		global $wpdb;
 
-		$tokens   = self::template_tokens( $template );
+		$tokens   = self::template_tokens( $template, $context );
 		$settings = is_array( $template->settings ) ? $template->settings : [];
 
 		// A one-off has no account to fall back on, so its name is always
@@ -534,6 +562,8 @@ class PressPrimer_Certificate_Issuance_Service {
 					'credential_display' => $credential_display,
 					'issued_at'          => $issued_at,
 					'expires_at'         => $expires_at,
+					// The issuer of record (2.1, ppcert_issuer_name).
+					'issuer_id'          => ! empty( $template->issuer_id ) ? (int) $template->issuer_id : 0,
 				]
 			);
 

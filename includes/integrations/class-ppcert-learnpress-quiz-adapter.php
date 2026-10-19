@@ -354,21 +354,73 @@ class PressPrimer_Certificate_LearnPress_Quiz_Adapter extends PressPrimer_Certif
 	 *
 	 * SUPPORTED (2.0, FR-005). Quiz rows carry item_type 'lp_quiz',
 	 * status 'completed', and graduation 'passed'; end_time is UTC (see
-	 * the course adapter's user_item_completions()). Limitation per
-	 * FR-005: min_score trigger conditions are not evaluated
-	 * historically.
+	 * the course adapter's user_item_completions()). Since 2.1 each row
+	 * carries `score`, the best `result` percent among the user's
+	 * passing attempts (wp_learnpress_user_item_results JSON, decoded in
+	 * PHP - no JSON functions in SQL), so callers can apply min_score
+	 * conditions (Trigger_Registry::conditions_met()).
 	 *
 	 * @since 2.0.0
 	 *
 	 * @param string $source_ref Quiz post id.
-	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC, 'score'? => float ], ... ]
 	 */
 	public function get_past_completions( string $source_ref ) {
-		return $this->user_item_completions(
-			'lp_quiz',
-			absint( $source_ref ),
-			'completed',
-			true
+		$quiz_id     = absint( $source_ref );
+		$completions = $this->user_item_completions( 'lp_quiz', $quiz_id, 'completed', true );
+
+		if ( empty( $completions ) ) {
+			return $completions;
+		}
+
+		$scores = $this->passing_scores( $quiz_id );
+
+		foreach ( $completions as $index => $completion ) {
+			if ( isset( $scores[ $completion['user_id'] ] ) ) {
+				$completions[ $index ]['score'] = $scores[ $completion['user_id'] ];
+			}
+		}
+
+		return $completions;
+	}
+
+	/**
+	 * The best passing result percent per user for one quiz
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $quiz_id Quiz post id.
+	 * @return array<int,float> user_id => percent.
+	 */
+	private function passing_scores( int $quiz_id ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT i.user_id, r.result FROM %i r INNER JOIN %i i ON i.user_item_id = r.user_item_id WHERE i.item_type = 'lp_quiz' AND i.item_id = %d AND i.status = 'completed' AND i.graduation = 'passed' AND i.user_id > 0",
+				$wpdb->prefix . 'learnpress_user_item_results',
+				$wpdb->prefix . 'learnpress_user_items',
+				$quiz_id
+			)
 		);
+
+		$scores = [];
+
+		foreach ( (array) $rows as $row ) {
+			$result = json_decode( (string) $row->result, true );
+
+			if ( ! is_array( $result ) || ! isset( $result['result'] ) || ! is_numeric( $result['result'] ) ) {
+				continue;
+			}
+
+			$user_id = (int) $row->user_id;
+			$percent = round( (float) $result['result'], 2 );
+
+			if ( ! isset( $scores[ $user_id ] ) || $percent > $scores[ $user_id ] ) {
+				$scores[ $user_id ] = $percent;
+			}
+		}
+
+		return $scores;
 	}
 }

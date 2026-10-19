@@ -324,6 +324,11 @@ class PressPrimer_Certificate_Privacy {
 		$removed      = 0;
 
 		foreach ( $certificates as $certificate ) {
+			// The same announcement as every other deletion path (2.1,
+			// Feature 2.1-004 FR-013): Educator's share images and
+			// School's caches follow the certificate out.
+			PressPrimer_Certificate_Certificate::before_delete( $certificate, 'privacy' );
+
 			PressPrimer_Certificate_Preview_Service::delete( (string) $certificate->credential_id );
 
 			$wpdb->delete(

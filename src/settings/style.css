@@ -465,3 +465,8 @@
 .ppcert-settings-email-extension:empty {
 	display: none;
 }
+
+/* Addon Appearance slot (2.1): invisible until an addon mounts. */
+.ppcert-settings-appearance-extension:empty {
+	display: none;
+}

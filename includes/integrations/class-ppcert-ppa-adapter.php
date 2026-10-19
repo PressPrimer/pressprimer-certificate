@@ -189,6 +189,66 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	}
 
 	/**
+	 * Every published PPA assignment, a page at a time (2.1, Feature 2.1-004
+	 * FR-016)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $page     1-based page.
+	 * @param int $per_page Sources per page (1-500).
+	 * @return array<int,array{id:string,title:string}>
+	 */
+	public function list_sources( int $page, int $per_page ): array {
+		global $wpdb;
+
+		$per_page = max( 1, min( 500, $per_page ) );
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, title FROM %i WHERE status = 'published' ORDER BY id ASC LIMIT %d OFFSET %d",
+				$wpdb->prefix . 'ppa_assignments',
+				$per_page,
+				( max( 1, $page ) - 1 ) * $per_page
+			)
+		);
+
+		$sources = [];
+
+		foreach ( (array) $rows as $row ) {
+			$sources[] = [
+				'id'    => (string) $row->id,
+				'title' => (string) $row->title,
+			];
+		}
+
+		return $sources;
+	}
+
+	/**
+	 * One PPA assignment's title, or '' (2.1, Feature 2.1-004 FR-016)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $ref Row id.
+	 * @return string
+	 */
+	public function get_source_title( string $ref ): string {
+		global $wpdb;
+
+		if ( ! ctype_digit( $ref ) ) {
+			return '';
+		}
+
+		return (string) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT title FROM %i WHERE id = %d',
+				$wpdb->prefix . 'ppa_assignments',
+				(int) $ref
+			)
+		);
+	}
+
+	/**
 	 * Conditions schema (TR-002)
 	 *
 	 * A null min_grade means "use the assignment's own passing score" -
@@ -202,12 +262,21 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	 */
 	public function get_conditions_schema(): array {
 		return [
-			'min_grade' => [
+			'min_grade'  => [
 				'type'    => 'number',
 				'label'   => __( 'Minimum grade (%)', 'pressprimer-certificate' ),
 				'help'    => __( 'Leave blank to award on any passing grade. Enter a percentage to require more than the assignment\'s own passing score.', 'pressprimer-certificate' ),
 				'min'     => 0,
 				'max'     => 100,
+				'default' => null,
+			],
+			// Since 2.1: the same bar in points earned, for graders who
+			// think in points. Both set means both must be met.
+			'min_points' => [
+				'type'    => 'number',
+				'label'   => __( 'Minimum score (points)', 'pressprimer-certificate' ),
+				'help'    => __( 'Leave blank for no points minimum. Enter the points a grade must reach. Unlike a percentage, this does not adjust if the assignment\'s maximum points change later. When both minimums are set, a grade must meet both.', 'pressprimer-certificate' ),
+				'min'     => 0,
 				'default' => null,
 			],
 		];
@@ -243,6 +312,14 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 					'sample'   => __( 'June 12, 2026', 'pressprimer-certificate' ),
 					'resolver' => [ $this, 'resolve_source_completed_date' ],
 				],
+				// Since 2.1: the grade as points earned of points
+				// possible, next to the percentage in source.grade.
+				'grade_points'     => [
+					'key'      => 'source.grade_points',
+					'label'    => __( 'Score (Points)', 'pressprimer-certificate' ),
+					'sample'   => __( '62 / 65', 'pressprimer-certificate' ),
+					'resolver' => [ $this, 'resolve_grade_points' ],
+				],
 			],
 		];
 	}
@@ -260,6 +337,7 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 			'source.assignment_title' => $this->resolve_assignment_title( $context ),
 			'source.grade'            => $this->resolve_source_grade( $context ),
 			'source.completion_date'  => $this->resolve_source_completed_date( $context ),
+			'source.grade_points'     => $this->resolve_grade_points( $context ),
 		];
 	}
 
@@ -299,20 +377,22 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 
 		$assignment = PressPrimer_Assignment_Assignment::get( (int) $submission->assignment_id );
 		$percent    = $this->grade_percent( $submission, $assignment );
+		$points     = isset( $submission->score ) && is_numeric( $submission->score ) ? (float) $submission->score : 0.0;
 
 		// Shared source-context contract (abstract adapter): display
 		// strings precomputed, shared resolvers stay passthroughs. PPA's
-		// grade renders as a percentage.
+		// grade renders as a percentage, and since 2.1 also as points.
 		$context = [
 			// Assignments are not posts: no source_post_id, so
 			// source.meta.* resolves empty (class docblock).
-			'source_post_id'       => 0,
-			'ppa_assignment_title' => is_object( $assignment ) ? (string) $assignment->title : '',
-			'src_grade_display'    => $this->format_percent_display( $percent ),
+			'source_post_id'           => 0,
+			'ppa_assignment_title'     => is_object( $assignment ) ? (string) $assignment->title : '',
+			'src_grade_display'        => $this->format_percent_display( $percent ),
+			'src_grade_points_display' => $this->points_display( $points, $this->grade_max( $submission, $assignment ) ),
 			// PPA stores graded_at in UTC (current_time('mysql', true)
 			// in PressPrimer_Assignment_Grading_Service::grade()) - the
 			// shared contract's expectation, no conversion needed.
-			'src_completed_at'     => isset( $submission->graded_at ) ? (string) $submission->graded_at : '',
+			'src_completed_at'         => isset( $submission->graded_at ) ? (string) $submission->graded_at : '',
 		];
 
 		foreach ( $triggers as $trigger ) {
@@ -321,6 +401,14 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 			$min_grade = isset( $trigger->conditions['min_grade'] ) ? $trigger->conditions['min_grade'] : null;
 
 			if ( null !== $min_grade && is_numeric( $min_grade ) && $percent < (float) $min_grade ) {
+				continue;
+			}
+
+			// Condition (2.1): numeric min_points is the same bar in
+			// points earned; both set means both must be met.
+			$min_points = isset( $trigger->conditions['min_points'] ) ? $trigger->conditions['min_points'] : null;
+
+			if ( null !== $min_points && is_numeric( $min_points ) && $points < (float) $min_points ) {
 				continue;
 			}
 
@@ -355,7 +443,29 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	 */
 	private function grade_percent( $submission, $assignment ) {
 		$score = isset( $submission->score ) && is_numeric( $submission->score ) ? (float) $submission->score : 0.0;
-		$max   = isset( $submission->max_points_at_grading ) && is_numeric( $submission->max_points_at_grading )
+		$max   = $this->grade_max( $submission, $assignment );
+
+		if ( $max <= 0 ) {
+			return 0.0;
+		}
+
+		return round( ( $score / $max ) * 100, 2 );
+	}
+
+	/**
+	 * The points a submission was graded out of
+	 *
+	 * The snapshot in max_points_at_grading, else the assignment's
+	 * current max_points (pre-1.10 rows); 0.0 when neither is known.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object      $submission Graded submission.
+	 * @param object|null $assignment Its assignment (fallback max).
+	 * @return float
+	 */
+	private function grade_max( $submission, $assignment ) {
+		$max = isset( $submission->max_points_at_grading ) && is_numeric( $submission->max_points_at_grading )
 			? (float) $submission->max_points_at_grading
 			: 0.0;
 
@@ -363,11 +473,55 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 			$max = (float) $assignment->max_points;
 		}
 
-		if ( $max <= 0 ) {
-			return 0.0;
+		return $max > 0 ? $max : 0.0;
+	}
+
+	/**
+	 * "62 / 65": points earned of points possible (2.1)
+	 *
+	 * Up to two decimals, trailing zeros dropped, the same style as the
+	 * percentage display. Just the points when the maximum is unknown.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param float $points Points earned.
+	 * @param float $max    Points possible (0 when unknown).
+	 * @return string
+	 */
+	private function points_display( $points, $max ) {
+		$format = static function ( $value ) {
+			return rtrim( rtrim( number_format( (float) $value, 2, '.', '' ), '0' ), '.' );
+		};
+
+		return $max > 0 ? $format( $points ) . ' / ' . $format( $max ) : $format( $points );
+	}
+
+	/**
+	 * The merge context a past completion's award needs (2.1)
+	 *
+	 * The grade displays the live listener would set, from a
+	 * get_past_completions() row, so an award for a past completion
+	 * prints the same source.grade and source.grade_points as a live
+	 * one (School's Award Past Completions). Rows without a score add
+	 * nothing.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $completion A get_past_completions() row.
+	 * @return array<string,string>
+	 */
+	public function completion_context( array $completion ): array {
+		if ( ! isset( $completion['score'], $completion['points'] ) ) {
+			return [];
 		}
 
-		return round( ( $score / $max ) * 100, 2 );
+		return [
+			'src_grade_display'        => $this->format_percent_display( $completion['score'] ),
+			'src_grade_points_display' => $this->points_display(
+				(float) $completion['points'],
+				isset( $completion['max_points'] ) ? (float) $completion['max_points'] : 0.0
+			),
+		];
 	}
 
 	/*
@@ -389,6 +543,18 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	}
 
 	/**
+	 * Resolve the grade in points ("62 / 65").
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $context Issuance context.
+	 * @return string
+	 */
+	public function resolve_grade_points( array $context ) {
+		return isset( $context['src_grade_points_display'] ) ? (string) $context['src_grade_points_display'] : '';
+	}
+
+	/**
 	 * Past completions: SUPPORTED (2.0, Feature 2.0-006 FR-005)
 	 *
 	 * @since 2.0.0
@@ -406,13 +572,20 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 	 * which includes rows later moved to 'returned' status; a returned
 	 * submission keeps its pass). graded_at is stored in UTC by PPA
 	 * (current_time('mysql', true) in the grading service) - no
-	 * conversion. Limitation, recorded per FR-005: min_grade trigger
-	 * conditions are not evaluated historically.
+	 * conversion. Read-only: PPA itself is unchanged.
+	 *
+	 * Since 2.1 each row also carries the learner's best passing
+	 * submission (highest percent, then most points): `score` (percent
+	 * of max_points_at_grading, else the assignment's max_points - the
+	 * live listener's formula), `points` (points earned), and
+	 * `max_points`, so callers can apply min_grade and min_points
+	 * conditions (Trigger_Registry::conditions_met()) and print the grade
+	 * (completion_context()). `completed_at` stays the earliest pass.
 	 *
 	 * @since 2.0.0
 	 *
 	 * @param string $source_ref PPA assignment row id.
-	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC, 'score'? => float, 'points'? => float, 'max_points'? => float ], ... ]
 	 */
 	public function get_past_completions( string $source_ref ) {
 		global $wpdb;
@@ -425,23 +598,90 @@ class PressPrimer_Certificate_PPA_Adapter extends PressPrimer_Certificate_LMS_Ad
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT user_id, MIN(graded_at) AS completed_at FROM %i WHERE assignment_id = %d AND passed = 1 AND graded_at IS NOT NULL GROUP BY user_id ORDER BY user_id ASC',
+				'SELECT s.user_id, s.graded_at, s.score, COALESCE( NULLIF( s.max_points_at_grading, 0 ), a.max_points ) AS max_points FROM %i s LEFT JOIN %i a ON a.id = s.assignment_id WHERE s.assignment_id = %d AND s.passed = 1 AND s.graded_at IS NOT NULL ORDER BY s.user_id ASC, s.graded_at ASC',
 				$wpdb->prefix . 'ppa_submissions',
+				$wpdb->prefix . 'ppa_assignments',
 				$assignment_id
 			)
 		);
 
-		$completions = [];
+		$users = [];
 
 		foreach ( (array) $rows as $row ) {
-			$completions[] = [
-				'user_id'      => (int) $row->user_id,
-				// Already UTC (PPA's storage convention).
-				'completed_at' => (string) $row->completed_at,
+			$user_id = (int) $row->user_id;
+
+			if ( ! isset( $users[ $user_id ] ) ) {
+				$users[ $user_id ] = [
+					// Already UTC (PPA's storage convention).
+					'completed_at' => (string) $row->graded_at,
+					'best'         => null,
+				];
+			}
+
+			if ( (string) $row->graded_at < $users[ $user_id ]['completed_at'] ) {
+				$users[ $user_id ]['completed_at'] = (string) $row->graded_at;
+			}
+
+			if ( ! is_numeric( $row->score ) ) {
+				continue;
+			}
+
+			$max       = is_numeric( $row->max_points ) && (float) $row->max_points > 0 ? (float) $row->max_points : 0.0;
+			$candidate = [
+				'score'      => $max > 0 ? round( ( (float) $row->score / $max ) * 100, 2 ) : null,
+				'points'     => round( (float) $row->score, 2 ),
+				'max_points' => $max,
 			];
+
+			if ( null === $users[ $user_id ]['best'] || self::better_grade( $candidate, $users[ $user_id ]['best'] ) ) {
+				$users[ $user_id ]['best'] = $candidate;
+			}
+		}
+
+		ksort( $users );
+
+		$completions = [];
+
+		foreach ( $users as $user_id => $entry ) {
+			$completion = [
+				'user_id'      => $user_id,
+				'completed_at' => $entry['completed_at'],
+			];
+
+			if ( null !== $entry['best'] ) {
+				if ( null !== $entry['best']['score'] ) {
+					$completion['score'] = $entry['best']['score'];
+				}
+
+				$completion['points'] = $entry['best']['points'];
+
+				if ( $entry['best']['max_points'] > 0 ) {
+					$completion['max_points'] = $entry['best']['max_points'];
+				}
+			}
+
+			$completions[] = $completion;
 		}
 
 		return $completions;
+	}
+
+	/**
+	 * Whether one graded submission beats another: higher percent, then
+	 * more points (a submission with a known percent beats one without)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $a Candidate { score, points }.
+	 * @param array $b Current best.
+	 * @return bool
+	 */
+	private static function better_grade( array $a, array $b ) {
+		if ( null !== $a['score'] && ( null === $b['score'] || $a['score'] > $b['score'] ) ) {
+			return true;
+		}
+
+		return $a['score'] === $b['score'] && $a['points'] > $b['points'];
 	}
 
 	/**

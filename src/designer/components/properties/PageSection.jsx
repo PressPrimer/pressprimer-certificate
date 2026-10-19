@@ -2,13 +2,22 @@
  * Page section - shown with no selection; edits the page preset (size +
  * orientation) and the document root background (the Background palette
  * entry routes here per FR-003).
+ *
+ * 2.1 (Feature 2.1-004 FR-002): the Size menu's options pass through
+ * `ppcert.designer.pageSizeOptions`; an option may carry `width` and
+ * `height` in points (a custom size, such as Educator's wallet cards).
+ * A custom page shows as "Custom size" with no fields of its own; the
+ * slot under the menu (#ppcert-designer-page-size-extension) is where
+ * an addon mounts them. Choosing a named size converts the page.
  */
 
 import { __, sprintf } from '@wordpress/i18n';
-import { Button, Segmented, Select, Tooltip, Typography, message } from 'antd';
+import { applyFilters } from '@wordpress/hooks';
+import { Button, Segmented, Select, Tooltip, Typography } from 'antd';
 import { PictureOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDesignerStore } from '../../hooks/useDesignerStore';
-import { updateBackground, updatePagePreset } from '../../schema/geometry';
+import { updateBackground } from '../../schema/geometry';
+import { applyPageResize } from '../../pageResize';
 import { useAttachmentUrl } from '../../hooks/useAttachment';
 import { isMediaAvailable, openImagePicker } from '../../media';
 import { getBoot } from '../../boot';
@@ -58,24 +67,87 @@ export default function PageSection() {
 	);
 
 	const presets = getBoot().page_presets;
+	const isCustom = 'custom' === layout.page.size;
 
-	const setPreset = ( size, orientation ) => {
-		const next = updatePagePreset( layout, size, orientation, presets );
+	const sizeOptions = pageSizeOptions( layout, presets );
 
-		dispatch( { type: 'APPLY_LAYOUT', layout: next } );
+	// A custom page shows the option whose dimensions it has (either
+	// orientation), else "Custom size".
+	const matched = isCustom
+		? sizeOptions.find(
+				( option ) =>
+					option.width &&
+					option.height &&
+					( ( option.width === layout.page.width &&
+						option.height === layout.page.height ) ||
+						( option.width === layout.page.height &&
+							option.height === layout.page.width ) )
+		  )
+		: null;
 
-		// Rescaling must never be silent: name what just happened and
-		// that it is one undo step.
-		if (
-			next.elements.length > 0 &&
-			( next.page.width !== layout.page.width ||
-				next.page.height !== layout.page.height )
-		) {
-			message.info(
-				__(
-					'Design scaled to fit the new page. Undo restores it.',
-					'pressprimer-certificate'
-				)
+	if (
+		isCustom &&
+		! matched &&
+		! sizeOptions.some( ( option ) => 'custom' === option.value )
+	) {
+		sizeOptions.push( {
+			value: 'custom',
+			label: __( 'Custom size', 'pressprimer-certificate' ),
+		} );
+	}
+
+	const sizeValue = matched ? matched.value : layout.page.size;
+
+	const setSize = ( value ) => {
+		const option = sizeOptions.find( ( entry ) => entry.value === value );
+
+		if ( presets[ value ] ) {
+			applyPageResize(
+				layout,
+				{ size: value, orientation: layout.page.orientation },
+				dispatch
+			);
+		} else if ( option && option.width && option.height ) {
+			applyPageResize(
+				layout,
+				{ size: 'custom', width: option.width, height: option.height },
+				dispatch
+			);
+		} else if ( 'custom' === value ) {
+			// Custom at the current dimensions: the addon's fields take
+			// it from here.
+			applyPageResize(
+				layout,
+				{
+					size: 'custom',
+					width: layout.page.width,
+					height: layout.page.height,
+				},
+				dispatch
+			);
+		}
+	};
+
+	const setOrientation = ( orientation ) => {
+		if ( ! isCustom ) {
+			applyPageResize(
+				layout,
+				{ size: layout.page.size, orientation },
+				dispatch
+			);
+			return;
+		}
+
+		// Custom pages turn by swapping their sides.
+		if ( orientation !== layout.page.orientation ) {
+			applyPageResize(
+				layout,
+				{
+					size: 'custom',
+					width: layout.page.height,
+					height: layout.page.width,
+				},
+				dispatch
 			);
 		}
 	};
@@ -89,28 +161,33 @@ export default function PageSection() {
 			<PropRow label={ __( 'Size', 'pressprimer-certificate' ) }>
 				<Select
 					size="small"
-					value={ layout.page.size }
+					value={ sizeValue }
 					data-ppcert-prop="page-size"
 					popupMatchSelectWidth={ false }
-					onChange={ ( size ) =>
-						setPreset( size, layout.page.orientation )
-					}
-					options={ Object.keys( presets ).map( ( size ) => ( {
-						value: size,
-						// Labels come from the page-size registry (2.1).
-						label: presets[ size ].label || size.toUpperCase(),
+					onChange={ setSize }
+					options={ sizeOptions.map( ( option ) => ( {
+						value: option.value,
+						label: option.label,
 					} ) ) }
 				/>
 			</PropRow>
+
+			{ /* Custom-size slot (2.1, Feature 2.1-004 FR-002): an addon's
+			     width and height fields mount their own React root here
+			     while the page is a custom size; free renders none. */ }
+			{ isCustom ? (
+				<div
+					id="ppcert-designer-page-size-extension"
+					className="ppcert-designer__page-size-extension"
+				/>
+			) : null }
 
 			<PropRow label={ __( 'Layout', 'pressprimer-certificate' ) }>
 				<Segmented
 					size="small"
 					value={ layout.page.orientation }
 					data-ppcert-prop="page-orientation"
-					onChange={ ( orientation ) =>
-						setPreset( layout.page.size, orientation )
-					}
+					onChange={ setOrientation }
 					options={ [
 						{
 							value: 'landscape',
@@ -174,5 +251,35 @@ export default function PageSection() {
 				<ImageFormatWarning mime={ mime } />
 			) : null }
 		</div>
+	);
+}
+
+/**
+ * The Size menu's options: the registry sizes, then
+ * `ppcert.designer.pageSizeOptions` (2.1). Entries without a string
+ * value and a label are dropped.
+ *
+ * @param {Object} layout  Layout document.
+ * @param {Object} presets Boot page_presets map.
+ * @return {Array} Options { value, label, width?, height? }.
+ */
+function pageSizeOptions( layout, presets ) {
+	const base = Object.keys( presets ).map( ( size ) => ( {
+		value: size,
+		// Labels come from the page-size registry (2.1).
+		label: presets[ size ].label || size.toUpperCase(),
+	} ) );
+
+	const filtered = applyFilters( 'ppcert.designer.pageSizeOptions', base, {
+		layout,
+		presets,
+	} );
+
+	return ( Array.isArray( filtered ) ? filtered : base ).filter(
+		( option ) =>
+			option &&
+			'string' === typeof option.value &&
+			'' !== option.value &&
+			option.label
 	);
 }

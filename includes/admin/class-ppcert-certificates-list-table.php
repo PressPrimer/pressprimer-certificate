@@ -359,13 +359,19 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 			'download' => '<a href="' . esc_url( $download_url ) . '">' . esc_html__( 'Download PDF', 'pressprimer-certificate' ) . '</a>',
 		];
 
-		// Lifecycle actions (issue capability): Revoke confirms through
-		// the house modal (ppcert-admin.js intercepts the flagged link
-		// and collects the optional reason); Reinstate undoes a
-		// mistaken revocation directly (it restores validity - no
-		// confirm).
-		if ( current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
-			if ( 'revoked' === (string) $item->status ) {
+		// Lifecycle actions, each behind the per-certificate check (2.1,
+		// Feature 2.1-004 FR-011; default: the issue capability and the
+		// user's scope, as in 2.0): Revoke confirms through the house
+		// modal (ppcert-admin.js intercepts the flagged link and
+		// collects the optional reason); Reinstate undoes a mistaken
+		// revocation directly (it restores validity - no confirm).
+		$user_id = get_current_user_id();
+		$can     = static function ( $action ) use ( $item, $user_id ) {
+			return PressPrimer_Certificate_Certificate::user_can_manage( $item, $user_id, $action );
+		};
+
+		if ( 'revoked' === (string) $item->status ) {
+			if ( $can( 'reinstate' ) ) {
 				$reinstate_url = wp_nonce_url(
 					add_query_arg(
 						[
@@ -379,7 +385,9 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 				);
 
 				$actions['reinstate'] = '<a href="' . esc_url( $reinstate_url ) . '">' . esc_html__( 'Reinstate', 'pressprimer-certificate' ) . '</a>';
-			} else {
+			}
+		} else {
+			if ( $can( 'revoke' ) ) {
 				$revoke_url = wp_nonce_url(
 					add_query_arg(
 						[
@@ -406,9 +414,13 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 					. ' data-ppcert-input-label="' . esc_attr__( 'Reason (optional, shown to staff only):', 'pressprimer-certificate' ) . '"'
 					. ' data-ppcert-input-name="revoke_reason"'
 					. '>' . esc_html__( 'Revoke', 'pressprimer-certificate' ) . '</a>';
+			}
 
-				// Resend the delivery email (not offered for revoked
-				// certificates - their downloads are disabled).
+			// Resend the delivery email (not offered for revoked
+			// certificates - their downloads are disabled). A one-off
+			// certificate without a stored email has no one to send to
+			// (2.1).
+			if ( $can( 'resend' ) && ( ! PressPrimer_Certificate_Certificate::is_one_off( $item ) || ! empty( $item->recipient_email ) ) ) {
 				$resend_url = wp_nonce_url(
 					add_query_arg(
 						[
@@ -421,15 +433,13 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 					'ppcert_resend_email_' . (int) $item->id
 				);
 
-				// A one-off certificate without a stored email has no one
-				// to send to (2.1).
-				if ( ! PressPrimer_Certificate_Certificate::is_one_off( $item ) || ! empty( $item->recipient_email ) ) {
-					$actions['resend'] = '<a href="' . esc_url( $resend_url ) . '">' . esc_html__( 'Resend email', 'pressprimer-certificate' ) . '</a>';
-				}
+				$actions['resend'] = '<a href="' . esc_url( $resend_url ) . '">' . esc_html__( 'Resend email', 'pressprimer-certificate' ) . '</a>';
 			}
+		}
 
-			// Permanent deletion (test data and mistakes) - always
-			// available, confirmed through the house modal.
+		// Permanent deletion (test data and mistakes), confirmed through
+		// the house modal.
+		if ( $can( 'delete' ) ) {
 			$delete_url = wp_nonce_url(
 				add_query_arg(
 					[

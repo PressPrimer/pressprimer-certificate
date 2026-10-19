@@ -299,6 +299,49 @@ class PressPrimer_Certificate_Trigger_Registry {
 	}
 
 	/**
+	 * Whether a completion meets a trigger's conditions (2.1, Feature
+	 * 2.1-004 FR-016)
+	 *
+	 * The live listeners' rule for past completions (School's Award Past
+	 * Completions): a numeric percent minimum - `min_score` for quizzes,
+	 * `min_grade` for assignments - needs the completion's `score`
+	 * (percent) at or above it, and an assignment's `min_points` needs
+	 * its `points`; a completion without the value cannot meet the
+	 * minimum. Null or absent minimums follow the source's own pass
+	 * mark, which every past completion already met. Conditions without
+	 * a minimum (scope keys) are the caller's source selection.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array|object $trigger    Trigger row (conditions array).
+	 * @param array        $completion A get_past_completions() row.
+	 * @return bool
+	 */
+	public static function conditions_met( $trigger, array $completion ) {
+		$trigger    = (array) $trigger;
+		$conditions = isset( $trigger['conditions'] ) && is_array( $trigger['conditions'] ) ? $trigger['conditions'] : [];
+		$minimums   = [
+			'min_score'  => 'score',
+			'min_grade'  => 'score',
+			'min_points' => 'points',
+		];
+
+		foreach ( $minimums as $key => $field ) {
+			if ( ! isset( $conditions[ $key ] ) || ! is_numeric( $conditions[ $key ] ) ) {
+				continue;
+			}
+
+			$value = isset( $completion[ $field ] ) && is_numeric( $completion[ $field ] ) ? (float) $completion[ $field ] : null;
+
+			if ( null === $value || $value < (float) $conditions[ $key ] ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Clamp a number to a schema field's min/max bounds
 	 *
 	 * @since 1.0.0

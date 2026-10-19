@@ -82,6 +82,15 @@ class PressPrimer_Certificate_Layout_Validator {
 	const MAX_PAGES = 10;
 
 	/**
+	 * The starting value of `ppcert_layout_sanitize_extension`: an `ext`
+	 * entry still holding it after the filter has no active owner
+	 *
+	 * @since 2.1.0
+	 * @var string
+	 */
+	const EXT_UNCLAIMED = 'ppcert_ext_unclaimed';
+
+	/**
 	 * Hard cap on the number of elements in a document
 	 *
 	 * @since 1.0.0
@@ -307,6 +316,84 @@ class PressPrimer_Certificate_Layout_Validator {
 
 		if ( ! empty( self::$errors ) ) {
 			return self::build_error();
+		}
+
+		$ext = self::validate_extensions(
+			isset( $raw['ext'] ) ? $raw['ext'] : null,
+			isset( $context['stored_ext'] ) && is_array( $context['stored_ext'] ) ? $context['stored_ext'] : [],
+			$clean
+		);
+
+		if ( ! empty( $ext ) ) {
+			$clean['ext'] = $ext;
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Rebuild the `ext` root key (2.1, Feature 2.1-004 FR-005)
+	 *
+	 * The one place addons store document data, keyed by addon slug.
+	 * Each entry passes through `ppcert_layout_sanitize_extension`, which
+	 * starts from EXT_UNCLAIMED: the slug's owner returns the clean value
+	 * (or null to drop it); every other callback returns its input
+	 * unchanged. A slug nobody claims keeps the value stored in the
+	 * template row (`stored_ext` in the context: previously sanitized,
+	 * never request input), so saving while the owner is inactive never
+	 * deletes its data; with nothing stored, it is dropped like any
+	 * unknown key.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $raw    Submitted `ext` value.
+	 * @param array $stored The stored template's `ext`.
+	 * @param array $layout The rebuilt document so far.
+	 * @return array Clean `ext` map (empty when none).
+	 */
+	private static function validate_extensions( $raw, array $stored, array $layout ) {
+		$raw   = is_array( $raw ) ? $raw : [];
+		$slugs = array_unique( array_merge( array_keys( $raw ), array_keys( $stored ) ) );
+		$clean = [];
+
+		foreach ( $slugs as $slug ) {
+			if ( ! is_string( $slug ) || '' === $slug || sanitize_key( $slug ) !== $slug ) {
+				continue;
+			}
+
+			/**
+			 * Sanitizes one addon's `ext` entry in a layout document.
+			 *
+			 * Return the clean value for a slug you own, or null to drop
+			 * it; return $clean unchanged for any other slug.
+			 *
+			 * @since 2.1.0
+			 *
+			 * @param mixed  $clean  EXT_UNCLAIMED until an owner answers.
+			 * @param string $slug   Addon slug (the `ext` key).
+			 * @param mixed  $raw    Submitted value (null when absent).
+			 * @param array  $layout The rebuilt document (page, background,
+			 *                       elements or pages; no `ext`).
+			 */
+			$value = apply_filters(
+				'ppcert_layout_sanitize_extension',
+				self::EXT_UNCLAIMED,
+				$slug,
+				array_key_exists( $slug, $raw ) ? $raw[ $slug ] : null,
+				$layout
+			);
+
+			if ( self::EXT_UNCLAIMED === $value ) {
+				if ( array_key_exists( $slug, $stored ) ) {
+					$clean[ $slug ] = $stored[ $slug ];
+				}
+
+				continue;
+			}
+
+			if ( null !== $value ) {
+				$clean[ $slug ] = $value;
+			}
 		}
 
 		return $clean;

@@ -7,6 +7,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
+import { applyFilters } from '@wordpress/hooks';
 import { ColorPicker } from 'antd';
 import { getBoot } from '../../boot';
 
@@ -28,7 +29,9 @@ const PRESETS = [
 ];
 
 /**
- * Preset groups with the site's Appearance brand colors first.
+ * Preset groups with the site's Appearance brand colors first, then
+ * `ppcert.designer.colorPresets` (2.1, Feature 2.1-004 FR-006 -
+ * Educator's brand kit). Groups need a label and a colors array.
  *
  * @return {Array} Preset groups.
  */
@@ -40,17 +43,24 @@ function presetGroups() {
 		appearance.text_color,
 	].filter( Boolean );
 
-	if ( ! brand.length ) {
-		return PRESETS;
-	}
+	const groups = brand.length
+		? [
+				{
+					label: __( 'Brand colors', 'pressprimer-certificate' ),
+					colors: brand,
+				},
+				...PRESETS,
+		  ]
+		: PRESETS;
 
-	return [
-		{
-			label: __( 'Brand colors', 'pressprimer-certificate' ),
-			colors: brand,
-		},
-		...PRESETS,
-	];
+	const filtered = applyFilters( 'ppcert.designer.colorPresets', groups );
+
+	return Array.isArray( filtered )
+		? filtered.filter(
+				( group ) =>
+					group && group.label && Array.isArray( group.colors )
+		  )
+		: groups;
 }
 
 /**

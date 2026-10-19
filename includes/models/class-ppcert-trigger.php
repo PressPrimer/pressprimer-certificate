@@ -234,6 +234,7 @@ class PressPrimer_Certificate_Trigger {
 
 		$template_id = absint( $template_id );
 		$now         = current_time( 'mysql', true );
+		$previous    = self::get_for_template( $template_id );
 
 		self::delete_for_template( $template_id );
 
@@ -266,7 +267,24 @@ class PressPrimer_Certificate_Trigger {
 			);
 		}
 
-		return self::get_for_template( $template_id );
+		$saved = self::get_for_template( $template_id );
+
+		/**
+		 * Fires after a template's triggers are saved (2.1, Feature
+		 * 2.1-004 FR-016).
+		 *
+		 * Triggers decide automatic awarding, so audit tools record the
+		 * change (Enterprise EN-005).
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param int      $template_id Template row id.
+		 * @param object[] $triggers    The saved trigger rows.
+		 * @param object[] $previous    The rows they replaced.
+		 */
+		do_action( 'ppcert_template_triggers_replaced', $template_id, $saved, $previous );
+
+		return $saved;
 	}
 
 	/**

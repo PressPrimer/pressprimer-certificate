@@ -48,6 +48,7 @@ import {
 	saveTemplate,
 	saveTriggers,
 } from '../api';
+import { SMALL_PAGE_PT } from '../schema/geometry';
 import TemplateGallery from './TemplateGallery';
 import Canvas from './Canvas';
 import ExtensionBridge from './ExtensionBridge';
@@ -76,6 +77,13 @@ const ZOOM_OPTIONS = [
 	{ value: 2, label: '200%' },
 ];
 
+// Small pages add 300% and 400% (2.1, Feature 2.1-004 FR-002).
+const ZOOM_OPTIONS_SMALL = [
+	...ZOOM_OPTIONS,
+	{ value: 3, label: '300%' },
+	{ value: 4, label: '400%' },
+];
+
 /**
  * The shell.
  *
@@ -91,6 +99,17 @@ export default function DesignerApp( { boot } ) {
 	const [ loading, setLoading ] = useState( boot.template_id > 0 );
 	const [ loadError, setLoadError ] = useState( '' );
 	const [ zoom, setZoom ] = useState( 'fit' );
+	const smallPage = !! (
+		state.layout && state.layout.page.width < SMALL_PAGE_PT
+	);
+
+	// 300% and 400% exist only for small pages: leaving one returns to
+	// fit-to-width rather than showing a zoom the menu does not offer.
+	useEffect( () => {
+		if ( ! smallPage && 'number' === typeof zoom && zoom > 2 ) {
+			setZoom( 'fit' );
+		}
+	}, [ smallPage, zoom ] );
 	const [ tokenView, setTokenView ] = useState( false );
 	const [ rawSamples, setRawSamples ] = useState( {} );
 	const [ rulers, setRulers ] = useState( true );
@@ -695,7 +714,9 @@ export default function DesignerApp( { boot } ) {
 						size="small"
 						value={ zoom }
 						onChange={ setZoom }
-						options={ ZOOM_OPTIONS }
+						options={
+							smallPage ? ZOOM_OPTIONS_SMALL : ZOOM_OPTIONS
+						}
 						popupMatchSelectWidth={ false }
 						aria-label={ __( 'Zoom', 'pressprimer-certificate' ) }
 						className="ppcert-designer__zoom"

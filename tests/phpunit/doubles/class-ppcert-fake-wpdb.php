@@ -693,6 +693,42 @@ class PPCert_Fake_WPDB {
 			return $rows;
 		}
 
+		// PPQ/PPA adapter list_sources() (2.1): published rows by id,
+		// paged. args: [table, limit, offset].
+		if ( "SELECT id, title FROM %i WHERE status = 'published' ORDER BY id ASC LIMIT %d OFFSET %d" === $query ) {
+			$matches = $this->filter_rows(
+				$rows,
+				static function ( $row ) {
+					return isset( $row['status'] ) && 'published' === $row['status'];
+				}
+			);
+
+			return array_map(
+				static function ( $row ) {
+					return [
+						'id'    => $row['id'],
+						'title' => $row['title'],
+					];
+				},
+				array_slice( $matches, (int) $args[2], (int) $args[1] )
+			);
+		}
+
+		// PPQ/PPA adapter get_source_title() (2.1). args: [table, id].
+		if ( 'SELECT title FROM %i WHERE id = %d' === $query ) {
+			return array_map(
+				static function ( $row ) {
+					return [ 'title' => $row['title'] ];
+				},
+				$this->filter_rows(
+					$rows,
+					static function ( $row ) use ( $args ) {
+						return (int) $row['id'] === (int) $args[1];
+					}
+				)
+			);
+		}
+
 		// Migrator::backfill_certificate_titles - keyset-paginated batch
 		// of NULL-title rows.
 		if ( false !== strpos( $query, 'WHERE title IS NULL AND id > %d ORDER BY id ASC LIMIT %d' ) ) {
@@ -730,24 +766,114 @@ class PPCert_Fake_WPDB {
 							&& ! empty( $row['finished_at'] );
 					}
 				),
-				'finished_at'
+				'finished_at',
+				static function ( $row ) {
+					return isset( $row['score_percent'] ) && is_numeric( $row['score_percent'] ) ? (float) $row['score_percent'] : null;
+				}
 			);
 		}
 
-		// PPA adapter past completions: earliest passing grade per user.
-		if ( false !== strpos( $query, 'MIN(graded_at) AS completed_at' ) ) {
+		// PPA adapter past completions (2.1): every passing graded
+		// submission with its points and max (max_points_at_grading,
+		// else the assignment's max_points), user then date order.
+		// args: [submissions, assignments, assignment_id].
+		if ( false !== strpos( $query, 'SELECT s.user_id, s.graded_at, s.score, COALESCE( NULLIF( s.max_points_at_grading, 0 ), a.max_points ) AS max_points' ) ) {
+			$assignments = $this->rows( (string) $args[1] );
+			$matches     = $this->filter_rows(
+				$rows,
+				static function ( $row ) use ( $args ) {
+					return (int) ( isset( $row['assignment_id'] ) ? $row['assignment_id'] : 0 ) === (int) $args[2]
+						&& 1 === (int) ( isset( $row['passed'] ) ? $row['passed'] : 0 )
+						&& ! empty( $row['graded_at'] );
+				}
+			);
+
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					$by_user = (int) $a['user_id'] <=> (int) $b['user_id'];
+
+					return 0 !== $by_user ? $by_user : strcmp( (string) $a['graded_at'], (string) $b['graded_at'] );
+				}
+			);
+
+			return array_map(
+				static function ( $row ) use ( $assignments ) {
+					$max = isset( $row['max_points_at_grading'] ) && (float) $row['max_points_at_grading'] > 0 ? $row['max_points_at_grading'] : null;
+
+					if ( null === $max ) {
+						foreach ( $assignments as $assignment ) {
+							if ( (int) $assignment['id'] === (int) $row['assignment_id'] ) {
+								$max = isset( $assignment['max_points'] ) ? $assignment['max_points'] : null;
+							}
+						}
+					}
+
+					return [
+						'user_id'    => $row['user_id'],
+						'graded_at'  => $row['graded_at'],
+						'score'      => isset( $row['score'] ) ? $row['score'] : null,
+						'max_points' => $max,
+					];
+				},
+				$matches
+			);
+		}
+
+		// LearnDash quiz past completions with the best percentage (2.1):
+		// activity rows LEFT JOIN their 'percentage' meta. args:
+		// [activity table, meta table, type, post_id].
+		if ( false !== strpos( $query, 'MIN(a.activity_completed) AS completed_at' ) ) {
+			$meta = $this->rows( (string) $args[1] );
+
 			return $this->group_earliest(
 				$this->filter_rows(
 					$rows,
 					static function ( $row ) use ( $args ) {
 						return isset( $row['user_id'] ) && (int) $row['user_id'] > 0
-							&& (int) $row['assignment_id'] === (int) $args[1]
-							&& 1 === (int) ( isset( $row['passed'] ) ? $row['passed'] : 0 )
-							&& ! empty( $row['graded_at'] );
+							&& (string) ( isset( $row['activity_type'] ) ? $row['activity_type'] : '' ) === (string) $args[2]
+							&& (int) ( isset( $row['post_id'] ) ? $row['post_id'] : 0 ) === (int) $args[3]
+							&& 1 === (int) ( isset( $row['activity_status'] ) ? $row['activity_status'] : 0 )
+							&& (int) ( isset( $row['activity_completed'] ) ? $row['activity_completed'] : 0 ) > 0;
 					}
 				),
-				'graded_at'
+				'activity_completed',
+				static function ( $row ) use ( $meta ) {
+					foreach ( $meta as $entry ) {
+						if ( (int) $entry['activity_id'] === (int) ( isset( $row['activity_id'] ) ? $row['activity_id'] : $row['id'] )
+							&& 'percentage' === $entry['activity_meta_key'] && is_numeric( $entry['activity_meta_value'] ) ) {
+							return (float) $entry['activity_meta_value'];
+						}
+					}
+
+					return null;
+				}
 			);
+		}
+
+		// LearnPress quiz scores (2.1): result JSON rows of the passing
+		// quiz items. args: [results table, items table, item_id].
+		if ( false !== strpos( $query, 'SELECT i.user_id, r.result FROM %i r INNER JOIN %i i' ) ) {
+			$items = $this->rows( (string) $args[1] );
+			$out   = [];
+
+			foreach ( $rows as $result ) {
+				foreach ( $items as $item ) {
+					if ( (int) $item['user_item_id'] === (int) $result['user_item_id']
+						&& 'lp_quiz' === (string) $item['item_type']
+						&& (int) $item['item_id'] === (int) $args[2]
+						&& 'completed' === (string) $item['status']
+						&& 'passed' === (string) ( isset( $item['graduation'] ) ? $item['graduation'] : '' )
+						&& (int) $item['user_id'] > 0 ) {
+						$out[] = [
+							'user_id' => $item['user_id'],
+							'result'  => $result['result'],
+						];
+					}
+				}
+			}
+
+			return $out;
 		}
 
 		// LearnDash adapter past completions: earliest completed activity
@@ -805,7 +931,13 @@ class PPCert_Fake_WPDB {
 				$matches
 			);
 
-			return $this->group_earliest( $matches, 'end_date' );
+			return $this->group_earliest(
+				$matches,
+				'end_date',
+				static function ( $row ) {
+					return isset( $row['grade'] ) && is_numeric( $row['grade'] ) ? (float) $row['grade'] : null;
+				}
+			);
 		}
 
 		// Tutor course adapter past completions: completion comments.
@@ -837,7 +969,12 @@ class PPCert_Fake_WPDB {
 							&& ! empty( $row['attempt_ended_at'] );
 					}
 				),
-				'attempt_ended_at'
+				'attempt_ended_at',
+				static function ( $row ) {
+					$total = isset( $row['total_marks'] ) ? (float) $row['total_marks'] : 0.0;
+
+					return $total > 0 && isset( $row['earned_marks'] ) ? (float) $row['earned_marks'] * 100 / $total : null;
+				}
 			);
 		}
 
@@ -2557,12 +2694,15 @@ class PPCert_Fake_WPDB {
 	 * Group rows to (user_id, earliest datetime column) tuples - the
 	 * past-completions GROUP BY user_id / MIN(column) shape.
 	 *
-	 * @param array[] $rows   Matching rows.
-	 * @param string  $column Datetime column to minimize.
-	 * @return array[] Rows of [ user_id, completed_at ], user_id order.
+	 * @param array[]       $rows   Matching rows.
+	 * @param string        $column Datetime column to minimize.
+	 * @param callable|null $score  Since 2.1: row => float|null; adds the
+	 *                              MAX(score) column (null when none).
+	 * @return array[] Rows of [ user_id, completed_at (, score) ], user_id order.
 	 */
-	private function group_earliest( $rows, $column ) {
+	private function group_earliest( $rows, $column, $score = null ) {
 		$earliest = [];
+		$best     = [];
 
 		foreach ( $rows as $row ) {
 			$user_id = (int) $row['user_id'];
@@ -2574,6 +2714,13 @@ class PPCert_Fake_WPDB {
 			if ( ! isset( $earliest[ $user_id ] ) || $value < $earliest[ $user_id ] ) {
 				$earliest[ $user_id ] = $value;
 			}
+
+			// MAX(score) semantics (2.1): NULLs ignored.
+			$points = null === $score ? null : $score( $row );
+
+			if ( null !== $points && ( ! isset( $best[ $user_id ] ) || $points > $best[ $user_id ] ) ) {
+				$best[ $user_id ] = $points;
+			}
 		}
 
 		ksort( $earliest );
@@ -2581,10 +2728,16 @@ class PPCert_Fake_WPDB {
 		$result = [];
 
 		foreach ( $earliest as $user_id => $completed_at ) {
-			$result[] = [
+			$entry = [
 				'user_id'      => $user_id,
 				'completed_at' => $completed_at,
 			];
+
+			if ( null !== $score ) {
+				$entry['score'] = isset( $best[ $user_id ] ) ? $best[ $user_id ] : null;
+			}
+
+			$result[] = $entry;
 		}
 
 		return $result;

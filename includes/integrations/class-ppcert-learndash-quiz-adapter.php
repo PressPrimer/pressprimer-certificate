@@ -213,6 +213,17 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 	}
 
 	/**
+	 * Quiz posts for list_sources() and get_source_title() (2.1)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return string[]
+	 */
+	protected function listing_post_types(): array {
+		return [ self::QUIZ_POST_TYPE ];
+	}
+
+	/**
 	 * Conditions schema (TR-002)
 	 *
 	 * Same semantics as the PPQ adapter: null min_score follows the
@@ -348,15 +359,15 @@ class PressPrimer_Certificate_LearnDash_Quiz_Adapter extends PressPrimer_Certifi
 	/**
 	 * Users who PASSED this quiz - activity rows of type 'quiz', where
 	 * LearnDash stores the pass flag as activity_status (SUPPORTED; see
-	 * the course adapter's activity_completions(), including the
-	 * min_score historical limitation).
+	 * the course adapter's activity_completions()). Since 2.1 each row
+	 * carries `score`, the best passing percentage.
 	 *
 	 * @since 2.0.0
 	 *
 	 * @param string $source_ref Quiz post id.
-	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC, 'score'? => float ], ... ]
 	 */
 	public function get_past_completions( string $source_ref ) {
-		return $this->activity_completions( 'quiz', absint( $source_ref ) );
+		return $this->activity_completions( 'quiz', absint( $source_ref ), true );
 	}
 }

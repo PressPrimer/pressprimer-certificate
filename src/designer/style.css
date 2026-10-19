@@ -773,3 +773,58 @@
 .ppcert-designer__award-extension:empty {
 	display: none;
 }
+
+/* The Award email section's addon slot (2.1): a mapping select sits
+   between the help text and the Send Test Email button. */
+.ppcert-designer__award-email-extension {
+	margin-bottom: 12px;
+}
+
+.ppcert-designer__award-email-extension:empty {
+	display: none;
+}
+
+/* Page panel custom-size slot (2.1): addon fields under the Size menu. */
+.ppcert-designer__page-size-extension:empty {
+	display: none;
+}
+
+/* Image quick picks (2.1, ppcert.designer.imagePresets). */
+.ppcert-designer__image-presets {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 8px;
+}
+
+.ppcert-designer__image-preset {
+	width: 44px;
+	height: 44px;
+	padding: 2px;
+	border: 1px solid #d9d9d9;
+	border-radius: 4px;
+	background: #fff;
+	cursor: pointer;
+}
+
+.ppcert-designer__image-preset:hover,
+.ppcert-designer__image-preset:focus-visible {
+	border-color: #1677ff;
+}
+
+.ppcert-designer__image-preset:focus-visible {
+	outline: 2px solid #1677ff;
+	outline-offset: 1px;
+}
+
+.ppcert-designer__image-preset.is-active {
+	border-color: #1677ff;
+	box-shadow: 0 0 0 1px #1677ff;
+}
+
+.ppcert-designer__image-preset img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}

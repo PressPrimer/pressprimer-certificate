@@ -1123,6 +1123,23 @@ if ( ! function_exists( 'get_posts' ) ) {
 			);
 		}
 
+		// Oldest-first by id (2.1 list_sources()).
+		if ( isset( $args['orderby'] ) && 'ID' === $args['orderby'] ) {
+			usort(
+				$matches,
+				static function ( $a, $b ) {
+					return (int) $a->ID <=> (int) $b->ID;
+				}
+			);
+		}
+
+		// Paging (2.1 list_sources()): posts_per_page + paged.
+		if ( isset( $args['posts_per_page'] ) && (int) $args['posts_per_page'] > 0 ) {
+			$page = isset( $args['paged'] ) ? max( 1, (int) $args['paged'] ) : 1;
+
+			return array_slice( $matches, ( $page - 1 ) * (int) $args['posts_per_page'], (int) $args['posts_per_page'] );
+		}
+
 		$limit = isset( $args['numberposts'] ) ? (int) $args['numberposts'] : -1;
 
 		return $limit > 0 ? array_slice( $matches, 0, $limit ) : $matches;

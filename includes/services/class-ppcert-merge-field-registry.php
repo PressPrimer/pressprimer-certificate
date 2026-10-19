@@ -197,7 +197,28 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 		// Every page of the document (v3 multi-page wraps elements in
 		// pages[]; v1/v2 normalize to one page) - a token on ANY page
 		// must resolve into the snapshot at issue time.
-		$elements = array_merge( ...PressPrimer_Certificate_Layout_Validator::layout_pages( $layout ) );
+		$pages = PressPrimer_Certificate_Layout_Validator::layout_pages( $layout );
+
+		/**
+		 * Filters the pages whose tokens are snapshotted at issue.
+		 *
+		 * Lets token extraction see pages an addon stores under the
+		 * layout's `ext` key (Educator's wallet card), so their merge
+		 * fields resolve into the certificate's snapshot.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array[] $pages  Element arrays, one per page.
+		 * @param array   $layout The layout document.
+		 */
+		$pages    = apply_filters( 'ppcert_layout_token_pages', $pages, $layout );
+		$elements = [];
+
+		foreach ( is_array( $pages ) ? $pages : [] as $page ) {
+			if ( is_array( $page ) ) {
+				$elements = array_merge( $elements, array_values( $page ) );
+			}
+		}
 
 		// Inline tokens in text content (schema v2+, Feature 1.1-001):
 		// the renderer interpolates them, so issuance must resolve them.
@@ -742,16 +763,49 @@ class PressPrimer_Certificate_Merge_Field_Registry {
 	}
 
 	/**
-	 * Resolve the issuer name: site name by default; an issuer entity can
-	 * fill this same field later with no new token.
+	 * Resolve the issuer name: site name by default; an issuer entity
+	 * fills this same field through `ppcert_issuer_name` (2.1: School's
+	 * organization name for organization templates), so it is snapshotted
+	 * at issue and the PDF, emails, and verification agree.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The ppcert_issuer_name filter.
 	 *
-	 * @param array $context Issuance context.
+	 * @param array $context Issuance context (template_id, issuer_id, ...).
 	 * @return string
 	 */
 	public static function resolve_issuer_name( array $context ) {
-		return (string) get_bloginfo( 'name' );
+		return self::issuer_name( $context );
+	}
+
+	/**
+	 * The issuer name for a context (merge field and email token)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $context template_id, issuer_id, and the caller's keys
+	 *                       (certificate_id for emails, test for tests).
+	 * @return string Plain text.
+	 */
+	public static function issuer_name( array $context ) {
+		/**
+		 * Filters the issuer name printed on certificates and in emails.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param string $name    Default: the site name.
+		 * @param array  $context template_id, issuer_id (0 for site
+		 *                        templates), and the caller's keys.
+		 */
+		$default = (string) get_bloginfo( 'name' );
+		$name    = apply_filters( 'ppcert_issuer_name', $default, $context );
+
+		// The unfiltered site name passes through untouched (2.0 output).
+		if ( $name === $default || ! is_string( $name ) ) {
+			return $default;
+		}
+
+		return sanitize_text_field( $name );
 	}
 
 	/**

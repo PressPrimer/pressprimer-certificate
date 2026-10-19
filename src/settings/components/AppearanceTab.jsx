@@ -537,6 +537,15 @@ const AppearanceTab = ( { settings, updateSetting, settingsData } ) => {
 					/>
 				</div>
 			</div>
+
+			{ /* Addon extension slot (2.1, Feature 2.1-004 FR-006):
+			     Educator's Brand Kit mounts its own React root under the
+			     Design Defaults, on the page's addon dirty/save contract;
+			     :empty CSS keeps it invisible until an extension does. */ }
+			<div
+				id="ppcert-settings-appearance-extension"
+				className="ppcert-settings-appearance-extension"
+			/>
 		</div>
 	);
 };

@@ -474,10 +474,18 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 			$certificate->layout_snapshot,
 			is_array( $certificate->merge_data ) ? $certificate->merge_data : [],
 			[
-				'context'       => 'download',
-				'credential_id' => (string) $certificate->credential_id,
+				'context'        => 'download',
+				// The certificate and its recipient (2.1, Feature 2.1-007
+				// FR-003): ppcert_pdf_generated gets the real id and the
+				// metadata matches the emailed copy.
+				'certificate_id' => (int) $certificate->id,
+				'recipient_name' => PressPrimer_Certificate_Certificate::recipient_name( $certificate ),
+				'credential_id'  => (string) $certificate->credential_id,
 				// PDF metadata title = the certificate's own name (1.1-006).
-				'title'         => PressPrimer_Certificate_Certificate::display_title( $certificate ),
+				'title'          => PressPrimer_Certificate_Certificate::display_title( $certificate ),
+				// An addon render variant (2.1, Feature 2.1-004 FR-005):
+				// ?variant=card; unknown variants render the certificate.
+				'variant'        => sanitize_key( (string) $request->get_param( 'variant' ) ),
 			]
 		);
 
@@ -493,7 +501,7 @@ class PressPrimer_Certificate_REST_Certificates_Controller {
 			get_current_user_id() > 0 ? get_current_user_id() : null
 		);
 
-		$this->stream_pdf( $pdf_path, PressPrimer_Certificate_Certificate::pdf_filename( $certificate ) );
+		$this->stream_pdf( $pdf_path, PressPrimer_Certificate_Certificate::pdf_filename( $certificate, $renderer->get_last_variant() ) );
 	}
 
 	/**

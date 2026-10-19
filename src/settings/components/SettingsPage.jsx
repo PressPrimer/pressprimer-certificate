@@ -27,6 +27,7 @@ import {
 	KeyOutlined,
 	ShareAltOutlined,
 	TeamOutlined,
+	SafetyCertificateOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -49,6 +50,8 @@ const ADDON_ICONS = {
 	sharing: <ShareAltOutlined />,
 	license: <KeyOutlined />,
 	directory: <TeamOutlined />,
+	// Enterprise Open Badges (2.1).
+	'open-badges': <SafetyCertificateOutlined />,
 	default: <SettingOutlined />,
 };
 

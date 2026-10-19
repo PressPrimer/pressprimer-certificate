@@ -1047,6 +1047,14 @@ function TestEmailSection( { state } ) {
 					'pressprimer-certificate'
 				) }
 			</Typography.Paragraph>
+			{ /* Award-email extension slot (2.1, Feature 2.1-004 FR-003):
+			     Educator's award email select mounts its own React root
+			     here, above the test button; :empty CSS hides it until
+			     an extension does. */ }
+			<div
+				id="ppcert-designer-award-email-extension"
+				className="ppcert-designer__award-email-extension"
+			/>
 			{ templateId > 0 ? (
 				<Button loading={ sending } onClick={ onSend }>
 					{ __( 'Send Test Email', 'pressprimer-certificate' ) }

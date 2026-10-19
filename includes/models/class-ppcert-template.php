@@ -27,6 +27,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PressPrimer_Certificate_Template {
 
 	/**
+	 * Email template mapping keys in settings_json and the row context
+	 * each one requires (Decision 005; reminder key since 2.1)
+	 *
+	 * @since 2.1.0
+	 * @var array<string,string>
+	 */
+	const EMAIL_MAPPING_KEYS = [
+		'email_template_id'          => 'issuance',
+		'reminder_email_template_id' => 'reminder',
+	];
+
+	/**
+	 * Settings keys free sanitizes itself (never carried over: an absent
+	 * core key on save means it was cleared)
+	 *
+	 * @since 2.1.0
+	 * @var string[]
+	 */
+	const CORE_SETTINGS_KEYS = [
+		'validity_mode',
+		'validity_amount',
+		'validity_unit',
+		'validity_date',
+		'certificate_name',
+		'email_template_id',
+		'reminder_email_template_id',
+		'reminders_enabled',
+		'reminder_offsets',
+	];
+
+	/**
 	 * Get the full templates table name
 	 *
 	 * @since 1.0.0
@@ -347,7 +378,10 @@ class PressPrimer_Certificate_Template {
 		}
 
 		if ( isset( $args['settings'] ) && is_array( $args['settings'] ) ) {
-			$settings              = self::sanitize_settings( $args['settings'] );
+			$settings              = self::carry_over_settings(
+				self::sanitize_settings( $args['settings'] ),
+				isset( $row->settings ) && is_array( $row->settings ) ? $row->settings : []
+			);
 			$data['settings_json'] = empty( $settings ) ? null : wp_json_encode( $settings );
 			$format[]              = '%s';
 		}
@@ -633,19 +667,18 @@ class PressPrimer_Certificate_Template {
 			$clean['certificate_name'] = function_exists( 'mb_substr' ) ? mb_substr( $name, 0, 200 ) : substr( $name, 0, 200 );
 		}
 
-		// Email template mapping (2.0, Decision 005): a positive integer
-		// referencing a non-deleted wp_ppcert_email_templates row at save
-		// time; anything else is dropped and the built-in default email
-		// applies. Archived rows keep their mapping (the resolution chain
-		// skips them at send time). The round-trip cast rejects negatives
-		// and fractions rather than absint-coercing them onto another row.
-		if ( isset( $settings['email_template_id'] ) && is_numeric( $settings['email_template_id'] ) ) {
-			$mapped_id = (int) $settings['email_template_id'];
+		// Email template mappings (2.0, Decision 005; the reminder key
+		// and the context check since 2.1, Feature 2.1-004 FR-003): each
+		// a positive integer referencing a non-deleted
+		// wp_ppcert_email_templates row of the key's context at save
+		// time; anything else is dropped and the default email applies.
+		// Archived rows keep their mapping (the resolution chain skips
+		// them at send time).
+		foreach ( self::EMAIL_MAPPING_KEYS as $key => $email_context ) {
+			$mapped_id = self::clean_email_template_id( $settings, $key, $email_context );
 
-			if ( $mapped_id > 0
-				&& (string) $mapped_id === (string) $settings['email_template_id']
-				&& PressPrimer_Certificate_Email_Template::exists( $mapped_id ) ) {
-				$clean['email_template_id'] = $mapped_id;
+			if ( $mapped_id > 0 ) {
+				$clean[ $key ] = $mapped_id;
 			}
 		}
 
@@ -696,5 +729,114 @@ class PressPrimer_Certificate_Template {
 		 * @param array $settings Raw submitted settings.
 		 */
 		return (array) apply_filters( 'ppcert_template_sanitize_settings', $clean, $settings );
+	}
+
+	/**
+	 * Keep stored addon settings whose owner is inactive (2.1, Feature
+	 * 2.1-004 FR-015)
+	 *
+	 * The settings_json column is replaced wholesale on save, and keys no
+	 * active sanitizer claims never reach storage, so before 2.1 saving while
+	 * School was inactive dropped its `school_*` keys. Every stored
+	 * non-core key the sanitized result lacks is kept - the STORED value,
+	 * never request input - unless an active owner claims the key's
+	 * prefix: every registered addon owns `{addon id}_` (so School 2.0.x,
+	 * which clears a switch by omitting its key, stays authoritative),
+	 * and `ppcert_template_settings_owned_prefixes` adds others.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $clean  Sanitized settings being saved.
+	 * @param array $stored The settings stored on the row.
+	 * @return array
+	 */
+	private static function carry_over_settings( array $clean, array $stored ) {
+		/**
+		 * Filters the template-settings key prefixes owned by active
+		 * addons.
+		 *
+		 * An active addon lists the prefixes of the keys it sanitizes
+		 * (School: 'school_'), so its own sanitizer decides whether a
+		 * stored key survives a save. Keys of inactive addons carry over.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param string[] $prefixes Owned prefixes. Default: each registered
+		 *                           addon's id plus '_' ('school_').
+		 */
+		$owned = apply_filters( 'ppcert_template_settings_owned_prefixes', self::addon_prefixes() );
+		$owned = array_values( array_filter( is_array( $owned ) ? $owned : [], 'is_string' ) );
+
+		foreach ( $stored as $key => $value ) {
+			if ( ! is_string( $key ) || array_key_exists( $key, $clean ) || in_array( $key, self::CORE_SETTINGS_KEYS, true ) ) {
+				continue;
+			}
+
+			foreach ( $owned as $prefix ) {
+				if ( '' !== $prefix && 0 === strpos( $key, $prefix ) ) {
+					continue 2;
+				}
+			}
+
+			$clean[ $key ] = $value;
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * `{addon id}_` for every registered (active) addon
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return string[]
+	 */
+	private static function addon_prefixes() {
+		$manager = function_exists( 'ppcert_addon_manager' ) ? ppcert_addon_manager() : null;
+
+		if ( ! $manager || ! method_exists( $manager, 'get_addons' ) ) {
+			return [];
+		}
+
+		$prefixes = [];
+
+		foreach ( array_keys( (array) $manager->get_addons() ) as $addon_id ) {
+			$addon_id = sanitize_key( (string) $addon_id );
+
+			if ( '' !== $addon_id ) {
+				$prefixes[] = $addon_id . '_';
+			}
+		}
+
+		return $prefixes;
+	}
+
+	/**
+	 * One email template mapping, validated
+	 *
+	 * The round-trip cast rejects negatives and fractions rather than
+	 * absint-coercing them onto another row.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array  $settings      Raw settings.
+	 * @param string $key           Settings key.
+	 * @param string $email_context Required row context.
+	 * @return int Row id, or 0 when the mapping is invalid.
+	 */
+	private static function clean_email_template_id( array $settings, $key, $email_context ) {
+		if ( ! isset( $settings[ $key ] ) || ! is_numeric( $settings[ $key ] ) ) {
+			return 0;
+		}
+
+		$mapped_id = (int) $settings[ $key ];
+
+		if ( $mapped_id < 1
+			|| (string) $mapped_id !== (string) $settings[ $key ]
+			|| ! PressPrimer_Certificate_Email_Template::exists( $mapped_id, $email_context ) ) {
+			return 0;
+		}
+
+		return $mapped_id;
 	}
 }

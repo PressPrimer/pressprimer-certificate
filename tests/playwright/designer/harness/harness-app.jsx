@@ -12,6 +12,7 @@
 
 import { render, useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
+import { addFilter, removeAllFilters } from '@wordpress/hooks';
 import manifest from '../../../../fonts/manifest.json';
 import starter from '../../../../templates/starter-formal-landscape.json';
 import '../../../../src/designer/style.css';
@@ -455,6 +456,10 @@ function Bridge() {
 		getState: () => state,
 		dispatch,
 		seedAttachment: seedAttachmentUrl,
+		// The bundled @wordpress/hooks instance the designer reads (2.1
+		// JS filter seams); nothing is on window.wp in the harness.
+		addFilter,
+		removeAllFilters,
 	};
 
 	return null;

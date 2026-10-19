@@ -4,19 +4,48 @@
  * Attachment IDs only (schema + security rule); the modal seeds the
  * URL cache so the canvas renders immediately. When wp.media is not
  * present (test harness) the picker disables with an explanation.
+ *
+ * 2.1 (Feature 2.1-004 FR-006): `ppcert.designer.imagePresets` supplies
+ * quick-pick thumbnails above the picker (Educator's brand kit); a
+ * click sets the attachment in one undo step.
  */
 
 import { __ } from '@wordpress/i18n';
+import { applyFilters } from '@wordpress/hooks';
 import { Button, Select, Slider, Tooltip, Typography } from 'antd';
 import { PictureOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDesignerStore } from '../../hooks/useDesignerStore';
 import { updateElementProps } from '../../schema/geometry';
-import { useAttachmentUrl } from '../../hooks/useAttachment';
+import { seedAttachmentUrl, useAttachmentUrl } from '../../hooks/useAttachment';
 import { isMediaAvailable, openImagePicker } from '../../media';
 import PropRow from './PropRow';
 import ImageFormatWarning from './ImageFormatWarning';
 
 const { Text } = Typography;
+
+/**
+ * Quick-pick images for an element (2.1): `ppcert.designer.imagePresets`
+ * entries { id, label, thumb, url, mime? } with a positive attachment id
+ * and a label.
+ *
+ * @param {Object} element Selected element.
+ * @return {Array} Presets.
+ */
+function imagePresets( element ) {
+	const presets = applyFilters( 'ppcert.designer.imagePresets', [], element );
+
+	if ( ! Array.isArray( presets ) ) {
+		return [];
+	}
+
+	return presets.filter(
+		( preset ) =>
+			preset &&
+			parseInt( preset.id, 10 ) > 0 &&
+			preset.label &&
+			( preset.thumb || preset.url )
+	);
+}
 
 /**
  * The section.
@@ -47,6 +76,20 @@ export default function MediaSection( { element } ) {
 			onSelect: ( { id } ) => patch( { attachment_id: id } ),
 		} );
 
+	const presets = imagePresets( element );
+
+	const choosePreset = ( preset ) => {
+		const id = parseInt( preset.id, 10 );
+
+		// With its MIME type known, the canvas can render at once (the
+		// format warning reads the MIME); otherwise the hook fetches.
+		if ( preset.url && preset.mime ) {
+			seedAttachmentUrl( id, preset.url, preset.mime );
+		}
+
+		patch( { attachment_id: id } );
+	};
+
 	const pickButton = (
 		<Button
 			size="small"
@@ -76,6 +119,42 @@ export default function MediaSection( { element } ) {
 			) : null }
 
 			{ p.attachment_id ? <ImageFormatWarning mime={ mime } /> : null }
+
+			{ presets.length > 0 ? (
+				<div
+					className="ppcert-designer__image-presets"
+					data-ppcert-prop="image-presets"
+				>
+					{ presets.map( ( preset ) => {
+						const active =
+							parseInt( preset.id, 10 ) === p.attachment_id;
+
+						return (
+							<Tooltip
+								key={ preset.id }
+								title={ preset.label }
+								placement="bottom"
+							>
+								<button
+									type="button"
+									className={
+										'ppcert-designer__image-preset' +
+										( active ? ' is-active' : '' )
+									}
+									aria-label={ preset.label }
+									aria-pressed={ active }
+									onClick={ () => choosePreset( preset ) }
+								>
+									<img
+										src={ preset.thumb || preset.url }
+										alt=""
+									/>
+								</button>
+							</Tooltip>
+						);
+					} ) }
+				</div>
+			) : null }
 
 			<PropRow label={ __( 'Media', 'pressprimer-certificate' ) }>
 				{ available ? (

@@ -417,13 +417,15 @@ class PressPrimer_Certificate_TutorLMS_Quiz_Adapter extends PressPrimer_Certific
 	 * SITE-LOCAL (tutor_time(), verified against Tutor LMS 4.0.5
 	 * sources, 2026-08-30) and converts to UTC here. Limitations per
 	 * FR-005: attempts predating Tutor 3.7.1's result column are not
-	 * counted, and min_score trigger conditions are not evaluated
-	 * historically.
+	 * counted. Since 2.1 each row carries `score`, the best passing
+	 * earned_marks / total_marks percent (the live listener's formula),
+	 * so callers can apply min_score conditions
+	 * (Trigger_Registry::conditions_met()).
 	 *
 	 * @since 2.0.0
 	 *
 	 * @param string $source_ref Quiz post id.
-	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC, 'score' => float ], ... ]
 	 */
 	public function get_past_completions( string $source_ref ) {
 		global $wpdb;
@@ -436,7 +438,7 @@ class PressPrimer_Certificate_TutorLMS_Quiz_Adapter extends PressPrimer_Certific
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT user_id, MIN(attempt_ended_at) AS completed_at FROM %i WHERE quiz_id = %d AND result = 'pass' AND user_id > 0 AND attempt_ended_at IS NOT NULL GROUP BY user_id ORDER BY user_id ASC",
+				"SELECT user_id, MIN(attempt_ended_at) AS completed_at, MAX( CASE WHEN total_marks > 0 THEN earned_marks * 100 / total_marks END ) AS score FROM %i WHERE quiz_id = %d AND result = 'pass' AND user_id > 0 AND attempt_ended_at IS NOT NULL GROUP BY user_id ORDER BY user_id ASC",
 				$wpdb->prefix . 'tutor_quiz_attempts',
 				$quiz_id
 			)
@@ -445,11 +447,20 @@ class PressPrimer_Certificate_TutorLMS_Quiz_Adapter extends PressPrimer_Certific
 		$completions = [];
 
 		foreach ( (array) $rows as $row ) {
-			$completions[] = [
+			$completion = [
 				'user_id'      => (int) $row->user_id,
 				// Local -> UTC (Tutor's storage convention).
 				'completed_at' => (string) get_gmt_from_date( (string) $row->completed_at ),
 			];
+
+			// The best passing score (2.1, Feature 2.1-004 FR-016) for
+			// Trigger_Registry::conditions_met(); completed_at stays the
+			// earliest pass.
+			if ( isset( $row->score ) && is_numeric( $row->score ) ) {
+				$completion['score'] = round( (float) $row->score, 2 );
+			}
+
+			$completions[] = $completion;
 		}
 
 		return $completions;

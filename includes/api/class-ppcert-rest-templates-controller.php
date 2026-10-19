@@ -861,7 +861,10 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 	}
 
 	/**
-	 * Validator context for a saved template (its stored page)
+	 * Validator context for a saved template: its stored page (a custom
+	 * size saves while custom sizes are off) and its stored `ext` (addon
+	 * data carried over while its owner is inactive; Feature 2.1-004
+	 * FR-002, FR-005)
 	 *
 	 * @since 2.1.0
 	 *
@@ -869,10 +872,11 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 	 * @return array
 	 */
 	private static function validation_context( $row ) {
+		$layout = is_array( $row->layout ) ? $row->layout : [];
+
 		return [
-			'stored_page' => is_array( $row->layout ) && isset( $row->layout['page'] ) && is_array( $row->layout['page'] )
-				? $row->layout['page']
-				: [],
+			'stored_page' => isset( $layout['page'] ) && is_array( $layout['page'] ) ? $layout['page'] : [],
+			'stored_ext'  => isset( $layout['ext'] ) && is_array( $layout['ext'] ) ? $layout['ext'] : [],
 		];
 	}
 

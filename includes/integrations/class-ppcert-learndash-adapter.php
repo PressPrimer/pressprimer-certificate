@@ -314,22 +314,38 @@ class PressPrimer_Certificate_LearnDash_Adapter extends PressPrimer_Certificate_
 	 *
 	 * The shared LearnDash history query (course/lesson/topic/quiz
 	 * adapters all read the same activity table; quiz rows use
-	 * activity_status as the PASS flag). Limitation, recorded per
-	 * FR-005: min_score quiz conditions are not evaluated historically -
-	 * the percentage lives serialized in activity meta, and the
-	 * retroactive flow's preview is the checkpoint.
+	 * activity_status as the PASS flag). Since 2.1 quiz rows carry
+	 * `score`, the best passing `percentage` from activity meta, so
+	 * callers can apply min_score conditions
+	 * (Trigger_Registry::conditions_met()).
 	 *
 	 * @since 2.0.0
+	 * @since 2.1.0 The $with_score argument.
 	 *
 	 * @param string $activity_type LearnDash activity type.
 	 * @param int    $post_id       Source post id.
-	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC ], ... ]
+	 * @param bool   $with_score    Read each user's best percentage (quizzes).
+	 * @return array [ [ 'user_id' => int, 'completed_at' => UTC, 'score'? => float ], ... ]
 	 */
-	protected function activity_completions( string $activity_type, int $post_id ) {
+	protected function activity_completions( string $activity_type, int $post_id, bool $with_score = false ) {
 		global $wpdb;
 
 		if ( $post_id < 1 ) {
 			return [];
+		}
+
+		if ( $with_score ) {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT a.user_id, MIN(a.activity_completed) AS completed_at, MAX( CAST( m.activity_meta_value AS DECIMAL(10,2) ) ) AS score FROM %i a LEFT JOIN %i m ON m.activity_id = a.activity_id AND m.activity_meta_key = 'percentage' WHERE a.activity_type = %s AND a.post_id = %d AND a.activity_status = 1 AND a.user_id > 0 AND a.activity_completed > 0 GROUP BY a.user_id ORDER BY a.user_id ASC",
+					$wpdb->prefix . 'learndash_user_activity',
+					$wpdb->prefix . 'learndash_user_activity_meta',
+					$activity_type,
+					$post_id
+				)
+			);
+
+			return $this->completion_rows( $rows );
 		}
 
 		$rows = $wpdb->get_results(
@@ -341,14 +357,34 @@ class PressPrimer_Certificate_LearnDash_Adapter extends PressPrimer_Certificate_
 			)
 		);
 
+		return $this->completion_rows( $rows );
+	}
+
+	/**
+	 * Activity rows to completion tuples
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $rows Query rows (user_id, completed_at, score?).
+	 * @return array
+	 */
+	private function completion_rows( $rows ) {
 		$completions = [];
 
 		foreach ( (array) $rows as $row ) {
-			$completions[] = [
+			$completion = [
 				'user_id'      => (int) $row->user_id,
 				// UNIX timestamp, already UTC (time() in LearnDash).
 				'completed_at' => gmdate( 'Y-m-d H:i:s', (int) $row->completed_at ),
 			];
+
+			// The best passing score (2.1, Feature 2.1-004 FR-016);
+			// completed_at stays the earliest pass.
+			if ( isset( $row->score ) && is_numeric( $row->score ) ) {
+				$completion['score'] = round( (float) $row->score, 2 );
+			}
+
+			$completions[] = $completion;
 		}
 
 		return $completions;

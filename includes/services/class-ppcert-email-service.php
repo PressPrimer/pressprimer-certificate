@@ -142,27 +142,35 @@ class PressPrimer_Certificate_Email_Service {
 	 * automatic-email toggle because the staff click is explicit.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The $actor_id argument.
 	 *
-	 * @param int $certificate_id Certificate row id.
+	 * @param int      $certificate_id Certificate row id.
+	 * @param int|null $actor_id       Acting user for the event (the bulk
+	 *                                 service passes the job's creator);
+	 *                                 null for the current user.
 	 * @return bool Whether an email was sent.
 	 */
-	public static function resend( $certificate_id ) {
-		$sent = self::send_issued( absint( $certificate_id ), [ 'resend' => true ], true );
+	public static function resend( $certificate_id, $actor_id = null ) {
+		return (bool) PressPrimer_Certificate_Certificate::with_actor(
+			$actor_id,
+			static function () use ( $certificate_id ) {
+				$sent = self::send_issued( absint( $certificate_id ), [ 'resend' => true ], true );
 
-		// Lifecycle event (2.0, Feature 2.0-006 FR-006): a resend records
-		// as the reserved 'reissued' type - only when the mail actually
-		// went out (a filter veto or mailer failure records nothing).
-		if ( $sent ) {
-			$actor = function_exists( 'get_current_user_id' ) ? get_current_user_id() : 0;
+				// Lifecycle event (2.0, Feature 2.0-006 FR-006): a resend
+				// records as the reserved 'reissued' type - only when the
+				// mail actually went out (a filter veto or mailer failure
+				// records nothing).
+				if ( $sent ) {
+					PressPrimer_Certificate_Certificate::record_event(
+						absint( $certificate_id ),
+						'reissued',
+						PressPrimer_Certificate_Certificate::current_actor()
+					);
+				}
 
-			PressPrimer_Certificate_Certificate::record_event(
-				absint( $certificate_id ),
-				'reissued',
-				$actor > 0 ? $actor : null
-			);
-		}
-
-		return $sent;
+				return $sent;
+			}
+		);
 	}
 
 	/**
@@ -271,7 +279,13 @@ class PressPrimer_Certificate_Email_Service {
 			),
 			'{credential_id}'    => PressPrimer_Certificate_Certificate::display_credential_id( $certificate ),
 			'{verification_url}' => ppcert_verification_url( (string) $certificate->credential_id ),
-			'{issuer_name}'      => (string) get_bloginfo( 'name' ),
+			'{issuer_name}'      => PressPrimer_Certificate_Merge_Field_Registry::issuer_name(
+				[
+					'template_id'    => (int) $certificate->template_id,
+					'issuer_id'      => ! empty( $certificate->issuer_id ) ? (int) $certificate->issuer_id : 0,
+					'certificate_id' => (int) $certificate->id,
+				]
+			),
 			'{site_name}'        => (string) get_bloginfo( 'name' ),
 		];
 	}
@@ -525,7 +539,13 @@ class PressPrimer_Certificate_Email_Service {
 			'{subject}'          => isset( $samples['certificate.title'] ) ? (string) $samples['certificate.title'] : ( $template && isset( $template->title ) ? (string) $template->title : '' ),
 			'{credential_id}'    => isset( $samples['certificate.credential_id'] ) ? (string) $samples['certificate.credential_id'] : '',
 			'{verification_url}' => ppcert_verification_page_url(),
-			'{issuer_name}'      => (string) get_bloginfo( 'name' ),
+			'{issuer_name}'      => PressPrimer_Certificate_Merge_Field_Registry::issuer_name(
+				[
+					'template_id' => $template && isset( $template->id ) ? (int) $template->id : 0,
+					'issuer_id'   => $template && ! empty( $template->issuer_id ) ? (int) $template->issuer_id : 0,
+					'test'        => true,
+				]
+			),
 			'{site_name}'        => (string) get_bloginfo( 'name' ),
 		];
 
@@ -623,16 +643,19 @@ class PressPrimer_Certificate_Email_Service {
 	/**
 	 * Resolve the effective email subject/body for a certificate template
 	 *
-	 * The Decision 005 resolution chain: when the template maps to an
-	 * email-template row (settings_json.email_template_id) and that row
-	 * is active, non-deleted, and of the requested context, its stored
-	 * subject/body win; in every other state - no mapping, missing row,
-	 * soft-deleted, archived, wrong context - the caller falls back to
-	 * the built-in default. Works with the table empty and with no
-	 * addons installed, and behaves identically for the future reminder
-	 * context.
+	 * The Decision 005 resolution chain. The row ID comes from
+	 * `ppcert_email_template_id`, whose default is 0: free alone always
+	 * sends the built-in default, and Educator returns the stored mapping
+	 * (settings_json.email_template_id for `issuance`,
+	 * reminder_email_template_id for `reminder`), so mappings apply only
+	 * while Educator is active (2.1, Feature 2.1-004 FR-003). A row that
+	 * is active, non-deleted, and of the requested context supplies the
+	 * subject/body; in every other state the caller falls back to the
+	 * built-in default. `ppcert_email_resolved_content` has the last word.
 	 *
 	 * @since 2.0.0
+	 * @since 2.1.0 The ID filter (default 0), the reminder key, and the
+	 *              resolved-content filter.
 	 *
 	 * @param object|null $template      Template row (hydrated, with
 	 *                                   decoded settings), or null.
@@ -642,25 +665,59 @@ class PressPrimer_Certificate_Email_Service {
 	 *                    null when the built-in default applies.
 	 */
 	public static function resolve_content( $template, $email_context = 'issuance' ) {
-		$settings = $template && isset( $template->settings ) && is_array( $template->settings )
+		$email_context = (string) $email_context;
+		$settings      = $template && isset( $template->settings ) && is_array( $template->settings )
 			? $template->settings
 			: [];
 
-		$mapped_id = isset( $settings['email_template_id'] ) ? absint( $settings['email_template_id'] ) : 0;
+		$key       = array_search( $email_context, PressPrimer_Certificate_Template::EMAIL_MAPPING_KEYS, true );
+		$stored_id = false !== $key && isset( $settings[ $key ] ) ? absint( $settings[ $key ] ) : 0;
 
-		if ( $mapped_id < 1 ) {
-			return null;
+		/**
+		 * Filters which email-template row a certificate template's email
+		 * uses (Decision 005).
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param int         $id            Row ID to use; 0 for the built-in default.
+		 *                                   Default 0 (free ignores stored mappings).
+		 * @param int         $stored_id     The mapping stored in the template's settings.
+		 * @param object|null $template      Template row, or null.
+		 * @param string      $email_context Email context ('issuance', 'reminder').
+		 */
+		$mapped_id = absint( apply_filters( 'ppcert_email_template_id', 0, $stored_id, $template, $email_context ) );
+		$content   = null;
+
+		if ( $mapped_id > 0 ) {
+			$row = PressPrimer_Certificate_Email_Template::get_active( $mapped_id );
+
+			if ( $row && (string) $row->context === $email_context ) {
+				$content = [
+					'subject' => (string) $row->subject,
+					'body'    => (string) $row->body,
+				];
+			}
 		}
 
-		$row = PressPrimer_Certificate_Email_Template::get_active( $mapped_id );
+		/**
+		 * Filters the resolved email content.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array|null  $content       { subject, body }, or null for the built-in default.
+		 * @param object|null $template      Template row, or null.
+		 * @param string      $email_context Email context.
+		 */
+		$content = apply_filters( 'ppcert_email_resolved_content', $content, $template, $email_context );
 
-		if ( ! $row || (string) $row->context !== (string) $email_context ) {
+		if ( ! is_array( $content ) || ! isset( $content['subject'], $content['body'] )
+			|| ! is_string( $content['subject'] ) || ! is_string( $content['body'] ) ) {
 			return null;
 		}
 
 		return [
-			'subject' => (string) $row->subject,
-			'body'    => (string) $row->body,
+			'subject' => $content['subject'],
+			'body'    => $content['body'],
 		];
 	}
 
@@ -680,8 +737,14 @@ class PressPrimer_Certificate_Email_Service {
 	 * surface must feed the issuance-path collection, because previews
 	 * substitute the sample map and cannot catch collection gaps).
 	 *
+	 * Since 2.1 the tokens of every mapped email context are collected
+	 * (Feature 2.1-004 FR-004): the issuance content plus the reminder
+	 * content when one resolves, so a token used only in a reminder is
+	 * snapshotted too and never renders empty.
+	 *
 	 * @since 1.1.0
 	 * @since 2.0.0 Accepts the template whose effective content applies.
+	 * @since 2.1.0 Includes the resolved reminder content.
 	 *
 	 * @param object|null $template Template row, or null for the
 	 *                              settings default.
@@ -691,17 +754,20 @@ class PressPrimer_Certificate_Email_Service {
 		$resolved = self::resolve_content( $template );
 
 		if ( null !== $resolved ) {
-			$subject = $resolved['subject'];
-			$body    = $resolved['body'];
+			$texts = [ $resolved['subject'], $resolved['body'] ];
 		} else {
 			$settings = self::settings();
-			$subject  = (string) $settings['email_issued_subject'];
-			$body     = (string) $settings['email_issued_body'];
+			$texts    = [ (string) $settings['email_issued_subject'], (string) $settings['email_issued_body'] ];
 		}
 
-		return PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text(
-			$subject . "\n" . $body
-		);
+		$reminder = self::resolve_content( $template, 'reminder' );
+
+		if ( null !== $reminder ) {
+			$texts[] = $reminder['subject'];
+			$texts[] = $reminder['body'];
+		}
+
+		return PressPrimer_Certificate_Merge_Field_Registry::extract_tokens_from_text( implode( "\n", $texts ) );
 	}
 
 	/**

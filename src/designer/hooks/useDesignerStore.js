@@ -21,7 +21,12 @@ export const initialState = {
 	template: null, // { id, title, status, page_size, orientation, updated_at }
 	layout: null, // The validator-clean layout document.
 	selection: [], // Selected element ids.
-	history: { past: [], future: [] },
+	// pastStates/futureStates run parallel to past/future: opaque addon
+	// state attached to each undo step (2.1, attachHistoryState).
+	history: { past: [], future: [], pastStates: [], futureStates: [] },
+	// The last undo/redo, delivered to extension subscribers once:
+	// { seq, direction: 'undo'|'redo', state }.
+	historyEvent: null,
 	dirty: false,
 	triggers: [],
 	// Trigger edits live outside the undo stack (FR-008) and save with
@@ -38,7 +43,26 @@ export const initialState = {
  */
 function pushHistory( history, layout ) {
 	const past = [ ...history.past, layout ].slice( -HISTORY_LIMIT );
-	return { past, future: [] };
+	const pastStates = [ ...( history.pastStates || [] ), null ].slice(
+		-HISTORY_LIMIT
+	);
+	return { past, future: [], pastStates, futureStates: [] };
+}
+
+/**
+ * The next history event (undo/redo notification for extensions).
+ *
+ * @param {Object|null} previous  Previous event.
+ * @param {string}      direction 'undo' | 'redo'.
+ * @param {*}           stepState The step's attached addon state.
+ * @return {Object} Event.
+ */
+function historyEvent( previous, direction, stepState ) {
+	return {
+		seq: ( previous ? previous.seq : 0 ) + 1,
+		direction,
+		state: undefined === stepState ? null : stepState,
+	};
 }
 
 /**
@@ -81,7 +105,12 @@ export function designerReducer( state, action ) {
 				...state,
 				layout: action.layout,
 				selection: [],
-				history: { past: [], future: [] },
+				history: {
+					past: [],
+					future: [],
+					pastStates: [],
+					futureStates: [],
+				},
 				dirty:
 					'boolean' === typeof action.dirty
 						? action.dirty
@@ -137,6 +166,30 @@ export function designerReducer( state, action ) {
 				triggersDirty: true,
 			};
 
+		case 'ATTACH_HISTORY_STATE': {
+			// Opaque addon state on the most recent undo step (2.1,
+			// Feature 2.1-004 FR-006): delivered back to subscribers when
+			// that step is undone or redone.
+			const count = state.history.past.length;
+
+			if ( 0 === count ) {
+				return state;
+			}
+
+			const pastStates = [ ...( state.history.pastStates || [] ) ];
+
+			while ( pastStates.length < count ) {
+				pastStates.unshift( null );
+			}
+
+			pastStates[ count - 1 ] = action.state;
+
+			return {
+				...state,
+				history: { ...state.history, pastStates },
+			};
+		}
+
 		case 'UNDO': {
 			if ( state.history.past.length === 0 ) {
 				return state;
@@ -144,6 +197,11 @@ export function designerReducer( state, action ) {
 			const past = state.history.past.slice( 0, -1 );
 			const restored =
 				state.history.past[ state.history.past.length - 1 ];
+			const states = state.history.pastStates || [];
+			const stepState =
+				states.length === state.history.past.length
+					? states[ states.length - 1 ]
+					: null;
 			return {
 				...state,
 				layout: restored,
@@ -153,7 +211,17 @@ export function designerReducer( state, action ) {
 						0,
 						HISTORY_LIMIT
 					),
+					pastStates: states.slice( 0, past.length ),
+					futureStates: [
+						stepState,
+						...( state.history.futureStates || [] ),
+					].slice( 0, HISTORY_LIMIT ),
 				},
+				historyEvent: historyEvent(
+					state.historyEvent,
+					'undo',
+					stepState
+				),
 				dirty: true,
 			};
 		}
@@ -163,6 +231,8 @@ export function designerReducer( state, action ) {
 				return state;
 			}
 			const [ next, ...future ] = state.history.future;
+			const [ stepState = null, ...futureStates ] =
+				state.history.futureStates || [];
 			return {
 				...state,
 				layout: next,
@@ -171,7 +241,17 @@ export function designerReducer( state, action ) {
 						-HISTORY_LIMIT
 					),
 					future,
+					pastStates: [
+						...( state.history.pastStates || [] ),
+						stepState,
+					].slice( -HISTORY_LIMIT ),
+					futureStates,
 				},
+				historyEvent: historyEvent(
+					state.historyEvent,
+					'redo',
+					stepState
+				),
 				dirty: true,
 			};
 		}

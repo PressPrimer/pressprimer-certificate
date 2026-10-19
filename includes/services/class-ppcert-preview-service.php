@@ -316,6 +316,34 @@ class PressPrimer_Certificate_Preview_Service {
 	}
 
 	/**
+	 * Delete every cached certificate-page preview (2.1, Feature 2.1-004
+	 * FR-016)
+	 *
+	 * Previews regenerate on the next view. Educator calls this when a
+	 * font is deleted, so no preview keeps showing a face that no longer
+	 * renders. The index guard stays.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return int Files deleted.
+	 */
+	public static function flush_all() {
+		$uploads = wp_upload_dir();
+		$files   = glob( trailingslashit( $uploads['basedir'] ) . self::SUBDIR . '/*.png' );
+		$deleted = 0;
+
+		foreach ( is_array( $files ) ? $files : [] as $file ) {
+			wp_delete_file( $file );
+
+			if ( ! file_exists( $file ) ) {
+				++$deleted;
+			}
+		}
+
+		return $deleted;
+	}
+
+	/**
 	 * Drop an empty index.php into the previews directory
 	 *
 	 * Prevents directory listing on hosts that allow it.

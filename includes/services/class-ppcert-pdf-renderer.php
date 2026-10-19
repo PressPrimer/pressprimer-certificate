@@ -59,6 +59,14 @@ class PressPrimer_Certificate_PDF_Renderer {
 	private $temp_files = [];
 
 	/**
+	 * The variant the last render applied ('' for the certificate itself)
+	 *
+	 * @since 2.1.0
+	 * @var string
+	 */
+	private $variant = '';
+
+	/**
 	 * Cached font manifest
 	 *
 	 * @since 1.0.0
@@ -82,11 +90,85 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 *                                  issued certificate; 0 otherwise.
 	 *     @type string $title          Document title (template title).
 	 *     @type string $recipient_name Recipient display name for metadata.
+	 *     @type string $variant        Since 2.1: an addon render variant
+	 *                                  ('card'); '' for the document itself.
 	 * }
 	 * @return string|WP_Error Absolute path to the PDF temp file. The caller
 	 *                         owns the file (stream/attach, then delete).
 	 */
 	public function render_pdf( array $layout, array $merge_data, array $args = [] ) {
+		return $this->render_document( $this->render_layout( $layout, $merge_data, $args ), $merge_data, $args );
+	}
+
+	/**
+	 * The variant the last render applied
+	 *
+	 * '' when none was requested, or when no addon supplied a layout for
+	 * the requested one (the certificate itself rendered; Feature 2.1-004
+	 * FR-005 edge case). Callers append it to file names.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return string
+	 */
+	public function get_last_variant() {
+		return $this->variant;
+	}
+
+	/**
+	 * The layout to render, after `ppcert_render_layout`
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $layout     Layout document.
+	 * @param array $merge_data Merge data.
+	 * @param array $args       Render arguments.
+	 * @return array
+	 */
+	private function render_layout( array $layout, array $merge_data, array $args ) {
+		$this->variant   = '';
+		$args['variant'] = isset( $args['variant'] ) ? sanitize_key( (string) $args['variant'] ) : '';
+
+		/**
+		 * Filters the layout document just before rendering.
+		 *
+		 * Runs before structural verification, so an addon can supply a
+		 * variant's layout (Educator's wallet card, built from the
+		 * snapshot's `ext` data). The result must be a validator-clean
+		 * document; anything else hard-fails like any malformed layout.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array $layout     Layout document (the snapshot for issued certificates).
+		 * @param array $merge_data Resolved merge data.
+		 * @param array $args       Render arguments: context, certificate_id,
+		 *                          credential_id, variant ('' for none), ...
+		 */
+		$filtered = apply_filters( 'ppcert_render_layout', $layout, $merge_data, $args );
+
+		if ( ! is_array( $filtered ) ) {
+			return $layout;
+		}
+
+		// A requested variant counts only when an addon supplied it.
+		if ( '' !== $args['variant'] && $filtered !== $layout ) {
+			$this->variant = $args['variant'];
+		}
+
+		return $filtered;
+	}
+
+	/**
+	 * Render a (filtered) layout document to a PDF temp file
+	 *
+	 * @since 2.1.0 Split from render_pdf().
+	 *
+	 * @param array $layout     Layout document.
+	 * @param array $merge_data Merge data.
+	 * @param array $args       Render arguments.
+	 * @return string|WP_Error
+	 */
+	private function render_document( array $layout, array $merge_data, array $args ) {
 		$this->warnings = [];
 
 		$structure = $this->verify_structure( $layout );
@@ -200,17 +282,22 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 * PDF to their own emails: loads the certificate, renders its
 	 * immutable snapshot with its merge data, and returns a temp file
 	 * with a recipient-friendly name (certificate-xxxx-xxxx-xxxx.pdf, the
-	 * one file-name form since 2.1).
-	 * The email service's attachment path delegates here. The caller
-	 * owns the file: attach or stream it, then wp_delete_file().
+	 * one file-name form since 2.1; a rendered variant appends
+	 * -{variant}). The email service's attachment path delegates here.
+	 * The caller owns the file: attach or stream it, then
+	 * wp_delete_file().
 	 *
 	 * @since 2.0.0
+	 * @since 2.1.0 The $args argument (`variant`).
 	 *
 	 * @param int    $certificate_id Certificate row id.
 	 * @param string $context        'download' | 'email' | 'preview'.
+	 * @param array  $args           Optional: `variant` (an addon render
+	 *                               variant such as 'card'; unknown
+	 *                               variants render the certificate).
 	 * @return string|WP_Error Absolute temp path, or WP_Error.
 	 */
-	public static function render_certificate( $certificate_id, $context = 'download' ) {
+	public static function render_certificate( $certificate_id, $context = 'download', array $args = [] ) {
 		$certificate = PressPrimer_Certificate_Certificate::get( absint( $certificate_id ) );
 
 		if ( ! $certificate || ! is_array( $certificate->layout_snapshot ) ) {
@@ -236,7 +323,8 @@ class PressPrimer_Certificate_PDF_Renderer {
 					$certificate,
 					$template ? (string) $template->title : ''
 				),
-				'recipient_name' => isset( $merge['recipient.full_name'] ) ? (string) $merge['recipient.full_name'] : '',
+				'recipient_name' => PressPrimer_Certificate_Certificate::recipient_name( $certificate ),
+				'variant'        => isset( $args['variant'] ) ? sanitize_key( (string) $args['variant'] ) : '',
 			]
 		);
 
@@ -246,7 +334,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		// A recipient-friendly filename: mail clients and download
 		// managers type the file by extension (wp_tempnam yields .tmp).
-		$friendly = dirname( $path ) . '/' . PressPrimer_Certificate_Certificate::pdf_filename( $certificate );
+		$friendly = dirname( $path ) . '/' . PressPrimer_Certificate_Certificate::pdf_filename( $certificate, $renderer->get_last_variant() );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Temp-to-temp rename in the same directory; WP_Filesystem is for user-visible storage.
 		if ( rename( $path, $friendly ) ) {
@@ -1268,6 +1356,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 * @return string|WP_Error Absolute path to the PNG temp file (caller owns).
 	 */
 	public function render_png( array $layout, array $merge_data, array $args = [] ) {
+		$layout    = $this->render_layout( $layout, $merge_data, $args );
 		$structure = $this->verify_structure( $layout );
 
 		if ( is_wp_error( $structure ) ) {
@@ -1284,7 +1373,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 		$page  = min( $page, count( $pages ) );
 
 		if ( extension_loaded( 'imagick' ) ) {
-			$pdf_path = $this->render_pdf( $layout, $merge_data, $args );
+			$pdf_path = $this->render_document( $layout, $merge_data, $args );
 
 			if ( is_wp_error( $pdf_path ) ) {
 				return $pdf_path;

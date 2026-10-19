@@ -539,4 +539,185 @@ class Test_PPA_Adapter extends TestCase { // phpcs:ignore Generic.Files.OneObjec
 			'UTC storage passes through unshifted; returned rows keep their pass.'
 		);
 	}
+
+	/**
+	 * min_points (2.1): the bar in points earned; with min_grade set
+	 * too, a grade must meet both.
+	 *
+	 * @return void
+	 */
+	public function test_min_points_condition() {
+		$this->seed_trigger( [ 'min_points' => 45.0 ] );
+
+		$this->fire_graded( 44.5, 50.0 );
+		$this->assertCount( 0, $this->wpdb->rows( 'wp_ppcert_certificates' ), '44.5 points is under 45' );
+
+		$this->fire_graded( 45.0, 50.0 );
+		$this->assertCount( 1, $this->wpdb->rows( 'wp_ppcert_certificates' ) );
+
+		$types = PressPrimer_Certificate_Trigger_Registry::get_types();
+		$this->assertSame( 'number', $types['ppa_assignment']['conditions_schema']['min_points']['type'] );
+		$clean = PressPrimer_Certificate_Trigger_Registry::sanitize_conditions( 'ppa_assignment', [ 'min_points' => '250' ] );
+		$this->assertSame( 250.0, $clean['min_points'], 'Points are not capped at 100' );
+		$this->assertNull( $clean['min_grade'] );
+	}
+
+	/**
+	 * Both minimums set: 45/50 (90%) meets 90% and 45 points; 46/60
+	 * meets the points but not the percentage.
+	 *
+	 * @return void
+	 */
+	public function test_both_minimums_must_be_met() {
+		$this->seed_trigger(
+			[
+				'min_grade'  => 90.0,
+				'min_points' => 45.0,
+			]
+		);
+
+		$this->fire_graded( 46.0, 60.0 );
+		$this->assertCount( 0, $this->wpdb->rows( 'wp_ppcert_certificates' ) );
+
+		$this->fire_graded( 45.0, 50.0 );
+		$this->assertCount( 1, $this->wpdb->rows( 'wp_ppcert_certificates' ) );
+	}
+
+	/**
+	 * source.grade_points (2.1): points earned of points possible.
+	 *
+	 * @return void
+	 */
+	public function test_grade_points_merge_field() {
+		$fields = PressPrimer_Certificate_Merge_Field_Registry::get_fields( 'designer' );
+		$this->assertArrayHasKey( 'source.grade_points', $fields );
+		$this->assertSame( '62 / 65', $fields['source.grade_points']['sample'] );
+
+		$this->seed_trigger();
+		$this->wpdb->mutate_row(
+			PressPrimer_Certificate_Template::table(),
+			$this->template_id,
+			[
+				'layout_json' => wp_json_encode(
+					[
+						'layout_schema_version' => 1,
+						'page'                  => [
+							'size'        => 'a4',
+							'orientation' => 'landscape',
+							'width'       => 842,
+							'height'      => 595,
+						],
+						'background'            => [
+							'color'         => '#ffffff',
+							'attachment_id' => 0,
+						],
+						'elements'              => [
+							[
+								'id'    => 'el_pointsfl',
+								'type'  => 'merge_field',
+								'x'     => 100,
+								'y'     => 100,
+								'w'     => 300,
+								'h'     => 30,
+								'z'     => 1,
+								'props' => [
+									'token'       => '{{source.grade_points}}',
+									'font_family' => 'playfair-display',
+									'font_size'   => 18,
+									'color'       => '#1f2a44',
+									'align'       => 'left',
+									'line_height' => 1.2,
+									'bold'        => false,
+									'italic'      => false,
+								],
+							],
+						],
+					]
+				),
+			]
+		);
+
+		$this->fire_graded( 62.5, 65.0 );
+
+		$rows  = $this->wpdb->rows( 'wp_ppcert_certificates' );
+		$merge = json_decode( $rows[0]['merge_data_json'], true );
+		$this->assertSame( '62.5 / 65', $merge['source.grade_points'] );
+	}
+
+	/**
+	 * Past completions (2.1) carry the best passing submission's
+	 * percent, points, and max; the date stays the earliest pass; the
+	 * assignment's max_points stands in when no snapshot exists.
+	 *
+	 * @return void
+	 */
+	public function test_past_completions_carry_best_grade() {
+		$this->wpdb->seed_row(
+			'wp_ppa_assignments',
+			[
+				'id'         => 11,
+				'title'      => 'Field Research Essay',
+				'max_points' => 40,
+			]
+		);
+
+		$submissions = [
+			// User 7: 45/50 first, then a better 62/65 resubmission.
+			[ 'user_id' => 7, 'assignment_id' => 11, 'passed' => 1, 'score' => 45, 'max_points_at_grading' => 50, 'graded_at' => '2026-06-12 14:30:00' ],
+			[ 'user_id' => 7, 'assignment_id' => 11, 'passed' => 1, 'score' => 62, 'max_points_at_grading' => 65, 'graded_at' => '2026-07-02 14:30:00' ],
+			// User 8: no snapshot - the assignment's 40 points.
+			[ 'user_id' => 8, 'assignment_id' => 11, 'passed' => 1, 'score' => 30, 'max_points_at_grading' => null, 'graded_at' => '2026-06-13 14:30:00' ],
+			// A failed attempt never counts.
+			[ 'user_id' => 8, 'assignment_id' => 11, 'passed' => 0, 'score' => 39, 'max_points_at_grading' => 40, 'graded_at' => '2026-06-14 14:30:00' ],
+		];
+
+		foreach ( $submissions as $submission ) {
+			$this->wpdb->seed_row( 'wp_ppa_submissions', $submission );
+		}
+
+		$completions = $this->adapter->get_past_completions( '11' );
+
+		$this->assertSame(
+			[
+				[
+					'user_id'      => 7,
+					'completed_at' => '2026-06-12 14:30:00',
+					'score'        => 95.38,
+					'points'       => 62.0,
+					'max_points'   => 65.0,
+				],
+				[
+					'user_id'      => 8,
+					'completed_at' => '2026-06-13 14:30:00',
+					'score'        => 75.0,
+					'points'       => 30.0,
+					'max_points'   => 40.0,
+				],
+			],
+			$completions
+		);
+
+		$this->assertSame(
+			[
+				'src_grade_display'        => '95.38%',
+				'src_grade_points_display' => '62 / 65',
+			],
+			$this->adapter->completion_context( $completions[0] ),
+			'A past award prints what a live one would'
+		);
+		$this->assertSame( [], $this->adapter->completion_context( [ 'user_id' => 9 ] ) );
+
+		$trigger = [
+			'conditions' => [
+				'min_grade'  => 90,
+				'min_points' => 60,
+			],
+		];
+		$this->assertTrue( PressPrimer_Certificate_Trigger_Registry::conditions_met( $trigger, $completions[0] ) );
+		$this->assertFalse( PressPrimer_Certificate_Trigger_Registry::conditions_met( $trigger, $completions[1] ) );
+		$this->assertFalse(
+			PressPrimer_Certificate_Trigger_Registry::conditions_met( [ 'conditions' => [ 'min_points' => 1 ] ], [ 'score' => 99 ] ),
+			'No points: a points minimum cannot be met'
+		);
+	}
 }

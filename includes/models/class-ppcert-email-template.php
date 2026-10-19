@@ -76,15 +76,26 @@ class PressPrimer_Certificate_Email_Template {
 	 *
 	 * The save-time validation for settings_json.email_template_id
 	 * (Feature 2.0-006 FR-001): archived rows still validate - only
-	 * soft-deleted rows reject the mapping.
+	 * soft-deleted rows reject the mapping. Since 2.1 a mapping key also
+	 * names its context (`issuance` for email_template_id, `reminder`
+	 * for reminder_email_template_id), and a row of another context does
+	 * not validate (Feature 2.1-004 FR-003).
 	 *
 	 * @since 2.0.0
+	 * @since 2.1.0 The $context argument.
 	 *
-	 * @param int $id Email template row id.
+	 * @param int    $id      Email template row id.
+	 * @param string $context Required row context, or '' for any.
 	 * @return bool
 	 */
-	public static function exists( $id ) {
-		return null !== self::get( $id );
+	public static function exists( $id, $context = '' ) {
+		$row = self::get( $id );
+
+		if ( null === $row ) {
+			return false;
+		}
+
+		return '' === (string) $context || (string) $row->context === (string) $context;
 	}
 
 	/**

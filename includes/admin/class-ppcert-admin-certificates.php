@@ -75,9 +75,7 @@ class PressPrimer_Certificate_Admin_Certificates {
 
 		check_admin_referer( 'ppcert_revoke_certificate_' . $certificate_id );
 
-		if ( ! PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $certificate_id ), get_current_user_id() ) ) {
-			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
-		}
+		self::authorize( $certificate_id, 'revoke' );
 
 		$reason = isset( $_GET['revoke_reason'] )
 			? sanitize_text_field( wp_unslash( $_GET['revoke_reason'] ) )
@@ -125,9 +123,7 @@ class PressPrimer_Certificate_Admin_Certificates {
 
 		check_admin_referer( 'ppcert_reinstate_certificate_' . $certificate_id );
 
-		if ( ! PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $certificate_id ), get_current_user_id() ) ) {
-			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
-		}
+		self::authorize( $certificate_id, 'reinstate' );
 
 		$result     = PressPrimer_Certificate_Certificate::reinstate( $certificate_id );
 		$reinstated = ! is_wp_error( $result ) ? 1 : 0;
@@ -173,9 +169,7 @@ class PressPrimer_Certificate_Admin_Certificates {
 
 		check_admin_referer( 'ppcert_delete_certificate_' . $certificate_id );
 
-		if ( ! PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $certificate_id ), get_current_user_id() ) ) {
-			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
-		}
+		self::authorize( $certificate_id, 'delete' );
 
 		$result  = PressPrimer_Certificate_Certificate::delete( $certificate_id );
 		$deleted = ! is_wp_error( $result ) ? 1 : 0;
@@ -219,9 +213,7 @@ class PressPrimer_Certificate_Admin_Certificates {
 
 		check_admin_referer( 'ppcert_resend_email_' . $certificate_id );
 
-		if ( ! PressPrimer_Certificate_Certificate::user_can_access( PressPrimer_Certificate_Certificate::get( $certificate_id ), get_current_user_id() ) ) {
-			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
-		}
+		self::authorize( $certificate_id, 'resend' );
 
 		$sent = PressPrimer_Certificate_Email_Service::resend( $certificate_id ) ? 1 : 0;
 
@@ -235,6 +227,43 @@ class PressPrimer_Certificate_Admin_Certificates {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Refuse a single-certificate action the user may not take
+	 *
+	 * The per-certificate check (2.1, Feature 2.1-004 FR-011): the
+	 * certificate scope by default, narrowed or widened by
+	 * ppcert_user_can_manage_certificate (School: delete is owner-only).
+	 * Dies with the scope message when the certificate is out of scope,
+	 * else with the action's own.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int    $certificate_id Certificate row id.
+	 * @param string $action         revoke | reinstate | delete | resend.
+	 * @return void
+	 */
+	private static function authorize( $certificate_id, $action ) {
+		$certificate = PressPrimer_Certificate_Certificate::get( $certificate_id );
+		$user_id     = get_current_user_id();
+
+		if ( PressPrimer_Certificate_Certificate::user_can_manage( $certificate, $user_id, $action ) ) {
+			return;
+		}
+
+		if ( ! PressPrimer_Certificate_Certificate::user_can_access( $certificate, $user_id ) ) {
+			wp_die( esc_html__( 'This certificate is outside your issuing organizations.', 'pressprimer-certificate' ) );
+		}
+
+		$messages = [
+			'revoke'    => __( 'You are not allowed to revoke this certificate.', 'pressprimer-certificate' ),
+			'reinstate' => __( 'You are not allowed to reinstate this certificate.', 'pressprimer-certificate' ),
+			'delete'    => __( 'You are not allowed to delete this certificate.', 'pressprimer-certificate' ),
+			'resend'    => __( 'You are not allowed to resend this certificate\'s email.', 'pressprimer-certificate' ),
+		];
+
+		wp_die( esc_html( isset( $messages[ $action ] ) ? $messages[ $action ] : $messages['revoke'] ) );
 	}
 
 	/**
@@ -469,15 +498,26 @@ class PressPrimer_Certificate_Admin_Certificates {
 			wp_die( esc_html__( 'Certificate not found.', 'pressprimer-certificate' ), 404 );
 		}
 
+		// An addon render variant (2.1, Feature 2.1-004 FR-005); the
+		// nonce above covers the certificate, the variant only picks a
+		// presentation of it.
+		$variant = isset( $_GET['variant'] ) ? sanitize_key( wp_unslash( $_GET['variant'] ) ) : '';
+
 		$renderer = new PressPrimer_Certificate_PDF_Renderer();
 		$pdf_path = $renderer->render_pdf(
 			$certificate->layout_snapshot,
 			is_array( $certificate->merge_data ) ? $certificate->merge_data : [],
 			[
-				'context'       => 'download',
-				'credential_id' => (string) $certificate->credential_id,
+				'context'        => 'download',
+				// The certificate and its recipient (2.1, Feature 2.1-007
+				// FR-003): ppcert_pdf_generated gets the real id and the
+				// metadata matches the emailed copy.
+				'certificate_id' => (int) $certificate->id,
+				'recipient_name' => PressPrimer_Certificate_Certificate::recipient_name( $certificate ),
+				'credential_id'  => (string) $certificate->credential_id,
 				// PDF metadata title = the certificate's own name (1.1-006).
-				'title'         => PressPrimer_Certificate_Certificate::display_title( $certificate ),
+				'title'          => PressPrimer_Certificate_Certificate::display_title( $certificate ),
+				'variant'        => $variant,
 			]
 		);
 
@@ -491,7 +531,7 @@ class PressPrimer_Certificate_Admin_Certificates {
 			get_current_user_id()
 		);
 
-		$filename = PressPrimer_Certificate_Certificate::pdf_filename( $certificate );
+		$filename = PressPrimer_Certificate_Certificate::pdf_filename( $certificate, $renderer->get_last_variant() );
 
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );

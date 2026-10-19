@@ -313,6 +313,127 @@ abstract class PressPrimer_Certificate_LMS_Adapter {
 	}
 
 	/**
+	 * Every source, a page at a time (2.1, Feature 2.1-004 FR-016)
+	 *
+	 * The designer's picker (get_sources()) stops at 50; this pages
+	 * through ALL published sources in id order, so a scan of an "Any" trigger
+	 * (School's Award Past Completions) reads every one. The default
+	 * reads the adapter's source post types; adapters whose sources are
+	 * not posts override it. Concrete and overridable - NOT part of the
+	 * locked contract.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $page     1-based page.
+	 * @param int $per_page Sources per page (1-500).
+	 * @return array<int,array{id:string,title:string}>
+	 */
+	public function list_sources( int $page, int $per_page ): array {
+		$types = $this->listing_post_types();
+
+		if ( empty( $types ) ) {
+			// Not posts and not overridden: the picker list is all there is.
+			return 1 === max( 1, $page ) ? $this->get_sources( '' ) : [];
+		}
+
+		$posts = get_posts(
+			[
+				'post_type'      => $types,
+				'post_status'    => 'publish',
+				'orderby'        => 'ID',
+				'order'          => 'ASC',
+				'posts_per_page' => max( 1, min( 500, $per_page ) ),
+				'paged'          => max( 1, $page ),
+				'no_found_rows'  => true,
+			]
+		);
+
+		$sources = [];
+
+		foreach ( (array) $posts as $post ) {
+			$sources[] = [
+				'id'    => (string) $post->ID,
+				'title' => (string) $post->post_title,
+			];
+		}
+
+		return $sources;
+	}
+
+	/**
+	 * One source's title, or '' when it does not exist (2.1, Feature
+	 * 2.1-004 FR-016)
+	 *
+	 * For naming a source outside the picker's first 50 (School
+	 * snapshots it as the course title). Concrete and overridable.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $ref Source reference.
+	 * @return string
+	 */
+	public function get_source_title( string $ref ): string {
+		$types = $this->listing_post_types();
+
+		if ( ! empty( $types ) ) {
+			$post = ctype_digit( $ref ) ? get_post( (int) $ref ) : null;
+
+			return $post && in_array( $post->post_type, $types, true ) ? (string) $post->post_title : '';
+		}
+
+		foreach ( $this->get_sources( '' ) as $source ) {
+			if ( isset( $source['id'], $source['title'] ) && (string) $source['id'] === $ref ) {
+				return (string) $source['title'];
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * The merge context an award for a past completion needs (2.1,
+	 * Feature 2.1-004 FR-016)
+	 *
+	 * The display values the live listener would set, built from a
+	 * get_past_completions() row, so a past completion's certificate
+	 * prints the same score fields as a live award (School's Award Past
+	 * Completions merges it into each row's context). The default covers
+	 * quiz-type rows (a percent `score`: source.score, and "Passed" for
+	 * source.grade); rows without a score add nothing. Concrete and
+	 * overridable.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $completion A get_past_completions() row.
+	 * @return array<string,string>
+	 */
+	public function completion_context( array $completion ): array {
+		if ( ! isset( $completion['score'] ) || ! is_numeric( $completion['score'] ) ) {
+			return [];
+		}
+
+		return [
+			'src_score_display' => $this->format_percent_display( $completion['score'] ),
+			'src_grade_display' => __( 'Passed', 'pressprimer-certificate' ),
+		];
+	}
+
+	/**
+	 * Post types list_sources() and get_source_title() read
+	 *
+	 * The source post types by default; an adapter whose sources are
+	 * posts but that exposes no source post types (they gate the
+	 * source-meta picker) names them here.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return string[]
+	 */
+	protected function listing_post_types(): array {
+		return $this->get_source_post_types();
+	}
+
+	/**
 	 * Whether this type has selectable sources
 	 *
 	 * Return false for VALUE-ONLY types whose triggers are defined by

@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { applyFilters } from '@wordpress/hooks';
 import {
 	Button,
 	Input,
@@ -60,12 +61,27 @@ function hasVariant( variants, bold, italic ) {
  * Registry entries carrying group: 'custom' (Educator uploads, free
  * font-pipeline contract) render under "Your fonts" above the bundled
  * set (E-001). Free-only sites have no custom entries and keep the
- * flat, ungrouped list unchanged.
+ * flat, ungrouped list unchanged. Since 2.1 the result passes through
+ * `ppcert.designer.fontOptions` (Feature 2.1-004 FR-006: a "Brand
+ * fonts" group may lead); options must use registered font slugs.
  *
  * @param {Object} fonts Registered font map from boot data.
  * @return {Array} Ant Design Select options (flat or grouped).
  */
 export function buildFontOptions( fonts ) {
+	const options = baseFontOptions( fonts );
+	const filtered = applyFilters( 'ppcert.designer.fontOptions', options );
+
+	return Array.isArray( filtered ) ? filtered : options;
+}
+
+/**
+ * The registry's font options before the filter.
+ *
+ * @param {Object} fonts Registered font map from boot data.
+ * @return {Array} Ant Design Select options (flat or grouped).
+ */
+function baseFontOptions( fonts ) {
 	const toOption = ( slug ) => ( {
 		value: slug,
 		label: fonts[ slug ].label || slug,

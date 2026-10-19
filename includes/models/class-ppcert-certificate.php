@@ -47,6 +47,23 @@ class PressPrimer_Certificate_Certificate {
 	const MAX_DUPLICATE_REFS = 20;
 
 	/**
+	 * Explicit actors of the lifecycle calls in progress, innermost last
+	 * (2.1, Feature 2.1-004 FR-012)
+	 *
+	 * @since 2.1.0
+	 * @var int[]
+	 */
+	private static $actor_stack = [];
+
+	/**
+	 * The actions user_can_manage() answers for
+	 *
+	 * @since 2.1.0
+	 * @var string[]
+	 */
+	const MANAGE_ACTIONS = [ 'revoke', 'reinstate', 'resend', 'delete' ];
+
+	/**
 	 * Get the full certificates table name
 	 *
 	 * @since 1.0.0
@@ -409,16 +426,37 @@ class PressPrimer_Certificate_Certificate {
 	 *
 	 * The single issued-to-revoked code path (the Certificates screen's
 	 * Revoke action and any addon share it) so the hook contract is
-	 * stable. No event row in 1.0 - the 'revoked' event type is
-	 * reserved for later versions (DATABASE.md).
+	 * stable. Records a `revoked` event (since 2.0); the reason stays on
+	 * the row, never in event meta.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The $actor_id argument.
 	 *
-	 * @param int    $id     Certificate row id.
-	 * @param string $reason Revocation reason (stored, max 191 chars).
+	 * @param int      $id       Certificate row id.
+	 * @param string   $reason   Revocation reason (stored, max 191 chars).
+	 * @param int|null $actor_id Acting user for the event and listeners
+	 *                           (current_actor()); null for the current user.
 	 * @return true|WP_Error True on success.
 	 */
-	public static function revoke( $id, $reason = '' ) {
+	public static function revoke( $id, $reason = '', $actor_id = null ) {
+		return self::with_actor(
+			$actor_id,
+			static function () use ( $id, $reason ) {
+				return self::revoke_as_current( $id, $reason );
+			}
+		);
+	}
+
+	/**
+	 * Revoke under the current actor
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int    $id     Certificate row id.
+	 * @param string $reason Staff-only reason.
+	 * @return true|WP_Error
+	 */
+	private static function revoke_as_current( $id, $reason ) {
 		global $wpdb;
 
 		$certificate = self::get( $id );
@@ -458,7 +496,7 @@ class PressPrimer_Certificate_Certificate {
 
 		// Lifecycle event (2.0, Feature 2.0-006 FR-006): the staff-only
 		// reason stays on the certificate row, never in event meta.
-		self::record_event( absint( $id ), 'revoked', self::acting_user_id() );
+		self::record_event( absint( $id ), 'revoked', self::current_actor() );
 
 		/** This action is documented in docs/architecture/HOOKS.md */
 		do_action( 'ppcert_certificate_revoked', absint( $id ), $reason );
@@ -475,11 +513,30 @@ class PressPrimer_Certificate_Certificate {
 	 * as if it had never been revoked.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The $actor_id argument.
 	 *
-	 * @param int $id Certificate row id.
+	 * @param int      $id       Certificate row id.
+	 * @param int|null $actor_id Acting user; null for the current user.
 	 * @return true|WP_Error True on success.
 	 */
-	public static function reinstate( $id ) {
+	public static function reinstate( $id, $actor_id = null ) {
+		return self::with_actor(
+			$actor_id,
+			static function () use ( $id ) {
+				return self::reinstate_as_current( $id );
+			}
+		);
+	}
+
+	/**
+	 * Reinstate under the current actor
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $id Certificate row id.
+	 * @return true|WP_Error
+	 */
+	private static function reinstate_as_current( $id ) {
 		global $wpdb;
 
 		$certificate = self::get( $id );
@@ -516,7 +573,7 @@ class PressPrimer_Certificate_Certificate {
 		}
 
 		// Lifecycle event (2.0, Feature 2.0-006 FR-006).
-		self::record_event( absint( $id ), 'reinstated', self::acting_user_id() );
+		self::record_event( absint( $id ), 'reinstated', self::current_actor() );
 
 		/**
 		 * Fires when a revoked certificate is reinstated.
@@ -575,10 +632,161 @@ class PressPrimer_Certificate_Certificate {
 	}
 
 	/**
-	 * The acting user for lifecycle event rows
+	 * The acting user for lifecycle event rows and listeners
 	 *
-	 * Lifecycle transitions run in authenticated admin contexts; system
-	 * paths without a user record NULL (anonymous per the privacy rules).
+	 * The explicit actor of the lifecycle call in progress (2.1: the
+	 * bulk service passes the job's creator, so work done under cron
+	 * still records a person), else the current user. Listeners of
+	 * ppcert_certificate_revoked/_reinstated/_deleted and
+	 * ppcert_before_certificate_delete read it here. Null for system
+	 * paths without a user (anonymous per the privacy rules).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return int|null
+	 */
+	public static function current_actor() {
+		if ( ! empty( self::$actor_stack ) ) {
+			$actor = (int) end( self::$actor_stack );
+
+			return $actor > 0 ? $actor : null;
+		}
+
+		return self::acting_user_id();
+	}
+
+	/**
+	 * Run a callback with an explicit lifecycle actor
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int|null $actor_id Acting user id; null keeps the current user.
+	 * @param callable $callback The work.
+	 * @return mixed The callback's result.
+	 */
+	public static function with_actor( $actor_id, callable $callback ) {
+		self::$actor_stack[] = null === $actor_id ? (int) self::acting_user_id() : absint( $actor_id );
+
+		try {
+			return $callback();
+		} finally {
+			array_pop( self::$actor_stack );
+		}
+	}
+
+	/**
+	 * Whether a user may revoke, reinstate, resend, or delete one
+	 * certificate (2.1, Feature 2.1-004 FR-011)
+	 *
+	 * Default: the 2.0 rule - the issue capability and the user's
+	 * certificate scope. `ppcert_user_can_manage_certificate` may narrow
+	 * it (School: delete is owner-only) or widen the scope, but never
+	 * past the capability. Used by the Certificates list's row actions,
+	 * the single-action handlers, and the bulk service per row.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object|null $certificate Certificate row.
+	 * @param int         $user_id     User id.
+	 * @param string      $action      revoke | reinstate | resend | delete.
+	 * @return bool
+	 */
+	public static function user_can_manage( $certificate, $user_id, $action ) {
+		$user_id = absint( $user_id );
+
+		if ( ! $certificate || ! in_array( $action, self::MANAGE_ACTIONS, true )
+			|| ! user_can( $user_id, PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether a user may act on one certificate.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param bool   $can         Default: the user's certificate scope allows it.
+		 * @param int    $user_id     User id.
+		 * @param string $action      revoke | reinstate | resend | delete.
+		 * @param object $certificate Certificate row.
+		 */
+		return (bool) apply_filters(
+			'ppcert_user_can_manage_certificate',
+			self::user_can_access( $certificate, $user_id ),
+			$user_id,
+			$action,
+			$certificate
+		);
+	}
+
+	/**
+	 * Whether a user may run bulk actions (2.1, Feature 2.1-004 FR-011;
+	 * consumed by the bulk service, Feature 2.1-002)
+	 *
+	 * Default: the issue capability and an unrestricted certificate
+	 * scope. `ppcert_user_can_bulk_manage_certificates` may grant scoped
+	 * users (School issuer owners) or refuse, never past the capability.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int    $user_id User id.
+	 * @param string $action  revoke | reinstate | resend | delete.
+	 * @return bool
+	 */
+	public static function user_can_bulk_manage( $user_id, $action ) {
+		$user_id = absint( $user_id );
+
+		if ( ! in_array( $action, self::MANAGE_ACTIONS, true )
+			|| ! user_can( $user_id, PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether a user may run a bulk certificate action.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param bool   $can     Default: the user is unscoped.
+		 * @param int    $user_id User id.
+		 * @param string $action  revoke | reinstate | resend | delete.
+		 */
+		return (bool) apply_filters(
+			'ppcert_user_can_bulk_manage_certificates',
+			null === self::scope_for( $user_id ),
+			$user_id,
+			$action
+		);
+	}
+
+	/**
+	 * The certificates a user's bulk actions may touch (2.1, Feature
+	 * 2.1-004 FR-011)
+	 *
+	 * Default: the user's normal certificate scope (null = every
+	 * certificate). School narrows an owner to the issuers they own,
+	 * without the issued_by branch.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $user_id User id.
+	 * @return array|null { issuer_ids: int[], issued_by: int } or null.
+	 */
+	public static function bulk_scope( $user_id ) {
+		$user_id = absint( $user_id );
+
+		/**
+		 * Filters the certificate scope of a user's bulk actions.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array|null $scope   null (every certificate), or
+		 *                            { issuer_ids: int[], issued_by: int }.
+		 * @param int        $user_id User id.
+		 */
+		return self::normalize_scope( apply_filters( 'ppcert_bulk_certificate_scope', self::scope_for( $user_id ), $user_id ) );
+	}
+
+	/**
+	 * The current user as an actor id (null when logged out)
 	 *
 	 * @since 2.0.0
 	 *
@@ -599,11 +807,62 @@ class PressPrimer_Certificate_Certificate {
 	 * Certificates screen says so in the delete confirmation.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 The $actor_id and $context arguments.
 	 *
-	 * @param int $id Certificate row id.
+	 * @param int      $id       Certificate row id.
+	 * @param int|null $actor_id Acting user; null for the current user.
+	 * @param string   $context  Deletion source: admin, bulk, privacy, api.
 	 * @return true|WP_Error True on success.
 	 */
-	public static function delete( $id ) {
+	public static function delete( $id, $actor_id = null, $context = 'admin' ) {
+		return self::with_actor(
+			$actor_id,
+			static function () use ( $id, $context ) {
+				return self::delete_as_current( $id, $context );
+			}
+		);
+	}
+
+	/**
+	 * Announce a deletion before anything is removed (2.1, Feature
+	 * 2.1-004 FR-013)
+	 *
+	 * Every deletion path calls this: delete(), the bulk service, and
+	 * the privacy eraser.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $certificate Hydrated certificate row.
+	 * @param string $context     admin | bulk | privacy | api.
+	 * @return void
+	 */
+	public static function before_delete( $certificate, $context ) {
+		/**
+		 * Fires before a certificate and its events are deleted.
+		 *
+		 * The row is still readable: consumers remove what they derived
+		 * from it (Educator's share images, School's caches, Enterprise's
+		 * badge status list). The actor is current_actor().
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param int    $certificate_id Certificate row id.
+		 * @param object $certificate    The full hydrated row.
+		 * @param string $context        admin | bulk | privacy | api.
+		 */
+		do_action( 'ppcert_before_certificate_delete', (int) $certificate->id, $certificate, sanitize_key( (string) $context ) );
+	}
+
+	/**
+	 * Delete under the current actor
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int    $id      Certificate row id.
+	 * @param string $context Deletion source.
+	 * @return true|WP_Error
+	 */
+	private static function delete_as_current( $id, $context ) {
 		global $wpdb;
 
 		$certificate = self::get( $id );
@@ -616,6 +875,8 @@ class PressPrimer_Certificate_Certificate {
 		}
 
 		$credential_id = (string) $certificate->credential_id;
+
+		self::before_delete( $certificate, $context );
 
 		$wpdb->delete( self::events_table(), [ 'certificate_id' => absint( $id ) ], [ '%d' ] );
 

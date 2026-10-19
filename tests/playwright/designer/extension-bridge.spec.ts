@@ -34,6 +34,7 @@ test.describe( 'extension bridge', () => {
 		expect( surface ).toEqual(
 			[
 				'applyLayout',
+				'attachHistoryState',
 				'editIssuer',
 				'editSettings',
 				'getBoot',
@@ -42,6 +43,8 @@ test.describe( 'extension bridge', () => {
 				'getTemplate',
 				'isDirty',
 				'replaceLayout',
+				'resizePage',
+				'scaleElements',
 				'setSelection',
 				'subscribe',
 			].sort()

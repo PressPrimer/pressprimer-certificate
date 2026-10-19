@@ -6,7 +6,8 @@
  * the true-size page; all stored coordinates are points, so pointer
  * deltas divide by the scale (zoom-independent storage).
  *
- * Prompt 3.2 scope: zoom (50-200%, fit-width default), selection
+ * Prompt 3.2 scope: zoom (50-200%, fit-width default; up to 400% for
+ * pages narrower than 400 pt since 2.1), selection
  * (click / shift-click / marquee), drag, 8-handle resize, arrow nudge
  * (1pt / Shift 10pt), z-order context menu. Snapping and alignment
  * guides arrive in 3.5; per-type element components in 3.3.
@@ -36,6 +37,7 @@ import {
 	resizeElement,
 	reorderElement,
 	SAFE_MARGIN_PT,
+	SMALL_PAGE_PT,
 	snapDrag,
 } from '../schema/geometry';
 import Ruler, { RULER_PX } from './Ruler';
@@ -43,6 +45,9 @@ import Ruler, { RULER_PX } from './Ruler';
 const DRAG_THRESHOLD_PX = 3;
 const FIT_MIN = 0.5;
 const FIT_MAX = 2;
+// Small pages (a wallet card) may fit up to 400% (2.1, Feature 2.1-004
+// FR-002).
+const FIT_MAX_SMALL = 4;
 
 /**
  * The canvas.
@@ -84,7 +89,7 @@ export default function Canvas( { layout, zoom, rulers = true } ) {
 		const measure = () => {
 			const available = node.clientWidth - ( rulers ? RULER_PX : 0 );
 			const next = Math.min(
-				FIT_MAX,
+				layout.page.width < SMALL_PAGE_PT ? FIT_MAX_SMALL : FIT_MAX,
 				Math.max( FIT_MIN, available / layout.page.width )
 			);
 			setFitScale( next );

@@ -13,12 +13,16 @@
  * The API is deliberately narrow: layout in/out through the same
  * APPLY_LAYOUT path every free tool uses (so history, dirty state, and
  * validation semantics hold), selection, and read-only boot data.
- * Anything more is a contract change, not a workaround.
+ * Anything more is a contract change, not a workaround. 2.1 adds page
+ * resizing, the scale-to-fit geometry, and opaque addon state on undo
+ * steps (Feature 2.1-004 FR-002, FR-006).
  */
 
 import { useEffect, useRef } from '@wordpress/element';
 import { useDesignerStore } from '../hooks/useDesignerStore';
 import { getBoot } from '../boot';
+import { scaleElements } from '../schema/geometry';
+import { applyPageResize } from '../pageResize';
 
 /**
  * The bridge. Renders nothing; the extension rail slot lives in
@@ -33,6 +37,9 @@ export default function ExtensionBridge() {
 	stateRef.current = state;
 
 	const listenersRef = useRef( new Set() );
+
+	// The last undo/redo already delivered to subscribers.
+	const deliveredRef = useRef( 0 );
 
 	useEffect( () => {
 		window.ppcert_designer_api = {
@@ -123,8 +130,47 @@ export default function ExtensionBridge() {
 				dispatch( { type: 'EDIT_ISSUER', issuerId } ),
 
 			/**
+			 * Resize the page (2.1): a registry size, or `custom` with
+			 * width and height in points (72-1728). Runs the Page panel's
+			 * scale-to-fit and message as one undo step.
+			 *
+			 * @param {Object} target { size, orientation, width, height }.
+			 * @return {boolean} Whether the page changed.
+			 */
+			resizePage: ( target ) =>
+				applyPageResize( stateRef.current.layout, target, dispatch ),
+
+			/**
+			 * The Page panel's scale-to-fit geometry (2.1), for pages an
+			 * addon keeps outside the working document.
+			 *
+			 * @param {Array}  elements Elements.
+			 * @param {Object} fromPage { width, height }.
+			 * @param {Object} toPage   { width, height }.
+			 * @return {Array} Scaled elements.
+			 */
+			scaleElements,
+
+			/**
+			 * Attach opaque state to the most recent undo step (2.1),
+			 * including one free just recorded. When that step is undone
+			 * or redone, subscribers receive it as `historyState` with
+			 * `historyDirection` ('undo' or 'redo').
+			 *
+			 * @param {*} historyState Addon state.
+			 */
+			attachHistoryState: ( historyState ) =>
+				dispatch( {
+					type: 'ATTACH_HISTORY_STATE',
+					state: historyState,
+				} ),
+
+			/**
 			 * Subscribe to state changes
-			 * ({ layout, selection, dirty, template }).
+			 * ({ layout, selection, dirty, template, historyState,
+			 * historyDirection }). historyDirection is 'undo' or 'redo'
+			 * on the notification an undo or redo caused, with that
+			 * step's attached state; null otherwise.
 			 *
 			 * @param {Function} callback Change listener.
 			 * @return {Function} Unsubscribe.
@@ -144,15 +190,30 @@ export default function ExtensionBridge() {
 	}, [] );
 
 	useEffect( () => {
+		const event = state.historyEvent;
+		const fresh = event && event.seq !== deliveredRef.current;
+
+		if ( fresh ) {
+			deliveredRef.current = event.seq;
+		}
+
 		listenersRef.current.forEach( ( callback ) =>
 			callback( {
 				layout: state.layout,
 				selection: state.selection,
 				dirty: state.dirty,
 				template: state.template,
+				historyState: fresh ? event.state : null,
+				historyDirection: fresh ? event.direction : null,
 			} )
 		);
-	}, [ state.layout, state.selection, state.dirty, state.template ] );
+	}, [
+		state.layout,
+		state.selection,
+		state.dirty,
+		state.template,
+		state.historyEvent,
+	] );
 
 	return null;
 }
