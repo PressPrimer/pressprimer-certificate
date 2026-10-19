@@ -148,21 +148,98 @@ class PressPrimer_Certificate_Certificate {
 	public static function query( array $args = [] ) {
 		global $wpdb;
 
+		$per_page = isset( $args['per_page'] ) ? min( 100, max( 1, absint( $args['per_page'] ) ) ) : 20;
+		$page     = isset( $args['page'] ) ? max( 1, absint( $args['page'] ) ) : 1;
+
+		// Scope (2.0, School contract): null = unscoped; otherwise the
+		// rows are limited to the scope's issuers plus the user's own
+		// issues. Callers may pass 'scope' explicitly; by default the
+		// current user's scope applies (Certificate::scope_for()).
+		$scope    = array_key_exists( 'scope', $args ) ? self::normalize_scope( $args['scope'] ) : self::scope_for( get_current_user_id() );
+		$bindings = self::list_where_bindings( $args, $scope );
+
+		// The WHERE clause below is identical in all three list queries
+		// (COUNT, page, and query_ids()); the bindings come from one
+		// builder (2.1, Feature 2.1-002 TR-001), so the bulk set always
+		// equals what the list shows.
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Twenty-eight placeholders, twenty-eight values bound through the args array (table plus list_where_bindings()).
+				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) OR ( %s <> '' AND ( recipient_email LIKE %s OR ( source_type = 'one_off' AND merge_data_json LIKE %s ) ) ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) )",
+				array_merge( [ self::table() ], $bindings )
+			)
+		);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Thirty placeholders, thirty values bound through the args array (table, list_where_bindings(), limit, offset).
+				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) OR ( %s <> '' AND ( recipient_email LIKE %s OR ( source_type = 'one_off' AND merge_data_json LIKE %s ) ) ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
+				array_merge( [ self::table() ], $bindings, [ $per_page, ( $page - 1 ) * $per_page ] )
+			)
+		);
+
+		return [
+			'items' => array_map( [ __CLASS__, 'hydrate' ], (array) $rows ),
+			'total' => $total,
+		];
+	}
+
+	/**
+	 * The ids of every certificate matching the list filters (2.1,
+	 * Feature 2.1-002 TR-001)
+	 *
+	 * The same filters and WHERE clause as query(), for the bulk
+	 * actions' "all matching" set. The scope is always explicit (the
+	 * bulk scope of the job's creator), never the current user's
+	 * default. Ids come back in id order with no paging; at most $limit.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array      $args  query()'s filters (paging keys ignored).
+	 * @param array|null $scope null (every certificate) or
+	 *                          { issuer_ids: int[], issued_by: int }.
+	 * @param int        $limit Most ids to return (1-100000).
+	 * @return int[]
+	 */
+	public static function query_ids( array $args, $scope, $limit ) {
+		global $wpdb;
+
+		$limit    = min( 100000, max( 1, absint( $limit ) ) );
+		$bindings = self::list_where_bindings( $args, self::normalize_scope( $scope ) );
+
+		$ids = $wpdb->get_col(
+			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Twenty-nine placeholders, twenty-nine values bound through the args array (table, list_where_bindings(), limit).
+				"SELECT id FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) OR ( %s <> '' AND ( recipient_email LIKE %s OR ( source_type = 'one_off' AND merge_data_json LIKE %s ) ) ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) ) ORDER BY id ASC LIMIT %d",
+				array_merge( [ self::table() ], $bindings, [ $limit ] )
+			)
+		);
+
+		return array_map( 'intval', (array) $ids );
+	}
+
+	/**
+	 * The list WHERE clause's bindings, in placeholder order
+	 *
+	 * The one filter builder behind query() and query_ids(): every
+	 * filter is always present with a sentinel ("0"/'') meaning "no
+	 * filter", so each prepared statement is one fixed string (no
+	 * clause interpolation).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array      $args  List filters (see query()).
+	 * @param array|null $scope Normalized scope.
+	 * @return array 27 values for the WHERE placeholders.
+	 */
+	private static function list_where_bindings( array $args, $scope ) {
+		global $wpdb;
+
 		$template_id = isset( $args['template_id'] ) ? absint( $args['template_id'] ) : 0;
 		$status      = isset( $args['status'] ) && in_array( $args['status'], [ 'issued', 'revoked', 'expired' ], true )
 			? (string) $args['status']
 			: '';
 		$source_type = isset( $args['source_type'] ) ? sanitize_key( (string) $args['source_type'] ) : '';
 		$search      = isset( $args['search'] ) ? sanitize_text_field( (string) $args['search'] ) : '';
-		$per_page    = isset( $args['per_page'] ) ? min( 100, max( 1, absint( $args['per_page'] ) ) ) : 20;
 
-		// Scope (2.0, School contract): null = unscoped; otherwise the
-		// rows are limited to the scope's issuers plus the user's own
-		// issues. Callers may pass 'scope' explicitly; by default the
-		// current user's scope applies (Certificate::scope_for()).
-		$scope                                        = array_key_exists( 'scope', $args ) ? self::normalize_scope( $args['scope'] ) : self::scope_for( get_current_user_id() );
 		list( $scoped, $scope_csv, $scope_issued_by ) = self::scope_bindings( $scope );
-		$page = isset( $args['page'] ) ? max( 1, absint( $args['page'] ) ) : 1;
 
 		// Issued date range (FR-002): Y-m-d in SITE timezone, inclusive
 		// day bounds, converted to UTC for the query (Datetime Standard).
@@ -172,10 +249,8 @@ class PressPrimer_Certificate_Certificate {
 		$issued_before = self::day_bound_utc( isset( $args['issued_before'] ) ? (string) $args['issued_before'] : '', '23:59:59' );
 
 		if ( '' !== $issued_after && '' !== $issued_before && $issued_after > $issued_before ) {
-			$swap          = $issued_after;
 			$issued_after  = self::day_bound_utc( (string) $args['issued_before'], '00:00:00' );
 			$issued_before = self::day_bound_utc( (string) $args['issued_after'], '23:59:59' );
-			unset( $swap );
 		}
 
 		// Search semantics (FR-001; combined since 2.1.0, Feature 2.1-004
@@ -231,82 +306,34 @@ class PressPrimer_Certificate_Certificate {
 		$has_after  = '' !== $issued_after ? 1 : 0;
 		$has_before = '' !== $issued_before ? 1 : 0;
 
-		$after_sql  = $has_after ? $issued_after : '1970-01-01 00:00:00';
-		$before_sql = $has_before ? $issued_before : '1970-01-01 00:00:00';
-
-		$total = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) OR ( %s <> '' AND ( recipient_email LIKE %s OR ( source_type = 'one_off' AND merge_data_json LIKE %s ) ) ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) )",
-				self::table(),
-				$template_id,
-				$template_id,
-				$status,
-				$status,
-				$status,
-				$now,
-				$status,
-				$now,
-				$source_type,
-				$source_type,
-				$search,
-				$credential_exact,
-				$recipient_csv,
-				$recipient_csv,
-				$title_like,
-				$title_like,
-				$one_off_like,
-				$one_off_like,
-				$one_off_json,
-				$has_after,
-				$after_sql,
-				$has_before,
-				$before_sql,
-				$scoped,
-				$scope_csv,
-				$scope_issued_by,
-				$scope_issued_by
-			)
-		);
-
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM %i WHERE ( %d = 0 OR template_id = %d ) AND ( %s = '' OR ( %s = 'revoked' AND status = 'revoked' ) OR ( %s = 'issued' AND status = 'issued' AND ( expires_at IS NULL OR expires_at > %s ) ) OR ( %s = 'expired' AND status = 'issued' AND expires_at IS NOT NULL AND expires_at <= %s ) ) AND ( %s = '' OR source_type = %s ) AND ( %s = '' OR credential_id = %s OR ( %s <> '' AND FIND_IN_SET( recipient_id, %s ) ) OR ( %s <> '' AND title LIKE %s ) OR ( %s <> '' AND ( recipient_email LIKE %s OR ( source_type = 'one_off' AND merge_data_json LIKE %s ) ) ) ) AND ( %d = 0 OR issued_at >= %s ) AND ( %d = 0 OR issued_at <= %s ) AND ( %d = 0 OR FIND_IN_SET( COALESCE( issuer_id, 0 ), %s ) OR ( %d > 0 AND issued_by = %d ) ) ORDER BY issued_at DESC, id DESC LIMIT %d OFFSET %d",
-				self::table(),
-				$template_id,
-				$template_id,
-				$status,
-				$status,
-				$status,
-				$now,
-				$status,
-				$now,
-				$source_type,
-				$source_type,
-				$search,
-				$credential_exact,
-				$recipient_csv,
-				$recipient_csv,
-				$title_like,
-				$title_like,
-				$one_off_like,
-				$one_off_like,
-				$one_off_json,
-				$has_after,
-				$after_sql,
-				$has_before,
-				$before_sql,
-				$scoped,
-				$scope_csv,
-				$scope_issued_by,
-				$scope_issued_by,
-				$per_page,
-				( $page - 1 ) * $per_page
-			)
-		);
-
 		return [
-			'items' => array_map( [ __CLASS__, 'hydrate' ], (array) $rows ),
-			'total' => $total,
+			$template_id,
+			$template_id,
+			$status,
+			$status,
+			$status,
+			$now,
+			$status,
+			$now,
+			$source_type,
+			$source_type,
+			$search,
+			$credential_exact,
+			$recipient_csv,
+			$recipient_csv,
+			$title_like,
+			$title_like,
+			$one_off_like,
+			$one_off_like,
+			$one_off_json,
+			$has_after,
+			$has_after ? $issued_after : '1970-01-01 00:00:00',
+			$has_before,
+			$has_before ? $issued_before : '1970-01-01 00:00:00',
+			$scoped,
+			$scope_csv,
+			$scope_issued_by,
+			$scope_issued_by,
 		];
 	}
 
@@ -1823,7 +1850,29 @@ class PressPrimer_Certificate_Certificate {
 			return false;
 		}
 
-		$scope = self::scope_for( $user_id );
+		return self::in_scope( $certificate, self::scope_for( $user_id ) );
+	}
+
+	/**
+	 * Whether a certificate falls inside a scope
+	 *
+	 * The row test behind user_can_access() (the user's normal scope)
+	 * and the bulk service's per-row check (the job's stored bulk
+	 * scope, 2.1).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object|null $certificate Certificate row.
+	 * @param array|null  $scope       null (every certificate) or
+	 *                                 { issuer_ids: int[], issued_by: int }.
+	 * @return bool
+	 */
+	public static function in_scope( $certificate, $scope ) {
+		if ( ! $certificate ) {
+			return false;
+		}
+
+		$scope = self::normalize_scope( $scope );
 
 		if ( null === $scope ) {
 			return true;

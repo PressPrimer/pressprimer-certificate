@@ -353,6 +353,8 @@ class PressPrimer_Certificate_Admin_Certificates {
 			echo '</p></div>';
 		}
 
+		$this->render_bulk_resume_notices();
+
 		// One GET form wraps search, the extra_tablenav filter controls,
 		// and the table (the ecosystem list pattern - Assignment's
 		// Submissions screen is the reference), so filter state lives in
@@ -368,6 +370,65 @@ class PressPrimer_Certificate_Admin_Certificates {
 		echo '</form>';
 
 		echo '</div>';
+	}
+
+	/**
+	 * Notices for the user's unfinished bulk jobs (2.1, Feature 2.1-002
+	 * FR-006): "A bulk delete stopped at 140 of 312." with Resume and
+	 * Discard, which ppcert-admin.js handles.
+	 *
+	 * @since 2.1.0
+	 */
+	private function render_bulk_resume_notices() {
+		foreach ( array_slice( PressPrimer_Certificate_Bulk_Action_Service::unfinished_for( get_current_user_id() ), 0, 3 ) as $job ) {
+			echo '<div class="notice notice-warning ppcert-bulk-resume-notice"><p>';
+			echo esc_html( self::bulk_stopped_message( (string) $job['action'], (int) $job['processed'], (int) $job['total'] ) );
+
+			if ( '' !== (string) $job['message'] ) {
+				echo ' ' . esc_html( (string) $job['message'] );
+			}
+
+			echo ' <button type="button" class="button button-primary ppcert-bulk-resume" data-ppcert-job="' . esc_attr( (string) $job['id'] ) . '">'
+				. esc_html__( 'Resume', 'pressprimer-certificate' ) . '</button>';
+			echo ' <button type="button" class="button ppcert-bulk-discard" data-ppcert-job="' . esc_attr( (string) $job['id'] ) . '">'
+				. esc_html__( 'Discard', 'pressprimer-certificate' ) . '</button>';
+			echo '</p></div>';
+		}
+	}
+
+	/**
+	 * "A bulk delete stopped at 140 of 312 certificates."
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $action    Bulk action.
+	 * @param int    $processed Certificates processed.
+	 * @param int    $total     Certificates in the job.
+	 * @return string
+	 */
+	private static function bulk_stopped_message( $action, $processed, $total ) {
+		switch ( $action ) {
+			case 'reinstate':
+				/* translators: 1: certificates processed, 2: certificates in the job. */
+				$format = _n( 'A bulk reinstate stopped at %1$s of %2$s certificate.', 'A bulk reinstate stopped at %1$s of %2$s certificates.', $total, 'pressprimer-certificate' );
+				break;
+
+			case 'resend':
+				/* translators: 1: emails processed, 2: emails in the job. */
+				$format = _n( 'A bulk email resend stopped at %1$s of %2$s certificate.', 'A bulk email resend stopped at %1$s of %2$s certificates.', $total, 'pressprimer-certificate' );
+				break;
+
+			case 'delete':
+				/* translators: 1: certificates processed, 2: certificates in the job. */
+				$format = _n( 'A bulk delete stopped at %1$s of %2$s certificate.', 'A bulk delete stopped at %1$s of %2$s certificates.', $total, 'pressprimer-certificate' );
+				break;
+
+			default:
+				/* translators: 1: certificates processed, 2: certificates in the job. */
+				$format = _n( 'A bulk revoke stopped at %1$s of %2$s certificate.', 'A bulk revoke stopped at %1$s of %2$s certificates.', $total, 'pressprimer-certificate' );
+		}
+
+		return sprintf( $format, number_format_i18n( $processed ), number_format_i18n( $total ) );
 	}
 
 	/**
@@ -396,9 +457,39 @@ class PressPrimer_Certificate_Admin_Certificates {
 		wp_enqueue_script(
 			'ppcert-admin',
 			PPCERT_PLUGIN_URL . 'assets/js/ppcert-admin.js',
-			[ 'jquery' ],
+			[ 'jquery', 'wp-api-fetch', 'wp-i18n' ],
 			PPCERT_VERSION,
 			true
+		);
+
+		wp_set_script_translations( 'ppcert-admin', 'pressprimer-certificate', PPCERT_PLUGIN_DIR . 'languages' );
+
+		// Bulk actions (2.1, Feature 2.1-002): the extra sentence each
+		// confirmation may carry.
+		$notes = [];
+
+		foreach ( PressPrimer_Certificate_Bulk_Action_Service::ACTIONS as $bulk_action ) {
+			/**
+			 * Filters an extra sentence for a bulk action's confirmation.
+			 *
+			 * School can say that resent emails also go to an issuer's CC
+			 * and BCC addresses. Plain text.
+			 *
+			 * @since 2.1.0
+			 *
+			 * @param string $note    Default ''.
+			 * @param string $action  revoke | reinstate | resend | delete.
+			 * @param int    $user_id Current user id.
+			 */
+			$notes[ $bulk_action ] = sanitize_text_field( (string) apply_filters( 'ppcert_bulk_confirm_note', '', $bulk_action, get_current_user_id() ) );
+		}
+
+		wp_localize_script(
+			'ppcert-admin',
+			'ppcert_bulk_data',
+			[
+				'notes' => $notes,
+			]
 		);
 
 		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_ISSUE_CERTIFICATES ) ) {

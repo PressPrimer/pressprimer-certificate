@@ -281,10 +281,54 @@ a.ant-btn-default:visited {
 	background: #fff;
 }
 
+/* Bulk actions (2.1): the modal's progress state and summary. */
+.ppcert-modal-progress {
+	height: 8px;
+	margin: 16px 0 8px;
+	border-radius: 4px;
+	background: #f0f0f1;
+	overflow: hidden;
+}
+
+.ppcert-modal-progress-bar {
+	width: 0;
+	height: 100%;
+	background: #2271b1;
+	transition: width 0.3s ease;
+}
+
+.ppcert-modal-hint {
+	margin: 0;
+	font-size: 12px;
+	color: #646970;
+}
+
+.ppcert-modal-icon--success .dashicons {
+	color: #00a32a;
+}
+
+.ppcert-modal-details {
+	margin-top: 12px;
+	text-align: left;
+	font-size: 13px;
+}
+
+.ppcert-modal-details ul {
+	max-height: 180px;
+	overflow-y: auto;
+	margin: 8px 0 0;
+}
+
+.ppcert-bulk-resume-notice .button {
+	margin-left: 4px;
+	vertical-align: baseline;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
 	.ppcert-modal-overlay,
-	.ppcert-modal {
+	.ppcert-modal,
+	.ppcert-modal-progress-bar {
 		transition: none;
 	}
 }

@@ -1802,7 +1802,7 @@ class PPCert_Fake_WPDB {
 		// now, source_type x2, search, credential_exact, recipient_csv x2,
 		// title_like x2, one_off_like x2, one_off_json, issued_after x2,
 		// issued_before x2, scoped, scope_csv, issued_by x2, (per_page,
-		// offset)].
+		// offset) or (limit) for query_ids()].
 		if ( false !== strpos( $query, 'FIND_IN_SET( recipient_id, %s )' ) ) {
 			$scope            = $this->scope_from_args( $args, 24 );
 			$template_id      = (int) $args[1];
@@ -1889,6 +1889,23 @@ class PPCert_Fake_WPDB {
 
 			if ( 0 === strpos( $query, 'SELECT COUNT(*)' ) ) {
 				return [ [ 'total' => count( $matches ) ] ];
+			}
+
+			// Certificate::query_ids() (2.1): ids in id order, LIMIT only.
+			if ( 0 === strpos( $query, 'SELECT id FROM' ) ) {
+				usort(
+					$matches,
+					static function ( $a, $b ) {
+						return (int) $a['id'] <=> (int) $b['id'];
+					}
+				);
+
+				return array_map(
+					static function ( $row ) {
+						return [ 'id' => $row['id'] ];
+					},
+					array_slice( $matches, 0, (int) $args[28] )
+				);
 			}
 
 			$per_page = (int) $args[28];

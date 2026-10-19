@@ -59,7 +59,11 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 	 * @return array
 	 */
 	public function get_columns() {
-		return [
+		// The checkbox column only for users with bulk actions (2.1,
+		// Feature 2.1-002 FR-005).
+		$columns = [] !== $this->get_bulk_actions() ? [ 'cb' => '<input type="checkbox" />' ] : [];
+
+		return $columns + [
 			'credential_id' => __( 'Credential ID', 'pressprimer-certificate' ),
 			'recipient'     => __( 'Recipient', 'pressprimer-certificate' ),
 			'template'      => __( 'Template', 'pressprimer-certificate' ),
@@ -68,6 +72,59 @@ class PressPrimer_Certificate_Certificates_List_Table extends WP_List_Table {
 			'issued_at'     => __( 'Issued', 'pressprimer-certificate' ),
 			'expires_at'    => __( 'Expires', 'pressprimer-certificate' ),
 		];
+	}
+
+	/**
+	 * Bulk actions the current user may run (2.1, Feature 2.1-002)
+	 *
+	 * Revoke, Reinstate, Resend email, and Delete, each behind the bulk
+	 * permission check (administrators by default; School grants issuer
+	 * owners). ppcert-admin.js runs them through the REST job routes;
+	 * the select values are never handled as a form submission.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return array Select value => label.
+	 */
+	protected function get_bulk_actions() {
+		$user_id = get_current_user_id();
+		$labels  = [
+			'revoke'    => __( 'Revoke', 'pressprimer-certificate' ),
+			'reinstate' => __( 'Reinstate', 'pressprimer-certificate' ),
+			'resend'    => __( 'Resend email', 'pressprimer-certificate' ),
+			'delete'    => __( 'Delete', 'pressprimer-certificate' ),
+		];
+		$actions = [];
+
+		foreach ( $labels as $action => $label ) {
+			if ( PressPrimer_Certificate_Certificate::user_can_bulk_manage( $user_id, $action ) ) {
+				$actions[ 'ppcert-bulk-' . $action ] = $label;
+			}
+		}
+
+		return $actions;
+	}
+
+	/**
+	 * The row checkbox
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param object $item Certificate row.
+	 * @return string
+	 */
+	public function column_cb( $item ) {
+		$id = (int) $item->id;
+
+		return '<label class="screen-reader-text" for="ppcert-cb-' . esc_attr( (string) $id ) . '">'
+			. esc_html(
+				sprintf(
+					/* translators: %s: credential ID. */
+					__( 'Select %s', 'pressprimer-certificate' ),
+					PressPrimer_Certificate_Certificate::display_credential_id( $item )
+				)
+			)
+			. '</label><input type="checkbox" id="ppcert-cb-' . esc_attr( (string) $id ) . '" name="certificate[]" value="' . esc_attr( (string) $id ) . '" />';
 	}
 
 	/**

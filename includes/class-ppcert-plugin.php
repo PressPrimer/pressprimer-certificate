@@ -376,6 +376,7 @@ class PressPrimer_Certificate_Plugin {
 		$controllers = [
 			'PressPrimer_Certificate_REST_Templates_Controller',
 			'PressPrimer_Certificate_REST_Certificates_Controller',
+			'PressPrimer_Certificate_REST_Bulk_Controller',
 			'PressPrimer_Certificate_REST_Merge_Fields_Controller',
 			'PressPrimer_Certificate_REST_Triggers_Controller',
 			'PressPrimer_Certificate_REST_Verification_Controller',
@@ -425,5 +426,8 @@ class PressPrimer_Certificate_Plugin {
 	 */
 	private function init_cron() {
 		PressPrimer_Certificate_Event_Pruner::init();
+
+		// Finished bulk jobs are removed with the daily pruner (2.1).
+		PressPrimer_Certificate_Bulk_Action_Service::init();
 	}
 }

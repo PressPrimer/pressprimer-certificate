@@ -1313,6 +1313,67 @@ if ( ! function_exists( 'register_rest_route' ) ) {
 	}
 }
 
+if ( ! class_exists( 'WP_List_Table' ) ) {
+	/**
+	 * Stub: the parts of WP_List_Table the plugin's list tables use
+	 * (column, bulk-action, and cell methods are the plugin's own).
+	 */
+	class WP_List_Table {
+
+		/**
+		 * Rows.
+		 *
+		 * @var array
+		 */
+		public $items = [];
+
+		/**
+		 * Column headers.
+		 *
+		 * @var array
+		 */
+		protected $_column_headers; // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Core's property name.
+
+		/**
+		 * Constructor.
+		 *
+		 * @param array $args Ignored.
+		 */
+		public function __construct( $args = [] ) {
+			unset( $args );
+		}
+
+		/**
+		 * Row actions markup.
+		 *
+		 * @param array $actions Action links.
+		 * @return string
+		 */
+		protected function row_actions( $actions ) {
+			return implode( ' | ', (array) $actions );
+		}
+
+		/**
+		 * Current page.
+		 *
+		 * @return int
+		 */
+		public function get_pagenum() {
+			return 1;
+		}
+
+		/**
+		 * Pagination arguments (ignored).
+		 *
+		 * @param array $args Arguments.
+		 * @return void
+		 */
+		protected function set_pagination_args( $args ) {
+			unset( $args );
+		}
+	}
+}
+
 if ( ! class_exists( 'WP_REST_Request' ) ) {
 	/**
 	 * Stub: Minimal REST request.
