@@ -467,7 +467,7 @@ class Test_Bulk_Actions extends TestCase {
 			$job['counts']
 		);
 		$this->assertCount( 2, $GLOBALS['ppcert_test_mail'] );
-		$this->assertSame( 'Revoked certificates are not emailed.', $job['problems'][0]['reason'] );
+		$this->assertSame( "This certificate is revoked, so it can't be resent.", $job['problems'][0]['reason'] );
 		$this->assertCount( 2, $this->events( 'reissued' ) );
 
 		// Mailer failure.

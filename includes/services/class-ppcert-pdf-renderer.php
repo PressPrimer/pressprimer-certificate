@@ -334,14 +334,49 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		// A recipient-friendly filename: mail clients and download
 		// managers type the file by extension (wp_tempnam yields .tmp).
-		$friendly = dirname( $path ) . '/' . PressPrimer_Certificate_Certificate::pdf_filename( $certificate, $renderer->get_last_variant() );
+		// Each render gets its own folder (2.1, Feature 2.1-007 FR-003):
+		// two renders of one certificate used to rename to the same
+		// certificate-{ID}.pdf and could delete each other's output.
+		$folder = trailingslashit( dirname( $path ) ) . 'ppcert-' . strtolower( wp_generate_password( 12, false ) );
 
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Temp-to-temp rename in the same directory; WP_Filesystem is for user-visible storage.
-		if ( rename( $path, $friendly ) ) {
-			return $friendly;
+		if ( ! wp_mkdir_p( $folder ) ) {
+			return $path;
 		}
 
-		return $path;
+		$friendly = $folder . '/' . PressPrimer_Certificate_Certificate::pdf_filename( $certificate, $renderer->get_last_variant() );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Temp-to-temp rename; WP_Filesystem is for user-visible storage.
+		if ( ! rename( $path, $friendly ) ) {
+			self::remove_empty_temp_folder( $folder );
+
+			return $path;
+		}
+
+		// Callers delete the file when done (the email send, the
+		// stream); the folder goes at the end of the request once empty.
+		add_action(
+			'shutdown',
+			static function () use ( $folder ) {
+				self::remove_empty_temp_folder( $folder );
+			}
+		);
+
+		return $friendly;
+	}
+
+	/**
+	 * Remove a render's temp folder when it is empty
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $folder Absolute folder path.
+	 * @return void
+	 */
+	public static function remove_empty_temp_folder( $folder ) {
+		if ( is_dir( $folder ) && array() === array_diff( (array) scandir( $folder ), [ '.', '..' ] ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing this render's own emptied temp folder.
+			rmdir( $folder );
+		}
 	}
 
 	/*

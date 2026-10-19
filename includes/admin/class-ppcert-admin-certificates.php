@@ -215,7 +215,15 @@ class PressPrimer_Certificate_Admin_Certificates {
 
 		self::authorize( $certificate_id, 'resend' );
 
-		$sent = PressPrimer_Certificate_Email_Service::resend( $certificate_id ) ? 1 : 0;
+		// A revoked certificate is never re-sent (2.1, Feature 2.1-007
+		// FR-004): 2 selects the revoked message.
+		$certificate = PressPrimer_Certificate_Certificate::get( $certificate_id );
+
+		if ( $certificate && 'revoked' === (string) $certificate->status ) {
+			$sent = 2;
+		} else {
+			$sent = PressPrimer_Certificate_Email_Service::resend( $certificate_id ) ? 1 : 0;
+		}
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -346,10 +354,15 @@ class PressPrimer_Certificate_Admin_Certificates {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag.
 			$resent = absint( wp_unslash( $_GET['ppcert_resent'] ) );
 
-			echo '<div class="notice notice-' . ( $resent ? 'success' : 'error' ) . ' is-dismissible"><p>';
-			echo $resent
-				? esc_html__( 'Certificate email sent to the recipient.', 'pressprimer-certificate' )
-				: esc_html__( 'The certificate email could not be sent. Check that the recipient has a valid email address.', 'pressprimer-certificate' );
+			$messages = [
+				0 => __( 'The certificate email could not be sent. Check that the recipient has a valid email address.', 'pressprimer-certificate' ),
+				1 => __( 'Certificate email sent to the recipient.', 'pressprimer-certificate' ),
+				2 => __( "This certificate is revoked, so it can't be resent.", 'pressprimer-certificate' ),
+			];
+			$resent   = isset( $messages[ $resent ] ) ? $resent : 0;
+
+			echo '<div class="notice notice-' . ( 1 === $resent ? 'success' : 'error' ) . ' is-dismissible"><p>';
+			echo esc_html( $messages[ $resent ] );
 			echo '</p></div>';
 		}
 

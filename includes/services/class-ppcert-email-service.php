@@ -166,9 +166,19 @@ class PressPrimer_Certificate_Email_Service {
 	 * @param int|null $actor_id       Acting user for the event (the bulk
 	 *                                 service passes the job's creator);
 	 *                                 null for the current user.
-	 * @return bool Whether an email was sent.
+	 * @return bool Whether an email was sent (never for a revoked
+	 *              certificate, since 2.1).
 	 */
 	public static function resend( $certificate_id, $actor_id = null ) {
+		// Revoked certificates are never re-sent (2.1, Feature 2.1-007
+		// FR-004): the list hid the action, but an old or replayed link
+		// emailed a PDF the public route refuses with 410.
+		$certificate = PressPrimer_Certificate_Certificate::get( absint( $certificate_id ) );
+
+		if ( $certificate && 'revoked' === (string) $certificate->status ) {
+			return false;
+		}
+
 		return (bool) PressPrimer_Certificate_Certificate::with_actor(
 			$actor_id,
 			static function () use ( $certificate_id ) {

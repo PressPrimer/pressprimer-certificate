@@ -302,8 +302,10 @@ class PressPrimer_Certificate_Privacy {
 	 * Erase a user's certificate data
 	 *
 	 * Removes certificate rows, their events, the user's credits, and
-	 * cached preview PNGs. Erased certificates can no longer be verified
-	 * (Feature 006 edge case) - the response message says so.
+	 * cached preview PNGs, and (2.1) clears the person's user id from
+	 * events on other people's certificates. Erased certificates can no
+	 * longer be verified (Feature 006 edge case) - the response message
+	 * says so.
 	 *
 	 * @since 1.0.0
 	 *
@@ -363,10 +365,40 @@ class PressPrimer_Certificate_Privacy {
 			}
 		}
 
+		// The person as an actor (2.1, Feature 2.1-007 FR-007): their user
+		// id stays on events of OTHER people's certificates (verifying,
+		// downloading, revoking, resending). Those events stay; the id is
+		// cleared, as anonymous events store it.
+		$actor_cleared = 0;
+
+		if ( $done && $user_id > 0 ) {
+			$actor_cleared = (int) $wpdb->update(
+				PressPrimer_Certificate_Certificate::events_table(),
+				[ 'actor_id' => null ],
+				[ 'actor_id' => $user_id ],
+				[ '%d' ],
+				[ '%d' ]
+			);
+			$removed      += $actor_cleared;
+		}
+
 		$messages = [];
 
 		if ( $removed > 0 || $done ) {
 			$messages[] = __( 'Erased certificates are permanently removed and can no longer be verified.', 'pressprimer-certificate' );
+		}
+
+		if ( $actor_cleared > 0 ) {
+			$messages[] = sprintf(
+				/* translators: %s: number of activity records. */
+				_n(
+					'This person was removed from %s activity record on other certificates.',
+					'This person was removed from %s activity records on other certificates.',
+					$actor_cleared,
+					'pressprimer-certificate'
+				),
+				number_format_i18n( $actor_cleared )
+			);
 		}
 
 		return [

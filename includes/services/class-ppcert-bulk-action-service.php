@@ -600,7 +600,7 @@ class PressPrimer_Certificate_Bulk_Action_Service {
 		}
 
 		if ( 'resend' === $action && $revoked ) {
-			return self::outcome( 'skipped', __( 'Revoked certificates are not emailed.', 'pressprimer-certificate' ), $credential );
+			return self::outcome( 'skipped', __( "This certificate is revoked, so it can't be resent.", 'pressprimer-certificate' ), $credential );
 		}
 
 		switch ( $action ) {

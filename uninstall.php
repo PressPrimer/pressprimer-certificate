@@ -100,24 +100,32 @@ function ppcert_remove_site_data() {
 	wp_clear_scheduled_hook( 'ppcert_prune_events' );
 
 	ppcert_drop_tables();
-	ppcert_remove_options();
 	ppcert_remove_post_meta();
 	ppcert_remove_capabilities();
 	ppcert_clear_transients();
 	ppcert_remove_uploads_data();
+
+	// Options last (2.1, Feature 2.1-007 FR-002): an addon uninstalled
+	// in the same request can still read the remove-data choice, and an
+	// addon finding free's options gone treats that as "free was removed
+	// with its data".
+	ppcert_remove_options();
 }
 
 /**
  * Remove the current site's plugin data from the uploads directory.
  *
- * Three suite-managed locations: ppcert-previews (short-lived designer
- * preview PDFs), ppcert-educator-fonts (the Educator addon's uploaded
- * TTFs), and ppcert-educator/og (Educator's link-preview PNGs, which
- * render recipient names - personal data). Everything here is either
- * regenerable, derived, or covered by the remove-data opt-in, and the
- * readme promises a clean uninstall.
+ * Every free upload folder, recursively (2.1, Feature 2.1-007 FR-002):
+ * `ppcert/` (certificate-page previews, which show recipient names at
+ * static URLs), `ppcert-previews/` (designer preview PDFs), and
+ * `ppcert-fonts/` (the font cache), plus the Educator folders free has
+ * always removed: `ppcert-educator-fonts/` (uploaded fonts and their
+ * `tcpdf/` subfolder) and `ppcert-educator/og/` (link-preview images
+ * showing recipient names). `ppcert-educator/` itself goes only when it
+ * is empty (Educator's own uninstall owns the rest).
  *
  * @since 1.0.0
+ * @since 2.1.0 Recursive, through WP_Filesystem; `ppcert/` and `ppcert-fonts/`.
  */
 function ppcert_remove_uploads_data() {
 	$uploads = wp_upload_dir();
@@ -128,29 +136,59 @@ function ppcert_remove_uploads_data() {
 
 	$base = trailingslashit( $uploads['basedir'] );
 
-	// The free preview folder plus the Educator addon's uploaded fonts
-	// and link-preview image cache (the suite's upload folders as built;
-	// Educator's own uninstall handles them when only Educator goes).
-	foreach ( array( 'ppcert-previews', 'ppcert-educator-fonts', 'ppcert-educator/og' ) as $subdir ) {
-		$dir = $base . $subdir;
-
-		if ( ! is_dir( $dir ) ) {
-			continue;
-		}
-
-		foreach ( (array) glob( $dir . '/*' ) as $file ) {
-			wp_delete_file( $file );
-		}
-
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing the emptied plugin cache directory.
-		rmdir( $dir );
+	foreach ( array( 'ppcert', 'ppcert-previews', 'ppcert-fonts', 'ppcert-educator-fonts', 'ppcert-educator/og' ) as $subdir ) {
+		ppcert_delete_directory( $base . $subdir );
 	}
 
-	// The now-empty ppcert parent (previews' container), if removable.
-	if ( is_dir( $base . 'ppcert-educator' ) ) {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir,WordPress.PHP.NoSilencedErrors.Discouraged -- Removing the emptied plugin cache directory; @ because foreign files inside fail it harmlessly.
-		@rmdir( $base . 'ppcert-educator' );
+	if ( is_dir( $base . 'ppcert-educator' ) && array() === array_diff( (array) scandir( $base . 'ppcert-educator' ), array( '.', '..' ) ) ) {
+		ppcert_delete_directory( $base . 'ppcert-educator' );
 	}
+}
+
+/**
+ * Delete a directory and everything in it
+ *
+ * Through WP_Filesystem when it can write directly; otherwise file by
+ * file with core's wp_delete_file() and an rmdir per emptied folder.
+ *
+ * @since 2.1.0
+ *
+ * @param string $dir Absolute directory path.
+ * @return void
+ */
+function ppcert_delete_directory( $dir ) {
+	global $wp_filesystem;
+
+	if ( ! is_dir( $dir ) ) {
+		return;
+	}
+
+	if ( ! function_exists( 'WP_Filesystem' ) && defined( 'ABSPATH' ) && file_exists( ABSPATH . 'wp-admin/includes/file.php' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+	}
+
+	if ( function_exists( 'WP_Filesystem' ) && WP_Filesystem() && $wp_filesystem && 'direct' === $wp_filesystem->method ) {
+		$wp_filesystem->delete( $dir, true, 'd' );
+
+		return;
+	}
+
+	$items = new RecursiveIteratorIterator(
+		new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ),
+		RecursiveIteratorIterator::CHILD_FIRST
+	);
+
+	foreach ( $items as $item ) {
+		if ( $item->isDir() ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Fallback when WP_Filesystem cannot write directly; the folder was emptied above it.
+			rmdir( $item->getPathname() );
+		} else {
+			wp_delete_file( $item->getPathname() );
+		}
+	}
+
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Fallback when WP_Filesystem cannot write directly; the folder is now empty.
+	rmdir( $dir );
 }
 
 /**

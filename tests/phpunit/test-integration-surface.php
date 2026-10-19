@@ -462,8 +462,15 @@ class Test_Integration_Surface extends TestCase {
 
 	/**
 	 * ppcert_render_certificate_pdf() renders an issued row to a real PDF
-	 * temp file, and the email attachment path produces the same document
-	 * (byte-identical after normalizing volatile PDF metadata).
+	 * temp file, and the email attachment path renders the same
+	 * certificate under the same file name, as its own file.
+	 *
+	 * Until 2.1 both renders were renamed to one shared temp path, so this
+	 * test compared the second file with itself (Feature 2.1-007 FR-003:
+	 * concurrent renders could delete each other's output). The free
+	 * plugin's PDF protection encrypts with fresh keys per render, so two
+	 * renders are never byte-identical; the test compares what was
+	 * rendered instead.
 	 *
 	 * @return void
 	 */
@@ -473,6 +480,16 @@ class Test_Integration_Surface extends TestCase {
 				'template_id'  => $this->template_id,
 				'recipient_id' => 7,
 			]
+		);
+
+		$rendered = [];
+		add_action(
+			'ppcert_pdf_generated',
+			static function ( $temp_path, $certificate_id, $context ) use ( &$rendered ) {
+				$rendered[] = [ $certificate_id, $context ];
+			},
+			10,
+			3
 		);
 
 		$path = ppcert_render_certificate_pdf( $id, 'download' );
@@ -489,10 +506,16 @@ class Test_Integration_Surface extends TestCase {
 
 		$this->assertNotSame( '', $attachment );
 		$this->assertSame( basename( $path ), basename( $attachment ), 'Same certificate-{DISPLAY-ID}.pdf filename' );
+		$this->assertNotSame( $path, $attachment, 'Each render has its own file (FR-003)' );
+		$this->assertFileExists( $path, 'The second render did not replace or remove the first' );
+		$this->assertStringStartsWith( '%PDF', (string) file_get_contents( $attachment, false, null, 0, 4 ) );
 		$this->assertSame(
-			$this->normalize_pdf( (string) file_get_contents( $path ) ),
-			$this->normalize_pdf( (string) file_get_contents( $attachment ) ),
-			'Attachment bytes match the direct render after stripping volatile metadata'
+			[
+				[ $id, 'download' ],
+				[ $id, 'email' ],
+			],
+			$rendered,
+			'Both renders are of this certificate'
 		);
 
 		wp_delete_file( $path );
@@ -502,19 +525,6 @@ class Test_Integration_Surface extends TestCase {
 		$error = ppcert_render_certificate_pdf( 999999 );
 		$this->assertInstanceOf( WP_Error::class, $error );
 		$this->assertSame( 'ppcert_invalid_certificate', $error->get_error_code() );
-	}
-
-	/**
-	 * Strip volatile PDF metadata (timestamps, document ids) so two
-	 * renders of the same certificate compare equal.
-	 *
-	 * @param string $bytes Raw PDF bytes.
-	 * @return string
-	 */
-	private function normalize_pdf( $bytes ) {
-		$bytes = (string) preg_replace( '/\/(CreationDate|ModDate)\s*\([^)]*\)/', '', $bytes );
-
-		return (string) preg_replace( '/\/ID\s*\[[^\]]*\]/', '', $bytes );
 	}
 
 	// -------------------------------------------------------------------

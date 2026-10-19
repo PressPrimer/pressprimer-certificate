@@ -1313,6 +1313,71 @@ if ( ! function_exists( 'register_rest_route' ) ) {
 	}
 }
 
+if ( ! function_exists( 'is_multisite' ) ) {
+	/**
+	 * Stub: single site unless a test says otherwise.
+	 *
+	 * @return bool
+	 */
+	function is_multisite() {
+		return ! empty( $GLOBALS['ppcert_test_multisite'] );
+	}
+}
+
+if ( ! function_exists( 'wp_clear_scheduled_hook' ) ) {
+	/**
+	 * Stub: clear a hook's scheduled event (the cron stubs' store) and
+	 * record the call.
+	 *
+	 * @param string $hook Hook name.
+	 * @return int
+	 */
+	function wp_clear_scheduled_hook( $hook ) {
+		$GLOBALS['ppcert_test_cleared_hooks'][] = $hook;
+		$cleared                                = isset( $GLOBALS['ppcert_test_cron'][ $hook ] ) ? 1 : 0;
+
+		unset( $GLOBALS['ppcert_test_cron'][ $hook ], $GLOBALS['ppcert_test_cron_recurrence'][ $hook ] );
+
+		return $cleared;
+	}
+}
+
+if ( ! function_exists( 'wp_roles' ) ) {
+	/**
+	 * Stub: no roles (uninstall's capability sweep finds nothing).
+	 *
+	 * @return object
+	 */
+	function wp_roles() {
+		return (object) [ 'roles' => [] ];
+	}
+}
+
+if ( ! function_exists( 'get_role' ) ) {
+	/**
+	 * Stub: no role objects.
+	 *
+	 * @param string $role Role name.
+	 * @return null
+	 */
+	function get_role( $role ) {
+		unset( $role );
+		return null;
+	}
+}
+
+if ( ! function_exists( 'plugin_dir_path' ) ) {
+	/**
+	 * Stub: the directory of a plugin file, with a trailing slash.
+	 *
+	 * @param string $file Plugin file.
+	 * @return string
+	 */
+	function plugin_dir_path( $file ) {
+		return trailingslashit( dirname( (string) $file ) );
+	}
+}
+
 if ( ! function_exists( 'wp_date' ) ) {
 	/**
 	 * Stub: format a timestamp (UTC in tests).
@@ -1878,21 +1943,35 @@ if ( ! function_exists( 'sanitize_html_class' ) ) {
 
 if ( ! function_exists( 'update_option' ) ) {
 	/**
-	 * Stub: Option write into the test options store.
+	 * Stub: Option write into the test options store, with core's rules.
 	 *
-	 * Adding a NEW option is an INSERT in WordPress, which replaces
-	 * $wpdb->insert_id; the stub does the same so code that reads the id
-	 * after an option write fails here as it does live (the 2.1 first
-	 * pattern-ID insert, found on the dev site 2026-10-18).
+	 * As in WordPress, an unchanged value writes nothing and returns
+	 * false, and an absent option reads as false: so update_option( $x,
+	 * false ) on a new option stores NOTHING (2.1, Feature 2.1-007: the
+	 * Enterprise switch bug passed tests because this stub always
+	 * wrote). Adding a NEW option is an INSERT in WordPress, which
+	 * replaces $wpdb->insert_id; the stub does the same so code that
+	 * reads the id after an option write fails here as it does live (the
+	 * 2.1 first pattern-ID insert, found on the dev site 2026-10-18).
 	 *
-	 * @param string $option Option name.
-	 * @param mixed  $value  Value.
-	 * @return bool
+	 * @param string    $option   Option name.
+	 * @param mixed     $value    Value.
+	 * @param bool|null $autoload Ignored.
+	 * @return bool Whether the value changed.
 	 */
-	function update_option( $option, $value ) {
-		$options = isset( $GLOBALS['ppcert_test_options'] ) ? (array) $GLOBALS['ppcert_test_options'] : [];
+	function update_option( $option, $value, $autoload = null ) {
+		unset( $autoload );
 
-		if ( ! array_key_exists( $option, $options ) && isset( $GLOBALS['wpdb'] ) && $GLOBALS['wpdb'] instanceof PPCert_Fake_WPDB ) {
+		$options = isset( $GLOBALS['ppcert_test_options'] ) ? (array) $GLOBALS['ppcert_test_options'] : [];
+		$exists  = array_key_exists( $option, $options );
+		$old     = $exists ? $options[ $option ] : false;
+
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Mirrors core's maybe_serialize() comparison.
+		if ( $value === $old || serialize( $value ) === serialize( $old ) ) {
+			return false;
+		}
+
+		if ( ! $exists && isset( $GLOBALS['wpdb'] ) && $GLOBALS['wpdb'] instanceof PPCert_Fake_WPDB ) {
 			$GLOBALS['wpdb']->insert_id = 900000 + count( $options );
 		}
 

@@ -224,14 +224,17 @@ test.describe( 'save flow', () => {
 		await expect( page.getByText( 'Template reloaded.' ) ).toBeVisible();
 
 		// The notice and the dialog close. The harness stops motion at 0s,
-		// which never fires animationend, so AntD's leave motion waits
-		// here: assert the close started, then clear the overlays.
+		// which usually leaves AntD's closing motion waiting: accept
+		// closed or closing (no open notice or dialog remains), then
+		// clear the overlays.
 		await expect(
-			page.locator( '.ant-notification-notice-wrapper' )
-		).toHaveClass( /-leave/ );
-		await expect( page.locator( '.ant-modal-confirm' ) ).toHaveClass(
-			/-leave/
-		);
+			page.locator(
+				'.ant-notification-notice-wrapper:not([class*="-leave"])'
+			)
+		).toHaveCount( 0 );
+		await expect(
+			page.locator( '.ant-modal-confirm:not([class*="-leave"])' )
+		).toHaveCount( 0 );
 		await clearClosedOverlays( page );
 
 		const reloaded = await getElement( page, TITLE_ID );

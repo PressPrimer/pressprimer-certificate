@@ -77,12 +77,12 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 				[
 					'methods'             => 'GET',
 					'callback'            => [ $this, 'get_triggers' ],
-					'permission_callback' => [ $this, 'can_manage' ],
+					'permission_callback' => [ $this, 'can_manage_template' ],
 				],
 				[
 					'methods'             => 'PUT',
 					'callback'            => [ $this, 'replace_triggers' ],
-					'permission_callback' => [ $this, 'can_manage' ],
+					'permission_callback' => [ $this, 'can_manage_template' ],
 				],
 			]
 		);
@@ -97,6 +97,24 @@ class PressPrimer_Certificate_REST_Triggers_Controller {
 	 */
 	public function can_manage() {
 		return current_user_can( PressPrimer_Certificate_Capabilities::CAP_MANAGE_TEMPLATES );
+	}
+
+	/**
+	 * Capability plus the per-template check for a template's triggers
+	 *
+	 * The same check as every other single-template route (2.1, Feature
+	 * 2.1-007 FR-001): before 2.1 these routes checked only the
+	 * capability, which School grants every member, so a member of one
+	 * organization could read or replace another organization's trigger,
+	 * or a site template's.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_REST_Request $request The request (route param `id`).
+	 * @return bool
+	 */
+	public function can_manage_template( $request ) {
+		return ( new PressPrimer_Certificate_REST_Templates_Controller() )->can_manage_template( $request );
 	}
 
 	/**
