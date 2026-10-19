@@ -169,7 +169,8 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request The request.
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response|WP_Error A WP_Error (400, with the field)
+	 *                                   for an invalid From address.
 	 */
 	public function update_settings( $request ) {
 		$data     = $request->get_json_params();
@@ -237,11 +238,38 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 			$sanitized['email_from_name'] = sanitize_text_field( (string) $data['email_from_name'] );
 		}
 
+		// Empty clears the address (the administration email applies);
+		// anything else must be a valid address - a field error, never
+		// a silent drop (2.1, Feature 2.1-001 FR-008).
 		if ( isset( $data['email_from_address'] ) ) {
-			$email = sanitize_email( (string) $data['email_from_address'] );
+			$raw = trim( (string) $data['email_from_address'] );
 
-			if ( is_email( $email ) ) {
+			if ( '' === $raw ) {
+				$sanitized['email_from_address'] = '';
+			} else {
+				$email = sanitize_email( $raw );
+
+				if ( '' === $email || ! is_email( $email ) ) {
+					return new WP_Error(
+						'ppcert_invalid_from_address',
+						__( 'Enter a valid From address, or leave it empty to use the site\'s administration email.', 'pressprimer-certificate' ),
+						[
+							'status' => 400,
+							'field'  => 'email_from_address',
+						]
+					);
+				}
+
 				$sanitized['email_from_address'] = $email;
+			}
+		}
+
+		// The Email logo (2.1): an image attachment id; 0 removes it.
+		if ( isset( $data['email_logo_id'] ) ) {
+			$logo_id = absint( $data['email_logo_id'] );
+
+			if ( 0 === $logo_id || wp_attachment_is_image( $logo_id ) ) {
+				$sanitized['email_logo_id'] = $logo_id;
 			}
 		}
 
@@ -249,8 +277,9 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 			$sanitized['email_issued_subject'] = sanitize_text_field( (string) $data['email_issued_subject'] );
 		}
 
+		// The body is HTML from the rich-text editor since 2.1.
 		if ( isset( $data['email_issued_body'] ) ) {
-			$sanitized['email_issued_body'] = sanitize_textarea_field( (string) $data['email_issued_body'] );
+			$sanitized['email_issued_body'] = wp_kses_post( (string) $data['email_issued_body'] );
 		}
 
 		// Advanced: retention window for prunable event rows.

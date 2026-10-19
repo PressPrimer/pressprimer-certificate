@@ -498,6 +498,47 @@ if ( ! function_exists( 'wp_attachment_is_image' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_get_attachment_metadata' ) ) {
+	/**
+	 * Stub: Attachment metadata.
+	 *
+	 * Tests register metadata in $GLOBALS['ppcert_test_attachment_meta'][id].
+	 *
+	 * @param int $attachment_id Attachment id.
+	 * @return array|false
+	 */
+	function wp_get_attachment_metadata( $attachment_id ) {
+		$meta = isset( $GLOBALS['ppcert_test_attachment_meta'] ) ? $GLOBALS['ppcert_test_attachment_meta'] : [];
+		return isset( $meta[ (int) $attachment_id ] ) ? $meta[ (int) $attachment_id ] : false;
+	}
+}
+
+if ( ! function_exists( 'wpautop' ) ) {
+	/**
+	 * Stub: Core's paragraph conversion for plain text - blank lines
+	 * split paragraphs, single newlines become <br />.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function wpautop( $text ) {
+		$text = str_replace( [ "\r\n", "\r" ], "\n", trim( (string) $text ) );
+
+		if ( '' === $text ) {
+			return '';
+		}
+
+		$paragraphs = preg_split( '/\n\s*\n/', $text );
+		$output     = '';
+
+		foreach ( $paragraphs as $paragraph ) {
+			$output .= '<p>' . str_replace( "\n", "<br />\n", trim( $paragraph ) ) . "</p>\n";
+		}
+
+		return $output;
+	}
+}
+
 if ( ! function_exists( 'wp_get_attachment_image_url' ) ) {
 	/**
 	 * Stub: Resolve an attachment id to a URL.

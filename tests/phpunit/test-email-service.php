@@ -699,14 +699,17 @@ class Test_Email_Service extends TestCase {
 		PressPrimer_Certificate_Email_Service::send_issued( $certificate_id, [ 'trigger_type' => 'manual' ] );
 		$mail = end( $GLOBALS['ppcert_test_mail'] );
 		$this->assertSame( 'From: Acme Academy <certificates@acme.example>', $mail['headers'][0], 'Filtered identity, markup stripped from the name' );
-		$this->assertStringEndsWith( "\n\nAcme Academy\n123 Main St", $mail['body'], 'Footer is the last thing in the body' );
+		$this->assertStringContainsString( 'Acme Academy<br />' . "\n" . '123 Main St</p></td></tr>', $mail['body'], 'The footer text fills the layout footer, line breaks kept (2.1)' );
+		$this->assertStringNotContainsString( 'This email was sent from', $mail['body'], 'It replaces the default footer lines' );
 		$this->assertSame( 'issued', $seen[0][1] );
 		$this->assertSame( $certificate_id, $seen[0][2]['certificate_id'], 'Context names the certificate before assembly' );
 
 		// Shared builder (Educator reminders and other addon callers).
 		$content = PressPrimer_Certificate_Email_Service::build_recipient_email( $certificate_id, 'Reminder {subject}', 'Body', 'expiry_reminder', [ 'offset' => 30 ] );
 		$this->assertSame( 'From: Acme Academy <certificates@acme.example>', $content['headers'][0] );
-		$this->assertSame( "Body\n\nAcme Academy\n123 Main St", $content['body'] );
+		$this->assertStringContainsString( '<p style="margin:0 0 15px;">Body</p>', $content['body'], 'The builder returns the HTML document (2.1)' );
+		$this->assertStringContainsString( '123 Main St', $content['body'] );
+		$this->assertContains( 'Content-Type: text/html; charset=UTF-8', $content['headers'] );
 		$last = end( $seen );
 		$this->assertSame( 'expiry_reminder', $last[1] );
 		$this->assertSame( 30, $last[2]['offset'] );
@@ -717,10 +720,21 @@ class Test_Email_Service extends TestCase {
 		$this->assertTrue( PressPrimer_Certificate_Email_Service::send_test( null ) );
 		$mail = end( $GLOBALS['ppcert_test_mail'] );
 		$this->assertSame( 'From: Acme Academy <certificates@acme.example>', $mail['headers'][0] );
-		$this->assertStringEndsWith( "\n\nAcme Academy\n123 Main St", $mail['body'], 'Footer is the last line of the test email too, after the test note' );
 		$this->assertStringContainsString( 'This is a test', $mail['body'] );
+		$this->assertLessThan( strpos( $mail['body'], '123 Main St' ), strpos( $mail['body'], 'This is a test' ), 'The footer follows the test note' );
 		$types = array_column( $seen, 1 );
 		$this->assertContains( 'test', $types );
+
+		// The 2.0 plain-text format keeps the 2.0 footer join exactly.
+		add_filter(
+			'ppcert_email_format',
+			static function () {
+				return 'text';
+			}
+		);
+		$content = PressPrimer_Certificate_Email_Service::build_recipient_email( $certificate_id, 'Reminder {subject}', 'Body', 'expiry_reminder' );
+		$this->assertSame( "Body\n\nAcme Academy\n123 Main St", $content['body'] );
+		$this->assertSame( [ 'From: Acme Academy <certificates@acme.example>' ], $content['headers'] );
 	}
 
 	/**
