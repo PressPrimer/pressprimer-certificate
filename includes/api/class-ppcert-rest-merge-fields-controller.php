@@ -246,8 +246,11 @@ class PressPrimer_Certificate_REST_Merge_Fields_Controller {
 	public function get_user_meta_keys( $request ) {
 		global $wpdb;
 
+		// Keyed by user as well as search (2.1, Feature 2.1-007 FR-006):
+		// the samples are the current user's own values, so one
+		// administrator must never see another's for five minutes.
 		$search    = self::sanitize_search( $request->get_param( 'search' ) );
-		$cache_key = 'ppcert_meta_keys_user_' . md5( $search );
+		$cache_key = 'ppcert_meta_keys_user_' . get_current_user_id() . '_' . md5( $search );
 		$cached    = get_transient( $cache_key );
 
 		if ( is_array( $cached ) ) {

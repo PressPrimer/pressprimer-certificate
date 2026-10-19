@@ -746,6 +746,7 @@ class PPCert_Fake_WPDB {
 					return [
 						'id'              => $row['id'],
 						'merge_data_json' => isset( $row['merge_data_json'] ) ? $row['merge_data_json'] : '',
+						'updated_at'      => isset( $row['updated_at'] ) ? $row['updated_at'] : '',
 					];
 				},
 				array_slice( $matches, 0, (int) $args[2] )

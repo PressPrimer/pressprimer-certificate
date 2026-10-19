@@ -230,6 +230,25 @@ class Test_Merge_Fields_REST extends TestCase {
 	}
 
 	/**
+	 * The cached suggestions are per user (2.1, Feature 2.1-007 FR-006):
+	 * the samples are the current user's values, so a second administrator
+	 * searching the same term must not get the first one's.
+	 *
+	 * @return void
+	 */
+	public function test_user_meta_cache_is_per_user() {
+		$this->seed_user_meta( 5, 'license_no', 'FIVE' );
+		$this->seed_user_meta( 9, 'license_no', 'NINE' );
+
+		$GLOBALS['ppcert_test_current_user'] = 5;
+		$this->assertSame( 'FIVE', $this->controller->get_user_meta_keys( new WP_REST_Request( [ 'search' => 'license' ] ) )->get_data()[0]['sample'] );
+
+		// No cache reset: user 9 asks the same thing within five minutes.
+		$GLOBALS['ppcert_test_current_user'] = 9;
+		$this->assertSame( 'NINE', $this->controller->get_user_meta_keys( new WP_REST_Request( [ 'search' => 'license' ] ) )->get_data()[0]['sample'] );
+	}
+
+	/**
 	 * Samples truncate to 80 chars; serialized values sample empty.
 	 *
 	 * @return void

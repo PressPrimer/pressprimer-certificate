@@ -65,6 +65,108 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 				'permission_callback' => [ $this, 'can_manage' ],
 			]
 		);
+
+		// The verification page picker's search (2.1, Feature 2.1-007
+		// FR-005; the users-search pattern).
+		register_rest_route(
+			'ppcert/v1',
+			'/settings/pages',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'search_pages' ],
+				'permission_callback' => [ $this, 'can_manage' ],
+				'args'                => [
+					'search' => [ 'sanitize_callback' => 'sanitize_text_field' ],
+				],
+			]
+		);
+	}
+
+	/**
+	 * GET /settings/pages - published pages matching a search
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_REST_Request $request The request.
+	 * @return WP_REST_Response
+	 */
+	public function search_pages( $request ) {
+		return new WP_REST_Response( self::page_matches( (string) $request->get_param( 'search' ), 20 ), 200 );
+	}
+
+	/**
+	 * Published pages for the verification page picker, by title
+	 *
+	 * Every published page is reachable by search; the empty search
+	 * returns the first ones alphabetically.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $search Title search ('' for the first pages).
+	 * @param int    $limit  Most pages (1-100).
+	 * @return array[] `[ id, title ]`.
+	 */
+	public static function page_matches( $search, $limit ) {
+		$args = [
+			'post_type'   => 'page',
+			'post_status' => 'publish',
+			'numberposts' => min( 100, max( 1, absint( $limit ) ) ),
+			'orderby'     => 'title',
+			'order'       => 'ASC',
+		];
+
+		if ( '' !== trim( (string) $search ) ) {
+			// Titles only: core's default also searches content, which
+			// lists pages whose names do not match what was typed.
+			$args['s']              = trim( (string) $search );
+			$args['search_columns'] = [ 'post_title' ];
+		}
+
+		return array_map( [ __CLASS__, 'page_choice' ], (array) get_posts( $args ) );
+	}
+
+	/**
+	 * The configured verification page, for the picker
+	 *
+	 * Whether it still exists comes from the page itself, not from
+	 * whether it is among the pages listed (2.1: on large sites the
+	 * configured page fell outside the first 200 and read as deleted).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $page_id Configured page id (0 = none).
+	 * @return array `[ id, title, exists ]`.
+	 */
+	public static function verification_page( $page_id ) {
+		$page_id = absint( $page_id );
+		$page    = $page_id > 0 ? get_post( $page_id ) : null;
+		$exists  = $page && 'page' === $page->post_type && 'publish' === $page->post_status;
+
+		return [
+			'id'     => $page_id,
+			'title'  => $exists ? self::page_choice( $page )['title'] : '',
+			'exists' => 0 === $page_id || $exists,
+		];
+	}
+
+	/**
+	 * One page as a picker choice
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param WP_Post|object $page Page.
+	 * @return array `[ id, title ]`.
+	 */
+	private static function page_choice( $page ) {
+		$title = (string) $page->post_title;
+
+		return [
+			'id'    => (int) $page->ID,
+			'title' => '' !== $title
+				? $title
+				/* translators: %d: page ID. */
+				: sprintf( __( '(no title) #%d', 'pressprimer-certificate' ), (int) $page->ID ),
+		];
 	}
 
 	/**

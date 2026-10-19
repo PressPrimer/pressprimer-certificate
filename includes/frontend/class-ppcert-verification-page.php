@@ -381,6 +381,12 @@ class PressPrimer_Certificate_Verification_Page {
 	 * @since 1.0.0
 	 */
 	public static function maybe_deleted_page_notice() {
+		// Only for people who can fix it (2.1, Feature 2.1-007 FR-009:
+		// every wp-admin user saw it, subscribers included).
+		if ( ! current_user_can( PressPrimer_Certificate_Capabilities::CAP_MANAGE_SETTINGS ) ) {
+			return;
+		}
+
 		$settings = get_option( 'ppcert_settings', [] );
 		$page_id  = isset( $settings['verification_page_id'] ) ? absint( $settings['verification_page_id'] ) : 0;
 

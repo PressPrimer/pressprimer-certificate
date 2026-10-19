@@ -9,8 +9,10 @@
  * @since 1.0.0
  */
 
-import { __ } from '@wordpress/i18n';
-import { Form, Select, Typography, Alert } from 'antd';
+import { useEffect, useRef, useState } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
+import { Form, Select, Spin, Typography, Alert } from 'antd';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -23,10 +25,67 @@ const { Title, Paragraph, Text } = Typography;
  * @param {Object}   props.settingsData  Full localized data.
  */
 const GeneralTab = ( { settings, updateSetting, settingsData } ) => {
-	const pages = settingsData.pages || [];
+	const firstPages = settingsData.pages || [];
+	const configured = settingsData.verificationPage || {};
 	const pageId = Number( settings.verification_page_id ) || 0;
+
+	// The picker searches every published page on the server (2.1,
+	// Feature 2.1-007 FR-005); the first choices come with the screen.
+	const [ pages, setPages ] = useState( firstPages );
+	const [ searching, setSearching ] = useState( false );
+	const [ chosen, setChosen ] = useState( null );
+	const timer = useRef( null );
+
+	useEffect( () => () => clearTimeout( timer.current ), [] );
+
+	const search = ( term ) => {
+		clearTimeout( timer.current );
+
+		if ( '' === term.trim() ) {
+			setPages( firstPages );
+			setSearching( false );
+			return;
+		}
+
+		setSearching( true );
+		timer.current = setTimeout( () => {
+			apiFetch( {
+				path: `/ppcert/v1/settings/pages?search=${ encodeURIComponent(
+					term
+				) }`,
+			} )
+				.then( ( results ) => setPages( results || [] ) )
+				.catch( () => setPages( [] ) )
+				.finally( () => setSearching( false ) );
+		}, 300 );
+	};
+
+	// Whether the configured page exists comes from the server; a page
+	// chosen in this session obviously does.
 	const pageExists =
-		0 === pageId || pages.some( ( page ) => page.id === pageId );
+		0 === pageId ||
+		( chosen && chosen.id === pageId ) ||
+		( configured.id === pageId && configured.exists !== false ) ||
+		firstPages.some( ( page ) => page.id === pageId );
+
+	// The selected page carries its own title (labelInValue), so the
+	// list shows only what matches the search.
+	const selected =
+		( chosen && chosen.id === pageId && chosen ) ||
+		firstPages.find( ( page ) => page.id === pageId ) ||
+		( configured.id === pageId && configured.title ? configured : null );
+	const value = pageId
+		? {
+				value: pageId,
+				label: selected
+					? selected.title
+					: sprintf(
+							/* translators: %d: page ID */
+							__( 'Page #%d', 'pressprimer-certificate' ),
+							pageId
+					  ),
+		  }
+		: undefined;
 
 	return (
 		<div>
@@ -68,18 +127,33 @@ const GeneralTab = ( { settings, updateSetting, settingsData } ) => {
 							style={ { maxWidth: 420, width: '100%' } }
 							popupMatchSelectWidth={ false }
 							showSearch
-							optionFilterProp="label"
-							value={ pageId || undefined }
-							placeholder={ __(
-								'Choose a page…',
-								'pressprimer-certificate'
-							) }
-							onChange={ ( value ) =>
-								updateSetting(
-									'verification_page_id',
-									value || 0
+							filterOption={ false }
+							onSearch={ search }
+							onBlur={ () => search( '' ) }
+							notFoundContent={
+								searching ? (
+									<Spin size="small" />
+								) : (
+									__(
+										'No published pages match.',
+										'pressprimer-certificate'
+									)
 								)
 							}
+							labelInValue
+							value={ value }
+							placeholder={ __(
+								'Search for a page…',
+								'pressprimer-certificate'
+							) }
+							onChange={ ( choice ) => {
+								const id = choice ? Number( choice.value ) : 0;
+
+								setChosen(
+									id ? { id, title: choice.label } : null
+								);
+								updateSetting( 'verification_page_id', id );
+							} }
 							options={ pages.map( ( page ) => ( {
 								value: page.id,
 								label: page.title,

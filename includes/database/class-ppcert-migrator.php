@@ -304,7 +304,8 @@ class PressPrimer_Certificate_Migrator {
 	 *
 	 * Keyset-paginated so large sites never load the whole table; safe to
 	 * re-run (only NULL-title rows are examined, and unmatched rows are
-	 * simply skipped again).
+	 * simply skipped again). Every migrator update sets `updated_at`
+	 * explicitly in UTC (2.1); here it keeps the row's own value.
 	 *
 	 * @since 2.0.0
 	 *
@@ -321,7 +322,7 @@ class PressPrimer_Certificate_Migrator {
 		do {
 			$rows = (array) $wpdb->get_results(
 				$wpdb->prepare(
-					'SELECT id, merge_data_json FROM %i WHERE title IS NULL AND id > %d ORDER BY id ASC LIMIT %d',
+					'SELECT id, merge_data_json, updated_at FROM %i WHERE title IS NULL AND id > %d ORDER BY id ASC LIMIT %d',
 					$table,
 					$last_id,
 					$batch_size
@@ -345,11 +346,18 @@ class PressPrimer_Certificate_Migrator {
 					continue;
 				}
 
+				// updated_at is written explicitly (2.1, Feature 2.1-007
+				// FR-008): without it MySQL's ON UPDATE CURRENT_TIMESTAMP
+				// rewrote it in server-local time. A backfill is not an
+				// edit, so the row keeps its own (UTC) value.
 				$wpdb->update(
 					$table,
-					[ 'title' => function_exists( 'mb_substr' ) ? mb_substr( $title, 0, 200 ) : substr( $title, 0, 200 ) ],
+					[
+						'title'      => function_exists( 'mb_substr' ) ? mb_substr( $title, 0, 200 ) : substr( $title, 0, 200 ),
+						'updated_at' => (string) $row->updated_at,
+					],
 					[ 'id' => (int) $row->id ],
-					[ '%s' ],
+					[ '%s', '%s' ],
 					[ '%d' ]
 				);
 			}

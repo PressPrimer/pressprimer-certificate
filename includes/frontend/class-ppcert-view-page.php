@@ -474,11 +474,16 @@ class PressPrimer_Certificate_View_Page {
 	 * @return WP_Post
 	 */
 	private static function build_stub_post( $title, $slug, $date ) {
+		// The post's local dates are site time; the _gmt ones UTC (2.1,
+		// Feature 2.1-007 FR-008: themes that print the post date showed
+		// the UTC issue time as if it were local).
+		$local = '' !== (string) $date ? (string) get_date_from_gmt( (string) $date ) : '';
+
 		return new WP_Post(
 			(object) [
 				'ID'                    => 0,
 				'post_author'           => 0,
-				'post_date'             => $date,
+				'post_date'             => $local,
 				'post_date_gmt'         => $date,
 				'post_content'          => '',
 				'post_title'            => $title,
@@ -490,7 +495,7 @@ class PressPrimer_Certificate_View_Page {
 				'post_name'             => $slug,
 				'to_ping'               => '',
 				'pinged'                => '',
-				'post_modified'         => $date,
+				'post_modified'         => $local,
 				'post_modified_gmt'     => $date,
 				'post_content_filtered' => '',
 				'post_parent'           => 0,
@@ -603,6 +608,12 @@ class PressPrimer_Certificate_View_Page {
 			$display,
 			PressPrimer_Certificate_Credential_ID_Service::format_display( $normalized )
 		);
+
+		// Plain permalinks have no /certificate/ rewrite: the query form
+		// the rewrite maps to (2.1, Feature 2.1-007 FR-009).
+		if ( '' === (string) get_option( 'permalink_structure', '' ) ) {
+			return add_query_arg( self::QUERY_VAR, rawurlencode( $path ), home_url( '/' ) );
+		}
 
 		return home_url( '/certificate/' . rawurlencode( $path ) . '/' );
 	}

@@ -229,6 +229,11 @@ class PressPrimer_Certificate_Admin_Settings {
 			'settingsMascot'    => $mascot,
 			'pluginUrl'         => PPCERT_PLUGIN_URL,
 			'pages'             => $this->page_choices(),
+			// Whether the configured page still exists, from the page
+			// itself (2.1).
+			'verificationPage'  => PressPrimer_Certificate_REST_Settings_Controller::verification_page(
+				(int) ( PressPrimer_Certificate_REST_Settings_Controller::current_settings()['verification_page_id'] ?? 0 )
+			),
 			'fonts'             => $fonts,
 			'pageSizes'         => $page_sizes,
 			'appearance'        => PressPrimer_Certificate_Appearance_Service::get(),
@@ -261,31 +266,31 @@ class PressPrimer_Certificate_Admin_Settings {
 	}
 
 	/**
-	 * Published pages for the verification-page selector
+	 * The verification page picker's first choices
+	 *
+	 * The first 50 published pages by title plus the configured page
+	 * wherever it sorts (2.1, Feature 2.1-007 FR-005: the picker searches
+	 * every page through GET /settings/pages; the 2.0 list stopped at
+	 * 200 and a configured page past them read as deleted).
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Fewer first choices; the configured page always included.
 	 *
-	 * @return array[] [ id, title ] pairs.
+	 * @return array[] `[ id, title ]`.
 	 */
 	private function page_choices() {
-		$pages = get_posts(
-			[
-				'post_type'   => 'page',
-				'post_status' => 'publish',
-				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_numberposts -- Admin-only selector; a deliberate hard cap, not an unbounded query.
-				'numberposts' => 200,
-				'orderby'     => 'title',
-				'order'       => 'ASC',
-			]
-		);
+		$choices  = PressPrimer_Certificate_REST_Settings_Controller::page_matches( '', 50 );
+		$settings = PressPrimer_Certificate_REST_Settings_Controller::current_settings();
+		$current  = PressPrimer_Certificate_REST_Settings_Controller::verification_page( isset( $settings['verification_page_id'] ) ? $settings['verification_page_id'] : 0 );
 
-		$choices = [];
-
-		foreach ( (array) $pages as $page ) {
-			$choices[] = [
-				'id'    => (int) $page->ID,
-				'title' => (string) $page->post_title,
-			];
+		if ( $current['id'] > 0 && '' !== $current['title'] && ! in_array( $current['id'], array_column( $choices, 'id' ), true ) ) {
+			array_unshift(
+				$choices,
+				[
+					'id'    => $current['id'],
+					'title' => $current['title'],
+				]
+			);
 		}
 
 		return $choices;

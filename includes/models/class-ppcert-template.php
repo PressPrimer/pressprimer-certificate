@@ -39,6 +39,16 @@ class PressPrimer_Certificate_Template {
 	];
 
 	/**
+	 * Settings a duplicate never copies (2.1, Feature 2.1-007 FR-010):
+	 * School's program publish switch and slug - a copy must not publish
+	 * a second program page at the same address.
+	 *
+	 * @since 2.1.0
+	 * @var string[]
+	 */
+	const DUPLICATE_EXCLUDED_SETTINGS = [ 'school_program_public', 'school_program_slug' ];
+
+	/**
 	 * Settings keys free sanitizes itself (never carried over: an absent
 	 * core key on save means it was cleared)
 	 *
@@ -189,18 +199,26 @@ class PressPrimer_Certificate_Template {
 	/**
 	 * Duplicate a template
 	 *
-	 * Copies the design only - triggers deliberately do NOT copy: the
-	 * single-trigger rule makes duplication the reuse path for awarding
-	 * the same design from a DIFFERENT trigger, and copying the original
-	 * trigger would double-award every completion.
+	 * Copies the design and (since 2.1, Feature 2.1-007 FR-010) the
+	 * settings: the certificate name, validity, email choices, reminders,
+	 * and addons' settings (an inactive addon's keys carry over as on
+	 * save), except School's program publish switch and slug. Triggers
+	 * deliberately do NOT copy: the single-trigger rule makes duplication
+	 * the reuse path for awarding the same design from a DIFFERENT
+	 * trigger, and copying the original trigger would double-award every
+	 * completion. The organization follows the duplicating user's default,
+	 * as for new templates.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Settings copy.
 	 *
 	 * @param int $id        Source template row id.
 	 * @param int $author_id Author for the copy.
 	 * @return int|WP_Error New template row id.
 	 */
 	public static function duplicate( $id, $author_id ) {
+		global $wpdb;
+
 		$source = self::get( $id );
 
 		if ( ! $source || ! is_array( $source->layout ) ) {
@@ -210,6 +228,25 @@ class PressPrimer_Certificate_Template {
 			);
 		}
 
+		$stored   = isset( $source->settings ) && is_array( $source->settings ) ? $source->settings : [];
+		$settings = self::carry_over_settings( self::sanitize_settings( $stored ), $stored );
+
+		foreach ( self::DUPLICATE_EXCLUDED_SETTINGS as $excluded ) {
+			unset( $settings[ $excluded ] );
+		}
+
+		/**
+		 * Filters the settings a duplicated template starts with.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array  $settings The copied settings (School's program
+		 *                         publish switch and slug already removed).
+		 * @param object $source   The template being copied.
+		 */
+		$settings = apply_filters( 'ppcert_template_duplicate_settings', $settings, $source );
+		$settings = is_array( $settings ) ? $settings : [];
+
 		$new_id = self::create(
 			[
 				/* translators: %s: source template title */
@@ -217,10 +254,28 @@ class PressPrimer_Certificate_Template {
 				'layout'    => $source->layout,
 				'author_id' => absint( $author_id ),
 				'status'    => 'draft',
+				'settings'  => $settings,
 			]
 		);
 
 		if ( ! is_wp_error( $new_id ) ) {
+			// create() sanitizes again, which drops an inactive addon's
+			// keys; store the copied set as it is.
+			$created = self::get( (int) $new_id );
+
+			if ( $created && $created->settings !== $settings ) {
+				$wpdb->update(
+					self::table(),
+					[
+						'settings_json' => empty( $settings ) ? null : wp_json_encode( $settings ),
+						'updated_at'    => current_time( 'mysql', true ),
+					],
+					[ 'id' => (int) $new_id ],
+					[ '%s', '%s' ],
+					[ '%d' ]
+				);
+			}
+
 			/**
 			 * Fires after a template is duplicated (2.0, audit contract).
 			 *

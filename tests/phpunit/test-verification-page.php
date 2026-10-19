@@ -251,6 +251,8 @@ class Test_Verification_Page extends TestCase {
 	 * @return void
 	 */
 	public function test_deleted_page_notice() {
+		$GLOBALS['ppcert_test_user_caps'] = true;
+
 		// No page configured: silent.
 		ob_start();
 		PressPrimer_Certificate_Verification_Page::maybe_deleted_page_notice();
@@ -269,6 +271,13 @@ class Test_Verification_Page extends TestCase {
 		$notice = ob_get_clean();
 		$this->assertStringContainsString( 'notice-warning', $notice );
 		$this->assertStringContainsString( 'verification page has been deleted', $notice );
+
+		// Only for people who can fix it (2.1, Feature 2.1-007 FR-009).
+		$GLOBALS['ppcert_test_user_caps'] = [ 'read' ];
+		ob_start();
+		PressPrimer_Certificate_Verification_Page::maybe_deleted_page_notice();
+		$this->assertSame( '', ob_get_clean(), 'Subscribers never see it' );
+		$GLOBALS['ppcert_test_user_caps'] = true;
 	}
 
 	/**

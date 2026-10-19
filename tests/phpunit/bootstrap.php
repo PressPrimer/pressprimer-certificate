@@ -748,7 +748,12 @@ if ( ! function_exists( 'get_option' ) ) {
 	 * @return mixed
 	 */
 	function get_option( $option, $default_value = false ) {
-		$defaults = [ 'date_format' => 'F j, Y' ];
+		// Pretty permalinks, like most sites (tests for plain ones set
+		// permalink_structure to '').
+		$defaults = [
+			'date_format'         => 'F j, Y',
+			'permalink_structure' => '/%postname%/',
+		];
 		$options  = isset( $GLOBALS['ppcert_test_options'] ) ? array_merge( $defaults, $GLOBALS['ppcert_test_options'] ) : $defaults;
 		return isset( $options[ $option ] ) ? $options[ $option ] : $default_value;
 	}
@@ -1108,7 +1113,8 @@ if ( ! function_exists( 'get_posts' ) ) {
 	/**
 	 * Stub: Post query over $GLOBALS['ppcert_test_posts'] supporting the
 	 * arguments the course adapters' source lookup uses (post_type,
-	 * post_status, s title search, numberposts, orderby title ASC).
+	 * post_status, s search with search_columns, numberposts, orderby
+	 * title ASC).
 	 *
 	 * @param array $args Query args.
 	 * @return array Post objects.
@@ -1138,8 +1144,19 @@ if ( ! function_exists( 'get_posts' ) ) {
 				continue;
 			}
 
-			if ( ! empty( $args['s'] ) && false === stripos( (string) $post->post_title, (string) $args['s'] ) ) {
-				continue;
+			if ( ! empty( $args['s'] ) ) {
+				// Core searches title, excerpt and content unless
+				// search_columns narrows it.
+				$columns  = isset( $args['search_columns'] ) ? (array) $args['search_columns'] : [ 'post_title', 'post_excerpt', 'post_content' ];
+				$haystack = '';
+
+				foreach ( $columns as $column ) {
+					$haystack .= ' ' . (string) ( $post->$column ?? '' );
+				}
+
+				if ( false === stripos( $haystack, (string) $args['s'] ) ) {
+					continue;
+				}
 			}
 
 			$matches[] = $post;
@@ -1375,6 +1392,24 @@ if ( ! function_exists( 'plugin_dir_path' ) ) {
 	 */
 	function plugin_dir_path( $file ) {
 		return trailingslashit( dirname( (string) $file ) );
+	}
+}
+
+if ( ! function_exists( 'flush_rewrite_rules' ) ) {
+	/**
+	 * Stub: rebuild the stored rewrite rules from the registered ones
+	 * ($GLOBALS['ppcert_test_registered_rewrite_rules']) through the
+	 * rewrite_rules_array filter, as core does.
+	 *
+	 * @param bool $hard Ignored.
+	 * @return void
+	 */
+	function flush_rewrite_rules( $hard = true ) {
+		unset( $hard );
+
+		$registered = isset( $GLOBALS['ppcert_test_registered_rewrite_rules'] ) ? (array) $GLOBALS['ppcert_test_registered_rewrite_rules'] : [];
+
+		$GLOBALS['ppcert_test_rewrite_rules'] = apply_filters( 'rewrite_rules_array', $registered );
 	}
 }
 
