@@ -136,10 +136,11 @@ class PressPrimer_Certificate_TutorLMS_Adapter extends PressPrimer_Certificate_L
 	/**
 	 * Listen for completed courses
 	 *
-	 * Hook citation (Tutor LMS 4.0.0): `tutor_course_complete_after`
-	 * fires in Tutor\Models\CourseModel::mark_course_complete()
-	 * (models/CourseModel.php:452) AFTER the course_completed comment
-	 * row is inserted - completion state is final when we run (TR-003).
+	 * Hook citation (Tutor LMS 2.0.7 through 4.1.1): `tutor_course_complete_after`
+	 * fires in Tutor\Models\CourseModel::mark_course_as_completed()
+	 * AFTER the course_completed comment row is inserted - completion
+	 * state is final when we run (TR-003). (Method names only: line
+	 * numbers move every Tutor release.)
 	 * Signature: ( int $course_id, int $user_id ). Priority 20 keeps us
 	 * after Tutor's own default-priority listeners.
 	 *

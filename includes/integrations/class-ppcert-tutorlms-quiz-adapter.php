@@ -212,15 +212,16 @@ class PressPrimer_Certificate_TutorLMS_Quiz_Adapter extends PressPrimer_Certific
 	/**
 	 * Listen for ended quiz attempts
 	 *
-	 * Hook citations (Tutor LMS 4.0.0): `tutor_quiz/attempt_ended`
-	 * fires in Tutor\Quiz::attempt_ended() (classes/Quiz.php:973) AFTER
-	 * the attempt row updates and QuizModel::update_attempt_result()
-	 * runs - grading state is final for auto-graded attempts (TR-003).
-	 * Signature: ( int $attempt_id, int $course_id, int $user_id ).
-	 * Attempts with open-ended answers land in 'review_required' and are
-	 * skipped; `tutor_quiz/attempt/submitted/feedback`
-	 * (classes/Quiz.php:502, signature ( int $attempt_id )) fires after
-	 * the instructor's review, and the listener re-enters through it.
+	 * Hook citations (Tutor LMS 4.1.1; method names only, as line numbers
+	 * move every release): `tutor_quiz/attempt_ended` fires in
+	 * Tutor\Quiz::manage_attempt_answers() AFTER the attempt row updates
+	 * and QuizModel::update_attempt_result() runs - grading state is
+	 * final for auto-graded attempts (TR-003). Signature: ( int
+	 * $attempt_id, int $course_id, int $user_id ). Attempts with
+	 * open-ended answers land in 'review_required' and are skipped;
+	 * `tutor_quiz/attempt/submitted/feedback` (signature ( int
+	 * $attempt_id )) fires in Tutor\Quiz::notify_quiz_attempt_graded()
+	 * after the instructor's review, and the listener re-enters through it.
 	 * Priority 20 keeps us after Tutor's own default-priority listeners.
 	 *
 	 * @since 1.0.0
