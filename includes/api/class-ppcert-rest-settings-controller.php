@@ -68,18 +68,40 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 	}
 
 	/**
-	 * POST /settings/test-email - send the current user the site-wide
-	 * default issuance email with sample values (2.0; the template
-	 * test-email pattern applied to the Settings > Email page)
+	 * POST /settings/test-email - send the site-wide default issuance
+	 * email with sample values (2.0; the template test-email pattern
+	 * applied to the Settings > Email page)
 	 *
-	 * Shares the template test's per-user throttle bucket so the two
-	 * buttons cannot multiply the send rate.
+	 * Since 2.1 (Feature 2.1-001 FR-006, Q1) the optional `to` sends it
+	 * to another address (Assignment's Send to); without it, the current
+	 * user. Administrator-only, REST nonce, and the template test's
+	 * per-user throttle bucket, so the two buttons cannot multiply the
+	 * send rate.
 	 *
 	 * @since 2.0.0
+	 * @since 2.1.0 The `to` parameter.
 	 *
+	 * @param WP_REST_Request|null $request The request.
 	 * @return WP_REST_Response|WP_Error
 	 */
-	public function send_test_email() {
+	public function send_test_email( $request = null ) {
+		$to = '';
+
+		if ( $request instanceof WP_REST_Request && null !== $request->get_param( 'to' ) ) {
+			$to = sanitize_email( (string) $request->get_param( 'to' ) );
+
+			if ( '' === $to || ! is_email( $to ) ) {
+				return new WP_Error(
+					'ppcert_test_email_invalid_recipient',
+					__( 'Enter a valid email address to send the test to.', 'pressprimer-certificate' ),
+					[
+						'status' => 400,
+						'field'  => 'to',
+					]
+				);
+			}
+		}
+
 		if ( ! PressPrimer_Certificate_Rate_Limiter::allow(
 			'ppcert_testmail_' . get_current_user_id(),
 			PressPrimer_Certificate_REST_Templates_Controller::TEST_EMAIL_RATE_LIMIT,
@@ -92,7 +114,7 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 			);
 		}
 
-		$result = PressPrimer_Certificate_Email_Service::send_test( null );
+		$result = PressPrimer_Certificate_Email_Service::send_test( null, $to );
 
 		if ( is_wp_error( $result ) ) {
 			$result->add_data( [ 'status' => 500 ] );
@@ -100,15 +122,13 @@ class PressPrimer_Certificate_REST_Settings_Controller {
 			return $result;
 		}
 
-		$user = wp_get_current_user();
-
 		return new WP_REST_Response(
 			[
 				'success' => true,
 				'message' => sprintf(
-					/* translators: %s: the current user's email address */
+					/* translators: %s: the address the test was sent to */
 					__( 'Test email sent to %s.', 'pressprimer-certificate' ),
-					(string) $user->user_email
+					'' !== $to ? $to : (string) wp_get_current_user()->user_email
 				),
 			],
 			200

@@ -1,0 +1,28 @@
+/**
+ * Rich Text Editor Component Styles
+ *
+ * Frames the bare TinyMCE container in a border that matches the visual
+ * rhythm of the other admin form inputs. wp.editor.initialize() (used by
+ * RichTextEditor.jsx) skips the standard wp-editor-wrap chrome that
+ * wp_editor() adds, so the editor needs an explicit border here.
+ *
+ * Ported from PressPrimer Assignment 2.2.3 (Feature 2.1-001 TR-004).
+ *
+ * @package PressPrimer_Certificate
+ * @since 2.1.0
+ */
+
+.ppcert-rich-text-editor .mce-tinymce {
+	border: 1px solid #d9d9d9;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.ppcert-rich-text-editor .mce-tinymce:hover {
+	border-color: #4096ff;
+}
+
+.ppcert-rich-text-editor .mce-tinymce:focus-within {
+	border-color: #4096ff;
+	box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+}

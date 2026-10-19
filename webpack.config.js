@@ -12,6 +12,13 @@ module.exports = {
 		),
 		designer: path.resolve( process.cwd(), 'src', 'designer', 'index.js' ),
 		settings: path.resolve( process.cwd(), 'src', 'settings', 'index.js' ),
+		// Shared components for addons (2.1): window.ppcert_components.
+		components: path.resolve(
+			process.cwd(),
+			'src',
+			'components',
+			'index.js'
+		),
 		issue: path.resolve( process.cwd(), 'src', 'issue', 'index.js' ),
 		onboarding: path.resolve(
 			process.cwd(),

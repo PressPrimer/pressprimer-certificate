@@ -12,7 +12,7 @@
  * @since 1.0.0
  */
 
-import { useState, useEffect } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
 	Button,
@@ -28,6 +28,7 @@ import {
 	PictureOutlined,
 	UndoOutlined,
 } from '@ant-design/icons';
+import useAttachmentUrl from '../useAttachmentUrl';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -48,43 +49,6 @@ const colorToHex = ( color ) => {
 		return color.toHexString();
 	}
 	return '';
-};
-
-/**
- * Resolve an attachment id to a preview URL through wp.media.
- *
- * @param {number}   attachmentId Attachment id.
- * @param {Function} setUrl       State setter for the URL.
- * @return {Function|undefined} Cleanup.
- */
-const useAttachmentUrl = ( attachmentId, setUrl ) => {
-	useEffect( () => {
-		let cancelled = false;
-
-		if ( ! attachmentId || ! window.wp || ! window.wp.media ) {
-			setUrl( '' );
-			return undefined;
-		}
-
-		const attachment = window.wp.media.attachment( attachmentId );
-
-		attachment.fetch().then( () => {
-			if ( cancelled ) {
-				return;
-			}
-
-			const sizes = attachment.get( 'sizes' ) || {};
-			setUrl(
-				( sizes.medium && sizes.medium.url ) ||
-					attachment.get( 'url' ) ||
-					''
-			);
-		} );
-
-		return () => {
-			cancelled = true;
-		};
-	}, [ attachmentId, setUrl ] );
 };
 
 /**

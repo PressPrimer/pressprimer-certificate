@@ -170,12 +170,26 @@ const SettingsPage = ( { settingsData = {} } ) => {
 		}
 	}, [ activeTab, isAddonTab ] );
 
+	// Field errors from the last save (2.1: the server names the field,
+	// e.g. an invalid From address); editing the field clears its error.
+	const [ fieldErrors, setFieldErrors ] = useState( {} );
+
 	const updateSetting = useCallback( ( key, value ) => {
 		setSettings( ( prev ) => ( {
 			...prev,
 			[ key ]: value,
 		} ) );
 		setHasChanges( true );
+		setFieldErrors( ( prev ) => {
+			if ( ! prev[ key ] ) {
+				return prev;
+			}
+
+			const next = { ...prev };
+			delete next[ key ];
+
+			return next;
+		} );
 	}, [] );
 
 	// Addon sections mounted into core-tab slots (2.0, Feature 2.0-006
@@ -234,6 +248,13 @@ const SettingsPage = ( { settingsData = {} } ) => {
 				)
 			);
 		} catch ( error ) {
+			if ( error && error.data && error.data.field ) {
+				setFieldErrors( ( prev ) => ( {
+					...prev,
+					[ error.data.field ]: error.message,
+				} ) );
+			}
+
 			message.error(
 				error.message ||
 					__(
@@ -323,6 +344,7 @@ const SettingsPage = ( { settingsData = {} } ) => {
 								settingsData={ settingsData }
 								hasChanges={ hasChanges }
 								onSave={ handleSave }
+								fieldErrors={ fieldErrors }
 							/>
 
 							<div className="ppcert-settings-footer">

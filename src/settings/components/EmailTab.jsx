@@ -7,16 +7,29 @@
  * with descriptions. The PDF always attaches (no size threshold -
  * Ryan, 2026-07-23).
  *
+ * Since 2.1 (Feature 2.1-001) the tab mirrors PressPrimer Assignment's
+ * Email settings: an Email logo, From name and address, the body in
+ * Assignment's rich-text editor, and a test email with a Send to
+ * address. Labels keep Certificate's sentence case; help text is
+ * Assignment's.
+ *
  * @package
  * @since 1.0.0
  */
 
-import { useState } from '@wordpress/element';
+import { useCallback, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { Button, Form, Input, message, Space, Switch, Typography } from 'antd';
-import { SendOutlined } from '@ant-design/icons';
+import {
+	DeleteOutlined,
+	PictureOutlined,
+	SendOutlined,
+} from '@ant-design/icons';
 import UpsellPrompt from '../../shared/components/UpsellPrompt';
+import RichTextEditor from '../../shared/components/RichTextEditor';
+import { toEditorHtml } from '../../shared/email-body';
+import useAttachmentUrl from '../useAttachmentUrl';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -91,6 +104,7 @@ const TokenItem = ( { token, description } ) => {
  * @param {Object}   props.settingsData  Full localized data.
  * @param {boolean}  props.hasChanges    Whether the page has unsaved changes.
  * @param {Function} props.onSave        Save every tab's settings; resolves true on success.
+ * @param {Object}   props.fieldErrors   Server field errors from the last save ({ key: message }).
  */
 const EmailTab = ( {
 	settings,
@@ -98,8 +112,10 @@ const EmailTab = ( {
 	settingsData,
 	hasChanges = false,
 	onSave = null,
+	fieldErrors = {},
 } ) => {
 	const defaults = settingsData.emailDefaults || {};
+	const placeholders = settingsData.emailPlaceholders || {};
 	// Premium touchpoints for this surface, resolved server-side by the
 	// touchpoint registry (empty for non-admins or when the tier is active).
 	const touchpoints = settingsData.touchpoints || {};
@@ -108,8 +124,61 @@ const EmailTab = ( {
 		!! Number( settings.email_issued_enabled );
 
 	const [ testing, setTesting ] = useState( false );
+	const [ testTo, setTestTo ] = useState(
+		placeholders.currentUserEmail || ''
+	);
+	const [ logoUrl, setLogoUrl ] = useState( '' );
+
+	const logoId = Number( settings.email_logo_id ) || 0;
+	const bodyHtml = toEditorHtml(
+		settings.email_issued_body ?? defaults.body ?? ''
+	);
+
+	useAttachmentUrl( logoId, setLogoUrl );
+
+	/**
+	 * Open the media library to choose the Email logo (Assignment's
+	 * modal: images only, one selection).
+	 */
+	const selectLogo = useCallback( () => {
+		if ( ! window.wp || ! window.wp.media ) {
+			return;
+		}
+
+		const frame = window.wp.media( {
+			title: __( 'Select Email Logo', 'pressprimer-certificate' ),
+			button: {
+				text: __( 'Use this image', 'pressprimer-certificate' ),
+			},
+			multiple: false,
+			library: { type: 'image' },
+		} );
+
+		frame.on( 'select', () => {
+			const attachment = frame
+				.state()
+				.get( 'selection' )
+				.first()
+				.toJSON();
+
+			setLogoUrl( attachment.url || '' );
+			updateSetting( 'email_logo_id', attachment.id );
+		} );
+
+		frame.open();
+	}, [ updateSetting ] );
 
 	const sendTest = async () => {
+		if ( ! testTo || ! testTo.includes( '@' ) ) {
+			message.error(
+				__(
+					'Enter a valid email address to send the test to.',
+					'pressprimer-certificate'
+				)
+			);
+			return;
+		}
+
 		setTesting( true );
 
 		try {
@@ -127,6 +196,7 @@ const EmailTab = ( {
 			const response = await apiFetch( {
 				path: '/ppcert/v1/settings/test-email',
 				method: 'POST',
+				data: { to: testTo.trim() },
 			} );
 			message.success( response.message );
 		} catch ( error ) {
@@ -144,6 +214,121 @@ const EmailTab = ( {
 
 	return (
 		<div>
+			<div className="ppcert-settings-section">
+				<Title level={ 4 } className="ppcert-settings-section-title">
+					{ __( 'Email Settings', 'pressprimer-certificate' ) }
+				</Title>
+				<Paragraph className="ppcert-settings-section-description">
+					{ __(
+						'Configure the emails sent by the plugin.',
+						'pressprimer-certificate'
+					) }
+				</Paragraph>
+
+				<div className="ppcert-settings-field">
+					<Form.Item
+						label={ __( 'Email logo', 'pressprimer-certificate' ) }
+						help={ __(
+							'Logo displayed at the top of emails. Max width 400px, max height 150px.',
+							'pressprimer-certificate'
+						) }
+					>
+						{ logoId > 0 ? (
+							<div className="ppcert-email-logo">
+								<div className="ppcert-email-logo__preview">
+									{ logoUrl && (
+										<img
+											src={ logoUrl }
+											alt={ __(
+												'Email logo',
+												'pressprimer-certificate'
+											) }
+										/>
+									) }
+								</div>
+								<Button
+									icon={ <DeleteOutlined /> }
+									onClick={ () => {
+										setLogoUrl( '' );
+										updateSetting( 'email_logo_id', 0 );
+									} }
+									danger
+								>
+									{ __(
+										'Remove',
+										'pressprimer-certificate'
+									) }
+								</Button>
+							</div>
+						) : (
+							<Button
+								icon={ <PictureOutlined /> }
+								onClick={ selectLogo }
+							>
+								{ __(
+									'Select Logo',
+									'pressprimer-certificate'
+								) }
+							</Button>
+						) }
+					</Form.Item>
+				</div>
+
+				<div className="ppcert-settings-field">
+					<Form.Item
+						label={ __( 'From name', 'pressprimer-certificate' ) }
+						help={ __(
+							'Name shown in the "From" field of emails sent by the plugin.',
+							'pressprimer-certificate'
+						) }
+					>
+						<Input
+							style={ { maxWidth: 420 } }
+							value={ settings.email_from_name || '' }
+							placeholder={ placeholders.siteName || '' }
+							onChange={ ( event ) =>
+								updateSetting(
+									'email_from_name',
+									event.target.value
+								)
+							}
+						/>
+					</Form.Item>
+				</div>
+
+				<div className="ppcert-settings-field">
+					<Form.Item
+						label={ __(
+							'From address',
+							'pressprimer-certificate'
+						) }
+						validateStatus={
+							fieldErrors.email_from_address ? 'error' : ''
+						}
+						help={
+							fieldErrors.email_from_address ||
+							__(
+								'Email address shown in the "From" field of emails sent by the plugin.',
+								'pressprimer-certificate'
+							)
+						}
+					>
+						<Input
+							style={ { maxWidth: 420 } }
+							type="email"
+							value={ settings.email_from_address || '' }
+							placeholder={ placeholders.adminEmail || '' }
+							onChange={ ( event ) =>
+								updateSetting(
+									'email_from_address',
+									event.target.value
+								)
+							}
+						/>
+					</Form.Item>
+				</div>
+			</div>
+
 			<div className="ppcert-settings-section">
 				<Title level={ 4 } className="ppcert-settings-section-title">
 					{ __( 'Issuance Email', 'pressprimer-certificate' ) }
@@ -176,44 +361,6 @@ const EmailTab = ( {
 
 				<div className="ppcert-settings-field">
 					<Form.Item
-						label={ __( 'From name', 'pressprimer-certificate' ) }
-					>
-						<Input
-							style={ { maxWidth: 420 } }
-							value={ settings.email_from_name || '' }
-							onChange={ ( event ) =>
-								updateSetting(
-									'email_from_name',
-									event.target.value
-								)
-							}
-						/>
-					</Form.Item>
-				</div>
-
-				<div className="ppcert-settings-field">
-					<Form.Item
-						label={ __(
-							'From address',
-							'pressprimer-certificate'
-						) }
-					>
-						<Input
-							style={ { maxWidth: 420 } }
-							type="email"
-							value={ settings.email_from_address || '' }
-							onChange={ ( event ) =>
-								updateSetting(
-									'email_from_address',
-									event.target.value
-								)
-							}
-						/>
-					</Form.Item>
-				</div>
-
-				<div className="ppcert-settings-field">
-					<Form.Item
 						label={ __( 'Subject', 'pressprimer-certificate' ) }
 					>
 						<Input
@@ -236,19 +383,18 @@ const EmailTab = ( {
 					<Form.Item
 						label={ __( 'Body', 'pressprimer-certificate' ) }
 					>
-						<Input.TextArea
-							rows={ 8 }
-							value={
-								settings.email_issued_body ??
-								defaults.body ??
-								''
-							}
-							onChange={ ( event ) =>
-								updateSetting(
-									'email_issued_body',
-									event.target.value
-								)
-							}
+						<RichTextEditor
+							id="ppcert-email-issued-body"
+							value={ bodyHtml }
+							onChange={ ( html ) => {
+								// TinyMCE also fires change when focus
+								// leaves after an edit; identical content
+								// must not mark the page unsaved.
+								if ( html !== bodyHtml ) {
+									updateSetting( 'email_issued_body', html );
+								}
+							} }
+							rows={ 10 }
 						/>
 					</Form.Item>
 				</div>
@@ -279,6 +425,13 @@ const EmailTab = ( {
 							token="{credential_id}"
 							description={ __(
 								'The formatted credential ID, e.g. 7Q4M-K9P2-XT3A',
+								'pressprimer-certificate'
+							) }
+						/>
+						<TokenItem
+							token="{certificate_button}"
+							description={ __(
+								'A "View Certificate" button that opens the certificate page',
 								'pressprimer-certificate'
 							) }
 						/>
@@ -343,26 +496,56 @@ const EmailTab = ( {
 						/>
 					</div>
 				</div>
+			</div>
+
+			<div className="ppcert-settings-section">
+				<Title level={ 4 } className="ppcert-settings-section-title">
+					{ __( 'Test Email', 'pressprimer-certificate' ) }
+				</Title>
+				<Paragraph className="ppcert-settings-section-description">
+					{ __(
+						'Send a test email to verify your email configuration and preview your templates.',
+						'pressprimer-certificate'
+					) }
+				</Paragraph>
 
 				<div className="ppcert-settings-field">
-					<Space align="center">
-						<Button
-							icon={ <SendOutlined /> }
-							onClick={ sendTest }
-							loading={ testing }
-						>
-							{ __(
-								'Send Test Email',
-								'pressprimer-certificate'
-							) }
-						</Button>
-						<Text type="secondary">
-							{ __(
-								'Sends this email to your own address with sample values. Unsaved changes on this page are saved first.',
-								'pressprimer-certificate'
-							) }
-						</Text>
-					</Space>
+					<Form.Item
+						label={ __( 'Send to', 'pressprimer-certificate' ) }
+					>
+						<Space.Compact style={ { maxWidth: 460 } }>
+							<Input
+								type="email"
+								value={ testTo }
+								onChange={ ( event ) =>
+									setTestTo( event.target.value )
+								}
+								placeholder={ __(
+									'Enter email address',
+									'pressprimer-certificate'
+								) }
+								style={ { width: 280 } }
+							/>
+							<Button
+								icon={ <SendOutlined /> }
+								onClick={ sendTest }
+								loading={ testing }
+							>
+								{ __(
+									'Send Test Email',
+									'pressprimer-certificate'
+								) }
+							</Button>
+						</Space.Compact>
+						<div style={ { marginTop: 8 } }>
+							<Text type="secondary">
+								{ __(
+									'Sends this email with sample values. Unsaved changes on this page are saved first.',
+									'pressprimer-certificate'
+								) }
+							</Text>
+						</div>
+					</Form.Item>
 				</div>
 			</div>
 

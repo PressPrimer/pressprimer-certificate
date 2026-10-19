@@ -461,6 +461,29 @@
 	margin-top: 4px;
 }
 
+/* Email logo picker (2.1): Assignment's bordered preview box. */
+.ppcert-email-logo {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+}
+
+.ppcert-email-logo__preview {
+	border: 1px solid #d9d9d9;
+	border-radius: 8px;
+	padding: 12px;
+	background: #fafafa;
+	max-width: 200px;
+	min-width: 80px;
+	min-height: 40px;
+}
+
+.ppcert-email-logo__preview img {
+	display: block;
+	max-width: 100%;
+	max-height: 100px;
+}
+
 /* Addon email-section slot (2.0): invisible until an addon mounts. */
 .ppcert-settings-email-extension:empty {
 	display: none;

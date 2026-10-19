@@ -430,4 +430,30 @@ class Test_Email_Html extends TestCase {
 		$this->assertSame( 400, $error->get_error_data()['status'] );
 		$this->assertSame( 'email_from_address', $error->get_error_data()['field'] );
 	}
+
+	/**
+	 * POST /settings/test-email (2.1): Send to another address, a 400
+	 * naming the field for an invalid one, the current user without it.
+	 *
+	 * @return void
+	 */
+	public function test_settings_test_route_send_to() {
+		$GLOBALS['ppcert_test_user_caps'] = [ 'ppcert_manage_settings' ];
+		ppcert_tests_reset_transients();
+
+		$controller = new PressPrimer_Certificate_REST_Settings_Controller();
+
+		$response = $controller->send_test_email( new WP_REST_Request( [ 'to' => 'inbox@example.test' ] ) );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'Test email sent to inbox@example.test.', $response->get_data()['message'] );
+		$this->assertSame( 'inbox@example.test', end( $GLOBALS['ppcert_test_mail'] )['to'] );
+
+		$invalid = $controller->send_test_email( new WP_REST_Request( [ 'to' => 'nope' ] ) );
+		$this->assertInstanceOf( WP_Error::class, $invalid );
+		$this->assertSame( 400, $invalid->get_error_data()['status'] );
+		$this->assertSame( 'to', $invalid->get_error_data()['field'] );
+
+		$mine = $controller->send_test_email( new WP_REST_Request( [] ) );
+		$this->assertSame( 'Test email sent to dana@example.test.', $mine->get_data()['message'] );
+	}
 }

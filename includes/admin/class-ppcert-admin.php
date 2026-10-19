@@ -499,6 +499,44 @@ class PressPrimer_Certificate_Admin {
 	}
 
 	/**
+	 * Register the shared components handle (2.1, Feature 2.1-001
+	 * TR-004)
+	 *
+	 * 'ppcert-components' publishes window.ppcert_components (the email
+	 * RichTextEditor) for addon screens; they enqueue the handle and call
+	 * wp_enqueue_editor(). Registered on suite pages only, never
+	 * enqueued here.
+	 *
+	 * @since 2.1.0
+	 */
+	public static function register_components() {
+		$asset_file = PPCERT_PLUGIN_DIR . 'build/components.asset.php';
+
+		if ( wp_script_is( 'ppcert-components', 'registered' ) || ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		wp_register_script(
+			'ppcert-components',
+			PPCERT_PLUGIN_URL . 'build/components.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		if ( file_exists( PPCERT_PLUGIN_DIR . 'build/components.css' ) ) {
+			wp_register_style(
+				'ppcert-components',
+				PPCERT_PLUGIN_URL . 'build/components.css',
+				[],
+				$asset['version']
+			);
+		}
+	}
+
+	/**
 	 * Enqueue the designer app on its screen only
 	 *
 	 * @since 1.0.0
@@ -526,6 +564,8 @@ class PressPrimer_Certificate_Admin {
 				[],
 				PPCERT_VERSION
 			);
+
+			self::register_components();
 		}
 
 		$is_dashboard = '' !== $this->dashboard_hook && $hook_suffix === $this->dashboard_hook;

@@ -84,6 +84,14 @@ class PressPrimer_Certificate_Admin_Settings {
 		// Media library for the signature/logo pickers.
 		wp_enqueue_media();
 
+		// The email body's rich-text editor (2.1, Feature 2.1-001 FR-002)
+		// and the shared components for addon sections mounted here
+		// (Educator's reminder email).
+		wp_enqueue_editor();
+		PressPrimer_Certificate_Admin::register_components();
+		wp_enqueue_script( 'ppcert-components' );
+		wp_enqueue_style( 'ppcert-components' );
+
 		// Global WP-admin / Ant Design conflict overrides.
 		wp_enqueue_style(
 			'ppcert-admin',
@@ -203,29 +211,36 @@ class PressPrimer_Certificate_Admin_Settings {
 		}
 
 		return [
-			'settings'       => PressPrimer_Certificate_REST_Settings_Controller::current_settings(),
-			'settingsTabs'   => $settings_tabs,
-			'settingsMascot' => $mascot,
-			'pluginUrl'      => PPCERT_PLUGIN_URL,
-			'pages'          => $this->page_choices(),
-			'fonts'          => $fonts,
-			'appearance'     => PressPrimer_Certificate_Appearance_Service::get(),
+			'settings'          => PressPrimer_Certificate_REST_Settings_Controller::current_settings(),
+			'settingsTabs'      => $settings_tabs,
+			'settingsMascot'    => $mascot,
+			'pluginUrl'         => PPCERT_PLUGIN_URL,
+			'pages'             => $this->page_choices(),
+			'fonts'             => $fonts,
+			'appearance'        => PressPrimer_Certificate_Appearance_Service::get(),
 			// Effective email templates: what actually sends today, so
 			// the fields never open empty.
-			'emailDefaults'  => [
+			'emailDefaults'     => [
 				'subject' => (string) $email_settings['email_issued_subject'],
 				'body'    => (string) $email_settings['email_issued_body'],
 			],
-			'systemInfo'     => $this->system_info(),
-			'integrations'   => $this->integrations_status(),
-			'databaseTables' => self::table_status(),
-			'nonces'         => [
+			// What an empty From field falls back to, and the test
+			// email's prefilled Send to address (2.1).
+			'emailPlaceholders' => [
+				'siteName'         => (string) get_bloginfo( 'name' ),
+				'adminEmail'       => (string) get_bloginfo( 'admin_email' ),
+				'currentUserEmail' => (string) wp_get_current_user()->user_email,
+			],
+			'systemInfo'        => $this->system_info(),
+			'integrations'      => $this->integrations_status(),
+			'databaseTables'    => self::table_status(),
+			'nonces'            => [
 				'repairTables' => wp_create_nonce( 'ppcert_repair_tables' ),
 			],
 			// Upsell touchpoints this user may see on this surface
 			// (2.0, Feature 2.0-005): resolved server-side, empty for
 			// non-admins and for active tiers.
-			'touchpoints'    => class_exists( 'PressPrimer_Certificate_Touchpoints' )
+			'touchpoints'       => class_exists( 'PressPrimer_Certificate_Touchpoints' )
 				? PressPrimer_Certificate_Touchpoints::get_eligible_for_surface( PressPrimer_Certificate_Touchpoints::SURFACE_SETTINGS )
 				: [],
 		];
