@@ -147,4 +147,25 @@ class Test_Element_Types extends TestCase {
 
 		$this->assertArrayHasKey( 'ppcert_educator_badge', $types );
 	}
+
+	/**
+	 * Line endpoints (2.1): a box 1 pt or less across is a straight rule
+	 * through its center; any other box runs corner to corner.
+	 *
+	 * @return void
+	 */
+	public function test_line_endpoints() {
+		// The starter rules: 1 pt tall, horizontal through the middle.
+		$this->assertSame( [ 271.0, 282.5, 571.0, 282.5 ], PressPrimer_Certificate_PDF_Renderer::line_endpoints( 271.0, 282.0, 300.0, 1.0 ) );
+
+		// A thin vertical box: vertical through the middle.
+		$this->assertSame( [ 50.25, 100.0, 50.25, 400.0 ], PressPrimer_Certificate_PDF_Renderer::line_endpoints( 50.0, 100.0, 0.5, 300.0 ) );
+
+		// A tiny box no taller than wide stays horizontal.
+		$this->assertSame( [ 10.0, 10.5, 11.0, 10.5 ], PressPrimer_Certificate_PDF_Renderer::line_endpoints( 10.0, 10.0, 1.0, 1.0 ) );
+
+		// Anything larger is a diagonal, as in 2.0.
+		$this->assertSame( [ 10.0, 20.0, 110.0, 70.0 ], PressPrimer_Certificate_PDF_Renderer::line_endpoints( 10.0, 20.0, 100.0, 50.0 ) );
+		$this->assertSame( [ 10.0, 20.0, 110.0, 21.5 ], PressPrimer_Certificate_PDF_Renderer::line_endpoints( 10.0, 20.0, 100.0, 1.5 ), 'Taller than 1 pt: a deliberate slope' );
+	}
 }

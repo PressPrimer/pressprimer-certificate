@@ -1272,6 +1272,40 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 */
 
 	/**
+	 * A line shape's endpoints in points
+	 *
+	 * The bounding box defines the endpoints, top-left to bottom-right
+	 * (layout-schema.md), except that a box 1 pt or less across is a
+	 * straight rule through its center: horizontal when the box is no
+	 * taller than it is wide, else vertical. Before 2.1 those boxes drew
+	 * corner to corner too, so every starter rule (h 1) slanted by 1 pt.
+	 * The designer canvas (ShapeElement) applies the same rule.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param float $x Box left.
+	 * @param float $y Box top.
+	 * @param float $w Box width.
+	 * @param float $h Box height.
+	 * @return float[] [ x1, y1, x2, y2 ].
+	 */
+	public static function line_endpoints( $x, $y, $w, $h ) {
+		if ( min( $w, $h ) <= 1 ) {
+			if ( $h <= $w ) {
+				$middle = $y + ( $h / 2 );
+
+				return [ $x, $middle, $x + $w, $middle ];
+			}
+
+			$middle = $x + ( $w / 2 );
+
+			return [ $middle, $y, $middle, $y + $h ];
+		}
+
+		return [ $x, $y, $x + $w, $y + $h ];
+	}
+
+	/**
 	 * Render a shape element (line / rect / ellipse)
 	 *
 	 * @since 1.0.0
@@ -1303,9 +1337,8 @@ class PressPrimer_Certificate_PDF_Renderer {
 		switch ( $props['shape'] ) {
 			case 'line':
 				if ( $has_stroke ) {
-					// The bounding box defines the endpoints: top-left to
-					// bottom-right (layout-schema.md).
-					$pdf->Line( $x, $y, $x + $w, $y + $h );
+					list( $x1, $y1, $x2, $y2 ) = self::line_endpoints( $x, $y, $w, $h );
+					$pdf->Line( $x1, $y1, $x2, $y2 );
 				}
 				break;
 
@@ -1884,7 +1917,18 @@ class PressPrimer_Certificate_PDF_Renderer {
 		switch ( $props['shape'] ) {
 			case 'line':
 				if ( $has_stroke ) {
-					imageline( $canvas, $x, $y, $x + $w, $y + $h, $stroke_color );
+					// Endpoints in points (the straight-rule test is in
+					// points), then to pixels.
+					$ends = self::line_endpoints( (float) $element['x'], (float) $element['y'], (float) $element['w'], (float) $element['h'] );
+
+					imageline(
+						$canvas,
+						(int) round( $ends[0] * $scale ),
+						(int) round( $ends[1] * $scale ),
+						(int) round( $ends[2] * $scale ),
+						(int) round( $ends[3] * $scale ),
+						$stroke_color
+					);
 				}
 				break;
 

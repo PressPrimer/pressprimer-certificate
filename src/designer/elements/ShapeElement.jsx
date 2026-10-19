@@ -30,15 +30,25 @@ export default function ShapeElement( { element, box } ) {
 	};
 
 	if ( 'line' === p.shape ) {
-		// The bounding box defines the endpoints, top-left to bottom-right
-		// - exactly TCPDF's Line(x, y, x + w, y + h).
+		// The bounding box defines the endpoints, top-left to bottom-right,
+		// except that a box 1 pt or less across is a straight rule through
+		// its center (2.1) - exactly the renderer's line_endpoints().
+		let ends = [ 0, 0, box.w, box.h ];
+
+		if ( Math.min( box.w, box.h ) <= 1 ) {
+			ends =
+				box.h <= box.w
+					? [ 0, box.h / 2, box.w, box.h / 2 ]
+					: [ box.w / 2, 0, box.w / 2, box.h ];
+		}
+
 		return (
 			<svg { ...svgProps } shapeRendering="auto">
 				<line
-					x1="0"
-					y1="0"
-					x2={ box.w }
-					y2={ box.h }
+					x1={ ends[ 0 ] }
+					y1={ ends[ 1 ] }
+					x2={ ends[ 2 ] }
+					y2={ ends[ 3 ] }
 					stroke={ p.stroke_color }
 					strokeWidth={ strokeWidth }
 				/>
