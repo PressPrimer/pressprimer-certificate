@@ -102,13 +102,15 @@ function sampleQr(): unknown {
  * @param qr
  * @param extraCss
  * @param extraFonts
+ * @param zoom
  */
 async function bootCanvas(
 	page: Page,
 	layout: unknown,
 	qr: unknown,
 	extraCss = '',
-	extraFonts: Record< string, unknown > = {}
+	extraFonts: Record< string, unknown > = {},
+	zoom = 1
 ): Promise< void > {
 	await page.goto( HARNESS_URL );
 	await page.waitForSelector( '[data-ppcert-canvas-scale]' );
@@ -150,13 +152,13 @@ async function bootCanvas(
 				layout: args.layout,
 			} );
 
-			bridge.setZoom( 1 );
+			bridge.setZoom( args.zoom );
 			bridge.setParity( true );
 		},
-		{ layout, qr, samples, extraFonts }
+		{ layout, qr, samples, extraFonts, zoom }
 	);
 
-	await page.waitForSelector( '[data-ppcert-canvas-scale="1"]' );
+	await page.waitForSelector( `[data-ppcert-canvas-scale="${ zoom }"]` );
 
 	// Real webfonts must be active before measurement or screenshot.
 	await page.evaluate( () => ( document as any ).fonts.ready );
@@ -220,6 +222,9 @@ const INLINE_TOKEN_FIXTURES = [
  * @param opts.renderArgs
  * @param opts.extraCss
  * @param opts.extraFonts
+ * @param opts.zoom         Canvas zoom, with the PDF raster at the same
+ *                          physical scale (2.1: small cards compare at 2x,
+ *                          where text edges are a fair share of the page).
  */
 async function runParityCase(
 	page: Page,
@@ -232,9 +237,11 @@ async function runParityCase(
 		renderArgs?: Record< string, unknown >;
 		extraCss?: string;
 		extraFonts?: Record< string, unknown >;
+		zoom?: number;
 	} = {}
 ): Promise< void > {
 	const canvasLayout = opts.canvasLayout ?? layout;
+	const zoom = opts.zoom ?? 1;
 	const pageArg = opts.pdfPage ? { page: opts.pdfPage } : {};
 
 	// PDF side.
@@ -244,7 +251,7 @@ async function runParityCase(
 		SAMPLES_PATH,
 		{
 			context: 'parity',
-			dpi: DPI,
+			dpi: DPI * zoom,
 			credential_id: CREDENTIAL,
 			...pageArg,
 			...( opts.renderArgs || {} ),
@@ -258,7 +265,8 @@ async function runParityCase(
 		canvasLayout,
 		sampleQr(),
 		opts.extraCss || '',
-		opts.extraFonts || {}
+		opts.extraFonts || {},
+		zoom
 	);
 
 	const canvasPng = path.join( dir, 'canvas.png' );
@@ -287,11 +295,12 @@ async function runParityCase(
 			.locator( `[data-ppcert-el="${ element.id }"]` )
 			.boundingBox();
 
+		// Measured in screen pixels at the zoom; drift is in points.
 		const drifts = {
-			x: Math.abs( domBox!.x - pageBox!.x - element.x ),
-			y: Math.abs( domBox!.y - pageBox!.y - element.y ),
-			w: Math.abs( domBox!.width - element.w ),
-			h: Math.abs( domBox!.height - element.h ),
+			x: Math.abs( domBox!.x - pageBox!.x - element.x * zoom ) / zoom,
+			y: Math.abs( domBox!.y - pageBox!.y - element.y * zoom ) / zoom,
+			w: Math.abs( domBox!.width - element.w * zoom ) / zoom,
+			h: Math.abs( domBox!.height - element.h * zoom ) / zoom,
 		};
 
 		for ( const [ edge, drift ] of Object.entries( drifts ) ) {
@@ -311,7 +320,7 @@ async function runParityCase(
 		SAMPLES_PATH,
 		{
 			context: 'parity',
-			dpi: DPI,
+			dpi: DPI * zoom,
 			credential_id: CREDENTIAL,
 			parity_debug: true,
 			...pageArg,
@@ -339,7 +348,7 @@ async function runParityCase(
 	} );
 
 	const boxes = extractBoxes( debugPng, clipped.length );
-	const failures = boxDriftFailures( boxes, clipped, SCALE );
+	const failures = boxDriftFailures( boxes, clipped, SCALE * zoom );
 
 	expect(
 		failures,
@@ -472,6 +481,48 @@ test.describe( '2.1 custom sizes (Educator)', () => {
 
 			await runParityCase( page, layout, layoutPath, dir );
 		} );
+	}
+} );
+
+/**
+ * Wallet cards (2.1, Educator E-008 TR-005): the card is a v3 document
+ * on a custom card page, built with Educator's Clean starter design (no
+ * logo, free's default theme). Each side is captured from the rendered
+ * PDF and compared with the canvas rendering that side, as the
+ * multi-page fixture does. Cards compare at 2x (the designer zooms
+ * small pages up to 400%): at 1x a 243 pt card is so text-dense that
+ * antialiased glyph edges alone are about 1.8% of its pixels.
+ */
+test.describe( '2.1 wallet cards (Educator)', () => {
+	const CARDS: Array< [ string, number ] > = [
+		[ 'parity-card-wallet', 2 ],
+		[ 'parity-card-business-eu-portrait', 1 ],
+	];
+
+	for ( const [ slug, sides ] of CARDS ) {
+		for ( let side = 1; side <= sides; side++ ) {
+			test( `${ slug } side ${ side }: canvas matches the PDF raster within parity thresholds`, async ( {
+				page,
+			} ) => {
+				const dir = tmpDir();
+				const { layout, layoutPath } = fixtureLayout( slug, dir );
+
+				expect( layout.pages.length, 'fixture side count' ).toBe(
+					sides
+				);
+
+				await runParityCase( page, layout, layoutPath, dir, {
+					pdfPage: side,
+					zoom: 2,
+					canvasLayout: {
+						layout_schema_version: 2,
+						page: layout.page,
+						background: layout.background,
+						elements: layout.pages[ side - 1 ].elements,
+					},
+				} );
+			} );
+		}
 	}
 } );
 

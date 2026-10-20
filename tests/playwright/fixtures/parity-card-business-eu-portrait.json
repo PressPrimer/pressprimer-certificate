@@ -1,0 +1,181 @@
+{
+	"layout_schema_version": 3,
+	"page": {
+		"size": "custom",
+		"orientation": "portrait",
+		"width": 156,
+		"height": 241
+	},
+	"background": {
+		"color": "#ffffff",
+		"attachment_id": 0
+	},
+	"pages": [
+		{
+			"elements": [
+				{
+					"id": "el_pcard022",
+					"type": "text",
+					"x": 12,
+					"y": 14,
+					"w": 132,
+					"h": 12,
+					"z": 1,
+					"props": {
+						"content": "{{certificate.issuer_name}}",
+						"font_family": "source-sans-3",
+						"font_size": 8.5,
+						"color": "#1f2937",
+						"align": "center",
+						"line_height": 1.2,
+						"bold": true,
+						"italic": false
+					}
+				},
+				{
+					"id": "el_pcard023",
+					"type": "shape",
+					"x": 12,
+					"y": 33,
+					"w": 132,
+					"h": 1,
+					"z": 2,
+					"props": {
+						"shape": "rect",
+						"stroke_color": "#1f3a5f",
+						"stroke_width": 0,
+						"fill_color": "#1f3a5f",
+						"radius": 0
+					}
+				},
+				{
+					"id": "el_pcard024",
+					"type": "text",
+					"x": 12,
+					"y": 66,
+					"w": 132,
+					"h": 21,
+					"z": 3,
+					"props": {
+						"content": "{{certificate.title}}",
+						"font_family": "source-sans-3",
+						"font_size": 9,
+						"color": "#1f3a5f",
+						"align": "center",
+						"line_height": 1.15,
+						"bold": true,
+						"italic": false
+					}
+				},
+				{
+					"id": "el_pcard025",
+					"type": "text",
+					"x": 12,
+					"y": 90,
+					"w": 132,
+					"h": 33,
+					"z": 4,
+					"props": {
+						"content": "{{recipient.full_name}}",
+						"font_family": "source-sans-3",
+						"font_size": 14,
+						"color": "#1f2937",
+						"align": "center",
+						"line_height": 1.15,
+						"bold": true,
+						"italic": false
+					}
+				},
+				{
+					"id": "el_pcard026",
+					"type": "text",
+					"x": 12,
+					"y": 131,
+					"w": 62,
+					"h": 8,
+					"z": 5,
+					"props": {
+						"content": "ISSUED",
+						"font_family": "source-sans-3",
+						"font_size": 6,
+						"color": "#6b7280",
+						"align": "center",
+						"line_height": 1.2,
+						"bold": true,
+						"italic": false
+					}
+				},
+				{
+					"id": "el_pcard027",
+					"type": "text",
+					"x": 12,
+					"y": 139,
+					"w": 62,
+					"h": 11,
+					"z": 6,
+					"props": {
+						"content": "{{certificate.issue_date}}",
+						"font_family": "source-sans-3",
+						"font_size": 7.5,
+						"color": "#1f2937",
+						"align": "center",
+						"line_height": 1.2,
+						"bold": false,
+						"italic": false
+					}
+				},
+				{
+					"id": "el_pcard028",
+					"type": "text",
+					"x": 82,
+					"y": 131,
+					"w": 62,
+					"h": 8,
+					"z": 7,
+					"props": {
+						"content": "CREDENTIAL ID",
+						"font_family": "source-sans-3",
+						"font_size": 6,
+						"color": "#6b7280",
+						"align": "center",
+						"line_height": 1.2,
+						"bold": true,
+						"italic": false
+					}
+				},
+				{
+					"id": "el_pcard029",
+					"type": "text",
+					"x": 82,
+					"y": 139,
+					"w": 62,
+					"h": 11,
+					"z": 8,
+					"props": {
+						"content": "{{certificate.credential_id}}",
+						"font_family": "source-sans-3",
+						"font_size": 7.5,
+						"color": "#1f2937",
+						"align": "center",
+						"line_height": 1.2,
+						"bold": false,
+						"italic": false
+					}
+				},
+				{
+					"id": "el_pcard030",
+					"type": "qr",
+					"x": 55,
+					"y": 182,
+					"w": 47,
+					"h": 47,
+					"z": 9,
+					"props": {
+						"dark_color": "#1f2937",
+						"light_color": "#ffffff"
+					}
+				}
+			]
+		}
+	]
+}

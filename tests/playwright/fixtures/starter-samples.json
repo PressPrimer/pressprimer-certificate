@@ -6,5 +6,7 @@
 	"certificate.credential_id": "7Q4M-K9P2-XT3A",
 	"certificate.expiry_date": "June 12, 2028",
 	"site.name": "Sunrise Training Academy",
-	"source.course_title": "Advanced Botany"
+	"source.course_title": "Advanced Botany",
+	"certificate.title": "Forklift Operator Safety",
+	"site.url": "https://sunrisetraining.example"
 }
