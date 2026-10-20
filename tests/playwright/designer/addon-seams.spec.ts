@@ -313,7 +313,39 @@ test.describe( 'addon seams', () => {
 		);
 	} );
 
-	test( 'image quick picks set the attachment in one undo step', async ( {
+	test( 'the no-selection panel has an empty addon slot above Page', async ( {
+		page,
+	} ) => {
+		await boot( page );
+
+		await page.evaluate( () =>
+			( window as any ).ppcert_designer_api.setSelection( [] )
+		);
+
+		const slot = page.locator( '#ppcert-designer-page-panel-extension' );
+		await expect( slot ).toHaveCount( 1 );
+		await expect( slot ).toBeEmpty();
+
+		// The slot comes before the Page section's heading.
+		const order = await page.evaluate( () => {
+			const node = document.getElementById(
+				'ppcert-designer-page-panel-extension'
+			);
+			const next = node?.nextElementSibling;
+			return next?.querySelector( '.ppcert-designer__panel-heading' )
+				?.textContent;
+		} );
+		expect( order ).toBe( 'Page' );
+
+		// Selecting an element replaces the panel, slot included.
+		await page.evaluate( () => {
+			const api = ( window as any ).ppcert_designer_api;
+			api.setSelection( [ api.getLayout().elements[ 0 ].id ] );
+		} );
+		await expect( slot ).toHaveCount( 0 );
+	} );
+
+	test( 'image quick picks sit under their caption and set the attachment in one undo step', async ( {
 		page,
 	} ) => {
 		await boot( page );
@@ -337,6 +369,7 @@ test.describe( 'addon seams', () => {
 						thumb: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
 						url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
 						mime: 'image/png',
+						group: 'Brand logos',
 					},
 				]
 			);
@@ -361,7 +394,9 @@ test.describe( 'addon seams', () => {
 				( window as any ).__ppcertHarness.getState().history.past.length
 		);
 
-		await page.getByRole( 'button', { name: 'Brand logo' } ).click();
+		const group = page.getByRole( 'group', { name: 'Brand logos' } );
+		await expect( group ).toBeVisible();
+		await group.getByRole( 'button', { name: 'Brand logo' } ).click();
 
 		const result = await page.evaluate( () => {
 			const harness = ( window as any ).__ppcertHarness;

@@ -6,8 +6,9 @@
  * present (test harness) the picker disables with an explanation.
  *
  * 2.1 (Feature 2.1-004 FR-006): `ppcert.designer.imagePresets` supplies
- * quick-pick thumbnails above the picker (Educator's brand kit); a
- * click sets the attachment in one undo step.
+ * quick-pick thumbnails above the picker (Educator's brand kit), under
+ * a caption per `group` (e.g. "Brand logos"); a click sets the
+ * attachment in one undo step.
  */
 
 import { __ } from '@wordpress/i18n';
@@ -25,8 +26,8 @@ const { Text } = Typography;
 
 /**
  * Quick-pick images for an element (2.1): `ppcert.designer.imagePresets`
- * entries { id, label, thumb, url, mime? } with a positive attachment id
- * and a label.
+ * entries { id, label, thumb, url, mime?, group? } with a positive
+ * attachment id and a label.
  *
  * @param {Object} element Selected element.
  * @return {Array} Presets.
@@ -45,6 +46,32 @@ function imagePresets( element ) {
 			preset.label &&
 			( preset.thumb || preset.url )
 	);
+}
+
+/**
+ * Presets in captioned groups, in order of first appearance. Presets
+ * with no `group` share one group without a caption.
+ *
+ * @param {Array} presets Presets.
+ * @return {Array} Groups { caption, presets }.
+ */
+function presetGroups( presets ) {
+	const groups = [];
+
+	presets.forEach( ( preset ) => {
+		const caption =
+			'string' === typeof preset.group ? preset.group.trim() : '';
+		let group = groups.find( ( entry ) => entry.caption === caption );
+
+		if ( ! group ) {
+			group = { caption, presets: [] };
+			groups.push( group );
+		}
+
+		group.presets.push( preset );
+	} );
+
+	return groups;
 }
 
 /**
@@ -120,41 +147,65 @@ export default function MediaSection( { element } ) {
 
 			{ p.attachment_id ? <ImageFormatWarning mime={ mime } /> : null }
 
-			{ presets.length > 0 ? (
-				<div
-					className="ppcert-designer__image-presets"
-					data-ppcert-prop="image-presets"
-				>
-					{ presets.map( ( preset ) => {
-						const active =
-							parseInt( preset.id, 10 ) === p.attachment_id;
+			{ presetGroups( presets ).map( ( group, index ) => {
+				const captionId = `ppcert-image-presets-${ element.id }-${ index }`;
 
-						return (
-							<Tooltip
-								key={ preset.id }
-								title={ preset.label }
-								placement="bottom"
+				return (
+					<div
+						key={ group.caption || index }
+						className="ppcert-designer__image-preset-group"
+						role="group"
+						aria-labelledby={
+							group.caption ? captionId : undefined
+						}
+						data-ppcert-prop="image-presets"
+					>
+						{ group.caption ? (
+							<span
+								id={ captionId }
+								className="ppcert-designer__image-presets-caption"
 							>
-								<button
-									type="button"
-									className={
-										'ppcert-designer__image-preset' +
-										( active ? ' is-active' : '' )
-									}
-									aria-label={ preset.label }
-									aria-pressed={ active }
-									onClick={ () => choosePreset( preset ) }
-								>
-									<img
-										src={ preset.thumb || preset.url }
-										alt=""
-									/>
-								</button>
-							</Tooltip>
-						);
-					} ) }
-				</div>
-			) : null }
+								{ group.caption }
+							</span>
+						) : null }
+						<div className="ppcert-designer__image-presets">
+							{ group.presets.map( ( preset ) => {
+								const active =
+									parseInt( preset.id, 10 ) ===
+									p.attachment_id;
+
+								return (
+									<Tooltip
+										key={ preset.id }
+										title={ preset.label }
+										placement="bottom"
+									>
+										<button
+											type="button"
+											className={
+												'ppcert-designer__image-preset' +
+												( active ? ' is-active' : '' )
+											}
+											aria-label={ preset.label }
+											aria-pressed={ active }
+											onClick={ () =>
+												choosePreset( preset )
+											}
+										>
+											<img
+												src={
+													preset.thumb || preset.url
+												}
+												alt=""
+											/>
+										</button>
+									</Tooltip>
+								);
+							} ) }
+						</div>
+					</div>
+				);
+			} ) }
 
 			<PropRow label={ __( 'Media', 'pressprimer-certificate' ) }>
 				{ available ? (

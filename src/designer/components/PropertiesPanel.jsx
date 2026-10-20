@@ -5,6 +5,10 @@
  * palette entry routes here). Single selection: Position & Size plus
  * the per-type section. Multi-selection: count notice (alignment tools
  * arrive with the guardrails prompt).
+ *
+ * 2.1 (Feature 2.1-004 FR-006): with no selection, an addon slot sits
+ * above the Page section (#ppcert-designer-page-panel-extension;
+ * Educator's Brand). Free renders it empty.
  */
 
 import { __, sprintf, _n } from '@wordpress/i18n';
@@ -18,6 +22,23 @@ import QrSection from './properties/QrSection';
 import PageSection from './properties/PageSection';
 
 const { Text } = Typography;
+
+/**
+ * The no-selection panel: the addon slot, then the Page section.
+ *
+ * @return {JSX.Element} Panel.
+ */
+function NoSelectionPanel() {
+	return (
+		<>
+			<div
+				id="ppcert-designer-page-panel-extension"
+				className="ppcert-designer__page-panel-extension"
+			/>
+			<PageSection />
+		</>
+	);
+}
 
 const TYPE_SECTIONS = {
 	text: TextSection,
@@ -49,7 +70,7 @@ export default function PropertiesPanel() {
 	}
 
 	if ( 0 === state.selection.length ) {
-		return <PageSection />;
+		return <NoSelectionPanel />;
 	}
 
 	if ( state.selection.length > 1 ) {
@@ -76,7 +97,7 @@ export default function PropertiesPanel() {
 	);
 
 	if ( ! element ) {
-		return <PageSection />;
+		return <NoSelectionPanel />;
 	}
 
 	const TypeSection = TYPE_SECTIONS[ element.type ];

@@ -788,17 +788,33 @@
 	display: none;
 }
 
+/* No-selection panel slot (2.1): an addon section above Page. */
+.ppcert-designer__page-panel-extension:empty {
+	display: none;
+}
+
 /* Page panel custom-size slot (2.1): addon fields under the Size menu. */
 .ppcert-designer__page-size-extension:empty {
 	display: none;
 }
 
-/* Image quick picks (2.1, ppcert.designer.imagePresets). */
+/* Image quick picks (2.1, ppcert.designer.imagePresets): a caption per
+   group in the row-label style, then the thumbnails. */
+.ppcert-designer__image-preset-group {
+	margin-bottom: 8px;
+}
+
+.ppcert-designer__image-presets-caption {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 12px;
+	color: #6b7280;
+}
+
 .ppcert-designer__image-presets {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
-	margin-bottom: 8px;
 }
 
 .ppcert-designer__image-preset {
