@@ -89,7 +89,8 @@ jobs:
       # Release blocker (re-blocked at Prompt 5.4, 2026-07-24): a parity
       # failure fails the build. Thresholds: PIXELMATCH_THRESHOLD 0.15,
       # 1.25% pixel ratio (raised from 1% for Linux FreeType AA, Ryan
-      # 2026-07-25), 1 pt box drift (tests/playwright/helpers/compare.ts).
+      # 2026-07-25; wallet cards 1.75%, Ryan 2026-10-20), 1 pt box drift
+      # (tests/playwright/helpers/compare.ts).
       - name: Run parity suite (GD path)
         run: npx playwright test --project=parity-pdf
 

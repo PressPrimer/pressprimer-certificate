@@ -16,6 +16,13 @@
  * measured 1.072% / 1.108% on Linux FreeType (script + serif faces over
  * hairline borders) while every bounding-box check stayed within 1 pt.
  * Real layout drift still shows up as multi-percent swings either way.
+ *
+ * Wallet cards get their own pixel budget, 1.75%, with Ryan's sign-off
+ * (2026-10-20): a 243 x 153 pt card's back is a QR code and nine lines
+ * of 6-9 pt text, and the GD reference rounds each glyph advance to a
+ * whole pixel, so letters drift a little along each line. It measured
+ * 0.864% on macOS and 1.415% on Linux CI while the QR matched and every
+ * bounding box stayed within 1 pt. Certificates keep 1.25%.
  */
 import * as fs from 'node:fs';
 import { PNG } from 'pngjs';
@@ -23,6 +30,9 @@ import pixelmatch from 'pixelmatch';
 
 /** Maximum ratio of differing pixels (FR-005). */
 export const PIXEL_DIFF_MAX_RATIO = 0.0125;
+
+/** Maximum ratio of differing pixels for wallet cards (2.1, Educator E-008). */
+export const CARD_PIXEL_DIFF_MAX_RATIO = 0.0175;
 
 /** Maximum element bounding-box drift in points (FR-005). */
 export const BOX_DRIFT_MAX_PT = 1.0;

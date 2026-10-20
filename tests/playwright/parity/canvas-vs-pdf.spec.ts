@@ -16,6 +16,7 @@ import * as path from 'node:path';
 import { findPhp, renderPng, PATHS } from '../helpers/render';
 import {
 	comparePngs,
+	CARD_PIXEL_DIFF_MAX_RATIO,
 	PIXEL_DIFF_MAX_RATIO,
 	BOX_DRIFT_MAX_PT,
 } from '../helpers/compare';
@@ -225,6 +226,8 @@ const INLINE_TOKEN_FIXTURES = [
  * @param opts.zoom         Canvas zoom, with the PDF raster at the same
  *                          physical scale (2.1: small cards compare at 2x,
  *                          where text edges are a fair share of the page).
+ * @param opts.maxRatio     Pixel budget (default PIXEL_DIFF_MAX_RATIO;
+ *                          wallet cards pass CARD_PIXEL_DIFF_MAX_RATIO).
  */
 async function runParityCase(
 	page: Page,
@@ -238,6 +241,7 @@ async function runParityCase(
 		extraCss?: string;
 		extraFonts?: Record< string, unknown >;
 		zoom?: number;
+		maxRatio?: number;
 	} = {}
 ): Promise< void > {
 	const canvasLayout = opts.canvasLayout ?? layout;
@@ -283,7 +287,7 @@ async function runParityCase(
 		`${ ( result.ratio * 100 ).toFixed(
 			3
 		) }% pixels differ (diff: ${ diffPath })`
-	).toBeLessThanOrEqual( PIXEL_DIFF_MAX_RATIO );
+	).toBeLessThanOrEqual( opts.maxRatio ?? PIXEL_DIFF_MAX_RATIO );
 
 	// Canvas bounding boxes vs declared geometry (<= 1 pt).
 	const pageBox = await page
@@ -491,7 +495,10 @@ test.describe( '2.1 custom sizes (Educator)', () => {
  * PDF and compared with the canvas rendering that side, as the
  * multi-page fixture does. Cards compare at 2x (the designer zooms
  * small pages up to 400%): at 1x a 243 pt card is so text-dense that
- * antialiased glyph edges alone are about 1.8% of its pixels.
+ * antialiased glyph edges alone are about 1.8% of its pixels. Cards
+ * allow 1.75% differing pixels (CARD_PIXEL_DIFF_MAX_RATIO, Ryan
+ * 2026-10-20: small-text advance rounding in the GD reference put the
+ * back at 1.415% on Linux CI); the 1 pt box check is unchanged.
  */
 test.describe( '2.1 wallet cards (Educator)', () => {
 	const CARDS: Array< [ string, number ] > = [
@@ -514,6 +521,7 @@ test.describe( '2.1 wallet cards (Educator)', () => {
 				await runParityCase( page, layout, layoutPath, dir, {
 					pdfPage: side,
 					zoom: 2,
+					maxRatio: CARD_PIXEL_DIFF_MAX_RATIO,
 					canvasLayout: {
 						layout_schema_version: 2,
 						page: layout.page,
