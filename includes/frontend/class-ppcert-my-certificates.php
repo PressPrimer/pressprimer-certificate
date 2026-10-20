@@ -301,8 +301,6 @@ class PressPrimer_Certificate_My_Certificates {
 				. '</strong></span>';
 		}
 
-		$output .= '</p></div>';
-
 		$actions = [];
 
 		// Revoked certificates are not served by the download route.
@@ -326,18 +324,26 @@ class PressPrimer_Certificate_My_Certificates {
 		 * Filters a My Certificates row's action links (2.0, Feature
 		 * 2.0-006 addon contract - Educator's share controls render
 		 * here). Same entry shape and escaping rules as
-		 * ppcert_view_page_actions.
+		 * ppcert_view_page_actions; since 2.1 a `secondary` entry
+		 * renders as a quiet text link under the row's dates, so the
+		 * buttons line up with every other row.
 		 *
 		 * @since 2.0.0
+		 * @since 2.1.0 The `secondary` key.
 		 *
 		 * @param array  $actions Map of action id => link definition.
 		 * @param object $certificate Certificate row.
 		 * @param string $status  Effective status (issued|expired|revoked).
 		 */
 		$actions = apply_filters( 'ppcert_my_certificates_row_actions', $actions, $certificate, $status );
+		$groups  = PressPrimer_Certificate_View_Page::split_action_links( is_array( $actions ) ? $actions : [] );
+
+		// Secondary links sit under the dates, outside the dates line, so
+		// the left column keeps its own width and the buttons stay put.
+		$output .= '</p>' . PressPrimer_Certificate_View_Page::render_secondary_links( $groups['secondary'] ) . '</div>';
 
 		$output .= '<span class="ppcert-my-certificates__links">';
-		$output .= PressPrimer_Certificate_View_Page::render_action_links( is_array( $actions ) ? $actions : [] );
+		$output .= PressPrimer_Certificate_View_Page::render_action_links( $groups['primary'] );
 		$output .= '</span></li>';
 
 		return $output;

@@ -399,21 +399,27 @@ class PressPrimer_Certificate_View_Page {
 		 * Filters the view page's action links (2.0, Feature 2.0-006
 		 * addon contract - Educator's share controls render here).
 		 *
-		 * Each entry: label, url, class (CSS classes), new_tab (bool).
+		 * Each entry: label, url, class (CSS classes), new_tab (bool),
+		 * and since 2.1 secondary (bool): a secondary entry renders as
+		 * a quiet text link on its own line under the buttons, so extra
+		 * downloads (Educator's wallet card) never crowd the button row.
 		 * Everything escapes at output; malformed entries are dropped.
 		 * Revoked certificates arrive without the download entry - added
 		 * entries should respect the same status semantics.
 		 *
 		 * @since 2.0.0
+		 * @since 2.1.0 The `secondary` key.
 		 *
 		 * @param array  $actions     Map of action id => link definition.
 		 * @param object $certificate Hydrated certificate row.
 		 * @param string $status      Effective status (issued|expired|revoked).
 		 */
 		$actions = apply_filters( 'ppcert_view_page_actions', $actions, $certificate, $status );
+		$groups  = self::split_action_links( is_array( $actions ) ? $actions : [] );
 
 		$output .= '<p class="ppcert-view__actions">';
-		$output .= self::render_action_links( is_array( $actions ) ? $actions : [] );
+		$output .= self::render_action_links( $groups['primary'] );
+		$output .= self::render_secondary_links( $groups['secondary'] );
 		$output .= '</p>';
 		$output .= '</div>';
 
@@ -507,6 +513,70 @@ class PressPrimer_Certificate_View_Page {
 				'filter'                => 'raw',
 			]
 		);
+	}
+
+	/**
+	 * Split an action-link set into the buttons and the secondary links
+	 * (2.1: entries with `secondary` set)
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $actions Map of action id => link definition.
+	 * @return array{primary: array, secondary: array}
+	 */
+	public static function split_action_links( array $actions ) {
+		$groups = [
+			'primary'   => [],
+			'secondary' => [],
+		];
+
+		foreach ( $actions as $key => $action ) {
+			$group = is_array( $action ) && ! empty( $action['secondary'] ) ? 'secondary' : 'primary';
+
+			$groups[ $group ][ $key ] = $action;
+		}
+
+		return $groups;
+	}
+
+	/**
+	 * Render secondary links: quiet text links, each with a download
+	 * mark (drawn in CSS: the page content is kses-filtered, which
+	 * strips inline SVG), on one line of their own (2.1)
+	 *
+	 * The line is a full-width flex item inside the surface's own
+	 * container (the view page's action row, a My Certificates row's
+	 * dates line), so it never changes the width of the buttons beside
+	 * it. Escaping and new-tab handling match render_action_links().
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $actions Secondary entries.
+	 * @return string HTML ('' when there are none).
+	 */
+	public static function render_secondary_links( array $actions ) {
+		$links = '';
+
+		foreach ( $actions as $action ) {
+			if ( ! is_array( $action ) || empty( $action['label'] ) || empty( $action['url'] ) ) {
+				continue;
+			}
+
+			$class   = isset( $action['class'] ) ? (string) $action['class'] : '';
+			$new_tab = ! empty( $action['new_tab'] );
+
+			$links .= '<a class="' . esc_attr( trim( 'ppcert-secondary-link ' . $class ) ) . '" href="' . esc_url( (string) $action['url'] ) . '"'
+				. ( $new_tab ? ' target="_blank" rel="noopener"' : '' ) . '>'
+				. esc_html( (string) $action['label'] );
+
+			if ( $new_tab ) {
+				$links .= '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'pressprimer-certificate' ) . '</span>';
+			}
+
+			$links .= '</a>';
+		}
+
+		return '' === $links ? '' : '<span class="ppcert-more-links">' . $links . '</span>';
 	}
 
 	/**

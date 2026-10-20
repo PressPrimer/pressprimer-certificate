@@ -359,4 +359,38 @@ class Test_My_Certificates extends TestCase {
 		$this->assertStringContainsString( 'Download PDF', $html );
 		$this->assertStringContainsString( 'Verify', $html );
 	}
+
+	/**
+	 * A secondary entry (2.1) renders under the row's dates (after the
+	 * dates paragraph, so the left column keeps its width), and the
+	 * row's buttons stay the same as every other row's.
+	 *
+	 * @return void
+	 */
+	public function test_secondary_row_actions_render_under_the_dates() {
+		$this->seed_certificate();
+
+		add_filter(
+			'ppcert_my_certificates_row_actions',
+			static function ( $actions ) {
+				$actions['card'] = [
+					'label'     => 'Download wallet card',
+					'url'       => 'https://example.test/card.pdf',
+					'secondary' => true,
+				];
+
+				return $actions;
+			}
+		);
+
+		$html  = PressPrimer_Certificate_My_Certificates::render_shortcode();
+		$meta  = substr( $html, strpos( $html, '<p class="ppcert-my-certificates__meta">' ) );
+		$links = substr( $html, strpos( $html, '<span class="ppcert-my-certificates__links">' ) );
+
+		// Right after the dates paragraph, inside the left column.
+		$this->assertStringContainsString( '</p><span class="ppcert-more-links"><a class="ppcert-secondary-link" href="https://example.test/card.pdf">', $meta );
+		$this->assertLessThan( strpos( $meta, '<span class="ppcert-my-certificates__links">' ), strpos( $meta, 'ppcert-more-links' ) );
+		$this->assertStringNotContainsString( 'wallet card', $links, 'Never among the buttons' );
+		$this->assertStringContainsString( 'Download PDF', $links );
+	}
 }

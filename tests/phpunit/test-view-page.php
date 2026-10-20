@@ -412,6 +412,46 @@ class Test_View_Page extends TestCase {
 	}
 
 	/**
+	 * Secondary entries (2.1) render as quiet links on their own line
+	 * under the buttons, escaped, never among the buttons.
+	 *
+	 * @return void
+	 */
+	public function test_secondary_actions_render_under_the_buttons() {
+		$certificate                 = $this->certificate();
+		$this->preview_credentials[] = 'CRED00000042';
+
+		add_filter(
+			'ppcert_view_page_actions',
+			static function ( $actions ) {
+				$actions['card'] = [
+					'label'     => 'Download wallet card <i>now</i>',
+					'url'       => 'https://example.test/card.pdf',
+					'class'     => 'ppcert-educator-card-download',
+					'secondary' => true,
+				];
+
+				return $actions;
+			}
+		);
+
+		$html    = PressPrimer_Certificate_View_Page::render_content( $certificate );
+		$actions = substr( $html, strpos( $html, '<p class="ppcert-view__actions">' ) );
+		$buttons = substr( $actions, 0, strpos( $actions, '<span class="ppcert-more-links">' ) );
+		$more    = substr( $actions, strpos( $actions, '<span class="ppcert-more-links">' ) );
+
+		$this->assertStringContainsString( 'Download PDF', $buttons );
+		$this->assertStringNotContainsString( 'wallet card', $buttons, 'Never among the buttons' );
+		$this->assertStringContainsString( 'class="ppcert-secondary-link ppcert-educator-card-download" href="https://example.test/card.pdf"', $more );
+		$this->assertStringContainsString( 'Download wallet card &lt;i&gt;now&lt;/i&gt;', $more, 'Labels escape at output' );
+		$this->assertLessThan( strpos( $actions, '</p>' ), strpos( $actions, '<span class="ppcert-more-links">' ), 'Inside the action row' );
+
+		// Without secondary entries there is no line at all.
+		ppcert_tests_reset_hooks();
+		$this->assertStringNotContainsString( 'ppcert-more-links', PressPrimer_Certificate_View_Page::render_content( $certificate ) );
+	}
+
+	/**
 	 * A fake main query for the injector.
 	 *
 	 * @param string $credential Query var value.

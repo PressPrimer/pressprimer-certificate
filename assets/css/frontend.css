@@ -369,6 +369,47 @@
 	align-items: center;
 }
 
+/* Secondary links (2.1): extra downloads such as Educator's wallet card
+   sit on a line of their own inside the surface's container, so they
+   never change the width of the buttons beside them. */
+.ppcert-more-links {
+	display: flex;
+	flex-basis: 100%;
+	flex-wrap: wrap;
+	gap: var(--ppcert-space-xs) var(--ppcert-space-md);
+}
+
+.ppcert-secondary-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--ppcert-primary);
+	text-decoration: none;
+}
+
+.ppcert-secondary-link:visited {
+	color: var(--ppcert-primary);
+}
+
+.ppcert-secondary-link:hover,
+.ppcert-secondary-link:focus-visible {
+	color: var(--ppcert-primary-hover);
+	text-decoration: underline;
+}
+
+/* The download mark: an arrow over a baseline, in the link's color. */
+.ppcert-secondary-link::before {
+	content: "";
+	flex: none;
+	width: 0.875rem;
+	height: 0.875rem;
+	background-color: currentcolor;
+	-webkit-mask: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2016%2016%27%3E%3Cpath%20d=%27M8%201.75v8.5M4.5%206.75%208%2010.25l3.5-3.5M2.75%2013.75h10.5%27%20fill=%27none%27%20stroke=%27black%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E) center / contain no-repeat;
+	mask: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2016%2016%27%3E%3Cpath%20d=%27M8%201.75v8.5M4.5%206.75%208%2010.25l3.5-3.5M2.75%2013.75h10.5%27%20fill=%27none%27%20stroke=%27black%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E) center / contain no-repeat;
+}
+
 .ppcert-verify__actions {
 	margin-top: var(--ppcert-space-md);
 }
@@ -521,6 +562,15 @@
 	color: var(--ppcert-text);
 }
 
+/* A secondary link line (2.1) sits just under the dates. */
+.ppcert-my-certificates__meta:has(+ .ppcert-more-links) {
+	margin-bottom: 0;
+}
+
+.ppcert-my-certificates__item .ppcert-more-links {
+	margin-top: var(--ppcert-space-sm);
+}
+
 .ppcert-my-certificates__links {
 	display: flex;
 	gap: var(--ppcert-space-sm);
@@ -587,6 +637,12 @@
 		align-items: stretch;
 	}
 
+	/* In the stacked column the secondary line is a row of its own. */
+	.ppcert-view__actions .ppcert-more-links {
+		flex-basis: auto;
+		justify-content: center;
+	}
+
 	.ppcert-view__download,
 	.ppcert-view__verify,
 	.ppcert-button-primary,
@@ -602,6 +658,7 @@
 @media print {
 
 	.ppcert-view__actions,
+	.ppcert-more-links,
 	.ppcert-verify__actions,
 	.ppcert-certificate-link,
 	.ppcert-verify__form,
