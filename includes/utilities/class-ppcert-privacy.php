@@ -114,10 +114,10 @@ class PressPrimer_Certificate_Privacy {
 			[
 				__( 'Usage records', 'pressprimer-certificate' ),
 				sprintf(
-					/* translators: %d: number of days view and verification records are kept */
+					/* translators: %d: number of days verification records are kept */
 					_n(
-						'When a certificate is viewed, verified, or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. View and verification records are deleted after %d day; issue and download records are kept with the certificate.',
-						'When a certificate is viewed, verified, or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. View and verification records are deleted after %d days; issue and download records are kept with the certificate.',
+						'When a certificate is verified or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. Verification records are deleted after %d day; issue and download records are kept with the certificate.',
+						'When a certificate is verified or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. Verification records are deleted after %d days; issue and download records are kept with the certificate.',
 						$retention,
 						'pressprimer-certificate'
 					),
