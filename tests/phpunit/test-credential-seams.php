@@ -285,6 +285,97 @@ class Test_Credential_Seams extends TestCase {
 	}
 
 	/**
+	 * A supplied credential ID (2.1, Feature 2.1-004 FR-017): stored in
+	 * the stored form with its display, printed and verified like a
+	 * pattern ID, winning over the generator; bad and taken IDs are
+	 * refused before anything is written or announced; a suppressed
+	 * duplicate keeps its own ID, whatever ID the row supplied.
+	 *
+	 * @return void
+	 */
+	public function test_supplied_credential_id() {
+		$this->add_generator();
+
+		$id  = $this->issue( [ 'credential_id' => ' hr-lot-2024-001 ' ] );
+		$row = $this->row( $id );
+
+		$this->assertSame( 'HR10T2024001', $row['credential_id'], 'Stored normalized (I/L to 1, O to 0, no hyphens)' );
+		$this->assertSame( 'HR-LOT-2024-001', $row['credential_display'], 'Shown as supplied, uppercased' );
+		$this->assertSame( 'HR-LOT-2024-001', json_decode( $row['merge_data_json'], true )['certificate.credential_id'] );
+		$this->assertTrue( PressPrimer_Certificate_Credential_ID_Service::pattern_ids_in_use() );
+
+		foreach ( [ 'HR-LOT-2024-001', 'hr lot 2024 001', 'HR10T2024001' ] as $input ) {
+			$this->assertSame( 'valid', PressPrimer_Certificate_REST_Verification_Controller::lookup( $input )['status'], $input );
+		}
+
+		// A supplied ID without hyphens has no separate display form.
+		$plain = $this->row( $this->issue( [ 'credential_id' => 'EXT00017' ] ) );
+		$this->assertSame( 'EXT00017', $plain['credential_id'] );
+		$this->assertNull( $plain['credential_display'] );
+
+		// Taken: refused before anything is written or announced.
+		$announced = 0;
+		$listener  = static function () use ( &$announced ) {
+			++$announced;
+		};
+		add_action( 'ppcert_before_issue', $listener );
+
+		$count = count( $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() ) );
+		$taken = $this->issue( [ 'credential_id' => 'HR-L0T-2024-001' ] );
+		$this->assertInstanceOf( 'WP_Error', $taken );
+		$this->assertSame( 'ppcert_credential_id_taken', $taken->get_error_code(), 'The same ID once normalized' );
+		$this->assertSame( 'That credential ID is already used by another certificate.', $taken->get_error_message() );
+
+		// Breaking the rules.
+		foreach ( [ 'AB1', 'two  spaces', 'A--B-1234', 'id_with_underscore', '-LEADING1', str_repeat( 'A', 33 ), str_repeat( 'A1-', 14 ) . 'A' ] as $bad ) {
+			$refused = $this->issue( [ 'credential_id' => $bad ] );
+			$this->assertInstanceOf( 'WP_Error', $refused, $bad );
+			$this->assertSame( 'ppcert_credential_id_invalid', $refused->get_error_code(), $bad );
+		}
+
+		$this->assertCount( $count, $this->wpdb->rows( PressPrimer_Certificate_Certificate::table() ), 'Nothing written for a refused ID' );
+		remove_action( 'ppcert_before_issue', $listener );
+		$this->assertSame( 0, $announced, 'ppcert_before_issue never fires for a refused ID' );
+
+		// A duplicate the person already holds is suppressed with its own ID.
+		$first      = $this->issue( [ 'source_ref' => 'dup-1', 'credential_id' => 'DUP-0001' ] );
+		$suppressed = PressPrimer_Certificate_Issuance_Service::issue(
+			[
+				'template_id'   => $this->template_id,
+				'recipient_id'  => 7,
+				'source_type'   => 'ppq_quiz',
+				'source_ref'    => 'dup-1',
+				'issued_by'     => 1,
+				'credential_id' => 'DUP-0002',
+			]
+		);
+		$this->assertSame( $first, $suppressed );
+		$this->assertSame( 'DUP0001', $this->row( $first )['credential_id'] );
+
+		// Suppression comes first, so a holder is never refused over the ID.
+		foreach ( [ 'HR-LOT-2024-001', 'id_with_underscore' ] as $other ) {
+			$again = PressPrimer_Certificate_Issuance_Service::issue(
+				[
+					'template_id'   => $this->template_id,
+					'recipient_id'  => 7,
+					'source_type'   => 'ppq_quiz',
+					'source_ref'    => 'dup-1',
+					'issued_by'     => 1,
+					'credential_id' => $other,
+				]
+			);
+			$this->assertSame( $first, $again, $other );
+		}
+
+		// Blank: the usual ID (here the generator's).
+		$this->assertStringStartsWith( 'ACME', $this->row( $this->issue( [ 'credential_id' => '  ' ] ) )['credential_id'] );
+
+		// The rule check alone.
+		$this->assertSame( [ 'id' => 'ABCDEFGHJKMN', 'display' => 'ABCD-EFGH-JKMN' ], PressPrimer_Certificate_Credential_ID_Service::accept_supplied( 'abcd-efgh-jkmn' ) );
+		$this->assertInstanceOf( 'WP_Error', PressPrimer_Certificate_Credential_ID_Service::accept_supplied( [ 'x' ] ) );
+	}
+
+	/**
 	 * The generator runs once per insert attempt with the attempt number,
 	 * issued_at, and the template's issuer; a collision draws again.
 	 *

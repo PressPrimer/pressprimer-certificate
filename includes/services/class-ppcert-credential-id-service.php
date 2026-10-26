@@ -336,6 +336,42 @@ class PressPrimer_Certificate_Credential_ID_Service {
 	}
 
 	/**
+	 * Accept or reject a credential ID a caller supplies for one
+	 * certificate (2.1, Feature 2.1-004 FR-017: Educator's Bulk Award CSV
+	 * carries IDs from another system)
+	 *
+	 * The same rules as an addon's pattern ID (Decision 006 point 1): the
+	 * value as shown is at most 40 letters, digits, and single hyphens,
+	 * uppercased; its stored form (normalize()) is 4-32 characters of
+	 * [0-9A-Z]. Whether the ID is free is the issuer's check (the unique
+	 * key is the last word).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $input The ID as supplied.
+	 * @return array|WP_Error [ 'id' => stored form, 'display' => display form or '' ].
+	 */
+	public static function accept_supplied( $input ) {
+		$display = is_scalar( $input ) ? strtoupper( trim( (string) $input ) ) : '';
+		$id      = self::normalize( $display );
+
+		if ( '' === $display
+			|| strlen( $display ) > self::DISPLAY_MAX_LENGTH
+			|| ! preg_match( self::DISPLAY_SHAPE, $display )
+			|| ! preg_match( self::PATTERN_SHAPE, $id ) ) {
+			return new WP_Error(
+				'ppcert_credential_id_invalid',
+				__( 'A credential ID needs 4 to 32 letters and numbers, with single hyphens between groups (40 characters at most).', 'pressprimer-certificate' )
+			);
+		}
+
+		return [
+			'id'      => $id,
+			'display' => $display !== $id ? $display : '',
+		];
+	}
+
+	/**
 	 * Whether an ID is a core-format ID (shape and checksum)
 	 *
 	 * @since 2.1.0

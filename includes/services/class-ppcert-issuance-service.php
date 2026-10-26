@@ -91,6 +91,14 @@ class PressPrimer_Certificate_Issuance_Service {
 	 *     @type string $duplicate_scope 'source' (default: same source type and
 	 *                                   ref) or 'template' (any certificate from
 	 *                                   this template suppresses) (2.1).
+	 *     @type string $credential_id   This certificate's own credential ID, as
+	 *                                   it should be shown (2.1, Feature 2.1-004
+	 *                                   FR-017; Educator's Bulk Award CSV). It
+	 *                                   must pass Credential_ID_Service::
+	 *                                   accept_supplied() and be unused; it wins
+	 *                                   over the generated ID and the
+	 *                                   ppcert_credential_id filter. A suppressed
+	 *                                   duplicate keeps its own ID.
 	 * }
 	 * @return int|WP_Error Certificate row id (existing id when suppressed),
 	 *                      or WP_Error on abort.
@@ -220,6 +228,25 @@ class PressPrimer_Certificate_Issuance_Service {
 			}
 		}
 
+		// A supplied credential ID (2.1, Feature 2.1-004 FR-017), checked
+		// after suppression (a recipient who holds the certificate keeps it
+		// and its own ID) and before anything announces the issue: it must
+		// pass the ID rules and be unused (the unique key stays the last
+		// word at insert).
+		$supplied = null;
+
+		if ( isset( $args['credential_id'] ) && is_scalar( $args['credential_id'] ) && '' !== trim( (string) $args['credential_id'] ) ) {
+			$supplied = PressPrimer_Certificate_Credential_ID_Service::accept_supplied( $args['credential_id'] );
+
+			if ( is_wp_error( $supplied ) ) {
+				return $supplied;
+			}
+
+			if ( PressPrimer_Certificate_Certificate::get_by_credential_id( $supplied['id'] ) ) {
+				return self::credential_taken();
+			}
+		}
+
 		// Step 3: validation pipeline. A WP_Error aborts with no rows.
 		/** This filter is documented in docs/architecture/HOOKS.md */
 		$validation = apply_filters( 'ppcert_issue_validation', true, $context );
@@ -253,7 +280,7 @@ class PressPrimer_Certificate_Issuance_Service {
 		}
 
 		try {
-			$certificate_id = self::resolve_and_insert( $template, $context, $issued_at, $expires_at );
+			$certificate_id = self::resolve_and_insert( $template, $context, $issued_at, $expires_at, $supplied );
 		} catch ( \Throwable $e ) {
 			return new WP_Error(
 				'ppcert_issue_failed',
@@ -526,9 +553,11 @@ class PressPrimer_Certificate_Issuance_Service {
 	 * @param array       $context    Issuance context.
 	 * @param string      $issued_at  UTC issuance datetime.
 	 * @param string|null $expires_at UTC expiry datetime, or null for never.
+	 * @param array|null  $supplied   A supplied credential ID (accept_supplied()),
+	 *                                or null to generate one (2.1).
 	 * @return int|WP_Error New certificate row id.
 	 */
-	private static function resolve_and_insert( $template, $context, $issued_at, $expires_at = null ) {
+	private static function resolve_and_insert( $template, $context, $issued_at, $expires_at = null, $supplied = null ) {
 		global $wpdb;
 
 		$tokens   = self::template_tokens( $template, $context );
@@ -550,7 +579,9 @@ class PressPrimer_Certificate_Issuance_Service {
 			: null;
 
 		for ( $attempt = 1; $attempt <= self::MAX_INSERT_ATTEMPTS; $attempt++ ) {
-			list( $credential_id, $credential_display ) = self::credential_for_attempt( $template, $context, $issued_at, $attempt );
+			list( $credential_id, $credential_display ) = null !== $supplied
+				? [ $supplied['id'], $supplied['display'] ]
+				: self::credential_for_attempt( $template, $context, $issued_at, $attempt );
 
 			// Step 5: merge resolution with the candidate credential in
 			// context (Feature 002 FR-005); a pattern ID's display form
@@ -635,6 +666,17 @@ class PressPrimer_Certificate_Issuance_Service {
 				return $certificate_id;
 			}
 
+			// A supplied ID can't be redrawn: taken meanwhile (the unique
+			// key), or a failure no retry of the same row would fix.
+			if ( null !== $supplied ) {
+				return PressPrimer_Certificate_Certificate::get_by_credential_id( $supplied['id'] )
+					? self::credential_taken()
+					: new WP_Error(
+						'ppcert_insert_failed',
+						__( 'Certificate could not be written to the database.', 'pressprimer-certificate' )
+					);
+			}
+
 			// Insert failed: retry covers the unique-key collision case;
 			// anything persistent falls out after MAX_INSERT_ATTEMPTS.
 		}
@@ -642,6 +684,20 @@ class PressPrimer_Certificate_Issuance_Service {
 		return new WP_Error(
 			'ppcert_insert_failed',
 			__( 'Certificate could not be written to the database.', 'pressprimer-certificate' )
+		);
+	}
+
+	/**
+	 * The answer for a supplied credential ID another certificate holds
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return WP_Error
+	 */
+	private static function credential_taken() {
+		return new WP_Error(
+			'ppcert_credential_id_taken',
+			__( 'That credential ID is already used by another certificate.', 'pressprimer-certificate' )
 		);
 	}
 

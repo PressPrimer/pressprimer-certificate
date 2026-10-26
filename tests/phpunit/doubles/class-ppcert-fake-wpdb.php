@@ -645,6 +645,48 @@ class PPCert_Fake_WPDB {
 		}
 
 		// Bulk duplicate lookup (Educator batch preview, 2.0.1).
+		// Educator Bulk Award CSV credential IDs (2.1, E-012): which supplied
+		// IDs are taken, and issued certificates' IDs for the results.
+		if ( 'SELECT credential_id FROM %i WHERE FIND_IN_SET( credential_id, %s )' === $query ) {
+			$wanted = explode( ',', (string) $args[1] );
+
+			return array_values(
+				array_map(
+					static function ( $row ) {
+						return [ 'credential_id' => $row['credential_id'] ];
+					},
+					array_filter(
+						$rows,
+						static function ( $row ) use ( $wanted ) {
+							return in_array( (string) $row['credential_id'], $wanted, true );
+						}
+					)
+				)
+			);
+		}
+
+		if ( 'SELECT id, credential_id, credential_display FROM %i WHERE FIND_IN_SET( id, %s )' === $query ) {
+			$wanted = array_map( 'intval', explode( ',', (string) $args[1] ) );
+
+			return array_values(
+				array_map(
+					static function ( $row ) {
+						return [
+							'id'                 => $row['id'],
+							'credential_id'      => $row['credential_id'],
+							'credential_display' => isset( $row['credential_display'] ) ? $row['credential_display'] : null,
+						];
+					},
+					array_filter(
+						$rows,
+						static function ( $row ) use ( $wanted ) {
+							return in_array( (int) $row['id'], $wanted, true );
+						}
+					)
+				)
+			);
+		}
+
 		if ( "SELECT recipient_id, source_ref FROM %i WHERE template_id = %d AND source_type = %s AND status != 'revoked' AND FIND_IN_SET( recipient_id, %s )" === $query ) {
 			$template_id = (int) $args[1];
 			$source_type = (string) $args[2];
