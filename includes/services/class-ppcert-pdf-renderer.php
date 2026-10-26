@@ -189,11 +189,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 
 		$context = isset( $args['context'] ) ? (string) $args['context'] : 'download';
 
-		// wp_tempnam() lives in wp-admin/includes/file.php, which REST and
-		// front-end requests (preview route, email hooks) never load.
-		if ( ! function_exists( 'wp_tempnam' ) && defined( 'ABSPATH' ) && file_exists( ABSPATH . 'wp-admin/includes/file.php' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-		}
+		self::load_file_api();
 
 		$temp_path = wp_tempnam( 'ppcert-render' );
 
@@ -1038,9 +1034,7 @@ class PressPrimer_Certificate_PDF_Renderer {
 			return false;
 		}
 
-		if ( ! function_exists( 'wp_tempnam' ) && defined( 'ABSPATH' ) && file_exists( ABSPATH . 'wp-admin/includes/file.php' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-		}
+		self::load_file_api();
 
 		$png_path = wp_tempnam( 'ppcert-image' );
 
@@ -1462,6 +1456,23 @@ class PressPrimer_Certificate_PDF_Renderer {
 	}
 
 	/**
+	 * Load wp-admin/includes/file.php when wp_tempnam() is missing
+	 *
+	 * The temp-file function lives there, and REST and front-end requests
+	 * (the preview route, the certificate page, email hooks) never load
+	 * it. Every temp-file path of the renderer calls this first.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return void
+	 */
+	private static function load_file_api() {
+		if ( ! function_exists( 'wp_tempnam' ) && defined( 'ABSPATH' ) && file_exists( ABSPATH . 'wp-admin/includes/file.php' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+	}
+
+	/**
 	 * Rasterize one PDF page with Imagick
 	 *
 	 * @since 1.0.0
@@ -1480,6 +1491,8 @@ class PressPrimer_Certificate_PDF_Renderer {
 			$imagick->setImageBackgroundColor( '#ffffff' );
 			$imagick->setImageAlphaChannel( \Imagick::ALPHACHANNEL_REMOVE );
 			$imagick->setImageFormat( 'png24' );
+
+			self::load_file_api();
 
 			$png_path = wp_tempnam( 'ppcert-raster' );
 
@@ -1511,6 +1524,12 @@ class PressPrimer_Certificate_PDF_Renderer {
 	 * @return string|WP_Error PNG temp path.
 	 */
 	private function gd_rasterize( $layout, $merge_data, $args, $dpi, $elements = null ) {
+		// Hosts without Imagick land here from front-end requests (the
+		// certificate page's preview, Educator's social image, Enterprise's
+		// badge image), which never load wp_tempnam() (2.1 fix: the page
+		// died on GD-only hosts since 2.0.0).
+		self::load_file_api();
+
 		if ( null === $elements ) {
 			$pages    = PressPrimer_Certificate_Layout_Validator::layout_pages( $layout );
 			$elements = $pages[0];

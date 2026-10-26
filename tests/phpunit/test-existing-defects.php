@@ -6,8 +6,11 @@
  * failing on 2.0.2: the trigger routes' per-template check (FR-001),
  * uninstall's upload folders and option order (FR-002), one render per
  * temp file (FR-003), revoked certificates never re-sent (FR-004), the
- * eraser clearing the person as an actor (FR-007), and the test
- * harness's update_option() following core.
+ * eraser clearing the person as an actor (FR-007), the test
+ * harness's update_option() following core, and (found in the
+ * Enterprise 2.1 Open Badges compatibility pass) the renderer loading
+ * wp_tempnam() on every temp-file path, so the certificate page works
+ * on hosts without Imagick.
  *
  * @package PressPrimer_Certificate
  * @subpackage Tests
@@ -403,5 +406,89 @@ class Test_Existing_Defects extends TestCase {
 
 		$this->assertTrue( update_option( 'ppcert_list', [ 'a' => 1 ] ) );
 		$this->assertFalse( update_option( 'ppcert_list', [ 'a' => 1 ] ), 'An equal array: no write' );
+	}
+
+	/**
+	 * Every renderer method that makes a temp file loads
+	 * wp-admin/includes/file.php first. Front-end requests never load
+	 * it, and before 2.1 the raster paths (Imagick's and both GD paths)
+	 * called wp_tempnam() without it: on hosts without Imagick the public
+	 * certificate page died rendering its preview (and Educator's social
+	 * image) since 2.0.0. The harness always defines wp_tempnam(), so
+	 * this checks the source: in each method, the loader comes before
+	 * the first wp_tempnam() call. No other free file calls wp_tempnam()
+	 * without the same guard.
+	 *
+	 * @return void
+	 */
+	public function test_temp_files_load_the_file_api_first() {
+		$file   = PPCERT_PLUGIN_DIR . 'includes/services/class-ppcert-pdf-renderer.php';
+		$tokens = token_get_all( (string) file_get_contents( $file ) );
+		$checked = [];
+
+		foreach ( $tokens as $index => $token ) {
+			if ( ! is_array( $token ) || T_FUNCTION !== $token[0] ) {
+				continue;
+			}
+
+			// The method's name, then its body between matching braces.
+			$name = '';
+
+			for ( $i = $index + 1; '' === $name && isset( $tokens[ $i ] ); $i++ ) {
+				if ( is_array( $tokens[ $i ] ) && T_STRING === $tokens[ $i ][0] ) {
+					$name = $tokens[ $i ][1];
+				}
+			}
+
+			while ( isset( $tokens[ $i ] ) && '{' !== $tokens[ $i ] && ';' !== $tokens[ $i ] ) {
+				++$i;
+			}
+
+			if ( ! isset( $tokens[ $i ] ) || ';' === $tokens[ $i ] ) {
+				continue;
+			}
+
+			$depth = 0;
+			$body  = '';
+
+			for ( ; isset( $tokens[ $i ] ); $i++ ) {
+				// Code only: comments may mention wp_tempnam().
+				if ( is_array( $tokens[ $i ] ) && in_array( $tokens[ $i ][0], [ T_COMMENT, T_DOC_COMMENT ], true ) ) {
+					continue;
+				}
+
+				$text  = is_array( $tokens[ $i ] ) ? $tokens[ $i ][1] : $tokens[ $i ];
+				$body .= $text;
+
+				if ( '{' === $text || ( is_array( $tokens[ $i ] ) && in_array( $tokens[ $i ][0], [ T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ], true ) ) ) {
+					++$depth;
+				} elseif ( '}' === $text && 0 === --$depth ) {
+					break;
+				}
+			}
+
+			$call = strpos( $body, 'wp_tempnam(' );
+
+			if ( false === $call ) {
+				continue;
+			}
+
+			$loader = strpos( $body, 'self::load_file_api();' );
+
+			$this->assertNotFalse( $loader, "$name makes a temp file without loading the file API" );
+			$this->assertLessThan( $call, $loader, "$name loads the file API after its first wp_tempnam()" );
+			$checked[] = $name;
+		}
+
+		sort( $checked );
+		$this->assertSame( [ 'gd_rasterize', 'imagick_raster', 'render_document', 'transcode_to_png' ], $checked, 'Every temp-file method was found and checked' );
+
+		foreach ( glob( PPCERT_PLUGIN_DIR . 'includes/{,*/}*.php', GLOB_BRACE ) as $other ) {
+			$source = (string) file_get_contents( $other );
+
+			if ( $other !== $file && false !== strpos( $source, 'wp_tempnam(' ) ) {
+				$this->assertStringContainsString( "wp-admin/includes/file.php'", $source, basename( $other ) . ' calls wp_tempnam() without loading the file API' );
+			}
+		}
 	}
 }
