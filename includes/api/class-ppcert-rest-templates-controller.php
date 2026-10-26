@@ -257,7 +257,7 @@ class PressPrimer_Certificate_REST_Templates_Controller {
 			[
 				'success' => true,
 				'message' => sprintf(
-					/* translators: %s: the current user's email address */
+					/* translators: %s: the address the test was sent to */
 					__( 'Test email sent to %s.', 'pressprimer-certificate' ),
 					(string) $user->user_email
 				),

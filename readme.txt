@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
 Tested up to: 7.1
-Stable tag: 2.0.2
+Stable tag: 2.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -45,7 +45,8 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 
 **Design Defaults**
 
-* Site-wide defaults for certificate size (Letter or A4), font, logo, and signature
+* Letter, A4, Legal, and A3 page sizes, in portrait or landscape
+* Site-wide defaults for certificate size, font, logo, and signature
 * Brand colors (primary, accent, text) that starter templates apply automatically
 
 **Issuance & Automation**
@@ -57,7 +58,7 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Validity periods: set how long certificates from a template stay valid (days, months, or years), pick an exact expiry date, or let them last forever
 * Per-trigger control over repeat completions: suppress duplicates or issue a fresh certificate every time (for compliance and recertification courses)
 * Revoke certificates and reinstate them if revoked by mistake
-* Send yourself a template's award email with sample values before it goes live
+* PressPrimer Assignment triggers can require a minimum grade percentage, a minimum score in points, or both
 
 **Credentials & Verification**
 
@@ -76,10 +77,17 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Dashboard with certificate statistics, an awarded-over-time chart, quick actions, and recent certificates
 * A guided setup tour that walks you from a starter template to your first issued certificate in five minutes
 * Certificates screen with search by recipient, certificate name, or exact credential ID, and template, status, source, and issue-date filters
-* Resend a certificate's email with one click
-* Certificate merge fields in the email subject and body, so the email can name the exact course or quiz that was completed
+* Bulk actions: revoke, reinstate, resend, or delete the certificates you check, or every certificate matching your filters, with a progress bar and a summary of anything skipped
 * Earned certificates listed on each user's profile page with verify and download links
 * Certificate templates list with trigger, page size, and status columns
+
+**Email**
+
+* Branded HTML certificate emails: your logo or site name at the top, the message in a clean white card, and the certificate PDF attached
+* A formatted message editor (bold, italics, lists, and links) and a View Certificate button
+* Certificate merge fields in the email subject and body, so the email can name the exact course or quiz that was completed
+* Send a test email to any address, or send yourself a template's award email with sample values before it goes live
+* Resend a certificate's email with one click
 
 **Security, Privacy & Accessibility**
 
@@ -97,7 +105,12 @@ Everything above is free on WordPress.org. Optional add-ons from [pressprimer.co
 
 * **Custom Fonts** – Upload your brand's TTF fonts; they appear in every designer font control and render identically on screen and in the PDF.
 * **Multi-Page Certificates** – Add, duplicate, and reorder pages in the designer; every page renders in the PDF.
-* **Bulk Awarding** – Award a certificate to many recipients at once from a user list or a CSV, with a full per-row preview before anything sends.
+* **Bulk Awarding** – Award a certificate to many recipients at once from a user list or a CSV, with a full per-row preview before anything sends; a CSV can give each certificate its own credential ID.
+* **Wallet Cards** – A credit-card or business-card size card designed in the same designer and issued with every certificate, as a card PDF or a print sheet with cut marks.
+* **Custom Page Sizes** – Any width and height from 1 to 24 inches.
+* **Email Templates** – As many named award and expiry reminder emails as you need, chosen for each certificate template.
+* **Brand Kit** – Up to 10 brands, each with its colors, fonts, and logos, offered first in the designer, with Replace Colors to recolor a design in one step.
+* **One-Off Certificates** – Issue a certificate to anyone by name and email, with no account or course needed.
 * **Expiry Reminder Emails** – Remind recipients before their certificate expires, on a schedule you control, with an editable message and a test send.
 * **Branded Verification Page** – Your logo, accent color, intro line, and footer on the public verification page, with a live preview.
 * **Social Sharing** – One-click LinkedIn add-to-profile, share composers for LinkedIn, X, and Facebook, copy link, and link previews that show the certificate itself.
@@ -108,13 +121,16 @@ Everything above is free on WordPress.org. Optional add-ons from [pressprimer.co
 * **Public Registry** – An issuer profile page and per-credential program pages with a sample certificate image and earner count.
 * **Credential Directory** – A searchable public directory of credential holders, listed according to your site policy and per-certificate consent.
 * **Organization-Branded Verification** – The verification page carries the issuing organization's logo, accent color, intro, and footer.
-* **Award Past Completions** – Find everyone who completed a course, lesson, quiz, or assignment before the trigger existed, preview every row, and award them in one run.
+* **Award Past Completions** – Find everyone who completed a course, lesson, quiz, or assignment before the trigger existed, in the dates you choose, preview every row, and award them in one run, each certificate dated to its completion.
+* **Credential ID Formats** – Each organization's own ID format, like ACME-2026-00042, that never reuses a number and verifies however it is typed.
+* **Organization Brands and Emails** – Choose which of the site's brands and emails each organization's templates can use, and let owners manage their organizations' certificates in bulk.
 * **Email Copies** – Per-template CC and BCC on award emails, plus optional copies to LearnDash Group Leaders and PressPrimer Teachers.
 
 **Enterprise** *(everything in School, plus)*
 
 * **Audit Log** – A single, filterable record of who did what and when across the suite, with per-category retention controls and CSV export.
-* **White Label** – Run the certificate system under your own brand across the admin, every email, new PDFs, and the public verification page.
+* **Open Badges 3.0** – Every certificate can also be a signed Open Badges 3.0 credential that learners add to a digital wallet or share as a badge image (PHP 8.2 or later).
+* **White Label** – Run the certificate system under your own brand: the admin menu, dashboard, and logos, email footers, PDF document details, and custom admin styles.
 * **Verification API and Embeddable Widget** – A key-authenticated JSON endpoint that answers what the verification page shows, and a drop-in widget partners paste into their own pages.
 
 = Perfect For =
@@ -131,7 +147,7 @@ PressPrimer Certificate automatically detects and integrates with:
 
 **PressPrimer Quiz:** Award a certificate when a learner passes a quiz, with quiz score and title merge fields.
 
-**PressPrimer Assignment:** Award a certificate when an assignment is graded and passed, with grade and assignment merge fields.
+**PressPrimer Assignment:** Award a certificate when an assignment is graded and passed, optionally with a minimum grade or score in points, with grade, points, and assignment merge fields.
 
 **LearnDash:** Award on course, lesson, topic, or quiz completion, with associated merge fields.
 
@@ -190,10 +206,10 @@ Issued certificates are public to anyone who has the link or the credential ID. 
 
 The plugin integrates with the WordPress Privacy API:
 
-* **Tools > Export Personal Data** includes all certificates issued to the requested user.
-* **Tools > Erase Personal Data** permanently deletes the requested user's certificates.
+* **Tools > Export Personal Data** includes all certificates issued to the requested person, including certificates issued to their email address without a site account.
+* **Tools > Erase Personal Data** permanently deletes those certificates and removes the person from activity records on other certificates.
 
-Verification and view events are stored without IP addresses or user agents, and prunable event rows are cleaned up on a configurable retention schedule. Administrators can permanently delete all plugin data via Settings > Advanced > "Remove all data on uninstall" before uninstalling the plugin.
+Verification and download events are stored without IP addresses or user agents, and verification records are cleaned up on a configurable retention schedule. Administrators can permanently delete all plugin data via Settings > Advanced > "Remove all data on uninstall" before uninstalling the plugin.
 
 == External Services ==
 
@@ -265,7 +281,15 @@ Certificate PDFs are generated with AES-256 protection that denies editing, so A
 
 = What page sizes do certificates use? =
 
-Letter and A4, in landscape or portrait. Every starter design ships in both sizes, and the PDF renders at print quality from the same layout you see on the canvas.
+Letter, A4, Legal, and A3, in landscape or portrait. Choose a template's size in the designer's Size menu, and the site's default size under Settings > Appearance. Every starter design ships in Letter and A4; with A3 or Legal as your default, the starter gallery picks the matching designs and you switch the size in the designer. The PDF renders at print quality from the same layout you see on the canvas. The Educator add-on adds custom sizes.
+
+= Can I change how certificate emails look? =
+
+Yes. Certificate emails are HTML: your email logo (or your site name) at the top, the message in a white card, and a footer naming your site, with the certificate PDF attached. Under Settings > Email, choose the logo, write the message with bold, italics, lists, and links, add a View Certificate button with the {certificate_button} token, and send a test to any address to check it in Gmail, Outlook, or any other email app. Recipient names and certificate titles always appear as plain text.
+
+= Can I revoke or delete many certificates at once? =
+
+Yes. On the Certificates screen, check the certificates you want, or check them all and choose "Select all certificates that match these filters", then pick Revoke, Reinstate, Resend email, or Delete from Bulk actions. A progress bar shows the work as it runs, and a summary lists anything skipped and why. Deleting every certificate that matches a filter asks you to type DELETE first. If you close the page partway, the Certificates screen offers to resume or discard the rest.
 
 == Screenshots ==
 
@@ -276,6 +300,48 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 5. The My Certificates page where learners view, verify, and download their certificates
 
 == Changelog ==
+
+= 2.1.0 =
+* Added: Certificate emails are branded HTML, with your email logo or site name at the top, the message in a white card, and a footer naming your site, matching PressPrimer Assignment's emails. Award, resend, test, and reminder emails all use it, and the PDF is still attached
+* Added: A View Certificate button in certificate emails: the new {certificate_button} token, included in the default email
+* Added: Settings > Email has an email logo, a formatted message editor with bold, italics, lists, and links, and test emails to any address
+* Added: A3 and Legal page sizes, in the designer and as the default certificate size under Settings > Appearance
+* Added: Bulk actions on the Certificates screen: revoke with one reason, reinstate, resend email, or delete the certificates you check, with a progress bar and a summary of anything skipped and why
+* Added: Bulk actions can apply to every certificate matching the current search and filters, not just the ones on the page; deleting them all asks you to type DELETE first
+* Added: A bulk action interrupted by closing the page can be resumed or discarded from the Certificates screen
+* Added: PressPrimer Assignment triggers can require a minimum score in points, alongside or instead of a minimum grade percentage
+* Added: A Score (Points) merge field prints an assignment grade as points earned of points possible, such as 62 / 65
+* Added: The designer explains the dashed safe-print line around the page
+* Added: A one-time request for feedback after 50 certificates; dismiss it for good or postpone it for 30 days. It never appears under white-label branding
+* Added: Support for the Educator, School, and Enterprise 2.1 add-ons, including certificates for people without a site account, credential ID formats and IDs from a spreadsheet, wallet cards, email templates, and brand kits
+* Improved: Certificate pages and public PDF downloads are rate limited per visitor, and certificate preview images use file names that can't be guessed from the credential ID
+* Improved: PDF downloads and email attachments share one file name, such as certificate-ab12-cd34-ef56.pdf
+* Improved: The designer's "Changed elsewhere" notice explains what can cause a save conflict and when the other save happened, and offers Reload
+* Improved: With A3 or Legal as the default size, the starter gallery preselects the matching A4 or Letter designs and explains how to change the size
+* Improved: Switching a design to a different page size keeps text, line thickness, and corner radius within their limits, so the design saves exactly as shown
+* Improved: Downloaded PDFs record the recipient's name in their document properties, matching the emailed copy
+* Improved: Saving a template while an add-on is inactive keeps that add-on's settings and design data
+* Changed: Clearing the From address on Settings > Email now sends from the site's administration email, and an invalid address shows an error when you save instead of being ignored
+* Changed: For developers, `ppcert_email_content` now carries the full HTML email; return 'text' from the new `ppcert_email_format` filter to send plain-text emails as in 2.0
+* Changed: For developers, new extension points for add-ons and integrations: `ppcert_issue_certificate()` arguments for recipients without an account, merge overrides, duplicate scope, and a supplied credential ID; duplicate-suppression refs as lists; and filters and actions for page sizes, credential IDs, email templates, render variants, bulk actions, certificate permissions, and deletion
+* Fixed: Thin horizontal and vertical lines, including the rules and signature lines in the starter templates, draw perfectly straight on the canvas, in PDFs, and in certificate images
+* Fixed: The certificate page shows the recipient's name as it was issued, not their current account name
+* Fixed: Award triggers can only be viewed or changed by people allowed to edit that template; with PressPrimer Certificate School, organization members could reach the triggers of another organization's templates and site templates
+* Fixed: A revoked certificate can no longer be emailed again, even from an old Resend link
+* Fixed: Erasing a person's data with WordPress's privacy tools also removes them from activity records on other people's certificates
+* Fixed: "Remove all data on uninstall" also removes certificate page previews and the font cache
+* Fixed: Two downloads or emails of the same certificate at the same moment no longer interfere with each other
+* Fixed: Certificate pages load on servers without the Imagick extension
+* Fixed: The verification page picker in Settings searches every published page, and a chosen page is no longer reported as deleted on sites with many pages
+* Fixed: Certificate links work on sites that use plain permalinks
+* Fixed: Certificate pages give themes that print a post date the correct local date
+* Fixed: Deactivating the plugin removes the certificate page addresses until it is activated again
+* Fixed: The "verification page deleted" notice shows only to people who can change settings
+* Fixed: Duplicated templates keep their settings; award triggers are still not copied
+* Fixed: The designer's merge-field samples from user meta always show your own values, not another administrator's
+* Fixed: The verification rate limit's time window no longer extends with every request
+* Fixed: The "Changed elsewhere" notice no longer opens under the WordPress admin bar
+* Fixed: The suggested privacy policy text describes the records the plugin keeps: verifications and downloads, not page views
 
 = 2.0.2 =
 * Fixed: On sites using LiteSpeed Cache with REST API caching, the template editor and other PressPrimer Certificate screens no longer load an outdated cached copy, which caused a false "Changed elsewhere" warning when saving a template
@@ -328,6 +394,9 @@ Letter and A4, in landscape or portrait. Every starter design ships in both size
 * Initial release: certificate designer, credential IDs, QR verification, automatic issuance from PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, and LearnPress, email delivery, and a public verification page.
 
 == Upgrade Notice ==
+
+= 2.1.0 =
+Branded HTML emails with a View Certificate button, A3 and Legal page sizes, bulk actions on the Certificates screen, and points minimums for Assignment triggers, plus security and privacy fixes. Existing certificates and templates are unchanged.
 
 = 2.0.2 =
 Fixes a false "Changed elsewhere" warning when saving templates on sites using LiteSpeed Cache, and helps certificates with large custom fonts render on hosts with a low memory limit. Nothing else changes.

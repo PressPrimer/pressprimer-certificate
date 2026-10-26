@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Certificate 2.0.2\n"
+"Project-Id-Version: PressPrimer Certificate 2.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-certificate\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-13T14:22:54+00:00\n"
+"POT-Creation-Date: 2026-10-26T19:05:46+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -20,6 +20,7 @@ msgstr ""
 #: includes/admin/class-ppcert-admin.php:291
 #: includes/admin/class-ppcert-admin.php:356
 #: includes/admin/class-ppcert-onboarding.php:346
+#: includes/admin/class-ppcert-review-notice.php:126
 #: includes/utilities/class-ppcert-privacy.php:76
 #: src/onboarding/components/Tooltip.jsx:176
 msgid "PressPrimer Certificate"
@@ -50,93 +51,152 @@ msgstr ""
 msgid "You are not allowed to revoke certificates."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:79
-#: includes/admin/class-ppcert-admin-certificates.php:129
-#: includes/admin/class-ppcert-admin-certificates.php:177
-#: includes/admin/class-ppcert-admin-certificates.php:223
-#: includes/admin/class-ppcert-admin-certificates.php:465
-msgid "This certificate is outside your issuing organizations."
-msgstr ""
-
-#: includes/admin/class-ppcert-admin-certificates.php:120
+#: includes/admin/class-ppcert-admin-certificates.php:118
 msgid "You are not allowed to reinstate certificates."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:168
+#: includes/admin/class-ppcert-admin-certificates.php:164
 msgid "You are not allowed to delete certificates."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:214
+#: includes/admin/class-ppcert-admin-certificates.php:208
 msgid "You are not allowed to resend certificate emails."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:248
-#: includes/admin/class-ppcert-admin-certificates.php:249
-#: includes/admin/class-ppcert-admin-certificates.php:266
+#: includes/admin/class-ppcert-admin-certificates.php:264
+#: includes/admin/class-ppcert-admin-certificates.php:610
+msgid "This certificate is outside your issuing organizations."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:268
+msgid "You are not allowed to revoke this certificate."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:269
+msgid "You are not allowed to reinstate this certificate."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:270
+msgid "You are not allowed to delete this certificate."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:271
+msgid "You are not allowed to resend this certificate's email."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:285
+#: includes/admin/class-ppcert-admin-certificates.php:286
+#: includes/admin/class-ppcert-admin-certificates.php:303
 #: includes/admin/class-ppcert-admin.php:292
 #: includes/utilities/class-ppcert-privacy.php:107
-#: includes/utilities/class-ppcert-privacy.php:266
+#: includes/utilities/class-ppcert-privacy.php:261
 #: src/settings/components/StatusTab.jsx:536
 msgid "Certificates"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:273
+#: includes/admin/class-ppcert-admin-certificates.php:310
 #: src/issue/index.js:166
 msgid "Issue Certificate"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:286
+#: includes/admin/class-ppcert-admin-certificates.php:323
 msgid "Certificate revoked. It now verifies as invalid and its PDF download is disabled. Use Reinstate to undo."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:287
+#: includes/admin/class-ppcert-admin-certificates.php:324
 msgid "The certificate could not be revoked."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:298
+#: includes/admin/class-ppcert-admin-certificates.php:335
 msgid "Certificate reinstated. It verifies as valid again."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:299
+#: includes/admin/class-ppcert-admin-certificates.php:336
 msgid "The certificate could not be reinstated."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:310
+#: includes/admin/class-ppcert-admin-certificates.php:347
 msgid "Certificate permanently deleted. Its credential ID no longer verifies."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:311
+#: includes/admin/class-ppcert-admin-certificates.php:348
 msgid "The certificate could not be deleted."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:322
-msgid "Certificate email sent to the recipient."
-msgstr ""
-
-#: includes/admin/class-ppcert-admin-certificates.php:323
+#: includes/admin/class-ppcert-admin-certificates.php:358
 msgid "The certificate email could not be sent. Check that the recipient has a valid email address."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:334
+#: includes/admin/class-ppcert-admin-certificates.php:359
+msgid "Certificate email sent to the recipient."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:360
+#: includes/services/class-ppcert-bulk-action-service.php:603
+msgid "This certificate is revoked, so it can't be resent."
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:378
 msgid "Search certificates"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:336
+#: includes/admin/class-ppcert-admin-certificates.php:380
 msgid "Search matches recipient name or email, a full credential ID, and certificate titles."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:459
+#: includes/admin/class-ppcert-admin-certificates.php:417
+msgid "Resume"
+msgstr ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:419
+#: assets/js/ppcert-admin.js:563
+msgid "Discard"
+msgstr ""
+
+#. translators: 1: certificates processed, 2: certificates in the job.
+#: includes/admin/class-ppcert-admin-certificates.php:438
+#, php-format
+msgid "A bulk reinstate stopped at %1$s of %2$s certificate."
+msgid_plural "A bulk reinstate stopped at %1$s of %2$s certificates."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: emails processed, 2: emails in the job.
+#: includes/admin/class-ppcert-admin-certificates.php:443
+#, php-format
+msgid "A bulk email resend stopped at %1$s of %2$s certificate."
+msgid_plural "A bulk email resend stopped at %1$s of %2$s certificates."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: certificates processed, 2: certificates in the job.
+#: includes/admin/class-ppcert-admin-certificates.php:448
+#, php-format
+msgid "A bulk delete stopped at %1$s of %2$s certificate."
+msgid_plural "A bulk delete stopped at %1$s of %2$s certificates."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: certificates processed, 2: certificates in the job.
+#: includes/admin/class-ppcert-admin-certificates.php:453
+#, php-format
+msgid "A bulk revoke stopped at %1$s of %2$s certificate."
+msgid_plural "A bulk revoke stopped at %1$s of %2$s certificates."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppcert-admin-certificates.php:604
 msgid "You are not allowed to download certificates."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-certificates.php:469
+#: includes/admin/class-ppcert-admin-certificates.php:614
 #: includes/api/class-ppcert-rest-certificates-controller.php:249
-#: includes/api/class-ppcert-rest-certificates-controller.php:441
-#: includes/models/class-ppcert-certificate.php:393
-#: includes/models/class-ppcert-certificate.php:454
-#: includes/models/class-ppcert-certificate.php:516
-#: includes/models/class-ppcert-certificate.php:578
-#: includes/services/class-ppcert-pdf-renderer.php:218
+#: includes/api/class-ppcert-rest-certificates-controller.php:459
+#: includes/models/class-ppcert-certificate.php:494
+#: includes/models/class-ppcert-certificate.php:574
+#: includes/models/class-ppcert-certificate.php:636
+#: includes/models/class-ppcert-certificate.php:900
+#: includes/services/class-ppcert-pdf-renderer.php:302
 msgid "Certificate not found."
 msgstr ""
 
@@ -151,125 +211,128 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-settings.php:158
-#: src/settings/components/SettingsPage.jsx:62
+#: includes/admin/class-ppcert-admin-settings.php:166
+#: src/settings/components/SettingsPage.jsx:65
 msgid "General"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-settings.php:162
-#: src/settings/components/SettingsPage.jsx:69
+#: includes/admin/class-ppcert-admin-settings.php:170
+#: src/settings/components/SettingsPage.jsx:72
 msgid "Appearance"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-settings.php:166
-#: includes/services/class-ppcert-merge-field-registry.php:538
-#: src/settings/components/SettingsPage.jsx:76
+#: includes/admin/class-ppcert-admin-settings.php:174
+#: includes/services/class-ppcert-merge-field-registry.php:572
+#: src/settings/components/SettingsPage.jsx:79
 msgid "Email"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-settings.php:170
+#: includes/admin/class-ppcert-admin-settings.php:178
 #: includes/admin/class-ppcert-admin-user-profile.php:160
-#: includes/admin/class-ppcert-certificates-list-table.php:67
+#: includes/admin/class-ppcert-certificates-list-table.php:79
 #: includes/admin/class-ppcert-templates-list-table.php:96
-#: includes/utilities/class-ppcert-privacy.php:235
+#: includes/utilities/class-ppcert-privacy.php:230
 #: src/dashboard/components/RecentCertificates.jsx:132
-#: src/settings/components/SettingsPage.jsx:83
+#: src/settings/components/SettingsPage.jsx:86
 #: src/settings/components/StatusTab.jsx:706
 msgid "Status"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-settings.php:174
-#: src/settings/components/SettingsPage.jsx:90
+#: includes/admin/class-ppcert-admin-settings.php:182
+#: src/settings/components/SettingsPage.jsx:93
 msgid "Advanced"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-settings.php:463
+#: includes/admin/class-ppcert-admin-settings.php:497
 msgid "You are not allowed to repair tables."
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-settings.php:473
+#: includes/admin/class-ppcert-admin-settings.php:507
 msgid "Database tables repaired."
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:150
-#: includes/admin/class-ppcert-certificates-list-table.php:68
-#: includes/admin/class-ppcert-certificates-list-table.php:199
-#: includes/admin/class-ppcert-certificates-list-table.php:524
-#: includes/admin/class-ppcert-certificates-list-table.php:591
-#: includes/frontend/class-ppcert-verification-page.php:97
-#: includes/frontend/class-ppcert-verification-page.php:284
-#: includes/frontend/class-ppcert-view-page.php:282
-#: includes/utilities/class-ppcert-privacy.php:239
+#: includes/admin/class-ppcert-certificates-list-table.php:80
+#: includes/admin/class-ppcert-certificates-list-table.php:232
+#: includes/admin/class-ppcert-certificates-list-table.php:393
+#: includes/admin/class-ppcert-certificates-list-table.php:753
+#: includes/admin/class-ppcert-certificates-list-table.php:820
+#: includes/frontend/class-ppcert-verification-page.php:102
+#: includes/frontend/class-ppcert-verification-page.php:289
+#: includes/frontend/class-ppcert-view-page.php:364
+#: includes/utilities/class-ppcert-privacy.php:234
 #: src/dashboard/components/RecentCertificates.jsx:62
 msgid "Issued"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:151
-#: includes/admin/class-ppcert-certificates-list-table.php:200
-#: includes/admin/class-ppcert-certificates-list-table.php:525
-#: includes/admin/class-ppcert-certificates-list-table.php:592
-#: includes/frontend/class-ppcert-my-certificates.php:268
+#: includes/admin/class-ppcert-certificates-list-table.php:233
+#: includes/admin/class-ppcert-certificates-list-table.php:394
+#: includes/admin/class-ppcert-certificates-list-table.php:754
+#: includes/admin/class-ppcert-certificates-list-table.php:821
+#: includes/frontend/class-ppcert-my-certificates.php:269
 #: src/dashboard/components/RecentCertificates.jsx:70
 msgid "Revoked"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:152
-#: includes/admin/class-ppcert-certificates-list-table.php:201
-#: includes/admin/class-ppcert-certificates-list-table.php:526
-#: includes/admin/class-ppcert-certificates-list-table.php:593
+#: includes/admin/class-ppcert-certificates-list-table.php:234
+#: includes/admin/class-ppcert-certificates-list-table.php:395
+#: includes/admin/class-ppcert-certificates-list-table.php:755
+#: includes/admin/class-ppcert-certificates-list-table.php:822
 #: includes/frontend/class-ppcert-my-certificates.php:186
-#: includes/frontend/class-ppcert-my-certificates.php:267
-#: includes/frontend/class-ppcert-my-certificates.php:295
-#: includes/frontend/class-ppcert-verification-page.php:99
-#: includes/frontend/class-ppcert-verification-page.php:277
-#: includes/frontend/class-ppcert-view-page.php:275
+#: includes/frontend/class-ppcert-my-certificates.php:268
+#: includes/frontend/class-ppcert-my-certificates.php:296
+#: includes/frontend/class-ppcert-verification-page.php:104
+#: includes/frontend/class-ppcert-verification-page.php:282
+#: includes/frontend/class-ppcert-view-page.php:357
 #: src/dashboard/components/RecentCertificates.jsx:66
 msgid "Expired"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:155
-#: includes/frontend/class-ppcert-verification-page.php:397
+#: includes/frontend/class-ppcert-verification-page.php:408
 #: includes/utilities/class-ppcert-privacy.php:173
 #: includes/utilities/class-ppcert-privacy.php:190
 msgid "PressPrimer Certificates"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:158
-#: includes/admin/class-ppcert-certificates-list-table.php:63
-#: includes/frontend/class-ppcert-verification-page.php:139
-#: includes/frontend/class-ppcert-view-page.php:281
-#: includes/services/class-ppcert-merge-field-registry.php:552
-#: includes/utilities/class-ppcert-privacy.php:223
+#: includes/admin/class-ppcert-certificates-list-table.php:75
+#: includes/frontend/class-ppcert-verification-page.php:144
+#: includes/frontend/class-ppcert-view-page.php:363
+#: includes/services/class-ppcert-merge-field-registry.php:586
+#: includes/utilities/class-ppcert-privacy.php:218
 #: src/dashboard/components/RecentCertificates.jsx:112
 msgid "Credential ID"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:159
-#: includes/frontend/class-ppcert-verification-page.php:95
-#: includes/frontend/class-ppcert-verification-page.php:282
-#: includes/frontend/class-ppcert-view-page.php:280
-#: includes/frontend/class-ppcert-view-page.php:393
+#: includes/frontend/class-ppcert-verification-page.php:100
+#: includes/frontend/class-ppcert-verification-page.php:287
+#: includes/frontend/class-ppcert-view-page.php:216
+#: includes/frontend/class-ppcert-view-page.php:362
 #: includes/services/class-ppcert-merge-field-registry.php:168
-#: includes/services/class-ppcert-pdf-renderer.php:333
-#: includes/utilities/class-ppcert-privacy.php:227
+#: includes/services/class-ppcert-pdf-renderer.php:451
+#: includes/utilities/class-ppcert-privacy.php:222
 #: src/dashboard/components/RecentCertificates.jsx:104
 #: src/designer/components/TriggerPanel.jsx:289
 msgid "Certificate"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:161
-#: includes/frontend/class-ppcert-my-certificates.php:288
+#: includes/frontend/class-ppcert-my-certificates.php:289
 #: src/dashboard/components/RecentCertificates.jsx:144
 msgid "Earned"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:162
-#: includes/admin/class-ppcert-certificates-list-table.php:69
-#: includes/frontend/class-ppcert-my-certificates.php:296
-#: includes/frontend/class-ppcert-verification-page.php:98
-#: includes/frontend/class-ppcert-verification-page.php:278
-#: includes/frontend/class-ppcert-view-page.php:276
-#: includes/utilities/class-ppcert-privacy.php:246
+#: includes/admin/class-ppcert-certificates-list-table.php:81
+#: includes/frontend/class-ppcert-my-certificates.php:297
+#: includes/frontend/class-ppcert-verification-page.php:103
+#: includes/frontend/class-ppcert-verification-page.php:283
+#: includes/frontend/class-ppcert-view-page.php:358
+#: includes/utilities/class-ppcert-privacy.php:241
 #: src/designer/components/TriggerPanel.jsx:403
 msgid "Expires"
 msgstr ""
@@ -279,48 +342,49 @@ msgid "Links"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:172
-#: includes/frontend/class-ppcert-my-certificates.php:318
-#: includes/frontend/class-ppcert-verification-page.php:144
-#: blocks/verify/index.js:81
+#: includes/frontend/class-ppcert-my-certificates.php:317
+#: includes/frontend/class-ppcert-verification-page.php:149
+#: blocks/verify/index.js:84
 msgid "Verify"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin-user-profile.php:173
-#: includes/admin/class-ppcert-certificates-list-table.php:353
-#: includes/frontend/class-ppcert-view-page.php:477
+#: includes/admin/class-ppcert-certificates-list-table.php:552
+#: includes/frontend/class-ppcert-view-page.php:573
+#: includes/frontend/class-ppcert-view-page.php:611
 msgid "(opens in a new tab)"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-user-profile.php:180
-#: includes/admin/class-ppcert-certificates-list-table.php:354
-#: includes/api/class-ppcert-rest-verification-controller.php:259
-#: includes/frontend/class-ppcert-my-certificates.php:310
-#: includes/frontend/class-ppcert-view-page.php:302
+#: includes/admin/class-ppcert-admin-user-profile.php:185
+#: includes/admin/class-ppcert-certificates-list-table.php:553
+#: includes/api/class-ppcert-rest-verification-controller.php:261
+#: includes/frontend/class-ppcert-my-certificates.php:309
+#: includes/frontend/class-ppcert-view-page.php:384
 msgid "Download PDF"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-user-profile.php:185
-#: includes/admin/class-ppcert-certificates-list-table.php:486
-#: includes/api/class-ppcert-rest-certificates-controller.php:602
-#: includes/api/class-ppcert-rest-certificates-controller.php:606
-#: includes/frontend/class-ppcert-my-certificates.php:262
+#: includes/admin/class-ppcert-admin-user-profile.php:190
+#: includes/admin/class-ppcert-certificates-list-table.php:711
+#: includes/api/class-ppcert-rest-certificates-controller.php:633
+#: includes/api/class-ppcert-rest-certificates-controller.php:637
+#: includes/frontend/class-ppcert-my-certificates.php:263
 #: src/dashboard/components/RecentCertificates.jsx:109
 #: src/dashboard/components/TopTemplates.jsx:74
 msgid "(deleted template)"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-user-profile.php:192
-#: includes/admin/class-ppcert-certificates-list-table.php:543
+#: includes/admin/class-ppcert-admin-user-profile.php:197
+#: includes/admin/class-ppcert-certificates-list-table.php:772
 msgid "Never expires"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-user-profile.php:210
-#: includes/frontend/class-ppcert-my-certificates.php:366
+#: includes/admin/class-ppcert-admin-user-profile.php:215
+#: includes/frontend/class-ppcert-my-certificates.php:373
 msgid "&laquo; Previous"
 msgstr ""
 
-#: includes/admin/class-ppcert-admin-user-profile.php:211
-#: includes/frontend/class-ppcert-my-certificates.php:367
+#: includes/admin/class-ppcert-admin-user-profile.php:216
+#: includes/frontend/class-ppcert-my-certificates.php:374
 msgid "Next &raquo;"
 msgstr ""
 
@@ -351,7 +415,7 @@ msgid "Certificate Templates"
 msgstr ""
 
 #: includes/admin/class-ppcert-admin.php:407
-#: src/designer/components/DesignerApp.jsx:554
+#: src/designer/components/DesignerApp.jsx:706
 #: src/settings/components/StatusTab.jsx:523
 msgid "Templates"
 msgstr ""
@@ -380,208 +444,287 @@ msgstr ""
 msgid "Search templates"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:64
-#: includes/frontend/class-ppcert-verification-page.php:94
-#: includes/frontend/class-ppcert-verification-page.php:281
-#: includes/frontend/class-ppcert-view-page.php:279
+#: includes/admin/class-ppcert-certificates-list-table.php:76
+#: includes/frontend/class-ppcert-verification-page.php:99
+#: includes/frontend/class-ppcert-verification-page.php:286
+#: includes/frontend/class-ppcert-view-page.php:361
 #: includes/services/class-ppcert-merge-field-registry.php:167
 #: src/dashboard/components/RecentCertificates.jsx:91
 #: src/issue/index.js:208
 msgid "Recipient"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:65
+#: includes/admin/class-ppcert-certificates-list-table.php:77
 #: blocks/certificate-link/index.js:202
 #: src/issue/index.js:184
 msgid "Template"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:66
+#: includes/admin/class-ppcert-certificates-list-table.php:78
 #: includes/integrations/abstract-ppcert-lms-adapter.php:219
 #: includes/services/class-ppcert-merge-field-registry.php:170
-#: includes/utilities/class-ppcert-privacy.php:231
+#: includes/utilities/class-ppcert-privacy.php:226
 #: blocks/certificate-link/index.js:147
 #: src/designer/components/ElementPalette.jsx:251
 #: src/designer/components/TriggerPanel.jsx:883
-#: src/designer/components/TriggerPanel.jsx:1239
+#: src/designer/components/TriggerPanel.jsx:1247
 msgid "Source"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:154
+#: includes/admin/class-ppcert-certificates-list-table.php:100
+#: includes/admin/class-ppcert-certificates-list-table.php:606
+#: includes/admin/class-ppcert-certificates-list-table.php:610
+#: assets/js/ppcert-admin.js:67
+msgid "Revoke"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:101
+#: includes/admin/class-ppcert-certificates-list-table.php:581
+#: assets/js/ppcert-admin.js:115
+msgid "Reinstate"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:102
+#: includes/admin/class-ppcert-certificates-list-table.php:630
+msgid "Resend email"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:103
+#: includes/admin/class-ppcert-certificates-list-table.php:660
+#: src/designer/components/Canvas.jsx:467
+msgid "Delete"
+msgstr ""
+
+#. translators: %s: credential ID.
+#: includes/admin/class-ppcert-certificates-list-table.php:131
+#, php-format
+msgid "Select %s"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:207
+msgid "Name and email searches match the first 100 people found."
+msgstr ""
+
+#. translators: %s: template title.
+#: includes/admin/class-ppcert-certificates-list-table.php:227
+#, php-format
+msgid "Template: %s"
+msgstr ""
+
+#. translators: %s: status label.
+#: includes/admin/class-ppcert-certificates-list-table.php:237
+#, php-format
+msgid "Status: %s"
+msgstr ""
+
+#. translators: %s: source label.
+#: includes/admin/class-ppcert-certificates-list-table.php:243
+#, php-format
+msgid "Source: %s"
+msgstr ""
+
+#. translators: %s: search term.
+#: includes/admin/class-ppcert-certificates-list-table.php:248
+#, php-format
+msgid "Search: \"%s\""
+msgstr ""
+
+#. translators: 1: first issued date, 2: last issued date.
+#: includes/admin/class-ppcert-certificates-list-table.php:257
+#, php-format
+msgid "Issued %1$s to %2$s"
+msgstr ""
+
+#. translators: %s: first issued date.
+#: includes/admin/class-ppcert-certificates-list-table.php:260
+#, php-format
+msgid "Issued on or after %s"
+msgstr ""
+
+#. translators: %s: last issued date.
+#: includes/admin/class-ppcert-certificates-list-table.php:263
+#, php-format
+msgid "Issued on or before %s"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:266
+msgid "All certificates"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:348
 msgid "Filter by template"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:156
+#: includes/admin/class-ppcert-certificates-list-table.php:350
 msgid "All templates"
 msgstr ""
 
 #. translators: %s: template title
-#: includes/admin/class-ppcert-certificates-list-table.php:180
+#: includes/admin/class-ppcert-certificates-list-table.php:374
 #, php-format
 msgid "%s (deleted)"
 msgstr ""
 
 #. translators: %s: template title
-#: includes/admin/class-ppcert-certificates-list-table.php:183
+#: includes/admin/class-ppcert-certificates-list-table.php:377
 #, php-format
 msgid "%s (archived)"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:205
+#: includes/admin/class-ppcert-certificates-list-table.php:399
 #: includes/admin/class-ppcert-templates-list-table.php:200
 msgid "Filter by status"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:207
+#: includes/admin/class-ppcert-certificates-list-table.php:401
 #: includes/admin/class-ppcert-templates-list-table.php:202
 msgid "All statuses"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:221
+#: includes/admin/class-ppcert-certificates-list-table.php:415
 msgid "Filter by source"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:223
+#: includes/admin/class-ppcert-certificates-list-table.php:417
 msgid "All sources"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:256
-#: includes/admin/class-ppcert-certificates-list-table.php:260
+#: includes/admin/class-ppcert-certificates-list-table.php:450
+#: includes/admin/class-ppcert-certificates-list-table.php:454
 msgid "Issued from date"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:263
+#: includes/admin/class-ppcert-certificates-list-table.php:457
 msgctxt "date range separator between the two issued-date inputs"
 msgid "to"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:267
+#: includes/admin/class-ppcert-certificates-list-table.php:461
 msgid "Issued to date"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:270
+#: includes/admin/class-ppcert-certificates-list-table.php:464
 #: includes/admin/class-ppcert-templates-list-table.php:248
 msgid "Filter"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:302
+#: includes/admin/class-ppcert-certificates-list-table.php:496
 msgid "Reset Filters"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:316
-#: includes/admin/class-ppcert-certificates-list-table.php:501
+#: includes/admin/class-ppcert-certificates-list-table.php:510
+#: includes/admin/class-ppcert-certificates-list-table.php:726
 msgid "Manual"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:352
+#: includes/admin/class-ppcert-certificates-list-table.php:514
+#: includes/admin/class-ppcert-certificates-list-table.php:730
+msgid "One-off"
+msgstr ""
+
+#: includes/admin/class-ppcert-certificates-list-table.php:551
 msgid "View"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:376
-msgid "Reinstate"
-msgstr ""
-
-#: includes/admin/class-ppcert-certificates-list-table.php:391
+#: includes/admin/class-ppcert-certificates-list-table.php:598
 msgid "Revoke certificate"
 msgstr ""
 
 #. translators: %s: credential ID.
-#: includes/admin/class-ppcert-certificates-list-table.php:395
+#: includes/admin/class-ppcert-certificates-list-table.php:602
 #, php-format
 msgid "%s will verify as revoked and its PDF download will be disabled. You can reinstate it later if this is a mistake."
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:399
-#: includes/admin/class-ppcert-certificates-list-table.php:403
-msgid "Revoke"
-msgstr ""
-
-#: includes/admin/class-ppcert-certificates-list-table.php:400
-#: includes/admin/class-ppcert-certificates-list-table.php:446
+#: includes/admin/class-ppcert-certificates-list-table.php:607
+#: includes/admin/class-ppcert-certificates-list-table.php:659
+#: assets/js/ppcert-admin.js:505
+#: assets/js/ppcert-admin.js:564
+#: assets/js/ppcert-admin.js:649
+#: src/designer/components/DesignerApp.jsx:303
 #: src/issue/index.js:126
 msgid "Cancel"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:401
+#: includes/admin/class-ppcert-certificates-list-table.php:608
+#: assets/js/ppcert-admin.js:68
 msgid "Reason (optional, shown to staff only):"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:419
-msgid "Resend email"
-msgstr ""
-
-#: includes/admin/class-ppcert-certificates-list-table.php:437
+#: includes/admin/class-ppcert-certificates-list-table.php:650
 msgid "Delete certificate"
 msgstr ""
 
 #. translators: %s: credential ID.
-#: includes/admin/class-ppcert-certificates-list-table.php:441
+#: includes/admin/class-ppcert-certificates-list-table.php:654
 #, php-format
 msgid "%s and its history will be permanently deleted, and the credential will no longer verify at all. This cannot be undone. To invalidate an earned credential while keeping its record, use Revoke instead."
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:445
+#: includes/admin/class-ppcert-certificates-list-table.php:658
+#: assets/js/ppcert-admin.js:206
 msgid "Delete permanently"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:447
-#: src/designer/components/Canvas.jsx:461
-msgid "Delete"
+#. translators: %s: recipient name
+#: includes/admin/class-ppcert-certificates-list-table.php:699
+#, php-format
+msgid "%s (no account)"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:482
-#: includes/api/class-ppcert-rest-certificates-controller.php:598
+#: includes/admin/class-ppcert-certificates-list-table.php:707
+#: includes/api/class-ppcert-rest-certificates-controller.php:621
 msgid "(deleted user)"
 msgstr ""
 
 #. translators: %s: search term
-#: includes/admin/class-ppcert-certificates-list-table.php:578
+#: includes/admin/class-ppcert-certificates-list-table.php:807
 #, php-format
 msgid "search \"%s\""
 msgstr ""
 
 #. translators: %s: template title
-#: includes/admin/class-ppcert-certificates-list-table.php:585
+#: includes/admin/class-ppcert-certificates-list-table.php:814
 #, php-format
 msgid "template \"%s\""
 msgstr ""
 
 #. translators: %s: status label
-#: includes/admin/class-ppcert-certificates-list-table.php:596
+#: includes/admin/class-ppcert-certificates-list-table.php:825
 #, php-format
 msgid "status %s"
 msgstr ""
 
 #. translators: %s: source label
-#: includes/admin/class-ppcert-certificates-list-table.php:603
+#: includes/admin/class-ppcert-certificates-list-table.php:832
 #, php-format
 msgid "source %s"
 msgstr ""
 
 #. translators: 1: from date, 2: to date
-#: includes/admin/class-ppcert-certificates-list-table.php:611
+#: includes/admin/class-ppcert-certificates-list-table.php:840
 #, php-format
 msgid "issued %1$s to %2$s"
 msgstr ""
 
 #. translators: %s: from date
-#: includes/admin/class-ppcert-certificates-list-table.php:614
+#: includes/admin/class-ppcert-certificates-list-table.php:843
 #, php-format
 msgid "issued from %s"
 msgstr ""
 
 #. translators: %s: to date
-#: includes/admin/class-ppcert-certificates-list-table.php:617
+#: includes/admin/class-ppcert-certificates-list-table.php:846
 #, php-format
 msgid "issued up to %s"
 msgstr ""
 
-#: includes/admin/class-ppcert-certificates-list-table.php:622
+#: includes/admin/class-ppcert-certificates-list-table.php:851
 msgid "No certificates issued yet. Add an award trigger to a published template, or issue one manually."
 msgstr ""
 
 #. translators: %s: comma-separated list of the active filters
-#: includes/admin/class-ppcert-certificates-list-table.php:628
+#: includes/admin/class-ppcert-certificates-list-table.php:857
 #, php-format
 msgid "No certificates match the current filters: %s. Clear or adjust the filters above."
 msgstr ""
@@ -595,6 +738,42 @@ msgstr ""
 msgid "Invalid action type."
 msgstr ""
 
+#: includes/admin/class-ppcert-review-notice.php:244
+msgid "Dismiss this notice"
+msgstr ""
+
+#. translators: %s: number of certificates issued.
+#: includes/admin/class-ppcert-review-notice.php:251
+#, php-format
+msgid "Congratulations! Your site has issued %s certificate with PressPrimer Certificate!"
+msgid_plural "Congratulations! Your site has issued %s certificates with PressPrimer Certificate!"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppcert-review-notice.php:260
+msgid "We'd love to hear your feedback. Are you enjoying the plugin?"
+msgstr ""
+
+#: includes/admin/class-ppcert-review-notice.php:262
+msgid "Yes, I love it!"
+msgstr ""
+
+#: includes/admin/class-ppcert-review-notice.php:263
+msgid "It could be better"
+msgstr ""
+
+#: includes/admin/class-ppcert-review-notice.php:264
+msgid "Remind me later"
+msgstr ""
+
+#: includes/admin/class-ppcert-review-notice.php:299
+msgid "You are not allowed to do that."
+msgstr ""
+
+#: includes/admin/class-ppcert-review-notice.php:306
+msgid "Unknown response."
+msgstr ""
+
 #: includes/admin/class-ppcert-templates-list-table.php:95
 msgid "Title"
 msgstr ""
@@ -605,7 +784,7 @@ msgid "Trigger"
 msgstr ""
 
 #: includes/admin/class-ppcert-templates-list-table.php:98
-#: src/designer/components/properties/PageSection.jsx:91
+#: src/designer/components/properties/PageSection.jsx:158
 msgid "Page"
 msgstr ""
 
@@ -636,7 +815,7 @@ msgid "(untitled)"
 msgstr ""
 
 #: includes/admin/class-ppcert-templates-list-table.php:300
-#: src/designer/components/TriggerPanel.jsx:1374
+#: src/designer/components/TriggerPanel.jsx:1382
 msgid "Edit"
 msgstr ""
 
@@ -652,17 +831,17 @@ msgstr ""
 msgid "Archived"
 msgstr ""
 
-#: includes/admin/class-ppcert-templates-list-table.php:393
+#: includes/admin/class-ppcert-templates-list-table.php:405
 msgid "No trigger"
 msgstr ""
 
 #. translators: %s: trigger label
-#: includes/admin/class-ppcert-templates-list-table.php:410
+#: includes/admin/class-ppcert-templates-list-table.php:422
 #, php-format
 msgid "%s (inactive)"
 msgstr ""
 
-#: includes/admin/class-ppcert-templates-list-table.php:427
+#: includes/admin/class-ppcert-templates-list-table.php:439
 msgid "No certificate templates found. Click \"Add New\" to start from a template, or adjust the filters above."
 msgstr ""
 
@@ -1033,8 +1212,22 @@ msgstr ""
 msgid "Compare plans and pick the tier that fits your program. 14-day money-back guarantee."
 msgstr ""
 
+#: includes/api/class-ppcert-rest-bulk-controller.php:227
+msgid "Send either the selected certificates or the filters, not both."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-bulk-controller.php:238
 #: includes/api/class-ppcert-rest-certificates-controller.php:184
 msgid "The issued-date range is reversed: the from date is after the to date."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-bulk-controller.php:244
+#: assets/js/ppcert-admin.js:508
+msgid "Type DELETE to confirm."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-bulk-controller.php:255
+msgid "No certificates match these filters."
 msgstr ""
 
 #: includes/api/class-ppcert-rest-certificates-controller.php:303
@@ -1061,10 +1254,14 @@ msgstr ""
 msgid "This recipient already has a certificate from this template."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-certificates-controller.php:449
-#: includes/frontend/class-ppcert-verification-page.php:88
-#: includes/frontend/class-ppcert-verification-page.php:244
-#: includes/frontend/class-ppcert-view-page.php:257
+#: includes/api/class-ppcert-rest-certificates-controller.php:441
+msgid "Too many requests. Please wait a minute and try again."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-certificates-controller.php:467
+#: includes/frontend/class-ppcert-verification-page.php:93
+#: includes/frontend/class-ppcert-verification-page.php:249
+#: includes/frontend/class-ppcert-view-page.php:339
 msgid "This certificate has been revoked."
 msgstr ""
 
@@ -1080,90 +1277,106 @@ msgstr ""
 msgid "Please enter a valid email address."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-merge-fields-controller.php:371
+#: includes/api/class-ppcert-rest-merge-fields-controller.php:374
 msgid "That post is not a source for any registered trigger type."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-settings-controller.php:90
-#: includes/api/class-ppcert-rest-templates-controller.php:201
+#. translators: %d: page ID.
+#: includes/api/class-ppcert-rest-settings-controller.php:168
+#, php-format
+msgid "(no title) #%d"
+msgstr ""
+
+#: includes/api/class-ppcert-rest-settings-controller.php:198
+#: includes/services/class-ppcert-email-service.php:1116
+#: src/settings/components/EmailTab.jsx:174
+msgid "Enter a valid email address to send the test to."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-settings-controller.php:214
+#: includes/api/class-ppcert-rest-templates-controller.php:241
 msgid "Too many test emails. Please wait a minute and try again."
 msgstr ""
 
-#. translators: %s: the current user's email address
-#: includes/api/class-ppcert-rest-settings-controller.php:110
-#: includes/api/class-ppcert-rest-templates-controller.php:221
+#. translators: %s: the address the test was sent to
+#: includes/api/class-ppcert-rest-settings-controller.php:232
+#: includes/api/class-ppcert-rest-templates-controller.php:261
 #, php-format
 msgid "Test email sent to %s."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:189
-#: includes/api/class-ppcert-rest-templates-controller.php:374
-#: includes/api/class-ppcert-rest-templates-controller.php:403
-#: includes/api/class-ppcert-rest-templates-controller.php:625
-#: includes/api/class-ppcert-rest-triggers-controller.php:252
-#: includes/api/class-ppcert-rest-triggers-controller.php:277
-#: includes/models/class-ppcert-template.php:178
-#: includes/models/class-ppcert-template.php:320
-#: includes/models/class-ppcert-template.php:399
-#: includes/services/class-ppcert-issuance-service.php:106
+#: includes/api/class-ppcert-rest-settings-controller.php:377
+msgid "Enter a valid From address, or leave it empty to use the site's administration email."
+msgstr ""
+
+#: includes/api/class-ppcert-rest-templates-controller.php:229
+#: includes/api/class-ppcert-rest-templates-controller.php:414
+#: includes/api/class-ppcert-rest-templates-controller.php:443
+#: includes/api/class-ppcert-rest-templates-controller.php:667
+#: includes/api/class-ppcert-rest-triggers-controller.php:270
+#: includes/api/class-ppcert-rest-triggers-controller.php:295
+#: includes/models/class-ppcert-template.php:227
+#: includes/models/class-ppcert-template.php:406
+#: includes/models/class-ppcert-template.php:488
+#: includes/services/class-ppcert-issuance-service.php:127
 msgid "Template not found."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:293
+#: includes/api/class-ppcert-rest-templates-controller.php:333
 msgid "Unknown starter template."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:320
+#: includes/api/class-ppcert-rest-templates-controller.php:360
 msgid "Untitled Certificate"
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:415
+#: includes/api/class-ppcert-rest-templates-controller.php:455
 msgid "This template was changed elsewhere since you opened it."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:431
+#: includes/api/class-ppcert-rest-templates-controller.php:471
 msgid "The layout document must be an object."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:458
+#: includes/api/class-ppcert-rest-templates-controller.php:500
 msgid "Status must be draft, published, or archived."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:471
+#: includes/api/class-ppcert-rest-templates-controller.php:513
 msgid "Template settings must be an object."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:535
+#: includes/api/class-ppcert-rest-templates-controller.php:577
 msgid "You are not allowed to assign this template to that issuer."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:713
+#: includes/api/class-ppcert-rest-templates-controller.php:777
 msgid "The uploads directory is not writable."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:725
-#: includes/services/class-ppcert-preview-service.php:202
+#: includes/api/class-ppcert-rest-templates-controller.php:789
+#: includes/services/class-ppcert-preview-service.php:251
 msgid "The preview directory could not be created."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-templates-controller.php:751
+#: includes/api/class-ppcert-rest-templates-controller.php:815
 msgid "The preview file could not be stored."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-triggers-controller.php:201
+#: includes/api/class-ppcert-rest-triggers-controller.php:219
 msgid "Unknown trigger type."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-triggers-controller.php:287
+#: includes/api/class-ppcert-rest-triggers-controller.php:305
 msgid "The triggers payload must be an array."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-triggers-controller.php:345
+#: includes/api/class-ppcert-rest-triggers-controller.php:363
 msgid "Certificates support a single award trigger in this version. Duplicate the template to award it another way."
 msgstr ""
 
-#: includes/api/class-ppcert-rest-triggers-controller.php:401
-#: src/designer/components/TriggerPanel.jsx:1308
+#: includes/api/class-ppcert-rest-triggers-controller.php:419
+#: src/designer/components/TriggerPanel.jsx:1316
 msgid "Any source"
 msgstr ""
 
@@ -1171,34 +1384,34 @@ msgstr ""
 msgid "Too many verification requests. Please wait a minute and try again."
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:117
+#: includes/blocks/class-ppcert-blocks.php:127
 #: blocks/verify/index.js:48
-#: blocks/verify/index.js:91
+#: blocks/verify/index.js:94
 msgid "Certificate Verification"
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:118
-#: blocks/verify/index.js:92
+#: includes/blocks/class-ppcert-blocks.php:128
+#: blocks/verify/index.js:95
 msgid "A credential ID lookup form visitors use to verify certificates."
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:177
+#: includes/blocks/class-ppcert-blocks.php:187
 #: blocks/my-certificates/index.js:48
 #: blocks/my-certificates/index.js:80
 msgid "My Certificates"
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:178
+#: includes/blocks/class-ppcert-blocks.php:188
 #: blocks/my-certificates/index.js:81
 msgid "Lists the logged-in visitor's earned certificates with verification and download links."
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:304
+#: includes/blocks/class-ppcert-blocks.php:314
 #: blocks/certificate-link/index.js:355
 msgid "Certificate Link"
 msgstr ""
 
-#: includes/blocks/class-ppcert-blocks.php:305
+#: includes/blocks/class-ppcert-blocks.php:315
 #: blocks/certificate-link/index.js:356
 msgid "A button to the logged-in learner's certificate for this course, lesson, quiz, or assignment. Shows only once it is earned."
 msgstr ""
@@ -1209,17 +1422,17 @@ msgstr ""
 msgid "%1$s requires PressPrimer Certificate %2$s or newer and has been paused. Please update PressPrimer Certificate."
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:348
+#: includes/frontend/class-ppcert-certificate-link.php:349
 #: blocks/certificate-link/index.js:58
 msgid "View your certificate"
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:349
+#: includes/frontend/class-ppcert-certificate-link.php:350
 #: blocks/certificate-link/index.js:53
 msgid "Download your certificate"
 msgstr ""
 
-#: includes/frontend/class-ppcert-certificate-link.php:350
+#: includes/frontend/class-ppcert-certificate-link.php:351
 #: blocks/certificate-link/index.js:56
 msgid "Verify your certificate"
 msgstr ""
@@ -1241,7 +1454,7 @@ msgid "All"
 msgstr ""
 
 #: includes/frontend/class-ppcert-my-certificates.php:185
-#: includes/frontend/class-ppcert-my-certificates.php:266
+#: includes/frontend/class-ppcert-my-certificates.php:267
 msgid "Valid"
 msgstr ""
 
@@ -1273,67 +1486,75 @@ msgstr ""
 msgid "Sort"
 msgstr ""
 
-#: includes/frontend/class-ppcert-my-certificates.php:377
+#: includes/frontend/class-ppcert-my-certificates.php:384
 msgid "Certificates pagination"
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:86
-#: includes/frontend/class-ppcert-verification-page.php:242
+#: includes/frontend/class-ppcert-verification-page.php:91
+#: includes/frontend/class-ppcert-verification-page.php:247
 msgid "Valid certificate"
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:87
-#: includes/frontend/class-ppcert-verification-page.php:243
+#: includes/frontend/class-ppcert-verification-page.php:92
+#: includes/frontend/class-ppcert-verification-page.php:248
 msgid "Expired certificate"
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:89
-#: includes/frontend/class-ppcert-verification-page.php:245
+#: includes/frontend/class-ppcert-verification-page.php:94
+#: includes/frontend/class-ppcert-verification-page.php:250
 msgid "No certificate found for that credential ID."
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:90
+#: includes/frontend/class-ppcert-verification-page.php:95
 msgid "That credential ID is invalid. Please check for typos and try again."
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:91
+#: includes/frontend/class-ppcert-verification-page.php:96
 msgid "Checking…"
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:92
-#: includes/frontend/class-ppcert-verification-page.php:123
+#: includes/frontend/class-ppcert-verification-page.php:97
+#: includes/frontend/class-ppcert-verification-page.php:128
 msgid "Too many checks - please wait a minute and try again."
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:93
+#: includes/frontend/class-ppcert-verification-page.php:98
 msgid "Verification is temporarily unavailable. Please try again."
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:96
-#: includes/frontend/class-ppcert-verification-page.php:283
+#: includes/frontend/class-ppcert-verification-page.php:101
+#: includes/frontend/class-ppcert-verification-page.php:288
 msgid "Issuer"
 msgstr ""
 
-#: includes/frontend/class-ppcert-verification-page.php:356
+#: includes/frontend/class-ppcert-verification-page.php:361
 msgid "Verify Certificate"
 msgstr ""
 
 #. translators: %s: the product or brand name
-#: includes/frontend/class-ppcert-verification-page.php:396
+#: includes/frontend/class-ppcert-verification-page.php:407
 #, php-format
 msgid "The %s verification page has been deleted. Certificate QR codes and links will not resolve until you assign a new page in the plugin settings."
 msgstr ""
 
-#: includes/frontend/class-ppcert-view-page.php:261
+#: includes/frontend/class-ppcert-view-page.php:187
+msgid "Too Many Requests"
+msgstr ""
+
+#: includes/frontend/class-ppcert-view-page.php:267
+msgid "Too many requests from your connection. Please wait a minute and try again."
+msgstr ""
+
+#: includes/frontend/class-ppcert-view-page.php:343
 msgid "This certificate has expired."
 msgstr ""
 
-#: includes/frontend/class-ppcert-view-page.php:310
+#: includes/frontend/class-ppcert-view-page.php:392
 msgid "Verify this certificate"
 msgstr ""
 
 #. translators: %s: recipient name
-#: includes/frontend/class-ppcert-view-page.php:356
+#: includes/frontend/class-ppcert-view-page.php:444
 #, php-format
 msgid "Certificate preview for %s"
 msgstr ""
@@ -1342,66 +1563,67 @@ msgstr ""
 msgid "This integration cannot list past completions."
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:662
-msgid "Course Title"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:663
-msgid "Introduction to Botany"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:668
-#: includes/integrations/class-ppcert-ppa-adapter.php:242
-msgid "Completion Date"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:669
-#: includes/integrations/abstract-ppcert-lms-adapter.php:765
-#: includes/integrations/class-ppcert-ppa-adapter.php:243
-#: includes/integrations/class-ppcert-ppq-adapter.php:245
-#: includes/services/class-ppcert-merge-field-registry.php:546
-msgid "June 12, 2026"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:674
-msgid "Instructor"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:675
-msgid "Prof. Marisol Vega"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:744
-#: includes/integrations/class-ppcert-ppq-adapter.php:221
-msgid "Quiz Title"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:745
-#: includes/integrations/class-ppcert-ppq-adapter.php:222
-msgid "Advanced Botany Quiz"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:750
-#: includes/integrations/class-ppcert-ppq-adapter.php:227
-msgid "Quiz Score"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:758
-#: includes/integrations/class-ppcert-ppa-adapter.php:236
-#: includes/integrations/class-ppcert-ppq-adapter.php:238
-msgid "Result"
-msgstr ""
-
-#: includes/integrations/abstract-ppcert-lms-adapter.php:759
-#: includes/integrations/abstract-ppcert-lms-adapter.php:821
-#: includes/integrations/class-ppcert-ppa-adapter.php:237
-#: includes/integrations/class-ppcert-ppq-adapter.php:239
-#: includes/integrations/class-ppcert-ppq-adapter.php:309
+#: includes/integrations/abstract-ppcert-lms-adapter.php:417
+#: includes/integrations/abstract-ppcert-lms-adapter.php:880
+#: includes/integrations/abstract-ppcert-lms-adapter.php:942
+#: includes/integrations/class-ppcert-ppa-adapter.php:306
+#: includes/integrations/class-ppcert-ppq-adapter.php:299
+#: includes/integrations/class-ppcert-ppq-adapter.php:369
 msgid "Passed"
 msgstr ""
 
-#: includes/integrations/abstract-ppcert-lms-adapter.php:764
-#: includes/integrations/class-ppcert-ppq-adapter.php:244
+#: includes/integrations/abstract-ppcert-lms-adapter.php:783
+msgid "Course Title"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:784
+msgid "Introduction to Botany"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:789
+#: includes/integrations/class-ppcert-ppa-adapter.php:311
+msgid "Completion Date"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:790
+#: includes/integrations/abstract-ppcert-lms-adapter.php:886
+#: includes/integrations/class-ppcert-ppa-adapter.php:312
+#: includes/integrations/class-ppcert-ppq-adapter.php:305
+#: includes/services/class-ppcert-merge-field-registry.php:580
+msgid "June 12, 2026"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:795
+msgid "Instructor"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:796
+msgid "Prof. Marisol Vega"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:865
+#: includes/integrations/class-ppcert-ppq-adapter.php:281
+msgid "Quiz Title"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:866
+#: includes/integrations/class-ppcert-ppq-adapter.php:282
+msgid "Advanced Botany Quiz"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:871
+#: includes/integrations/class-ppcert-ppq-adapter.php:287
+msgid "Quiz Score"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:879
+#: includes/integrations/class-ppcert-ppa-adapter.php:305
+#: includes/integrations/class-ppcert-ppq-adapter.php:298
+msgid "Result"
+msgstr ""
+
+#: includes/integrations/abstract-ppcert-lms-adapter.php:885
+#: includes/integrations/class-ppcert-ppq-adapter.php:304
 msgid "Pass Date"
 msgstr ""
 
@@ -1492,15 +1714,15 @@ msgstr ""
 msgid "Any quiz in this course"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:230
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:241
 #: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:235
 #: includes/integrations/class-ppcert-lifterlms-quiz-adapter.php:242
-#: includes/integrations/class-ppcert-ppq-adapter.php:200
-#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:258
+#: includes/integrations/class-ppcert-ppq-adapter.php:260
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:259
 msgid "Minimum score (%)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:231
+#: includes/integrations/class-ppcert-learndash-quiz-adapter.php:242
 msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own passing percentage."
 msgstr ""
 
@@ -1541,7 +1763,7 @@ msgid "Quiz passed (LearnPress)"
 msgstr ""
 
 #: includes/integrations/class-ppcert-learnpress-quiz-adapter.php:236
-#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:259
+#: includes/integrations/class-ppcert-tutorlms-quiz-adapter.php:260
 msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own passing grade."
 msgstr ""
 
@@ -1581,20 +1803,36 @@ msgstr ""
 msgid "Assignment passed"
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppa-adapter.php:207
+#: includes/integrations/class-ppcert-ppa-adapter.php:267
 msgid "Minimum grade (%)"
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppa-adapter.php:208
+#: includes/integrations/class-ppcert-ppa-adapter.php:268
 msgid "Leave blank to award on any passing grade. Enter a percentage to require more than the assignment's own passing score."
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppa-adapter.php:228
+#: includes/integrations/class-ppcert-ppa-adapter.php:277
+msgid "Minimum score (points)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:278
+msgid "Leave blank for no points minimum. Enter the points a grade must reach. Unlike a percentage, this does not adjust if the assignment's maximum points change later. When both minimums are set, a grade must meet both."
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:297
 msgid "Assignment Title"
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppa-adapter.php:229
+#: includes/integrations/class-ppcert-ppa-adapter.php:298
 msgid "Field Research Essay"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:319
+msgid "Score (Points)"
+msgstr ""
+
+#: includes/integrations/class-ppcert-ppa-adapter.php:320
+msgid "62 / 65"
 msgstr ""
 
 #: includes/integrations/class-ppcert-ppq-adapter.php:65
@@ -1609,7 +1847,7 @@ msgstr ""
 msgid "PressPrimer Quiz"
 msgstr ""
 
-#: includes/integrations/class-ppcert-ppq-adapter.php:201
+#: includes/integrations/class-ppcert-ppq-adapter.php:261
 msgid "Leave blank to award on any passing score. Enter a percentage to require more than the quiz's own pass mark."
 msgstr ""
 
@@ -1625,48 +1863,117 @@ msgstr ""
 msgid "Quiz passed (Tutor LMS)"
 msgstr ""
 
-#: includes/models/class-ppcert-certificate.php:419
+#: includes/models/class-ppcert-certificate.php:520
 msgid "Certificate revocation failed."
 msgstr ""
 
-#: includes/models/class-ppcert-certificate.php:478
+#: includes/models/class-ppcert-certificate.php:598
 msgid "Certificate reinstatement failed."
 msgstr ""
 
-#: includes/models/class-ppcert-certificate.php:534
+#: includes/models/class-ppcert-certificate.php:654
 msgid "The directory visibility could not be saved."
 msgstr ""
 
-#: includes/models/class-ppcert-certificate.php:591
+#: includes/models/class-ppcert-certificate.php:915
 msgid "Certificate deletion failed."
 msgstr ""
 
 #. translators: %s: source template title
-#: includes/models/class-ppcert-template.php:185
+#: includes/models/class-ppcert-template.php:253
 #, php-format
 msgid "%s (Copy)"
 msgstr ""
 
-#: includes/models/class-ppcert-template.php:235
+#: includes/models/class-ppcert-template.php:321
 msgid "A layout document is required."
 msgstr ""
 
-#: includes/models/class-ppcert-template.php:271
+#: includes/models/class-ppcert-template.php:357
 #: src/designer/components/TemplateGallery.jsx:126
 msgid "The template could not be created."
 msgstr ""
 
-#: includes/models/class-ppcert-template.php:375
-#: src/designer/components/DesignerApp.jsx:217
+#: includes/models/class-ppcert-template.php:464
+#: src/designer/components/DesignerApp.jsx:215
 msgid "The template could not be saved."
 msgstr ""
 
-#: includes/models/class-ppcert-template.php:417
+#: includes/models/class-ppcert-template.php:506
 msgid "The template could not be moved to the trash."
 msgstr ""
 
+#: includes/services/class-ppcert-bulk-action-service.php:158
+msgid "Choose a bulk action."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:162
+msgid "You are not allowed to run this bulk action."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:178
+#: assets/js/ppcert-admin.js:474
+msgid "Select at least one certificate."
+msgstr ""
+
+#. translators: %s: the most certificates one bulk action may change.
+#: includes/services/class-ppcert-bulk-action-service.php:186
+#, php-format
+msgid "Narrow your filters to %s certificates or fewer."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:272
+msgid "You are no longer allowed to run this bulk action, so it stopped. Certificates already processed stay processed."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:288
+msgid "This bulk action is already running in another window."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:582
+msgid "It no longer exists."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:589
+msgid "You are not allowed to change this certificate."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:595
+msgid "It is already revoked."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:599
+msgid "It is not revoked."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:645
+msgid "The email could not be sent."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:664
+msgid "No email was sent: there is no address, or the email is turned off."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:700
+msgid "That bulk action was not found."
+msgstr ""
+
+#: includes/services/class-ppcert-bulk-action-service.php:823
+msgid "Another bulk action is running. Try again when it finishes."
+msgstr ""
+
+#. translators: %s: the name of the user running the other bulk action.
+#: includes/services/class-ppcert-bulk-action-service.php:829
+#, php-format
+msgid "Another bulk action, started by %s, is running. Try again when it finishes."
+msgstr ""
+
+#: includes/services/class-ppcert-credential-id-service.php:364
+msgid "A credential ID needs 4 to 32 letters and numbers, with single hyphens between groups (40 characters at most)."
+msgstr ""
+
 #: includes/services/class-ppcert-element-types.php:63
-#: src/designer/components/properties/TextSection.jsx:204
+#: src/designer/components/properties/TextSection.jsx:220
 msgid "Text"
 msgstr ""
 
@@ -1683,7 +1990,7 @@ msgid "Image / Logo"
 msgstr ""
 
 #: includes/services/class-ppcert-element-types.php:118
-#: src/designer/components/properties/MediaSection.jsx:68
+#: src/designer/components/properties/MediaSection.jsx:138
 #: src/designer/elements/ImageElement.jsx:36
 msgid "Signature"
 msgstr ""
@@ -1698,40 +2005,58 @@ msgid "QR Code"
 msgstr ""
 
 #: includes/services/class-ppcert-element-types.php:161
-#: src/designer/components/properties/PageSection.jsx:140
+#: src/designer/components/properties/PageSection.jsx:225
 msgid "Background"
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:462
+#. translators: %s: certificate page URL
+#: includes/services/class-ppcert-email-service.php:651
+#, php-format
+msgid "View Certificate: %s"
+msgstr ""
+
+#: includes/services/class-ppcert-email-service.php:686
+msgid "View Certificate"
+msgstr ""
+
+#. translators: %s: site name
+#: includes/services/class-ppcert-email-service.php:918
+#, php-format
+msgid "This email was sent from %s"
+msgstr ""
+
+#: includes/services/class-ppcert-email-service.php:1105
 msgid "Your account has no email address to send the test to."
 msgstr ""
 
-#. translators: prefix marking a test email's subject line
-#: includes/services/class-ppcert-email-service.php:486
-msgid "[Test]"
-msgstr ""
-
-#: includes/services/class-ppcert-email-service.php:488
+#: includes/services/class-ppcert-email-service.php:1156
 msgid "This is a test of the award email, sent with sample values and without the PDF attachment. Real award emails include the certificate PDF."
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:498
+#. translators: prefix marking a test email's subject line
+#: includes/services/class-ppcert-email-service.php:1170
+msgid "[Test]"
+msgstr ""
+
+#: includes/services/class-ppcert-email-service.php:1178
 msgid "The test email was blocked by a filter."
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:529
+#: includes/services/class-ppcert-email-service.php:1209
 msgid "The site could not send the email. Check the WordPress email configuration."
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:662
+#: includes/services/class-ppcert-email-service.php:1388
 msgid "Your certificate: {subject}"
 msgstr ""
 
-#: includes/services/class-ppcert-email-service.php:663
+#: includes/services/class-ppcert-email-service.php:1391
 msgid ""
 "Hi {recipient_name},\n"
 "\n"
 "Congratulations! Your certificate for {subject} is now available.\n"
+"\n"
+"{certificate_button}\n"
 "\n"
 "Credential ID: {credential_id}\n"
 "Verify it any time: {verification_url}\n"
@@ -1739,102 +2064,121 @@ msgid ""
 "{issuer_name}"
 msgstr ""
 
-#: includes/services/class-ppcert-issuance-service.php:113
+#: includes/services/class-ppcert-issuance-service.php:134
 msgid "Certificates can only be issued from published templates."
 msgstr ""
 
-#: includes/services/class-ppcert-issuance-service.php:120
+#: includes/services/class-ppcert-issuance-service.php:154
 msgid "Recipient user not found."
 msgstr ""
 
-#: includes/services/class-ppcert-issuance-service.php:233
+#: includes/services/class-ppcert-issuance-service.php:287
 msgid "Certificate issuance failed before completion; no certificate was created."
 msgstr ""
 
-#: includes/services/class-ppcert-issuance-service.php:382
+#: includes/services/class-ppcert-issuance-service.php:480
+msgid "One-off certificates are for people without an account. Issue to the account instead."
+msgstr ""
+
+#: includes/services/class-ppcert-issuance-service.php:490
+msgid "A one-off certificate needs the recipient's name."
+msgstr ""
+
+#: includes/services/class-ppcert-issuance-service.php:499
+msgid "The recipient's email address is not valid."
+msgstr ""
+
+#: includes/services/class-ppcert-issuance-service.php:676
+#: includes/services/class-ppcert-issuance-service.php:686
 msgid "Certificate could not be written to the database."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:205
+#: includes/services/class-ppcert-issuance-service.php:700
+msgid "That credential ID is already used by another certificate."
+msgstr ""
+
+#: includes/services/class-ppcert-layout-validator.php:228
 msgid "layout_schema_version: missing or unsupported schema version."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:223
-msgid "must be a4 or letter."
+#. translators: %s: comma-separated list of page size names
+#: includes/services/class-ppcert-layout-validator.php:251
+#, php-format
+msgid "must be one of: %s."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:227
+#: includes/services/class-ppcert-layout-validator.php:266
 msgid "must be landscape or portrait."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:289
+#: includes/services/class-ppcert-layout-validator.php:461
 msgid "must be an array with at least one page."
 msgstr ""
 
 #. translators: %d: maximum number of pages
-#: includes/services/class-ppcert-layout-validator.php:298
+#: includes/services/class-ppcert-layout-validator.php:470
 #, php-format
 msgid "documents are limited to %d pages."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:311
-#: includes/services/class-ppcert-layout-validator.php:494
+#: includes/services/class-ppcert-layout-validator.php:483
+#: includes/services/class-ppcert-layout-validator.php:666
 msgid "must be an object."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:445
-#: includes/services/class-ppcert-layout-validator.php:772
-#: includes/services/class-ppcert-layout-validator.php:942
+#: includes/services/class-ppcert-layout-validator.php:617
+#: includes/services/class-ppcert-layout-validator.php:944
+#: includes/services/class-ppcert-layout-validator.php:1114
 msgid "must be a hex color."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:472
+#: includes/services/class-ppcert-layout-validator.php:644
 msgid "must be an array."
 msgstr ""
 
 #. translators: %d: maximum number of elements
-#: includes/services/class-ppcert-layout-validator.php:481
+#: includes/services/class-ppcert-layout-validator.php:653
 #, php-format
 msgid "documents are limited to %d elements."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:515
+#: includes/services/class-ppcert-layout-validator.php:687
 msgid "duplicate element id."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:545
+#: includes/services/class-ppcert-layout-validator.php:717
 msgid "must match el_ followed by 8 lowercase alphanumerics."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:552
+#: includes/services/class-ppcert-layout-validator.php:724
 msgid "unknown element type."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:646
+#: includes/services/class-ppcert-layout-validator.php:818
 msgid "must be a {{group.field}} merge token."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:661
+#: includes/services/class-ppcert-layout-validator.php:833
 msgid "must be a number."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:670
+#: includes/services/class-ppcert-layout-validator.php:842
 msgid "must be left, center, or right."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:701
+#: includes/services/class-ppcert-layout-validator.php:873
 msgid "must be an existing image attachment."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:707
+#: includes/services/class-ppcert-layout-validator.php:879
 msgid "must be contain, cover, or stretch."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:732
+#: includes/services/class-ppcert-layout-validator.php:904
 msgid "must be line, rect, or ellipse."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:967
+#: includes/services/class-ppcert-layout-validator.php:1139
 msgid "must be a hex color or empty."
 msgstr ""
 
@@ -1842,112 +2186,112 @@ msgstr ""
 msgid "Site"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:510
+#: includes/services/class-ppcert-merge-field-registry.php:544
 msgid "Recipient Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:511
-#: includes/services/class-ppcert-merge-field-registry.php:532
+#: includes/services/class-ppcert-merge-field-registry.php:545
+#: includes/services/class-ppcert-merge-field-registry.php:566
 msgid "Jordan Rivera"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:517
+#: includes/services/class-ppcert-merge-field-registry.php:551
 msgid "First Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:518
+#: includes/services/class-ppcert-merge-field-registry.php:552
 msgid "Jordan"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:524
+#: includes/services/class-ppcert-merge-field-registry.php:558
 msgid "Last Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:525
+#: includes/services/class-ppcert-merge-field-registry.php:559
 msgid "Rivera"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:531
+#: includes/services/class-ppcert-merge-field-registry.php:565
 msgid "Full Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:545
+#: includes/services/class-ppcert-merge-field-registry.php:579
 msgid "Issue Date"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:559
+#: includes/services/class-ppcert-merge-field-registry.php:593
 msgid "Issuer Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:560
-#: includes/services/class-ppcert-merge-field-registry.php:583
+#: includes/services/class-ppcert-merge-field-registry.php:594
+#: includes/services/class-ppcert-merge-field-registry.php:617
 msgid "Sunrise Training Academy"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:566
+#: includes/services/class-ppcert-merge-field-registry.php:600
 msgid "Expiry Date"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:567
+#: includes/services/class-ppcert-merge-field-registry.php:601
 msgid "June 12, 2028"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:573
+#: includes/services/class-ppcert-merge-field-registry.php:607
 msgid "Display Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:574
-#: src/settings/components/AppearanceTab.jsx:257
+#: includes/services/class-ppcert-merge-field-registry.php:608
+#: src/settings/components/AppearanceTab.jsx:227
 msgid "Certificate of Completion"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:582
+#: includes/services/class-ppcert-merge-field-registry.php:616
 msgid "Site Name"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:589
+#: includes/services/class-ppcert-merge-field-registry.php:623
 msgid "Site Tagline"
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:590
+#: includes/services/class-ppcert-merge-field-registry.php:624
 msgid "Learn. Grow. Achieve."
 msgstr ""
 
-#: includes/services/class-ppcert-merge-field-registry.php:596
+#: includes/services/class-ppcert-merge-field-registry.php:630
 #: src/settings/components/StatusTab.jsx:367
 msgid "Site URL"
 msgstr ""
 
-#: includes/services/class-ppcert-pdf-renderer.php:121
+#: includes/services/class-ppcert-pdf-renderer.php:199
 msgid "Could not create a temporary file for rendering."
 msgstr ""
 
-#: includes/services/class-ppcert-pdf-renderer.php:172
+#: includes/services/class-ppcert-pdf-renderer.php:250
 msgid "PDF rendering failed."
 msgstr ""
 
-#: includes/services/class-ppcert-pdf-renderer.php:305
+#: includes/services/class-ppcert-pdf-renderer.php:423
 msgid "The layout document is not validator-clean; refusing to render."
 msgstr ""
 
-#: includes/services/class-ppcert-pdf-renderer.php:1372
+#: includes/services/class-ppcert-pdf-renderer.php:1547
 msgid "PNG rasterization failed (GD)."
 msgstr ""
 
-#: includes/services/class-ppcert-pdf-renderer.php:1403
-#: includes/services/class-ppcert-pdf-renderer.php:1479
+#: includes/services/class-ppcert-pdf-renderer.php:1578
+#: includes/services/class-ppcert-pdf-renderer.php:1654
 msgid "Could not create a temporary file for rasterization."
 msgstr ""
 
-#: includes/services/class-ppcert-preview-service.php:152
+#: includes/services/class-ppcert-preview-service.php:201
 msgid "Invalid credential ID."
 msgstr ""
 
-#: includes/services/class-ppcert-preview-service.php:163
+#: includes/services/class-ppcert-preview-service.php:212
 msgid "The certificate has no layout snapshot."
 msgstr ""
 
-#: includes/services/class-ppcert-preview-service.php:218
+#: includes/services/class-ppcert-preview-service.php:271
 msgid "The preview image could not be written."
 msgstr ""
 
@@ -1979,12 +2323,50 @@ msgstr ""
 msgid "An \"Any\" trigger of this type must be scoped to a parent (for example, a specific course)."
 msgstr ""
 
+#: includes/utilities/class-ppcert-page-sizes.php:224
+msgid "Custom"
+msgstr ""
+
+#. translators: 1: page width, 2: page height, 3: unit abbreviation ("in" or "mm")
+#: includes/utilities/class-ppcert-page-sizes.php:232
+#, php-format
+msgid "Custom · %1$s × %2$s %3$s"
+msgstr ""
+
+#: includes/utilities/class-ppcert-page-sizes.php:235
+msgid "in"
+msgstr ""
+
+#: includes/utilities/class-ppcert-page-sizes.php:235
+msgid "mm"
+msgstr ""
+
+#: includes/utilities/class-ppcert-page-sizes.php:242
+#: src/designer/components/properties/PageSection.jsx:194
+msgid "Landscape"
+msgstr ""
+
+#: includes/utilities/class-ppcert-page-sizes.php:243
+#: src/designer/components/properties/PageSection.jsx:198
+msgid "Portrait"
+msgstr ""
+
+#: includes/utilities/class-ppcert-page-sizes.php:263
+#: src/designer/components/TemplateGallery.jsx:159
+#: src/settings/components/AppearanceTab.jsx:297
+msgid "Letter"
+msgstr ""
+
+#: includes/utilities/class-ppcert-page-sizes.php:269
+msgid "Legal"
+msgstr ""
+
 #: includes/utilities/class-ppcert-privacy.php:100
 msgid "This plugin issues certificates to users of your site and keeps a record of each one in your database. Nothing is sent to outside services. Use the text below as a starting point and adjust it to match how you use certificates."
 msgstr ""
 
 #: includes/utilities/class-ppcert-privacy.php:101
-msgid "Certificates are public to anyone who has the link or the credential ID. Every certificate has a share page, a verification result, and a PDF download that open without signing in. They show the recipient's name, the certificate title, the issuer, the issue and expiry dates, and the certificate image and PDF with every field placed on the design, which can include the recipient's email address if your template uses that field. Long random credential IDs and rate limiting make guessing impractical, but anyone a recipient shares the link with, or who scans the QR code, sees the same information."
+msgid "Certificates are public to anyone who has the link or the credential ID. Every certificate has a share page, a verification result, and a PDF download that open without signing in. They show the recipient's name, the certificate title, the issuer, the issue and expiry dates, and the certificate image and PDF with every field placed on the design, which can include the recipient's email address if your template uses that field. Core credential IDs are long, random, and never sequential, and rate limiting makes guessing them impractical, but anyone a recipient shares the link with, or who scans the QR code, sees the same information."
 msgstr ""
 
 #: includes/utilities/class-ppcert-privacy.php:102
@@ -2007,11 +2389,11 @@ msgstr ""
 msgid "Usage records"
 msgstr ""
 
-#. translators: %d: number of days view and verification records are kept
+#. translators: %d: number of days verification records are kept
 #: includes/utilities/class-ppcert-privacy.php:118
 #, php-format
-msgid "When a certificate is viewed, verified, or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. View and verification records are deleted after %d day; issue and download records are kept with the certificate."
-msgid_plural "When a certificate is viewed, verified, or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. View and verification records are deleted after %d days; issue and download records are kept with the certificate."
+msgid "When a certificate is verified or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. Verification records are deleted after %d day; issue and download records are kept with the certificate."
+msgid_plural "When a certificate is verified or downloaded, we record the event and the time, and who did it if they were signed in. We do not record IP addresses or browser details for these events. Verification records are deleted after %d days; issue and download records are kept with the certificate."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -2027,32 +2409,249 @@ msgstr ""
 msgid "Suggested text:"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:278
+#: includes/utilities/class-ppcert-privacy.php:273
 msgid "Certificate Credits"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:282
+#: includes/utilities/class-ppcert-privacy.php:277
 msgid "Credit type"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:288
+#: includes/utilities/class-ppcert-privacy.php:283
 msgid "Amount"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:292
+#: includes/utilities/class-ppcert-privacy.php:287
 #: src/dashboard/components/ActivityChart.jsx:63
 #: src/dashboard/components/ActivityChart.jsx:190
 msgid "Awarded"
 msgstr ""
 
-#: includes/utilities/class-ppcert-privacy.php:376
+#: includes/utilities/class-ppcert-privacy.php:388
 msgid "Erased certificates are permanently removed and can no longer be verified."
 msgstr ""
+
+#. translators: %s: number of activity records.
+#: includes/utilities/class-ppcert-privacy.php:394
+#, php-format
+msgid "This person was removed from %s activity record on other certificates."
+msgid_plural "This person was removed from %s activity records on other certificates."
+msgstr[0] ""
+msgstr[1] ""
 
 #. translators: 1: required WordPress version, 2: required PHP version
 #: pressprimer-certificate.php:57
 #, php-format
 msgid "PressPrimer Certificate requires WordPress %1$s or higher and PHP %2$s or higher. The plugin is inactive until the server meets these requirements."
+msgstr ""
+
+#: assets/js/ppcert-admin.js:55
+msgid "Revoke certificates"
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:59
+#, js-format
+msgid "Revoke %s certificate?"
+msgid_plural "Revoke %s certificates?"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: certificates processed, 2: certificates in the job.
+#: assets/js/ppcert-admin.js:75
+#, js-format
+msgid "Revoking %1$s of %2$s…"
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:82
+#, js-format
+msgid "%s certificate revoked."
+msgid_plural "%s certificates revoked."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: revoked, 2: skipped, 3: failed.
+#: assets/js/ppcert-admin.js:93
+#, js-format
+msgid "%1$s revoked, %2$s skipped, %3$s failed."
+msgstr ""
+
+#: assets/js/ppcert-admin.js:103
+msgid "Reinstate certificates"
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:107
+#, js-format
+msgid "Reinstate %s certificate?"
+msgid_plural "Reinstate %s certificates?"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: certificates processed, 2: certificates in the job.
+#: assets/js/ppcert-admin.js:119
+#, js-format
+msgid "Reinstating %1$s of %2$s…"
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:129
+#, js-format
+msgid "%s certificate reinstated."
+msgid_plural "%s certificates reinstated."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: reinstated, 2: skipped, 3: failed.
+#: assets/js/ppcert-admin.js:140
+#, js-format
+msgid "%1$s reinstated, %2$s skipped, %3$s failed."
+msgstr ""
+
+#: assets/js/ppcert-admin.js:150
+msgid "Resend emails"
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:154
+#, js-format
+msgid "Send the award email again for %s certificate? Each email includes the certificate PDF."
+msgid_plural "Send the award email again for %s certificates? Each email includes the certificate PDF."
+msgstr[0] ""
+msgstr[1] ""
+
+#: assets/js/ppcert-admin.js:162
+msgid "Send emails"
+msgstr ""
+
+#. translators: 1: emails processed, 2: emails in the job.
+#: assets/js/ppcert-admin.js:166
+#, js-format
+msgid "Sending %1$s of %2$s…"
+msgstr ""
+
+#. translators: %s: number of emails.
+#: assets/js/ppcert-admin.js:173
+#, js-format
+msgid "%s email sent."
+msgid_plural "%s emails sent."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: sent, 2: skipped, 3: failed.
+#: assets/js/ppcert-admin.js:184
+#, js-format
+msgid "%1$s sent, %2$s skipped, %3$s failed."
+msgstr ""
+
+#: assets/js/ppcert-admin.js:194
+msgid "Delete certificates"
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:198
+#, js-format
+msgid "Permanently delete %s certificate? Its verification link will stop working. This can't be undone."
+msgid_plural "Permanently delete %s certificates? Their verification links will stop working. This can't be undone."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: certificates processed, 2: certificates in the job.
+#: assets/js/ppcert-admin.js:210
+#, js-format
+msgid "Deleting %1$s of %2$s…"
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:217
+#, js-format
+msgid "%s certificate deleted."
+msgid_plural "%s certificates deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: deleted, 2: skipped, 3: failed.
+#: assets/js/ppcert-admin.js:228
+#, js-format
+msgid "%1$s deleted, %2$s skipped, %3$s failed."
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:336
+#, js-format
+msgid "All %s certificate that matches these filters is selected."
+msgid_plural "All %s certificates that match these filters are selected."
+msgstr[0] ""
+msgstr[1] ""
+
+#: assets/js/ppcert-admin.js:347
+msgid "Clear selection."
+msgstr ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:355
+#, js-format
+msgid "Select all %s certificate that matches these filters."
+msgid_plural "Select all %s certificates that match these filters."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:365
+#, js-format
+msgid "Select all %s certificate you can manage that matches these filters."
+msgid_plural "Select all %s certificates you can manage that match these filters."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of certificates.
+#: assets/js/ppcert-admin.js:378
+#, js-format
+msgid "All %s certificate on this page is selected."
+msgid_plural "All %s certificates on this page are selected."
+msgstr[0] ""
+msgstr[1] ""
+
+#: assets/js/ppcert-admin.js:478
+#: assets/js/ppcert-admin.js:722
+#: src/settings/components/StatusTab.jsx:132
+#: src/settings/components/StatusTab.jsx:723
+msgid "OK"
+msgstr ""
+
+#: assets/js/ppcert-admin.js:493
+msgid "Matching:"
+msgstr ""
+
+#: assets/js/ppcert-admin.js:558
+msgid "Discard bulk action"
+msgstr ""
+
+#: assets/js/ppcert-admin.js:559
+msgid "Discard this bulk action? Certificates already processed stay processed; the rest are left alone."
+msgstr ""
+
+#: assets/js/ppcert-admin.js:639
+msgid "Keep this page open until it finishes."
+msgstr ""
+
+#: assets/js/ppcert-admin.js:671
+msgid "Stopping after this step…"
+msgstr ""
+
+#. translators: 1: certificates processed, 2: certificates in the job.
+#: assets/js/ppcert-admin.js:752
+#, js-format
+msgid "Stopped after %1$s of %2$s certificates."
+msgstr ""
+
+#: assets/js/ppcert-admin.js:769
+msgid "Show skipped and failed"
+msgstr ""
+
+#: assets/js/ppcert-admin.js:801
+msgid "The bulk action could not continue."
 msgstr ""
 
 #: blocks/certificate-link/index.js:73
@@ -2328,150 +2927,174 @@ msgstr ""
 msgid "Select three or more elements to distribute."
 msgstr ""
 
-#: src/designer/components/Canvas.jsx:445
+#: src/designer/components/Canvas.jsx:451
 msgid "Bring forward"
 msgstr ""
 
-#: src/designer/components/Canvas.jsx:449
+#: src/designer/components/Canvas.jsx:455
 msgid "Send backward"
 msgstr ""
 
-#: src/designer/components/Canvas.jsx:454
+#: src/designer/components/Canvas.jsx:460
 msgid "Bring to front"
 msgstr ""
 
-#: src/designer/components/Canvas.jsx:456
+#: src/designer/components/Canvas.jsx:462
 msgid "Send to back"
 msgstr ""
 
-#: src/designer/components/Canvas.jsx:577
+#: src/designer/components/Canvas.jsx:583
 msgid "Certificate canvas"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:70
+#: src/designer/components/DesignerApp.jsx:72
 msgid "Fit width"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:169
+#: src/designer/components/DesignerApp.jsx:192
 msgid "Template published."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:170
+#: src/designer/components/DesignerApp.jsx:193
 msgid "Template saved."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:187
+#: src/designer/components/DesignerApp.jsx:250
 msgid "Changed elsewhere"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:191
-msgid "This template was changed in another window since you opened it. Saving again will overwrite those changes."
+#: src/designer/components/DesignerApp.jsx:254
+msgid "This template was saved somewhere else after you opened it: in another browser tab, by another user, by an action on the Templates list, or by a cached copy of this page. Reload to get the latest version, or save anyway to replace it with yours."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:204
+#. translators: %s: date and time of the other save.
+#: src/designer/components/DesignerApp.jsx:263
+#, js-format
+msgid "Last saved elsewhere at %s."
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:283
 msgid "Save anyway"
 msgstr ""
 
+#: src/designer/components/DesignerApp.jsx:290
+msgid "Reload the template?"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:294
+msgid "Discard your unsaved changes and reload the template?"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:298
+#: src/designer/components/DesignerApp.jsx:317
+msgid "Reload"
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:348
+msgid "Template reloaded."
+msgstr ""
+
+#: src/designer/components/DesignerApp.jsx:355
+#: src/designer/components/DesignerApp.jsx:598
+msgid "The template could not be loaded."
+msgstr ""
+
 #. translators: %d: number of images
-#: src/designer/components/DesignerApp.jsx:261
+#: src/designer/components/DesignerApp.jsx:401
 #, js-format
 msgid "%d image was skipped in the PDF because this server cannot render its format."
 msgid_plural "%d images were skipped in the PDF because this server cannot render their formats."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/designer/components/DesignerApp.jsx:279
+#: src/designer/components/DesignerApp.jsx:419
 msgid "The preview could not be rendered."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:422
+#: src/designer/components/DesignerApp.jsx:566
 msgid "This design uses multi-page features from PressPrimer Certificate Educator, so it cannot be opened in the single-page designer. Certificates still award and download from it normally."
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:446
-msgid "The template could not be loaded."
-msgstr ""
-
-#: src/designer/components/DesignerApp.jsx:478
+#: src/designer/components/DesignerApp.jsx:630
 msgid "Template created - happy designing!"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:509
+#: src/designer/components/DesignerApp.jsx:661
 msgid "Cannot open the designer"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:516
+#: src/designer/components/DesignerApp.jsx:668
 msgid "Back to Templates"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:542
+#: src/designer/components/DesignerApp.jsx:694
 msgid "You have unsaved changes. Leave without saving?"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:568
+#: src/designer/components/DesignerApp.jsx:720
 msgid "Template name"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:590
+#: src/designer/components/DesignerApp.jsx:742
 msgid "Save name"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:611
+#: src/designer/components/DesignerApp.jsx:763
 msgid "Rename template"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:641
-#: src/designer/components/DesignerApp.jsx:642
+#: src/designer/components/DesignerApp.jsx:793
+#: src/designer/components/DesignerApp.jsx:794
 msgid "Undo"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:649
-#: src/designer/components/DesignerApp.jsx:650
+#: src/designer/components/DesignerApp.jsx:801
+#: src/designer/components/DesignerApp.jsx:802
 msgid "Redo"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:659
-#: src/designer/components/DesignerApp.jsx:663
+#: src/designer/components/DesignerApp.jsx:811
+#: src/designer/components/DesignerApp.jsx:815
 msgid "Toggle rulers"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:673
+#: src/designer/components/DesignerApp.jsx:825
 msgid "Merge field display"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:680
+#: src/designer/components/DesignerApp.jsx:832
 msgid "Samples"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:687
+#: src/designer/components/DesignerApp.jsx:839
 msgid "Tokens"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:700
+#: src/designer/components/DesignerApp.jsx:854
 msgid "Zoom"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:709
+#: src/designer/components/DesignerApp.jsx:863
 msgid "Preview PDF"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:717
+#: src/designer/components/DesignerApp.jsx:871
 msgid "Switch to draft"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:728
+#: src/designer/components/DesignerApp.jsx:882
 msgid "Publish"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:741
+#: src/designer/components/DesignerApp.jsx:895
 msgid "Save"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:792
+#: src/designer/components/DesignerApp.jsx:946
 msgid "Design"
 msgstr ""
 
-#: src/designer/components/DesignerApp.jsx:800
+#: src/designer/components/DesignerApp.jsx:954
 msgid "Award"
 msgstr ""
 
@@ -2539,7 +3162,7 @@ msgstr ""
 msgid "Insert"
 msgstr ""
 
-#: src/designer/components/properties/ColorField.jsx:15
+#: src/designer/components/properties/ColorField.jsx:16
 msgid "Certificate palette"
 msgstr ""
 
@@ -2553,92 +3176,82 @@ msgstr ""
 msgid "This image is %s, which this server cannot place in PDFs. Use PNG or JPG."
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:45
+#: src/designer/components/properties/MediaSection.jsx:101
 msgid "Choose signature image"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:46
-#: src/designer/components/properties/MediaSection.jsx:60
-#: src/designer/components/properties/PageSection.jsx:61
-#: src/settings/components/AppearanceTab.jsx:188
+#: src/designer/components/properties/MediaSection.jsx:102
+#: src/designer/components/properties/MediaSection.jsx:130
+#: src/designer/components/properties/PageSection.jsx:65
+#: src/settings/components/AppearanceTab.jsx:152
 msgid "Choose image"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:59
-#: src/designer/components/properties/PageSection.jsx:60
+#: src/designer/components/properties/MediaSection.jsx:129
+#: src/designer/components/properties/PageSection.jsx:64
 msgid "Replace"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:69
-#: src/designer/components/properties/PageSection.jsx:154
+#: src/designer/components/properties/MediaSection.jsx:139
+#: src/designer/components/properties/PageSection.jsx:239
 #: src/designer/elements/ImageElement.jsx:31
 msgid "Image"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:80
+#: src/designer/components/properties/MediaSection.jsx:210
 msgid "Media"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:85
-#: src/designer/components/properties/PageSection.jsx:159
+#: src/designer/components/properties/MediaSection.jsx:215
+#: src/designer/components/properties/PageSection.jsx:244
 msgid "The WordPress media library is unavailable here."
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:103
+#: src/designer/components/properties/MediaSection.jsx:233
 msgid "Fit"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:113
+#: src/designer/components/properties/MediaSection.jsx:243
 msgid "Contain"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:117
+#: src/designer/components/properties/MediaSection.jsx:247
 msgid "Cover"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:121
+#: src/designer/components/properties/MediaSection.jsx:251
 msgid "Stretch"
 msgstr ""
 
-#: src/designer/components/properties/MediaSection.jsx:127
+#: src/designer/components/properties/MediaSection.jsx:257
 msgid "Opacity"
 msgstr ""
 
-#: src/designer/components/properties/PageSection.jsx:23
-#: src/designer/components/TemplateGallery.jsx:159
-#: src/settings/components/AppearanceTab.jsx:373
-msgid "Letter"
-msgstr ""
-
-#: src/designer/components/properties/PageSection.jsx:47
+#: src/designer/components/properties/PageSection.jsx:51
 msgid "Choose background image"
 msgstr ""
 
-#: src/designer/components/properties/PageSection.jsx:80
-msgid "Design scaled to fit the new page. Undo restores it."
+#: src/designer/components/properties/PageSection.jsx:95
+msgid "Custom size"
 msgstr ""
 
-#: src/designer/components/properties/PageSection.jsx:94
-#: src/designer/components/properties/TextSection.jsx:266
+#: src/designer/components/properties/PageSection.jsx:161
+#: src/designer/components/properties/TextSection.jsx:282
 msgid "Size"
 msgstr ""
 
-#: src/designer/components/properties/PageSection.jsx:110
+#: src/designer/components/properties/PageSection.jsx:185
 msgid "Layout"
 msgstr ""
 
-#: src/designer/components/properties/PageSection.jsx:121
-msgid "Landscape"
-msgstr ""
-
-#: src/designer/components/properties/PageSection.jsx:125
-msgid "Portrait"
-msgstr ""
-
 #. translators: 1: width, 2: height
-#: src/designer/components/properties/PageSection.jsx:134
+#: src/designer/components/properties/PageSection.jsx:207
 #, js-format
 msgid "%1$s × %2$s pt"
+msgstr ""
+
+#: src/designer/components/properties/PageSection.jsx:219
+msgid "Keep text and logos inside the dashed line so printing doesn't cut them off."
 msgstr ""
 
 #: src/designer/components/properties/PositionSection.jsx:41
@@ -2705,52 +3318,52 @@ msgstr ""
 msgid "Radius"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:88
+#: src/designer/components/properties/TextSection.jsx:104
 msgid "Your fonts"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:92
+#: src/designer/components/properties/TextSection.jsx:108
 msgid "Bundled"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:232
+#: src/designer/components/properties/TextSection.jsx:248
 msgid "Fields drop in at the cursor in the text field above and print real values on each certificate. You can also type them, like {{recipient.display_name}}."
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:240
+#: src/designer/components/properties/TextSection.jsx:256
 msgid "Font"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:281
+#: src/designer/components/properties/TextSection.jsx:297
 msgid "Line height"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:296
+#: src/designer/components/properties/TextSection.jsx:312
 msgid "Style"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:306
+#: src/designer/components/properties/TextSection.jsx:322
 msgid "This font does not bundle a bold variant."
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:322
+#: src/designer/components/properties/TextSection.jsx:338
 msgid "This font does not bundle an italic variant."
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:331
+#: src/designer/components/properties/TextSection.jsx:347
 msgid "Align"
 msgstr ""
 
-#: src/designer/components/properties/TextSection.jsx:354
+#: src/designer/components/properties/TextSection.jsx:370
 msgid "Color"
 msgstr ""
 
-#: src/designer/components/PropertiesPanel.jsx:43
+#: src/designer/components/PropertiesPanel.jsx:64
 msgid "Load a template to start designing."
 msgstr ""
 
 #. translators: %d: number of selected elements
-#: src/designer/components/PropertiesPanel.jsx:61
+#: src/designer/components/PropertiesPanel.jsx:82
 #, js-format
 msgid "%d element selected."
 msgid_plural "%d elements selected."
@@ -2770,16 +3383,20 @@ msgid "Certificate size:"
 msgstr ""
 
 #: src/designer/components/TemplateGallery.jsx:153
-#: src/settings/components/AppearanceTab.jsx:357
+#: src/settings/components/AppearanceTab.jsx:353
 msgid "Certificate size"
 msgstr ""
 
 #: src/designer/components/TemplateGallery.jsx:163
-#: src/settings/components/AppearanceTab.jsx:380
+#: src/settings/components/AppearanceTab.jsx:303
 msgid "A4"
 msgstr ""
 
-#: src/designer/components/TemplateGallery.jsx:218
+#: src/designer/components/TemplateGallery.jsx:174
+msgid "Starter designs come in Letter and A4. After creating one, change the size in the Page panel."
+msgstr ""
+
+#: src/designer/components/TemplateGallery.jsx:227
 msgid "Start blank"
 msgstr ""
 
@@ -2851,7 +3468,7 @@ msgstr ""
 
 #: src/designer/components/TriggerPanel.jsx:721
 #: src/designer/components/TriggerPanel.jsx:757
-#: src/designer/components/TriggerPanel.jsx:1177
+#: src/designer/components/TriggerPanel.jsx:1185
 msgid "Add trigger"
 msgstr ""
 
@@ -2877,7 +3494,7 @@ msgid "Search…"
 msgstr ""
 
 #: src/designer/components/TriggerPanel.jsx:974
-#: src/designer/components/TriggerPanel.jsx:1339
+#: src/designer/components/TriggerPanel.jsx:1347
 #: src/settings/components/StatusTab.jsx:586
 msgid "Active"
 msgstr ""
@@ -2887,7 +3504,7 @@ msgid "Test email sent."
 msgstr ""
 
 #: src/designer/components/TriggerPanel.jsx:1030
-#: src/settings/components/EmailTab.jsx:135
+#: src/settings/components/EmailTab.jsx:205
 msgid "The test email could not be sent."
 msgstr ""
 
@@ -2899,72 +3516,76 @@ msgstr ""
 msgid "Send yourself this certificate’s award email with sample values to check the subject, body, and merge fields."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1052
-#: src/designer/components/TriggerPanel.jsx:1063
-#: src/settings/components/EmailTab.jsx:354
+#: src/designer/components/TriggerPanel.jsx:1060
+#: src/designer/components/TriggerPanel.jsx:1071
+#: src/settings/components/EmailTab.jsx:534
 msgid "Send Test Email"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1057
+#: src/designer/components/TriggerPanel.jsx:1065
 msgid "Save the template first - the test sends the saved design."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1072
+#: src/designer/components/TriggerPanel.jsx:1080
 msgid "You have unsaved changes - the test uses the last-saved version of this template."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1115
+#: src/designer/components/TriggerPanel.jsx:1123
 msgid "Certificates can always be issued manually from the Certificates screen, with or without triggers."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1128
+#: src/designer/components/TriggerPanel.jsx:1136
 msgid "No automatic award sources detected."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1137
+#: src/designer/components/TriggerPanel.jsx:1145
 msgid "Install and activate an LMS plugin, <quiz>PressPrimer Quiz</quiz>, <assignment>PressPrimer Assignment</assignment>, or another integration to award this certificate based on user activity."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1188
+#: src/designer/components/TriggerPanel.jsx:1196
 msgid "Award this certificate when…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1195
+#: src/designer/components/TriggerPanel.jsx:1203
 msgid "Only one trigger can be added per certificate. To use another trigger, clone the certificate."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1211
+#: src/designer/components/TriggerPanel.jsx:1219
 msgid "No trigger yet."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1226
+#: src/designer/components/TriggerPanel.jsx:1234
 msgid "The source for this trigger no longer exists."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1256
+#: src/designer/components/TriggerPanel.jsx:1264
 msgid "Trigger deactivated"
 msgstr ""
 
 #. translators: %s: plugin name
-#: src/designer/components/TriggerPanel.jsx:1272
+#: src/designer/components/TriggerPanel.jsx:1280
 #, js-format
 msgid "%s must be active to use this trigger."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1278
+#: src/designer/components/TriggerPanel.jsx:1286
 msgid "The plugin providing this trigger is not active."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1322
+#: src/designer/components/TriggerPanel.jsx:1330
 msgid "Conditions"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1439
+#: src/designer/components/TriggerPanel.jsx:1447
 msgid "Trigger changes save with the Save button."
 msgstr ""
 
 #: src/designer/elements/ImageElement.jsx:34
 msgid "Missing image"
+msgstr ""
+
+#: src/designer/pageResize.js:56
+msgid "Design scaled to fit the new page. Undo restores it."
 msgstr ""
 
 #. translators: %s: credential ID
@@ -3196,249 +3817,317 @@ msgstr ""
 msgid "By default, data is preserved when you uninstall the plugin to prevent accidental data loss. Only enable this if you are certain you want to completely remove all data."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:118
+#: src/settings/components/AppearanceTab.jsx:82
 msgid "Default"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:128
+#: src/settings/components/AppearanceTab.jsx:92
 msgid "Clear"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:187
+#: src/settings/components/AppearanceTab.jsx:151
 msgid "Change image"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:197
+#: src/settings/components/AppearanceTab.jsx:161
+#: src/settings/components/EmailTab.jsx:257
 msgid "Remove"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:266
+#: src/settings/components/AppearanceTab.jsx:236
 msgid "This certificate is proudly presented to"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:285
+#: src/settings/components/AppearanceTab.jsx:255
 msgid "for successfully completing"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:303
+#: src/settings/components/AppearanceTab.jsx:273
 msgid "Authorized Signature"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:312
+#: src/settings/components/AppearanceTab.jsx:282
 msgid "Live preview of your defaults - a simplified sample, not a real template."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:344
+#: src/settings/components/AppearanceTab.jsx:340
 msgid "Design Defaults"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:347
+#: src/settings/components/AppearanceTab.jsx:343
 msgid "New blank certificates start from these defaults. Certificates created from a starter template keep their design but take on your brand colors. The preview below shows every choice as you make it."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:361
-msgid "The default page size for new certificates. Every starter template ships natively in both sizes."
+#: src/settings/components/AppearanceTab.jsx:357
+msgid "The default page size for new certificates. Every starter template ships natively in Letter and A4."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:399
+#: src/settings/components/AppearanceTab.jsx:380
 msgid "Default font"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:403
+#: src/settings/components/AppearanceTab.jsx:384
 msgid "Used for new text and merge-field elements."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:416
+#: src/settings/components/AppearanceTab.jsx:397
 msgid "Plugin default (Source Sans 3)"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:444
+#: src/settings/components/AppearanceTab.jsx:425
 msgid "Default signature"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:448
+#: src/settings/components/AppearanceTab.jsx:429
 msgid "Pre-fills new Signature elements in the designer."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:463
+#: src/settings/components/AppearanceTab.jsx:444
 msgid "Default logo"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:467
+#: src/settings/components/AppearanceTab.jsx:448
 msgid "Pre-fills new Image / Logo elements in the designer."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:479
+#: src/settings/components/AppearanceTab.jsx:460
 msgid "Primary color"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:483
+#: src/settings/components/AppearanceTab.jsx:464
 msgid "The main shape color: borders, frames, and rules."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:497
+#: src/settings/components/AppearanceTab.jsx:478
 msgid "Accent color"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:501
+#: src/settings/components/AppearanceTab.jsx:482
 msgid "Secondary shapes and decorative details."
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:515
+#: src/settings/components/AppearanceTab.jsx:496
 msgid "Text color"
 msgstr ""
 
-#: src/settings/components/AppearanceTab.jsx:519
+#: src/settings/components/AppearanceTab.jsx:500
 msgid "Headings, names, and body text. Unset keeps each design’s own ink."
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:64
+#: src/settings/components/EmailTab.jsx:77
 msgid "Copied!"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:66
+#: src/settings/components/EmailTab.jsx:79
 msgid "Failed to copy"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:76
+#: src/settings/components/EmailTab.jsx:89
 msgid "Click to copy"
 msgstr ""
 
 #: src/settings/components/EmailTab.jsx:149
-msgid "Issuance Email"
+msgid "Select Email Logo"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:152
-msgid "Sent to the recipient when a certificate is issued, with the certificate PDF attached and a verification link in the body."
+#: src/settings/components/EmailTab.jsx:151
+msgid "Use this image"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:160
-msgid "Send issuance email"
+#: src/settings/components/EmailTab.jsx:219
+msgid "Email Settings"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:179
+#: src/settings/components/EmailTab.jsx:222
+msgid "Configure the emails sent by the plugin."
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:230
+#: src/settings/components/EmailTab.jsx:242
+msgid "Email logo"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:231
+msgid "Logo displayed at the top of emails. Max width 400px, max height 150px."
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:268
+msgid "Select Logo"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:279
 msgid "From name"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:196
-msgid "From address"
-msgstr ""
-
-#: src/settings/components/EmailTab.jsx:217
-msgid "Subject"
-msgstr ""
-
-#: src/settings/components/EmailTab.jsx:237
-msgid "Body"
-msgstr ""
-
-#: src/settings/components/EmailTab.jsx:258
-msgid "Available Tokens:"
-msgstr ""
-
-#: src/settings/components/EmailTab.jsx:261
-msgid "(click to copy)"
-msgstr ""
-
-#: src/settings/components/EmailTab.jsx:266
-msgid "The recipient's name as it appears on the certificate"
-msgstr ""
-
-#: src/settings/components/EmailTab.jsx:273
-msgid "The certificate title (template name)"
-msgstr ""
-
 #: src/settings/components/EmailTab.jsx:280
-msgid "The formatted credential ID, e.g. 7Q4M-K9P2-XT3A"
-msgstr ""
-
-#: src/settings/components/EmailTab.jsx:287
-msgid "Link to verify the certificate on the public verification page"
-msgstr ""
-
-#: src/settings/components/EmailTab.jsx:294
-msgid "The issuing site or organization name"
+msgid "Name shown in the \"From\" field of emails sent by the plugin."
 msgstr ""
 
 #: src/settings/components/EmailTab.jsx:301
+msgid "From address"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:310
+msgid "Email address shown in the \"From\" field of emails sent by the plugin."
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:334
+msgid "Issuance Email"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:337
+msgid "Sent to the recipient when a certificate is issued, with the certificate PDF attached and a verification link in the body."
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:345
+msgid "Send issuance email"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:364
+msgid "Subject"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:384
+msgid "Body"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:404
+msgid "Available Tokens:"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:407
+msgid "(click to copy)"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:412
+msgid "The recipient's name as it appears on the certificate"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:419
+msgid "The certificate title (template name)"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:426
+msgid "The formatted credential ID, e.g. 7Q4M-K9P2-XT3A"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:433
+msgid "A \"View Certificate\" button that opens the certificate page"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:440
+msgid "Link to verify the certificate on the public verification page"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:447
+msgid "The issuing site or organization name"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:454
 msgid "The site title from Settings → General"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:309
+#: src/settings/components/EmailTab.jsx:462
 msgid "Certificate merge fields:"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:318
+#: src/settings/components/EmailTab.jsx:471
 msgid "Any merge field from the certificate designer works here too, wrapped in double braces. The email uses the same values printed on the certificate. A few examples:"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:325
+#: src/settings/components/EmailTab.jsx:478
 msgid "The course that earned the certificate (quiz and assignment fields work the same way)"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:332
+#: src/settings/components/EmailTab.jsx:485
 msgid "The recipient's first name"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:339
+#: src/settings/components/EmailTab.jsx:492
 msgid "When the certificate expires, blank when it never does"
 msgstr ""
 
-#: src/settings/components/EmailTab.jsx:360
-msgid "Sends this email to your own address with sample values. Unsaved changes on this page are saved first."
+#: src/settings/components/EmailTab.jsx:503
+msgid "Test Email"
 msgstr ""
 
-#: src/settings/components/GeneralTab.jsx:35
+#: src/settings/components/EmailTab.jsx:506
+msgid "Send a test email to verify your email configuration and preview your templates."
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:514
+msgid "Send to"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:523
+msgid "Enter email address"
+msgstr ""
+
+#: src/settings/components/EmailTab.jsx:542
+msgid "Sends this email with sample values. Unsaved changes on this page are saved first."
+msgstr ""
+
+#. translators: %d: page ID
+#: src/settings/components/GeneralTab.jsx:84
+#, js-format
+msgid "Page #%d"
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:94
 msgid "Verification"
 msgstr ""
 
-#: src/settings/components/GeneralTab.jsx:38
+#: src/settings/components/GeneralTab.jsx:97
 msgid "The public page where visitors verify certificates. QR codes on rendered certificates and links in issuance emails point here."
 msgstr ""
 
-#: src/settings/components/GeneralTab.jsx:49
+#: src/settings/components/GeneralTab.jsx:108
 msgid "The configured verification page no longer exists."
 msgstr ""
 
-#: src/settings/components/GeneralTab.jsx:53
+#: src/settings/components/GeneralTab.jsx:112
 msgid "Certificate QR codes and links will not resolve until you assign a new page. The page needs the Certificate Verification block or the [ppcert_verify] shortcode."
 msgstr ""
 
-#: src/settings/components/GeneralTab.jsx:62
+#: src/settings/components/GeneralTab.jsx:121
 msgid "Verification page"
 msgstr ""
 
-#: src/settings/components/GeneralTab.jsx:73
-msgid "Choose a page…"
+#: src/settings/components/GeneralTab.jsx:137
+msgid "No published pages match."
 msgstr ""
 
-#: src/settings/components/GeneralTab.jsx:90
+#: src/settings/components/GeneralTab.jsx:145
+msgid "Search for a page…"
+msgstr ""
+
+#: src/settings/components/GeneralTab.jsx:164
 msgid "The page should contain the Certificate Verification block (or the [ppcert_verify] shortcode)."
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:213
+#: src/settings/components/SettingsPage.jsx:230
 msgid "Settings saved."
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:228
-#: src/settings/components/SettingsPage.jsx:236
+#: src/settings/components/SettingsPage.jsx:245
+#: src/settings/components/SettingsPage.jsx:260
 msgid "The settings could not be saved."
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:263
+#: src/settings/components/SettingsPage.jsx:287
 msgid "Certificate Settings"
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:269
+#: src/settings/components/SettingsPage.jsx:293
 msgid "Configure certificate defaults, appearance, email notifications, and data handling."
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:315
+#: src/settings/components/SettingsPage.jsx:339
 msgid "Saving…"
 msgstr ""
 
-#: src/settings/components/SettingsPage.jsx:334
-#: src/settings/components/SettingsPage.jsx:371
+#: src/settings/components/SettingsPage.jsx:359
+#: src/settings/components/SettingsPage.jsx:396
 msgid "Save Settings"
 msgstr ""
 
@@ -3448,11 +4137,6 @@ msgstr ""
 
 #: src/settings/components/StatusTab.jsx:115
 msgid "An error occurred. Please try again."
-msgstr ""
-
-#: src/settings/components/StatusTab.jsx:132
-#: src/settings/components/StatusTab.jsx:723
-msgid "OK"
 msgstr ""
 
 #. translators: %s: minimum required version number
