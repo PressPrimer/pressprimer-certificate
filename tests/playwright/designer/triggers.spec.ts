@@ -216,6 +216,47 @@ test.describe( 'trigger panel', () => {
 		).toBeVisible();
 	} );
 
+	test( 'with no integrations, the Award tab keeps its other sections', async ( {
+		page,
+	} ) => {
+		// Edge US-5 (2.1 release battery): the notice replaces only the
+		// trigger area; name, validity, the test email, and the addon slot
+		// stay reachable on a site with no integrations.
+		await page.goto( HARNESS_URL );
+		await page.evaluate( () => {
+			window.localStorage.removeItem( 'ppcert_harness_template' );
+			window.localStorage.removeItem( 'ppcert_harness_triggers' );
+			window.localStorage.setItem( 'ppcert_harness_no_types', '1' );
+		} );
+		await page.reload();
+		await page.waitForSelector( '[data-ppcert-canvas-scale]' );
+		await page.getByRole( 'tab', { name: 'Award' } ).click();
+		await page.waitForSelector( '[data-ppcert-triggers]' );
+
+		await expect(
+			page.getByText( 'No automatic award sources detected.' )
+		).toBeVisible();
+		await expect( page.locator( '[data-ppcert-trigger-add]' ) ).toHaveCount(
+			0
+		);
+		await expect(
+			page.getByText( 'Award this certificate when…' )
+		).toHaveCount( 0 );
+		await expect(
+			page.locator( '[data-ppcert-validity-mode]' )
+		).toBeVisible();
+		await expect(
+			page.getByRole( 'button', { name: 'Send Test Email' } )
+		).toBeVisible();
+		await expect(
+			page.locator( '#ppcert-designer-award-extension' )
+		).toHaveCount( 1 );
+
+		await page.evaluate( () =>
+			window.localStorage.removeItem( 'ppcert_harness_no_types' )
+		);
+	} );
+
 	test( 'remove empties the list back to the empty state', async ( {
 		page,
 	} ) => {

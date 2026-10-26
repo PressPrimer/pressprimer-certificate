@@ -812,8 +812,10 @@ class PressPrimer_Certificate_Layout_Validator {
 		} else {
 			$token = isset( $raw['token'] ) ? (string) $raw['token'] : '';
 
-			// Grammar only here; registry resolution (save warning for
-			// unresolvable tokens) is wired in Prompt 1.6.
+			// Grammar only, by design: a token is not checked against the
+			// registry, so an inactive addon's fields survive a save. An
+			// unregistered token resolves to '' at issue and is recorded
+			// in the issued event's resolver_failed meta.
 			if ( ! preg_match( self::TOKEN_PATTERN, $token ) && ! preg_match( self::META_TOKEN_PATTERN, $token ) ) {
 				self::add_error( $path . '.token', __( 'must be a {{group.field}} merge token.', 'pressprimer-certificate' ) );
 			}

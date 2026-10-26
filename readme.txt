@@ -341,6 +341,7 @@ Yes. On the Certificates screen, check the certificates you want, or check them 
 * Fixed: The designer's merge-field samples from user meta always show your own values, not another administrator's
 * Fixed: The verification rate limit's time window no longer extends with every request
 * Fixed: The "Changed elsewhere" notice no longer opens under the WordPress admin bar
+* Fixed: On sites with no LMS or quiz plugin, the designer's Award tab shows the certificate name, validity, test email, and add-on settings instead of only a message about award sources
 * Fixed: The suggested privacy policy text describes the records the plugin keeps: verifications and downloads, not page views
 
 = 2.0.2 =

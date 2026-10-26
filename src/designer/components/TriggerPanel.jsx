@@ -1127,49 +1127,51 @@ export default function TriggerPanel() {
 		</Paragraph>
 	);
 
-	// Edge US-5: no adapters detected - explain, don't look broken.
-	if ( types && 0 === types.length && 0 === triggers.length ) {
-		return (
-			<div className="ppcert-designer__prop-section">
-				<Empty
-					image={ Empty.PRESENTED_IMAGE_SIMPLE }
-					description={ __(
-						'No automatic award sources detected.',
+	// Edge US-5: no adapters detected - explain, don't look broken. Only the
+	// trigger area changes: the name, validity, test email, and the addon
+	// slot below stay reachable on a site with no integrations (2.1 release
+	// battery: the early return here hid them all).
+	const noSources = types && 0 === types.length && 0 === triggers.length;
+
+	const noSourcesNotice = (
+		<>
+			<Empty
+				image={ Empty.PRESENTED_IMAGE_SIMPLE }
+				description={ __(
+					'No automatic award sources detected.',
+					'pressprimer-certificate'
+				) }
+			/>
+			<Alert
+				type="info"
+				showIcon
+				message={ createInterpolateElement(
+					__(
+						'Install and activate an LMS plugin, <quiz>PressPrimer Quiz</quiz>, <assignment>PressPrimer Assignment</assignment>, or another integration to award this certificate based on user activity.',
 						'pressprimer-certificate'
-					) }
-				/>
-				<Alert
-					type="info"
-					showIcon
-					message={ createInterpolateElement(
-						__(
-							'Install and activate an LMS plugin, <quiz>PressPrimer Quiz</quiz>, <assignment>PressPrimer Assignment</assignment>, or another integration to award this certificate based on user activity.',
-							'pressprimer-certificate'
+					),
+					{
+						quiz: (
+							// eslint-disable-next-line jsx-a11y/anchor-has-content -- createInterpolateElement injects the link text.
+							<a
+								href="https://wordpress.org/plugins/pressprimer-quiz/"
+								target="_blank"
+								rel="noopener noreferrer"
+							/>
 						),
-						{
-							quiz: (
-								// eslint-disable-next-line jsx-a11y/anchor-has-content -- createInterpolateElement injects the link text.
-								<a
-									href="https://wordpress.org/plugins/pressprimer-quiz/"
-									target="_blank"
-									rel="noopener noreferrer"
-								/>
-							),
-							assignment: (
-								// eslint-disable-next-line jsx-a11y/anchor-has-content -- createInterpolateElement injects the link text.
-								<a
-									href="https://wordpress.org/plugins/pressprimer-assignment/"
-									target="_blank"
-									rel="noopener noreferrer"
-								/>
-							),
-						}
-					) }
-				/>
-				{ manualNote }
-			</div>
-		);
-	}
+						assignment: (
+							// eslint-disable-next-line jsx-a11y/anchor-has-content -- createInterpolateElement injects the link text.
+							<a
+								href="https://wordpress.org/plugins/pressprimer-assignment/"
+								target="_blank"
+								rel="noopener noreferrer"
+							/>
+						),
+					}
+				) }
+			/>
+		</>
+	);
 
 	const addButton = (
 		<Button
@@ -1188,32 +1190,36 @@ export default function TriggerPanel() {
 
 	return (
 		<div className="ppcert-designer__prop-section" data-ppcert-triggers>
-			<div className="ppcert-designer__trigger-head">
-				<Text
-					type="secondary"
-					className="ppcert-designer__panel-heading"
-				>
-					{ __(
-						'Award this certificate when…',
-						'pressprimer-certificate'
-					) }
-				</Text>
-				{ triggers.length > 0 ? (
-					<Tooltip
-						title={ __(
-							'Only one trigger can be added per certificate. To use another trigger, clone the certificate.',
+			{ noSources && noSourcesNotice }
+
+			{ ! noSources && (
+				<div className="ppcert-designer__trigger-head">
+					<Text
+						type="secondary"
+						className="ppcert-designer__panel-heading"
+					>
+						{ __(
+							'Award this certificate when…',
 							'pressprimer-certificate'
 						) }
-					>
-						{ /* span: tooltips need events a disabled button eats */ }
-						<span>{ addButton }</span>
-					</Tooltip>
-				) : (
-					addButton
-				) }
-			</div>
+					</Text>
+					{ triggers.length > 0 ? (
+						<Tooltip
+							title={ __(
+								'Only one trigger can be added per certificate. To use another trigger, clone the certificate.',
+								'pressprimer-certificate'
+							) }
+						>
+							{ /* span: tooltips need events a disabled button eats */ }
+							<span>{ addButton }</span>
+						</Tooltip>
+					) : (
+						addButton
+					) }
+				</div>
+			) }
 
-			{ 0 === triggers.length ? (
+			{ 0 === triggers.length && ! noSources && (
 				<Empty
 					image={ Empty.PRESENTED_IMAGE_SIMPLE }
 					description={ __(
@@ -1221,7 +1227,9 @@ export default function TriggerPanel() {
 						'pressprimer-certificate'
 					) }
 				/>
-			) : (
+			) }
+
+			{ triggers.length > 0 &&
 				triggers.map( ( trigger, index ) => {
 					// A trigger whose plugin is deactivated: name the
 					// plugin to reactivate; the raw type id, source ref,
@@ -1401,8 +1409,7 @@ export default function TriggerPanel() {
 							</div>
 						</div>
 					);
-				} )
-			) }
+				} ) }
 
 			{ manualNote }
 

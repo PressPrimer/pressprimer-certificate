@@ -367,6 +367,11 @@ apiFetch.use( ( options, next ) => {
 			return Promise.resolve( bySearch( DOUBLE_SOURCES ) );
 		}
 
+		// A site with no integrations (Edge US-5): the spec sets this key.
+		if ( window.localStorage.getItem( 'ppcert_harness_no_types' ) ) {
+			return Promise.resolve( [] );
+		}
+
 		return Promise.resolve( HARNESS_TYPES );
 	}
 
