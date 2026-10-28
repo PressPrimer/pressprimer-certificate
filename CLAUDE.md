@@ -4,7 +4,7 @@
 
 PressPrimer Certificate is an LMS-agnostic certificate authoring, issuance, and verification plugin for WordPress. It is the third plugin suite in the PressPrimer portfolio (Quiz, Assignment, Certificate).
 
-**Status: 1.0.0 shipped to WordPress.org on 2026-08-10; 1.1.0 (the feedback fast-follow) is built and releasing.** The conventions in this guide and in `docs/architecture/CONVENTIONS.md` were set before the first commit and are binding on every change since; the as-built architecture docs in `docs/architecture/` describe the shipped code.
+**Status: 2.0.2 is the current release (WordPress.org, 2026-10-13; 1.0.0 shipped 2026-08-10, 2.0.0 on 2026-09-24); 2.1.0 is built and releasing (`docs/versions/v2.x/v2.1/`).** The conventions in this guide and in `docs/architecture/CONVENTIONS.md` were set before the first commit and are binding on every change since; the as-built architecture docs in `docs/architecture/` describe the shipped code.
 
 **Read before any work:** `docs/CLAUDE-INSTRUCTIONS.md` for the reading order and current version context.
 
