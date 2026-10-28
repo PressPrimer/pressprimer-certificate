@@ -58,7 +58,6 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Validity periods: set how long certificates from a template stay valid (days, months, or years), pick an exact expiry date, or let them last forever
 * Per-trigger control over repeat completions: suppress duplicates or issue a fresh certificate every time (for compliance and recertification courses)
 * Revoke certificates and reinstate them if revoked by mistake
-* PressPrimer Assignment triggers can require a minimum grade percentage, a minimum score in points, or both
 
 **Credentials & Verification**
 
@@ -70,7 +69,6 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Download PDF on the verification page for valid and expired certificates, so a verifier can keep a copy
 * Certificate Link block and shortcode: one button on a course, lesson, topic, or quiz page that downloads the logged-in learner's own certificate for that item (or opens its page, your choice), hidden until it is earned
 * My Certificates list (shortcode and block) so logged-in learners can see, verify, and download everything they have earned, with status filters and sorting by date, name, or upcoming expiry
-* PDFs are protected against editing: Acrobat and other viewers refuse to modify the text, while printing and copying stay available
 
 **Admin**
 
@@ -86,13 +84,13 @@ PressPrimer Certificate delivers a complete, self-hosted credential workflow, in
 * Branded HTML certificate emails: your logo or site name at the top, the message in a clean white card, and the certificate PDF attached
 * A formatted message editor (bold, italics, lists, and links) and a View Certificate button
 * Certificate merge fields in the email subject and body, so the email can name the exact course or quiz that was completed
-* Send a test email to any address, or send yourself a template's award email with sample values before it goes live
+* Send a test email to any address
 * Resend a certificate's email with one click
 
 **Security, Privacy & Accessibility**
 
 * PDF and QR code generation happen locally on your server
-* PDF files cannot be modified in Acrobat or other tools to change data like the student name
+* PDFs are protected against editing: Acrobat and other tools refuse to change text like the student name, while printing and copying stay available
 * WordPress Privacy API integration (Tools > Export/Erase Personal Data)
 * Clean uninstall with optional complete data removal
 * Keyboard navigation, screen reader support, and reduced motion preferences
@@ -105,13 +103,13 @@ Everything above is free on WordPress.org. Optional add-ons from [pressprimer.co
 
 * **Custom Fonts** – Upload your brand's TTF fonts; they appear in every designer font control and render identically on screen and in the PDF.
 * **Multi-Page Certificates** – Add, duplicate, and reorder pages in the designer; every page renders in the PDF.
-* **Bulk Awarding** – Award a certificate to many recipients at once from a user list or a CSV, with a full per-row preview before anything sends; a CSV can give each certificate its own credential ID.
+* **Bulk Awarding** – Award a certificate to many recipients at once from a user list or a CSV, with a full per-row preview before anything sends.
 * **Wallet Cards** – A credit-card or business-card size card designed in the same designer and issued with every certificate, as a card PDF or a print sheet with cut marks.
 * **Custom Page Sizes** – Any width and height from 1 to 24 inches.
 * **Email Templates** – As many named award and expiry reminder emails as you need, chosen for each certificate template.
 * **Brand Kit** – Up to 10 brands, each with its colors, fonts, and logos, offered first in the designer, with Replace Colors to recolor a design in one step.
 * **One-Off Certificates** – Issue a certificate to anyone by name and email, with no account or course needed.
-* **Expiry Reminder Emails** – Remind recipients before their certificate expires, on a schedule you control, with an editable message and a test send.
+* **Expiry Reminder Emails** – Remind recipients before their certificate expires, on a schedule you control, with a rich-text message (or a different reminder email per template) and a test send to any address.
 * **Branded Verification Page** – Your logo, accent color, intro line, and footer on the public verification page, with a live preview.
 * **Social Sharing** – One-click LinkedIn add-to-profile, share composers for LinkedIn, X, and Facebook, copy link, and link previews that show the certificate itself.
 
@@ -128,8 +126,8 @@ Everything above is free on WordPress.org. Optional add-ons from [pressprimer.co
 
 **Enterprise** *(everything in School, plus)*
 
-* **Audit Log** – A single, filterable record of who did what and when across the suite, with per-category retention controls and CSV export.
-* **Open Badges 3.0** – Every certificate can also be a signed Open Badges 3.0 credential that learners add to a digital wallet or share as a badge image (PHP 8.2 or later).
+* **Audit Log** – A single, filterable record of who did what and when across the suite, with per-category retention controls, CSV export, and support for WordPress's Export and Erase Personal Data tools.
+* **Open Badges 3.0** – Every certificate can also be a signed Open Badges 3.0 credential that learners add to a digital wallet, upload to Credly or Open Badge Passport, or share as a badge image, and revoking the certificate revokes the badge for verifiers (PHP 8.2 or later required).
 * **White Label** – Run the certificate system under your own brand: the admin menu, dashboard, and logos, email footers, PDF document details, and custom admin styles.
 * **Verification API and Embeddable Widget** – A key-authenticated JSON endpoint that answers what the verification page shows, and a drop-in widget partners paste into their own pages.
 
@@ -164,6 +162,8 @@ All integrations are bundled in the free version, and the plugin is still fully 
 = Built for Developers =
 
 * Public `ppcert_*()` functions for issuing, rendering, and linking certificates from your own plugin
+* `ppcert_issue_certificate()` arguments for recipients without a site account, merge overrides, and a credential ID you supply
+* Filters and actions for page sizes, credential IDs, email templates and format, render variants, bulk actions, certificate permissions, and deletion
 * Action hooks for issuance, revocation, and verification events
 * Filter-based registries for custom trigger types (including value-only "threshold" triggers) and merge fields
 * REST API support
@@ -237,11 +237,15 @@ The bundled fonts are all licensed under the SIL Open Font License 1.1, with lic
 
 = Is this really free, or is it a limited trial? =
 
-It's genuinely free and not locked down. PressPrimer Certificate includes unlimited templates, unlimited certificates, the full designer, plugin integrations, public verification, and email delivery in the free version. Optional Educator, School, and Enterprise add-ons add features such as custom fonts, bulk awarding, issuing organizations, and an audit log; the Upgrade page under Certificates compares them, and the free plugin never loses a feature.
+It's genuinely free and not locked down. PressPrimer Certificate includes unlimited templates, unlimited certificates, the full designer, plugin integrations, public verification, bulk actions, and branded HTML email in the free version. Optional Educator, School, and Enterprise add-ons add features such as custom fonts, wallet cards, bulk awarding, issuing organizations, Open Badges, and an audit log; the Upgrade page under Certificates compares them, and the free plugin never loses a feature.
 
 = Does this plugin require an LMS? =
 
 No. PressPrimer Certificate is fully functional with no LMS installed; you can design certificates and issue them manually to any user. When PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, or LearnPress is detected, automatic issuance triggers become available.
+
+= Can I issue a certificate to someone without an account on my site? =
+
+The free plugin issues certificates to your site's users, by hand or automatically. The Educator add-on's Issue One-Off sends a certificate to anyone by name and an optional email address, with no account or course needed, and WordPress's Export and Erase Personal Data tools find those certificates by email address.
 
 = Does it work with PressPrimer Quiz and PressPrimer Assignment? =
 
@@ -254,6 +258,10 @@ Every certificate can include a unique credential ID and/or a QR code. Scanning 
 = How do learners see the certificates they have earned? =
 
 Three ways. Each certificate is emailed as a PDF the moment it is issued. Learners can also visit a My Certificates page you create with the included block or `[ppcert_my_certificates]` shortcode, which lists everything they have earned with verify and download links, status filters, and sorting. And every certificate has its own shareable view page with the certificate image and a PDF download.
+
+= Can learners add a certificate to LinkedIn or a digital wallet? =
+
+Every certificate has its own shareable page and PDF in the free plugin. The Educator add-on adds LinkedIn's Add to Profile button and share links for LinkedIn, X, and Facebook. The Enterprise add-on can also issue each certificate as a signed Open Badges 3.0 credential that learners add to a badge wallet such as the Learner Credential Wallet, or upload to Credly or Open Badge Passport.
 
 = Can I put a link to a learner's certificate on the course page itself? =
 
@@ -302,17 +310,17 @@ Yes. On the Certificates screen, check the certificates you want, or check them 
 == Changelog ==
 
 = 2.1.0 =
-* Added: Certificate emails are branded HTML, with your email logo or site name at the top, the message in a white card, and a footer naming your site, matching PressPrimer Assignment's emails. Award, resend, test, and reminder emails all use it, and the PDF is still attached
+* Added: Certificate emails are branded HTML, with your email logo or site name at the top, the message in a white card, and a footer naming your site, matching PressPrimer Assignment's emails. 
 * Added: A View Certificate button in certificate emails: the new {certificate_button} token, included in the default email
 * Added: Settings > Email has an email logo, a formatted message editor with bold, italics, lists, and links, and test emails to any address
 * Added: A3 and Legal page sizes, in the designer and as the default certificate size under Settings > Appearance
-* Added: Bulk actions on the Certificates screen: revoke with one reason, reinstate, resend email, or delete the certificates you check, with a progress bar and a summary of anything skipped and why
+* Added: Bulk actions on the Certificates screen: revoke with one reason, reinstate, resend email, or delete the certificates you check
 * Added: Bulk actions can apply to every certificate matching the current search and filters, not just the ones on the page; deleting them all asks you to type DELETE first
 * Added: A bulk action interrupted by closing the page can be resumed or discarded from the Certificates screen
 * Added: PressPrimer Assignment triggers can require a minimum score in points, alongside or instead of a minimum grade percentage
 * Added: A Score (Points) merge field prints an assignment grade as points earned of points possible, such as 62 / 65
 * Added: The designer explains the dashed safe-print line around the page
-* Added: A one-time request for feedback after 50 certificates; dismiss it for good or postpone it for 30 days. It never appears under white-label branding
+* Added: A one-time request for feedback after 50 certificates; dismiss it for good or postpone it for 30 days
 * Added: Support for the Educator, School, and Enterprise 2.1 add-ons, including certificates for people without a site account, credential ID formats and IDs from a spreadsheet, wallet cards, email templates, and brand kits
 * Improved: Certificate pages and public PDF downloads are rate limited per visitor, and certificate preview images use file names that can't be guessed from the credential ID
 * Improved: PDF downloads and email attachments share one file name, such as certificate-ab12-cd34-ef56.pdf
@@ -326,7 +334,7 @@ Yes. On the Certificates screen, check the certificates you want, or check them 
 * Changed: For developers, new extension points for add-ons and integrations: `ppcert_issue_certificate()` arguments for recipients without an account, merge overrides, duplicate scope, and a supplied credential ID; duplicate-suppression refs as lists; and filters and actions for page sizes, credential IDs, email templates, render variants, bulk actions, certificate permissions, and deletion
 * Fixed: Thin horizontal and vertical lines, including the rules and signature lines in the starter templates, draw perfectly straight on the canvas, in PDFs, and in certificate images
 * Fixed: The certificate page shows the recipient's name as it was issued, not their current account name
-* Fixed: Award triggers can only be viewed or changed by people allowed to edit that template; with PressPrimer Certificate School, organization members could reach the triggers of another organization's templates and site templates
+* Fixed: Award triggers can only be viewed or changed by people allowed to edit that template
 * Fixed: A revoked certificate can no longer be emailed again, even from an old Resend link
 * Fixed: Erasing a person's data with WordPress's privacy tools also removes them from activity records on other people's certificates
 * Fixed: "Remove all data on uninstall" also removes certificate page previews and the font cache
