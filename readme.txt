@@ -310,7 +310,7 @@ Yes. On the Certificates screen, check the certificates you want, or check them 
 == Changelog ==
 
 = 2.1.0 =
-* Added: Certificate emails are branded HTML, with your email logo or site name at the top, the message in a white card, and a footer naming your site, matching PressPrimer Assignment's emails. 
+* Added: Certificate emails are branded HTML, with your email logo or site name at the top, the message in a white card, and a footer naming your site, matching PressPrimer Assignment's emails
 * Added: A View Certificate button in certificate emails: the new {certificate_button} token, included in the default email
 * Added: Settings > Email has an email logo, a formatted message editor with bold, italics, lists, and links, and test emails to any address
 * Added: A3 and Legal page sizes, in the designer and as the default certificate size under Settings > Appearance
