@@ -309,6 +309,9 @@ Yes. On the Certificates screen, check the certificates you want, or check them 
 
 == Changelog ==
 
+= 2.1.1 =
+* Fixed: Updating to 2.1 while visitors were on the site could log "Duplicate column name" and "Duplicate key name" database errors. The database update now runs once, and page loads that arrive during it wait for it to finish
+
 = 2.1.0 =
 * Added: Certificate emails are branded HTML, with your email logo or site name at the top, the message in a white card, and a footer naming your site, matching PressPrimer Assignment's emails
 * Added: A View Certificate button in certificate emails: the new {certificate_button} token, included in the default email

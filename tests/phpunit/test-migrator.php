@@ -7,7 +7,8 @@
  * the 1.1.0-to-2.0.0 upgrade on a populated fixture (title backfill),
  * the 2.0.0-to-2.1.0 upgrade (page_size widened, new columns and
  * indexes, type-checked targets), fresh-versus-upgraded schema parity,
- * verify-before-advance, and backfill batching. Real dbDelta behavior
+ * verify-before-advance, backfill batching, and the migration lock
+ * (2.1.1: one request at a time). Real dbDelta behavior
  * (SHOW CREATE TABLE parity between fresh and upgraded installs) is
  * additionally verified live on the dev site per the prompt convention.
  *
@@ -42,7 +43,7 @@ class Test_Migrator extends TestCase {
 		$this->wpdb = ppcert_tests_reset_wpdb();
 
 		$GLOBALS['ppcert_test_options'] = [];
-		unset( $GLOBALS['ppcert_test_dbdelta_skip_tables'], $GLOBALS['ppcert_test_dbdelta_keep_types'] );
+		unset( $GLOBALS['ppcert_test_dbdelta_skip_tables'], $GLOBALS['ppcert_test_dbdelta_keep_types'], $GLOBALS['ppcert_test_before_lock_insert'], $GLOBALS['ppcert_test_on_option_read'] );
 	}
 
 	/**
@@ -385,6 +386,7 @@ class Test_Migrator extends TestCase {
 		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ), 'An un-widened page_size must not advance the version' );
 		$this->assertSame( "enum('a4','letter')", $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'] );
 		$this->assertContains( 'recipient_email', $this->wpdb->table_columns( 'wp_ppcert_certificates' ), 'Presence alone would have passed: the new columns exist' );
+		$this->assertArrayNotHasKey( 'ppcert_migration_lock', $GLOBALS['ppcert_test_options'], 'A failed step still releases the lock' );
 
 		unset( $GLOBALS['ppcert_test_dbdelta_keep_types'] );
 
@@ -392,6 +394,156 @@ class Test_Migrator extends TestCase {
 
 		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ), 'The retry completes the step' );
 		$this->assertSame( 'varchar(32)', $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'] );
+	}
+
+	/**
+	 * The 2.1.0 upgrade race (2.1.1): while another request holds the
+	 * migration lock, a load that sees the old version runs nothing (no
+	 * dbDelta, so no duplicate-column errors) and leaves the lock alone.
+	 * A lock older than the wait (a long step, or a holder that died) is
+	 * not waited on. Once the lock is gone, the next load migrates and
+	 * releases it.
+	 *
+	 * @return void
+	 */
+	public function test_held_lock_skips_the_chain_until_released() {
+		$this->install_2_0_schema();
+
+		$held = (string) ( time() - 60 );
+
+		$GLOBALS['ppcert_test_options']['ppcert_migration_lock'] = $held;
+
+		$started = microtime( true );
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertLessThan( 1, microtime( true ) - $started, 'A minute-old lock is not waited on' );
+		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ) );
+		$this->assertSame( "enum('a4','letter')", $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'], 'dbDelta never ran' );
+		$this->assertNotContains( 'credential_display', $this->wpdb->table_columns( 'wp_ppcert_certificates' ) );
+		$this->assertSame( $held, $GLOBALS['ppcert_test_options']['ppcert_migration_lock'], "The holder's lock is untouched" );
+
+		unset( $GLOBALS['ppcert_test_options']['ppcert_migration_lock'] );
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ) );
+		$this->assertContains( 'credential_display', $this->wpdb->table_columns( 'wp_ppcert_certificates' ) );
+		$this->assertArrayNotHasKey( 'ppcert_migration_lock', $GLOBALS['ppcert_test_options'], 'The lock is released after the chain' );
+	}
+
+	/**
+	 * A load that collides with a migration just begun waits for it, so
+	 * it doesn't run against tables the step hasn't finished (an
+	 * issuance insert naming credential_display would fail), and returns
+	 * as soon as the holder releases the lock, without migrating itself.
+	 *
+	 * @return void
+	 */
+	public function test_waits_for_a_fresh_lock_to_be_released() {
+		$this->install_2_0_schema();
+
+		$GLOBALS['ppcert_test_options']['ppcert_migration_lock'] = (string) time();
+
+		// Reads of the lock row: the failed take, two polls while held,
+		// then the holder finishes before the third poll.
+		$reads                                  = 0;
+		$GLOBALS['ppcert_test_on_option_read'] = static function ( $name ) use ( &$reads ) {
+			if ( 'ppcert_migration_lock' !== $name ) {
+				return;
+			}
+
+			++$reads;
+
+			if ( 4 === $reads ) {
+				unset( $GLOBALS['ppcert_test_options']['ppcert_migration_lock'] );
+			}
+		};
+
+		$started = microtime( true );
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+		$elapsed = microtime( true ) - $started;
+
+		$this->assertSame( 4, $reads, 'It polled until the lock was gone, then stopped' );
+		$this->assertGreaterThanOrEqual( 0.35, $elapsed, 'It waited between polls' );
+		$this->assertLessThan( 2, $elapsed, 'It returned as soon as the lock was released' );
+		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ), 'The waiting load leaves migrating to the holder' );
+		$this->assertSame( "enum('a4','letter')", $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'] );
+	}
+
+	/**
+	 * A lock older than ten minutes belongs to a request that died
+	 * mid-migration: the next load takes it over and migrates. A younger
+	 * one is still respected.
+	 *
+	 * @return void
+	 */
+	public function test_abandoned_lock_is_taken_over() {
+		$this->install_2_0_schema();
+
+		$GLOBALS['ppcert_test_options']['ppcert_migration_lock'] = (string) ( time() - 300 );
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( '2.0.0', get_option( 'ppcert_db_version' ), 'A five-minute-old lock is still held' );
+
+		$GLOBALS['ppcert_test_options']['ppcert_migration_lock'] = (string) ( time() - 601 );
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ), 'An abandoned lock is taken over' );
+		$this->assertArrayNotHasKey( 'ppcert_migration_lock', $GLOBALS['ppcert_test_options'] );
+	}
+
+	/**
+	 * The options a request loads at startup can be stale by the time it
+	 * gets the lock: another request may have finished the chain in
+	 * between. With the lock taken, the stored version is re-read from
+	 * the table, and a finished chain is not run again.
+	 *
+	 * @return void
+	 */
+	public function test_lock_rechecks_the_stored_version() {
+		$this->install_2_0_schema();
+
+		// Another request finishes the chain after this one read 2.0.0.
+		$GLOBALS['ppcert_test_before_lock_insert'] = static function () {
+			$GLOBALS['ppcert_test_options']['ppcert_db_version'] = '2.1.0';
+		};
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( "enum('a4','letter')", $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'], 'dbDelta did not run a second time' );
+		$this->assertArrayNotHasKey( 'ppcert_migration_lock', $GLOBALS['ppcert_test_options'] );
+	}
+
+	/**
+	 * The daily head heal takes the same lock: while it is held, a
+	 * broken head step is left alone (without waiting: the site's
+	 * version is current) and the daily check stays unstamped, so the
+	 * next load heals it.
+	 *
+	 * @return void
+	 */
+	public function test_head_heal_respects_the_lock() {
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->wpdb->register_table( 'wp_ppcert_templates', [ 'page_size' => "enum('a4','letter')" ] );
+		ppcert_tests_reset_transients();
+
+		$GLOBALS['ppcert_test_options']['ppcert_migration_lock'] = (string) time();
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( "enum('a4','letter')", $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'] );
+		$this->assertFalse( get_transient( 'ppcert_db_head_verified' ), 'The daily check is not stamped while the step is unhealed' );
+
+		unset( $GLOBALS['ppcert_test_options']['ppcert_migration_lock'] );
+
+		PressPrimer_Certificate_Migrator::maybe_migrate();
+
+		$this->assertSame( 'varchar(32)', $this->wpdb->table_column_types( 'wp_ppcert_templates' )['page_size'] );
+		$this->assertSame( '2.1.0', get_option( 'ppcert_db_version' ) );
+		$this->assertArrayNotHasKey( 'ppcert_migration_lock', $GLOBALS['ppcert_test_options'] );
 	}
 
 	/**

@@ -29,6 +29,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * that changes a column's type (page_size ENUM to VARCHAR) is verified
  * by type, not just presence.
  *
+ * Since 2.1.1 one request at a time runs the chain (or the head heal).
+ * The first loads after an update arrive together - visitors, WP-Cron,
+ * AJAX - and each saw the old version and ran dbDelta; every request
+ * but the first logged "Duplicate column name" / "Duplicate key name"
+ * for each column and index the step adds. A request that finds the
+ * lock taken waits briefly for the holder to finish rather than run
+ * against tables the step hasn't finished (an insert naming a new
+ * column fails until it exists), then carries on without migrating.
+ *
  * @since 1.0.0
  */
 class PressPrimer_Certificate_Migrator {
@@ -51,12 +60,52 @@ class PressPrimer_Certificate_Migrator {
 	const HEAD_VERIFIED_TRANSIENT = 'ppcert_db_head_verified';
 
 	/**
+	 * Option row that holds the migration lock: the Unix time it was taken
+	 *
+	 * @since 2.1.1
+	 * @var string
+	 */
+	const LOCK_OPTION = 'ppcert_migration_lock';
+
+	/**
+	 * Seconds after which a lock counts as abandoned (its request died
+	 * mid-migration) and the next load takes it over
+	 *
+	 * @since 2.1.1
+	 * @var int
+	 */
+	const LOCK_TIMEOUT = 600;
+
+	/**
+	 * Seconds a request waits for another request's migration: the most
+	 * it waits, and the lock age past which it doesn't wait at all (the
+	 * holder is on a very long step or died, and every load stalling
+	 * until LOCK_TIMEOUT would be worse than a load that runs early)
+	 *
+	 * @since 2.1.1
+	 * @var int
+	 */
+	const LOCK_WAIT = 15;
+
+	/**
+	 * The value this request wrote into the lock row, or null when it
+	 * holds no lock; release only deletes a row that still carries it
+	 *
+	 * @since 2.1.1
+	 * @var string|null
+	 */
+	private static $lock_value = null;
+
+	/**
 	 * Maybe run migrations
 	 *
 	 * Checks if the database needs to be updated and runs migrations if
 	 * necessary. Safe to call multiple times - only runs when the stored
 	 * version is behind PPCERT_DB_VERSION. Called on activation and on
-	 * every load (the retry path for a previously failed step).
+	 * every load (the retry path for a previously failed step). While
+	 * another request holds the migration lock, this load waits for it
+	 * (wait_for_lock()) and skips the chain; a later load picks up
+	 * anything left.
 	 *
 	 * @since 1.0.0
 	 */
@@ -68,7 +117,23 @@ class PressPrimer_Certificate_Migrator {
 			return;
 		}
 
-		self::run_migrations( $current_version );
+		if ( ! self::acquire_lock() ) {
+			self::wait_for_lock();
+			return;
+		}
+
+		try {
+			// The options this request loaded can predate a chain another
+			// request finished before the lock came free: re-read the
+			// stored version from the table.
+			$current_version = self::stored_version();
+
+			if ( version_compare( $current_version, PPCERT_DB_VERSION, '<' ) ) {
+				self::run_migrations( $current_version );
+			}
+		} finally {
+			self::release_lock();
+		}
 	}
 
 	/**
@@ -106,8 +171,21 @@ class PressPrimer_Certificate_Migrator {
 		$healed = false;
 
 		if ( ! empty( self::verify_targets( $head['targets'] ) ) ) {
-			call_user_func( $head['callback'] );
-			$healed = true;
+			// Another request is migrating or healing: leave the daily
+			// check unstamped so the next load looks again.
+			if ( ! self::acquire_lock() ) {
+				return false;
+			}
+
+			try {
+				// It may have healed the step before the lock came free.
+				if ( ! empty( self::verify_targets( $head['targets'] ) ) ) {
+					call_user_func( $head['callback'] );
+					$healed = true;
+				}
+			} finally {
+				self::release_lock();
+			}
 		}
 
 		if ( empty( self::verify_targets( $head['targets'] ) ) ) {
@@ -115,6 +193,143 @@ class PressPrimer_Certificate_Migrator {
 		}
 
 		return $healed;
+	}
+
+	/**
+	 * Take the migration lock
+	 *
+	 * WP_Upgrader::create_lock()'s pattern: INSERT IGNORE into the options
+	 * table, whose unique option_name lets exactly one request create the
+	 * row (add_option() upserts, so two requests would both "win"). A
+	 * lock older than LOCK_TIMEOUT belongs to a request that died, and is
+	 * taken over with a compare-and-swap UPDATE so two requests can't
+	 * both claim it. The row is written directly and never read through
+	 * get_option(), so no options cache sits between requests and the
+	 * row; it is not autoloaded.
+	 *
+	 * @since 2.1.1
+	 *
+	 * @return bool Whether this request now holds the lock.
+	 */
+	private static function acquire_lock() {
+		global $wpdb;
+
+		$now = (string) time();
+
+		$created = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO %i ( option_name, option_value, autoload ) VALUES ( %s, %s, 'off' )",
+				$wpdb->options,
+				self::LOCK_OPTION,
+				$now
+			)
+		);
+
+		if ( ! $created ) {
+			$locked_at = $wpdb->get_var(
+				$wpdb->prepare( 'SELECT option_value FROM %i WHERE option_name = %s', $wpdb->options, self::LOCK_OPTION )
+			);
+
+			// Released in between (the holder just finished), or still
+			// fresh: leave the work to the holder or the next load.
+			if ( null === $locked_at || (int) $locked_at > (int) $now - self::LOCK_TIMEOUT ) {
+				return false;
+			}
+
+			$taken = $wpdb->query(
+				$wpdb->prepare(
+					'UPDATE %i SET option_value = %s WHERE option_name = %s AND option_value = %s',
+					$wpdb->options,
+					$now,
+					self::LOCK_OPTION,
+					$locked_at
+				)
+			);
+
+			if ( 1 !== (int) $taken ) {
+				return false;
+			}
+		}
+
+		self::$lock_value = $now;
+
+		return true;
+	}
+
+	/**
+	 * Release the migration lock
+	 *
+	 * Deletes the row only while it still carries this request's value,
+	 * so a request whose lock was taken over as abandoned can't release
+	 * the new holder's lock.
+	 *
+	 * @since 2.1.1
+	 */
+	private static function release_lock() {
+		global $wpdb;
+
+		if ( null === self::$lock_value ) {
+			return;
+		}
+
+		$wpdb->query(
+			$wpdb->prepare(
+				'DELETE FROM %i WHERE option_name = %s AND option_value = %s',
+				$wpdb->options,
+				self::LOCK_OPTION,
+				self::$lock_value
+			)
+		);
+
+		self::$lock_value = null;
+	}
+
+	/**
+	 * Wait for another request's migration to finish
+	 *
+	 * Polls the lock row until it is gone, for at most LOCK_WAIT seconds,
+	 * and not at all once the lock is LOCK_WAIT seconds old. Before
+	 * 2.1.1 every request ran the step itself, which held it until the
+	 * tables matched; this keeps that without the duplicate ALTERs.
+	 *
+	 * @since 2.1.1
+	 */
+	private static function wait_for_lock() {
+		global $wpdb;
+
+		$deadline = microtime( true ) + self::LOCK_WAIT;
+
+		do {
+			$locked_at = $wpdb->get_var(
+				$wpdb->prepare( 'SELECT option_value FROM %i WHERE option_name = %s', $wpdb->options, self::LOCK_OPTION )
+			);
+
+			if ( null === $locked_at || time() - (int) $locked_at >= self::LOCK_WAIT ) {
+				return;
+			}
+
+			usleep( 200000 );
+		} while ( microtime( true ) < $deadline );
+	}
+
+	/**
+	 * Read the stored DB version from the options table
+	 *
+	 * Bypasses the options cache, which holds the value this request
+	 * loaded at startup.
+	 *
+	 * @since 2.1.1
+	 *
+	 * @return string Stored version, '0' when none.
+	 */
+	private static function stored_version() {
+		global $wpdb;
+
+		$stored = $wpdb->get_var(
+			$wpdb->prepare( 'SELECT option_value FROM %i WHERE option_name = %s', $wpdb->options, self::DB_VERSION_OPTION )
+		);
+
+		return null === $stored ? '0' : (string) $stored;
 	}
 
 	/**

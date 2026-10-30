@@ -48,6 +48,15 @@ class PPCert_Fake_WPDB {
 	public $postmeta = 'wp_postmeta';
 
 	/**
+	 * Core options table name. The migration lock's direct queries
+	 * (2.1.1) are served from $GLOBALS['ppcert_test_options'], the same
+	 * store the get_option() stub reads.
+	 *
+	 * @var string
+	 */
+	public $options = 'wp_options';
+
+	/**
 	 * Core comments table name (the Tutor adapter reads it).
 	 *
 	 * @var string
@@ -454,6 +463,49 @@ class PPCert_Fake_WPDB {
 		$args  = $payload['args'];
 		$table = isset( $args[0] ) ? (string) $args[0] : '';
 
+		// Migration lock (2.1.1): INSERT IGNORE creates the row only when
+		// absent. $GLOBALS['ppcert_test_before_lock_insert'] runs first,
+		// standing in for a request that finishes in the meantime.
+		if ( "INSERT IGNORE INTO %i ( option_name, option_value, autoload ) VALUES ( %s, %s, 'off' )" === $query ) {
+			if ( isset( $GLOBALS['ppcert_test_before_lock_insert'] ) && is_callable( $GLOBALS['ppcert_test_before_lock_insert'] ) ) {
+				call_user_func( $GLOBALS['ppcert_test_before_lock_insert'] );
+			}
+
+			if ( isset( $GLOBALS['ppcert_test_options'] ) && array_key_exists( (string) $args[1], (array) $GLOBALS['ppcert_test_options'] ) ) {
+				return 0;
+			}
+
+			$GLOBALS['ppcert_test_options'][ (string) $args[1] ] = (string) $args[2];
+
+			return 1;
+		}
+
+		// Migration lock: compare-and-swap takeover of an abandoned lock.
+		if ( 'UPDATE %i SET option_value = %s WHERE option_name = %s AND option_value = %s' === $query ) {
+			$name = (string) $args[2];
+
+			if ( ! isset( $GLOBALS['ppcert_test_options'][ $name ] ) || (string) $GLOBALS['ppcert_test_options'][ $name ] !== (string) $args[3] ) {
+				return 0;
+			}
+
+			$GLOBALS['ppcert_test_options'][ $name ] = (string) $args[1];
+
+			return 1;
+		}
+
+		// Migration lock: release only a row still carrying the value.
+		if ( 'DELETE FROM %i WHERE option_name = %s AND option_value = %s' === $query ) {
+			$name = (string) $args[1];
+
+			if ( ! isset( $GLOBALS['ppcert_test_options'][ $name ] ) || (string) $GLOBALS['ppcert_test_options'][ $name ] !== (string) $args[2] ) {
+				return 0;
+			}
+
+			unset( $GLOBALS['ppcert_test_options'][ $name ] );
+
+			return 1;
+		}
+
 		// Enterprise Audit_Service::update_event_meta.
 		if ( 'UPDATE %i SET meta_json = %s WHERE id = %d' === $query ) {
 			$id = (int) $args[2];
@@ -580,6 +632,20 @@ class PPCert_Fake_WPDB {
 		$args  = $payload['args'];
 		$table = isset( $args[0] ) ? (string) $args[0] : '';
 		$rows  = $this->rows( $table );
+
+		// One option read straight from the table (the migrator's lock
+		// and stored-version reads, 2.1.1), from the options store.
+		// $GLOBALS['ppcert_test_on_option_read'] sees each read first,
+		// standing in for another request changing the row meanwhile.
+		if ( 'SELECT option_value FROM %i WHERE option_name = %s' === $query ) {
+			$name = (string) $args[1];
+
+			if ( isset( $GLOBALS['ppcert_test_on_option_read'] ) && is_callable( $GLOBALS['ppcert_test_on_option_read'] ) ) {
+				call_user_func( $GLOBALS['ppcert_test_on_option_read'], $name );
+			}
+
+			return isset( $GLOBALS['ppcert_test_options'][ $name ] ) ? [ [ 'option_value' => $GLOBALS['ppcert_test_options'][ $name ] ] ] : [];
+		}
 
 		// Database write ceiling (Educator batch storage guard, 2.0.1).
 		if ( 'SELECT @@max_allowed_packet' === $query ) {
