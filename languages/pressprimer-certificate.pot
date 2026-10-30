@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Certificate 2.1.0\n"
+"Project-Id-Version: PressPrimer Certificate 2.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-certificate\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-26T19:05:46+00:00\n"
+"POT-Creation-Date: 2026-10-30T19:27:38+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-certificate\n"
@@ -467,7 +467,7 @@ msgstr ""
 #: blocks/certificate-link/index.js:147
 #: src/designer/components/ElementPalette.jsx:251
 #: src/designer/components/TriggerPanel.jsx:883
-#: src/designer/components/TriggerPanel.jsx:1247
+#: src/designer/components/TriggerPanel.jsx:1255
 msgid "Source"
 msgstr ""
 
@@ -815,7 +815,7 @@ msgid "(untitled)"
 msgstr ""
 
 #: includes/admin/class-ppcert-templates-list-table.php:300
-#: src/designer/components/TriggerPanel.jsx:1382
+#: src/designer/components/TriggerPanel.jsx:1390
 msgid "Edit"
 msgstr ""
 
@@ -1376,7 +1376,7 @@ msgid "Certificates support a single award trigger in this version. Duplicate th
 msgstr ""
 
 #: includes/api/class-ppcert-rest-triggers-controller.php:419
-#: src/designer/components/TriggerPanel.jsx:1316
+#: src/designer/components/TriggerPanel.jsx:1324
 msgid "Any source"
 msgstr ""
 
@@ -2127,8 +2127,8 @@ msgid "must be an object."
 msgstr ""
 
 #: includes/services/class-ppcert-layout-validator.php:617
-#: includes/services/class-ppcert-layout-validator.php:944
-#: includes/services/class-ppcert-layout-validator.php:1114
+#: includes/services/class-ppcert-layout-validator.php:946
+#: includes/services/class-ppcert-layout-validator.php:1116
 msgid "must be a hex color."
 msgstr ""
 
@@ -2154,31 +2154,31 @@ msgstr ""
 msgid "unknown element type."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:818
+#: includes/services/class-ppcert-layout-validator.php:820
 msgid "must be a {{group.field}} merge token."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:833
+#: includes/services/class-ppcert-layout-validator.php:835
 msgid "must be a number."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:842
+#: includes/services/class-ppcert-layout-validator.php:844
 msgid "must be left, center, or right."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:873
+#: includes/services/class-ppcert-layout-validator.php:875
 msgid "must be an existing image attachment."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:879
+#: includes/services/class-ppcert-layout-validator.php:881
 msgid "must be contain, cover, or stretch."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:904
+#: includes/services/class-ppcert-layout-validator.php:906
 msgid "must be line, rect, or ellipse."
 msgstr ""
 
-#: includes/services/class-ppcert-layout-validator.php:1139
+#: includes/services/class-ppcert-layout-validator.php:1141
 msgid "must be a hex color or empty."
 msgstr ""
 
@@ -3468,7 +3468,7 @@ msgstr ""
 
 #: src/designer/components/TriggerPanel.jsx:721
 #: src/designer/components/TriggerPanel.jsx:757
-#: src/designer/components/TriggerPanel.jsx:1185
+#: src/designer/components/TriggerPanel.jsx:1187
 msgid "Add trigger"
 msgstr ""
 
@@ -3494,7 +3494,7 @@ msgid "Search…"
 msgstr ""
 
 #: src/designer/components/TriggerPanel.jsx:974
-#: src/designer/components/TriggerPanel.jsx:1347
+#: src/designer/components/TriggerPanel.jsx:1355
 #: src/settings/components/StatusTab.jsx:586
 msgid "Active"
 msgstr ""
@@ -3534,49 +3534,49 @@ msgstr ""
 msgid "Certificates can always be issued manually from the Certificates screen, with or without triggers."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1136
+#: src/designer/components/TriggerPanel.jsx:1140
 msgid "No automatic award sources detected."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1145
+#: src/designer/components/TriggerPanel.jsx:1149
 msgid "Install and activate an LMS plugin, <quiz>PressPrimer Quiz</quiz>, <assignment>PressPrimer Assignment</assignment>, or another integration to award this certificate based on user activity."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1196
+#: src/designer/components/TriggerPanel.jsx:1201
 msgid "Award this certificate when…"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1203
+#: src/designer/components/TriggerPanel.jsx:1208
 msgid "Only one trigger can be added per certificate. To use another trigger, clone the certificate."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1219
+#: src/designer/components/TriggerPanel.jsx:1225
 msgid "No trigger yet."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1234
+#: src/designer/components/TriggerPanel.jsx:1242
 msgid "The source for this trigger no longer exists."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1264
+#: src/designer/components/TriggerPanel.jsx:1272
 msgid "Trigger deactivated"
 msgstr ""
 
 #. translators: %s: plugin name
-#: src/designer/components/TriggerPanel.jsx:1280
+#: src/designer/components/TriggerPanel.jsx:1288
 #, js-format
 msgid "%s must be active to use this trigger."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1286
+#: src/designer/components/TriggerPanel.jsx:1294
 msgid "The plugin providing this trigger is not active."
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1330
+#: src/designer/components/TriggerPanel.jsx:1338
 msgid "Conditions"
 msgstr ""
 
-#: src/designer/components/TriggerPanel.jsx:1447
+#: src/designer/components/TriggerPanel.jsx:1454
 msgid "Trigger changes save with the Save button."
 msgstr ""
 

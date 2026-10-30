@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: certificate, certification, lms, learndash, elearning
 Requires at least: 6.4
 Tested up to: 7.1
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -406,6 +406,9 @@ Yes. On the Certificates screen, check the certificates you want, or check them 
 * Initial release: certificate designer, credential IDs, QR verification, automatic issuance from PressPrimer Quiz, PressPrimer Assignment, LearnDash, LifterLMS, Tutor LMS, and LearnPress, email delivery, and a public verification page.
 
 == Upgrade Notice ==
+
+= 2.1.1 =
+Stops the "Duplicate column name" database errors some sites logged while updating to 2.1. Sites already on 2.1.0 have nothing to repair, and nothing else changes.
 
 = 2.1.0 =
 Branded HTML emails with a View Certificate button, A3 and Legal page sizes, bulk actions on the Certificates screen, and points minimums for Assignment triggers, plus security and privacy fixes. Existing certificates and templates are unchanged.
